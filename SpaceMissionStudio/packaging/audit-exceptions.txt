@@ -13,6 +13,15 @@
 # SpaceMissionStudio nor those Basilisk modules writes a TIFF, or any
 # image, with pillow: the app's plots are drawn and saved (PNG, SVG) by
 # plotly.js in Qt WebEngine.
+# Two more TIFF ones, found 2026-11-15: CVE-2026-128067 (GHSA-xcvg-w56q-
+# r89m), the libtiff encoder reading or writing past a heap buffer when
+# saving a compressed TIFF whose tags override the image size, and
+# CVE-2026-128066 (GHSA-wqgw-9xfh-qf2g), Image.open of a crafted TIFF or
+# EXIF block taking thousands of times its size in memory. The same holds:
+# no TIFF is read or written with pillow. The one pillow user in the
+# repository, scripts/prepare_mission_view_textures.py (a maintainer's
+# script, not shipped), opens two PNG textures after checking their
+# SHA-256 against the recorded values.
 # Remove these lines with the Basilisk upgrade that allows pillow >= 13.0.0;
 # tests/test_dependencies.py fails if pillow is moved and they are not.
 #
@@ -71,3 +80,5 @@ PYSEC-2026-4341  pillow==12.2.0  # fixed in 13.0.0
 PYSEC-2026-4342  pillow==12.2.0  # fixed in 13.0.0
 PYSEC-2026-4343  pillow==12.2.0  # fixed in 13.0.0
 PYSEC-2026-4363  pillow==12.2.0  # fixed in 13.0.0; TIFF encoder, not reached
+CVE-2026-128066  pillow==12.2.0  # fixed in 13.0.0; TIFF/EXIF parsing, not reached
+CVE-2026-128067  pillow==12.2.0  # fixed in 13.0.0; TIFF encoder, not reached

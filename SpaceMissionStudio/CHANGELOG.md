@@ -67,6 +67,18 @@ fixes bugs.
   reference-data guide no longer says the installers fetch the ITU file:
   they may not carry it.
 
+### Fixed
+
+- **tornado 6.6.1 and two pillow advisories:** three advisories
+  published on 2026-11-15 made CI's dependency audit fail.
+  - tornado's CVE-2026-126347, an open redirect left by 6.6's fix, is
+    fixed in 6.6.1; the pin is now 6.6.1.
+  - pillow's CVE-2026-128066 and CVE-2026-128067 are about reading and
+    writing TIFF files. pillow stays at 12.2.0, the highest the qualified
+    Basilisk allows, and both are accepted with that reason in
+    `packaging/audit-exceptions.txt`: nothing here reads or writes a TIFF
+    with pillow.
+
 ## 2.7.0 (2026-11-11)
 
 The 3D View becomes a real 3D renderer, and the app starts clean.

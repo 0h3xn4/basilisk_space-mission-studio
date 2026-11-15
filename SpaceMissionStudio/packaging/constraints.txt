@@ -53,7 +53,7 @@ requests==2.34.2
 sgp4==2.25
 shiboken6==6.11.2
 six==1.17.0
-tornado==6.6
+tornado==6.6.1
 tqdm==4.67.3
 tzdata==2026.6
 urllib3==2.8.0
