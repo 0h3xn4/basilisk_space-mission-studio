@@ -61,7 +61,7 @@ def test_the_page_shows_each_check_and_its_findings(qtbot, tmp_path):
                                                                                                 "panel -y"]
     assert "panel +y is 300 mm outside" in page.findings_label.text()
     assert "camera's field of view (deployed) is 100.0 % blocked" in page.findings_label.text()
-    assert page.mass_group.isVisibleTo(page) and "launch 300.00 kg" in page.mass_label.text()
+    assert page.mass_group.isVisibleTo(page) and page.mass_sheet.value("= Launch mass") == "300.00"
     assert STIFFNESS_NOTE in page.notes_label.text() and page.save_button.isEnabled()
     written = page.save(tmp_path / "out")
     assert {p.name for p in written} == {"design_checks.json", "field_of_view.csv", "launcher_envelope.csv",

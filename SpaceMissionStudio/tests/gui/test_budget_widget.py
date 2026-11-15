@@ -76,7 +76,7 @@ def test_the_budget_tab_shows_the_table(qtbot):
     widget.wait_for_worker()  # the table comes before the worker's thread ends: never tear down under it
     contributors = [widget.table.cell(r, 1) for r in range(widget.table.row_count())]
     assert "In-plane orbit control" in contributors and "Residual" in contributors
-    assert widget.totals_label.text().startswith("Total: ")
+    assert widget.totals_sheet.value("Delta-V") and widget.totals_sheet.value("Propellant")
     assert "DRAMA" in widget.notes_label.text()
 
 

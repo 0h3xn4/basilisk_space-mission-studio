@@ -82,6 +82,7 @@ from .problem_location import (GROUND_STATION, JSON_VIEW, MISSION_SEQUENCE, PROP
                                locate)
 from .spacecraft_editor import SpacecraftEditorDialog, SpacecraftLabels, SpacecraftListWidget, tab_titles
 from .theme import CONTENT_MAX_WIDTH_PX, set_role
+from .value_sheet import NoteList
 from .widgets import ComboBox, out_of_range_boxes
 from .workspace_panels import field_label
 
@@ -240,9 +241,7 @@ class ScenarioEditorWidget(QWidget):
         outer_layout.addWidget(self.validation_label)
         # Plausibility checks while editing (UX/UI guidelines): orbits that
         # cannot be flown, a run outside the installed reference data.
-        self.plausibility_label = QLabel()
-        self.plausibility_label.setWordWrap(True)
-        set_role(self.plausibility_label, tone="caution")
+        self.plausibility_label = NoteList("warning")
         self.plausibility_label.setVisible(False)
         outer_layout.addWidget(self.plausibility_label)
 
@@ -1149,7 +1148,7 @@ class ScenarioEditorWidget(QWidget):
             set_role(self.validation_label, tone="normal")
             base_dir = self._base_dir_provider() if self._base_dir_provider else None
             warnings = plausibility_warnings(scenario, base_dir=base_dir)
-        self.plausibility_label.setText("\n".join(f"⚠ {warning}" for warning in warnings))
+        self.plausibility_label.set_notes(warnings)
         self.plausibility_label.setVisible(bool(warnings))
         warnings = self._range_warnings() + warnings
         self.problems = problems + [("warning", warning) for warning in warnings]

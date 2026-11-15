@@ -32,14 +32,19 @@ compares two states, a summary, a popover. ``rows`` are
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QGridLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from .theme import SPACE, numeric_font, set_role
 
 Row = tuple[str, str, str]
+
+
+def _looks_numeric(value: str) -> bool:
+    return bool(re.match(r"^[-+\u2212]?(\d|\.\d)", value.strip()))
 
 
 class ValueSheet(QWidget):
@@ -51,7 +56,7 @@ class ValueSheet(QWidget):
         column = QVBoxLayout(self)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(SPACE["xs"])
-        self.title_label = set_role(QLabel(title), role="heading")
+        self.title_label = set_role(QLabel(title, self), role="heading")  # a parent first: shown, it is no window
         self.title_label.setVisible(bool(title))
         column.addWidget(self.title_label)
         self.grid = QGridLayout()
@@ -61,7 +66,7 @@ class ValueSheet(QWidget):
         column.addLayout(self.grid)
         self.empty_label = set_role(QLabel(empty), tone="secondary")
         column.addWidget(self.empty_label)
-        self.note_label = set_role(QLabel(note), role="caption")
+        self.note_label = set_role(QLabel(note, self), role="caption")
         self.note_label.setVisible(bool(note))
         column.addWidget(self.note_label)
         column.addStretch(1)
@@ -77,7 +82,9 @@ class ValueSheet(QWidget):
         for index, (name, value, unit) in enumerate(self.rows):
             name_label = set_role(QLabel(name), tone="secondary")
             value_label = QLabel(value)
-            value_label.setFont(numeric_font("body"))
+            if _looks_numeric(value):  # tabular figures for numbers; a name ("fits", an envelope) reads as text
+                value_label.setFont(numeric_font("body"))
+                value_label.setProperty("smsNumeric", True)
             value_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             unit_label = set_role(QLabel(unit), tone="secondary")
@@ -116,7 +123,7 @@ class ValueTable(QWidget):
         column = QVBoxLayout(self)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(SPACE["xs"])
-        self.title_label = set_role(QLabel(title), role="heading")
+        self.title_label = set_role(QLabel(title, self), role="heading")  # a parent first: shown, it is no window
         self.title_label.setVisible(bool(title))
         column.addWidget(self.title_label)
         self.grid = QGridLayout()
@@ -124,7 +131,7 @@ class ValueTable(QWidget):
         self.grid.setHorizontalSpacing(SPACE["lg"])
         self.grid.setVerticalSpacing(SPACE["xs"])
         column.addLayout(self.grid)
-        self.note_label = set_role(QLabel(note), role="caption")
+        self.note_label = set_role(QLabel(note, self), role="caption")
         self.note_label.setVisible(bool(note))
         column.addWidget(self.note_label)
         self.headers = list(headers)
@@ -200,3 +207,128 @@ class FoldSection(QWidget):
 
     def is_open(self) -> bool:
         return self.button.isChecked()
+
+
+# kind: (Lucide icon, its ink, the text tone, the mark in ``text()``)
+NOTE_KINDS = {
+    "note": ("info", "text.secondary", "secondary", "-"),
+    "warning": ("triangle-alert", "status.caution", None, "⚠"),
+    "finding": ("circle-alert", "status.caution", None, "-"),
+}
+FOLD_AFTER = 4  # notes shown before "Show n more"
+
+
+class _Mark(QWidget):
+    """A 16 px icon painted each time, so it takes the theme's colour at once
+    (``theme.icon`` reads its token when it paints)."""
+
+    SIZE = 16  # [px]
+
+    def __init__(self, name: str, ink: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        from .theme import icon
+
+        self._icon = icon(name, ink)
+        self.setFixedSize(self.SIZE, self.SIZE)
+
+    def paintEvent(self, _event) -> None:  # noqa: N802 -- Qt's name
+        from PySide6.QtGui import QPainter
+
+        painter = QPainter(self)
+        self._icon.paint(painter, self.rect())
+        painter.end()
+
+
+class NoteList(QWidget):
+    """Notes, warnings or findings one per row, each behind its icon, the
+    text wrapped beside it; never a block of dash-led lines. After
+    :data:`FOLD_AFTER` notes the rest wait behind "Show n more", so a long
+    list does not push the page down. ``empty`` is shown when there are no
+    notes ("No design finding."); with no ``empty`` the list takes no room.
+    ``text()`` gives every note as a line behind its mark, for copying and
+    tests."""
+
+    def __init__(self, kind: str = "note", notes: Iterable[str] = (), empty: str = "",
+                 fold_after: int = FOLD_AFTER, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        from PySide6.QtWidgets import QPushButton
+
+        self.kind = kind
+        self.empty = empty
+        self.fold_after = fold_after
+        self.notes: list[str] = []
+        self.rows: list[QWidget] = []
+        self._column = QVBoxLayout(self)
+        self._column.setContentsMargins(0, 0, 0, 0)
+        self._column.setSpacing(SPACE["xs"])
+        self.empty_label = set_role(QLabel(empty), tone="secondary")
+        self.empty_label.setWordWrap(True)
+        self._column.addWidget(self.empty_label)
+        self.more_button = set_role(QPushButton(), variant="ghost")  # quiet: text, no frame
+        self.more_button.setCheckable(True)
+        self.more_button.toggled.connect(self._show_rows)
+        self._column.addWidget(self.more_button, 0, Qt.AlignmentFlag.AlignLeft)
+        self.set_notes(notes)
+
+    def set_notes(self, notes: Iterable[str]) -> None:
+        for row in self.rows:
+            self._column.removeWidget(row)
+            row.deleteLater()
+        self.notes = [str(note) for note in notes if str(note).strip()]
+        icon_name, ink, tone, _mark = NOTE_KINDS[self.kind]
+        self.rows = []
+        for index, note in enumerate(self.notes):
+            row = QWidget()
+            line = QHBoxLayout(row)
+            line.setContentsMargins(0, 0, 0, 0)
+            line.setSpacing(SPACE["sm"])
+            line.addWidget(_Mark(icon_name, ink), 0, Qt.AlignmentFlag.AlignTop)
+            label = set_role(QLabel(note), tone=tone)
+            label.setWordWrap(True)
+            label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            line.addWidget(label, 1)
+            self._column.insertWidget(1 + index, row)
+            self.rows.append(row)
+        self.empty_label.setVisible(not self.notes and bool(self.empty))
+        self.more_button.blockSignals(True)
+        self.more_button.setChecked(False)
+        self.more_button.blockSignals(False)
+        self._show_rows(False)
+
+    def _show_rows(self, all_shown: bool) -> None:
+        hidden = max(len(self.rows) - self.fold_after, 0)
+        for index, row in enumerate(self.rows):
+            row.setVisible(all_shown or index < self.fold_after)
+        self.more_button.setVisible(hidden > 0)
+        self.more_button.setText("Show fewer" if all_shown else f"Show {hidden} more")
+
+    # Qt's guess at the height of wrapped text lays it out narrow (four
+    # lines for one): the list answers for the width it has, and asks its
+    # layout again when that width changes (Results at 1280 x 720).
+    _LAYOUT_WIDTH = 360  # [px] the width assumed before the list is laid out
+
+    def _width(self) -> int:
+        laid_out = self.testAttribute(Qt.WidgetAttribute.WA_Resized) or self.isVisible()
+        return self.width() if laid_out else max(self.minimumWidth(), self._LAYOUT_WIDTH)
+
+    def hasHeightForWidth(self) -> bool:  # noqa: N802 -- Qt's name
+        return True
+
+    def heightForWidth(self, width: int) -> int:  # noqa: N802 -- Qt's name
+        return self.layout().totalHeightForWidth(width)
+
+    def sizeHint(self):  # noqa: N802 -- Qt's name
+        hint = super().sizeHint()
+        hint.setHeight(self.heightForWidth(self._width()))
+        return hint
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 -- Qt's name
+        super().resizeEvent(event)
+        if event.oldSize().width() != event.size().width():
+            self.updateGeometry()
+
+    def text(self) -> str:
+        if not self.notes:
+            return self.empty
+        mark = NOTE_KINDS[self.kind][3]
+        return "\n".join(f"{mark} {note}" for note in self.notes)

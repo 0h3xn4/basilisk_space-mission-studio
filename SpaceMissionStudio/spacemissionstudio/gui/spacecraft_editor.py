@@ -116,6 +116,7 @@ from .param_form import ParamForm
 from .problem_location import SPACECRAFT, locate
 from .sensor_actuator_editor import SensorActuatorListWidget
 from .theme import set_role
+from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row
 
 _FSW_MODE_NONE_LABEL = "(none -- no attitude control)"
@@ -315,6 +316,43 @@ def tab_titles(simulation_mode: str | None) -> list[str]:
     return [title for title in TAB_TITLES if simulation_mode != "orbit_only" or title not in _ATTITUDE_TABS]
 
 
+class ModelSummary(QWidget):
+    """The 3D model tab's summary: what the model gives as a sheet (parts,
+    mass, centre of mass, facets), its problems as warnings, and whether
+    the spacecraft's values still match it."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        column = QVBoxLayout(self)
+        column.setContentsMargins(0, 0, 0, 0)
+        self.state_label = QLabel()
+        self.state_label.setWordWrap(True)
+        column.addWidget(self.state_label)
+        self.sheet = ValueSheet()
+        column.addWidget(self.sheet)
+        self.problems = NoteList("warning")
+        column.addWidget(self.problems)
+
+    def show_text(self, text: str) -> None:
+        """No model: one line, nothing else."""
+        self.state_label.setText(text)
+        set_role(self.state_label, tone="secondary")
+        self.sheet.set_rows([])
+        self.sheet.note_label.setVisible(False)
+        self.problems.set_notes([])
+
+    def show_model(self, rows, note: str, problems: list[str], state: str, stale: bool) -> None:
+        self.state_label.setText(state)
+        set_role(self.state_label, tone="caution" if stale else "secondary")
+        self.sheet.set_rows(rows)
+        self.sheet.note_label.setText(note)
+        self.sheet.note_label.setVisible(bool(note))
+        self.problems.set_notes(problems)
+
+    def text(self) -> str:
+        return "\n".join(part for part in (self.state_label.text(), self.sheet.text(), self.problems.text()) if part)
+
+
 class SpacecraftEditorDialog(QDialog):
     """Edits one :class:`SpacecraftConfig` in place. Construct with an
     existing config to edit it, or ``None`` for a fresh default.
@@ -510,8 +548,7 @@ class SpacecraftEditorDialog(QDialog):
         inertia_form.addRow("Ixx [kg*m^2]", self.ixx)
         inertia_form.addRow("Iyy [kg*m^2]", self.iyy)
         inertia_form.addRow("Izz [kg*m^2]", self.izz)
-        self.products_label = QLabel()
-        self.products_label.setWordWrap(True)
+        self.products_label = ValueSheet("Products of inertia", note="Kept from the file or the 3D model.")
         inertia_form.addRow(self.products_label)
         self._show_products()
         self.gravity_gradient_check = QCheckBox("Enable gravity gradient torque")
@@ -2135,8 +2172,8 @@ class SpacecraftEditorDialog(QDialog):
         i = self._full_inertia
         products = (i[1], i[2], i[5])
         if any(abs(v) > 0.0 for v in products):
-            self.products_label.setText(f"Products of inertia (kept from the file or the 3D model): Ixy {i[1]:.6g}, "
-                                        f"Ixz {i[2]:.6g}, Iyz {i[5]:.6g} kg*m^2")
+            self.products_label.set_rows([(name, f"{value:.6g}", "kg·m²")
+                                          for name, value in (("Ixy", i[1]), ("Ixz", i[2]), ("Iyz", i[5]))])
             self.products_label.setVisible(True)
         else:
             self.products_label.setVisible(False)
@@ -2150,8 +2187,7 @@ class SpacecraftEditorDialog(QDialog):
                        "inertia and facets, and the 3D views show it.")
         intro.setWordWrap(True)
         layout.addWidget(intro)
-        self.model_summary = QLabel()
-        self.model_summary.setWordWrap(True)
+        self.model_summary = ModelSummary()
         layout.addWidget(self.model_summary)
         row = QHBoxLayout()
         self.open_model_button = QPushButton("Open 3D model editor...")
@@ -2188,27 +2224,28 @@ class SpacecraftEditorDialog(QDialog):
         self.remove_model_button.setVisible(has_model)
         self.open_model_button.setText("Open 3D model editor..." if has_model else "Build a 3D model...")
         if not has_model:
-            self.model_summary.setText("No 3D model: mass, inertia and facets are typed in.")
+            self.model_summary.show_text("No 3D model: mass, inertia and facets are typed in.")
             self._update_model_locks()
             return
         derived = model3d.derive(self._model, self._base_dir())
-        lines = [f"{len(self._model.parts)} part(s): " + ", ".join(p.name for p in self._model.parts)]
+        rows = [("Parts", f"{len(self._model.parts)}", "")]
+        note = "Parts: " + ", ".join(p.name for p in self._model.parts)
         if derived.mass_properties is not None:
             props = model3d.tidy(derived.mass_properties)
             com = props.center_of_mass_m
-            lines.append(f"Mass {props.mass_kg:.6g} kg, center of mass [{com[0]:.4g}, {com[1]:.4g}, {com[2]:.4g}] m "
-                         f"({self._model.mass_properties_source})")
+            rows += [("Mass", f"{props.mass_kg:.6g}", "kg"), ("Centre of mass x", f"{com[0]:.4g}", "m"),
+                     ("Centre of mass y", f"{com[1]:.4g}", "m"), ("Centre of mass z", f"{com[2]:.4g}", "m")]
+            note += f". Mass properties: {self._model.mass_properties_source}."
         if derived.faces:
-            lines.append(f"{len(derived.faces)} facets")
-        lines += [f"Problem: {m}" for m in derived.errors + derived.warnings]
+            rows.append(("Facets", f"{len(derived.faces)}", ""))
         current = SimpleNamespace(**self._model_target().__dict__, dry_mass_kg=self.dry_mass_kg.value(),
                                   center_of_mass_b_m=[self.com_x.value(), self.com_y.value(), self.com_z.value()],
                                   inertia_kg_m2=self._inertia_from_form(),
                                   facets=[] if self._orbit_only else self.facet_table.to_list())
         stale = model3d.stale_fields(current, derived, orbit_only=self._orbit_only)
-        lines.append(f"Out of date: {', '.join(stale)} -- click Apply the model." if stale else
-                     "This spacecraft's values match the model.")
-        self.model_summary.setText("\n".join(lines))
+        state = (f"Out of date: {', '.join(stale)}. Click Apply the model." if stale else
+                 "This spacecraft's values match the model.")
+        self.model_summary.show_model(rows, note, derived.errors + derived.warnings, state, bool(stale))
         self._update_model_locks()
 
     def _update_model_locks(self) -> None:

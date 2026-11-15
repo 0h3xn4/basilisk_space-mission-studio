@@ -17781,3 +17781,45 @@ go to Attitude and shading to Power with readable names, the Sun, Moon
 and planets under their own group. A group named as its topic, or of one
 plot, is no level. Groups open when one of their plots is shown, and a
 search opens what holds its matches.
+
+## Notes as lists, the remaining values as sheets (2026-11-15)
+
+The rest of the owner's "raw text is visually always like noise ... that
+applies to everything in the tool". A scan of every label the GUI fills
+found two patterns left. The first was blocks of dash-led notes: the
+budget, the altitude trade and launch sweep, the design checks, the
+lifetime warnings, the model analyses, the re-entry estimate, the
+Results warnings and the scenario plausibility line, and the 3D model
+editor's problems. The second was sentences of numbers: "Total: 41.27
+m/s, 9.842 kg", "Dry mass 180.0 kg, Isp 220 s, efficiency 0.950; 4
+iteration(s)", "Basic dry ... + growth ... = launch ... kg", the
+launcher verdict, the momentum per axis, the casualty areas and risk,
+the spacecraft's 3D model summary, the products of inertia and the
+Settings host list.
+
+`value_sheet.NoteList` puts each note on its own row behind an icon
+(info, caution triangle, finding circle), the text wrapped beside it and
+kept in the body colour. After four, the rest wait behind "Show n more".
+Its `text()` gives the same lines as before, so the tests and copying
+that read them are unchanged. The sentences became `ValueSheet`s and
+`ValueTable`s. The mass sum and the launcher verdict moved under their
+own tables; they had sat below every group. A text value in a sheet
+keeps the body font, and numbers keep tabular figures.
+
+One snag: under a fixed vertical policy Qt takes a widget's height from
+`sizeHint()`, and the list's layout guessed a 185 px width: four lines
+for a one-line warning. At 1280 x 720 the Results page then lost its fit
+(`test_the_window_fits_1280_by_720_with_provenance_and_warning_lines`).
+The list now answers for the width it has, and asks its layout again
+when that width changes.
+
+A second snag, from the full suite: three keyboard tests in
+`test_panels.py` failed after `test_a_project_layout_outlives_the_window`
+and passed alone. The new window was visible but never became active,
+so Ctrl+1 did nothing. `ValueSheet` and `ValueTable` showed their title
+and note labels before the layout took them, so each titled sheet was a
+top-level window for a moment. The "Totals" and "Hosts" sheets, built
+with the main window, took its activation. The labels now get their
+parent first; `test_a_titled_sheet_opens_no_window_of_its_own` watches
+for any window shown while sheets and note lists are built, and fails
+with the old order.

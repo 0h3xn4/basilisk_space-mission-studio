@@ -2121,3 +2121,17 @@ kept. New tests are in `tests/gui/test_calm_home.py`.
 | `test_shell_reachability.py` rows "Status bar items" and "Run › Check Reference Data" | the entry shown | shown with All Details | entries that need no attention are shown with All Details |
 | `test_home.py::test_a_selected_card_is_marked_and_the_details_follow` | "What to look at" in the description text | a folded part titled "What to look at" | the details fold the headed parts |
 | `test_workspace.py::test_the_view_analyses_and_tools_commands` | the View commands | the same with "Status Bar: All Details" | a new View command |
+
+## Notes as lists, the remaining values as sheets (2026-11-15)
+
+Notes, warnings and findings became a `NoteList`, whose `text()` gives
+the same lines as before, so the tests reading them are unchanged. Three
+sentences of numbers became sheets; the tests that read the sentence now
+read the value from the sheet, and every check is kept. New tests are in
+`tests/gui/test_readable_values.py`.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_budget_widget.py::test_the_budget_tab_shows_the_table` | `totals_label` starts with "Total: " | `totals_sheet` has a delta-V and a propellant value | the totals are a sheet |
+| `test_design_checks_page.py::test_the_page_shows_each_check_and_its_findings` | "launch 300.00 kg" in `mass_label` | `mass_sheet`'s "= Launch mass" is "300.00" | the mass sum is a sheet under its table |
+| `test_model_analyses_pages.py::test_the_model_analyses_tab_shows_a_runs_analyses` | "Momentum" in `summary_label` | `momentum_table` is shown, its first row "Needed ..." with x, y, z | the momentum per axis is a table |

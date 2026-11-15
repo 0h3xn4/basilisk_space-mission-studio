@@ -43,6 +43,7 @@ from PySide6.QtWidgets import (
 from . import export_log
 from .data_table import DataTable, Row
 from .theme import set_role
+from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox
 
 STIFFNESS_NOTE = ("Launcher compatibility here is geometry, mass and centre of mass only: stiffness and "
@@ -104,8 +105,7 @@ class DesignChecksWidget(QWidget):
                                             "launcher."), tone="secondary")
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
-        self.findings_label = QLabel("")
-        self.findings_label.setWordWrap(True)
+        self.findings_label = NoteList("finding", empty="No design finding.")
         layout.addWidget(self.findings_label)
         self.fov_table = DataTable("No mounted sensor, camera or antenna with a field of view.")
         self.thruster_table = DataTable("No thruster with a position and a direction.")
@@ -119,14 +119,12 @@ class DesignChecksWidget(QWidget):
         self.launcher_group = _group("Launcher envelope", self.launcher_table)
         for group in (self.fov_group, self.thruster_group, self.plume_group, self.mass_group, self.launcher_group):
             layout.addWidget(group)
-        self.mass_label = set_role(QLabel(""), role="strong")
-        self.mass_label.setWordWrap(True)
-        layout.addWidget(self.mass_label)
-        self.launcher_label = QLabel("")
-        self.launcher_label.setWordWrap(True)
-        layout.addWidget(self.launcher_label)
-        self.notes_label = set_role(QLabel(STIFFNESS_NOTE), tone="secondary")
-        self.notes_label.setWordWrap(True)
+        # Under each table, its sums and its verdict, a value per row.
+        self.mass_sheet = ValueSheet()
+        self.mass_group.layout().addWidget(self.mass_sheet)
+        self.launcher_sheet = ValueSheet()
+        self.launcher_group.layout().addWidget(self.launcher_sheet)
+        self.notes_label = NoteList("note", [STIFFNESS_NOTE])
         layout.addWidget(self.notes_label)
         layout.addStretch(1)
         self._update_enabled()
@@ -176,8 +174,7 @@ class DesignChecksWidget(QWidget):
     def _show(self, report) -> None:
         self.report = report
         findings = report.findings()
-        self.findings_label.setText("\n".join(f"- {f}" for f in findings) if findings else "No design finding.")
-        set_role(self.findings_label, tone="caution" if findings else "normal")
+        self.findings_label.set_notes(findings)
         rows = report.fov.rows() if report.fov is not None else []
         self.fov_table.set_table(("Item", "Configuration", "Field of view [deg]", "Blocked [%]", "+- [%]",
                                   "Blocking parts"),
@@ -209,12 +206,15 @@ class DesignChecksWidget(QWidget):
                                        tooltips={4: r["column"]}) for r in mass.rows()], numeric=(3, 4, 5), stretch=0)
         self.mass_group.setVisible(True)
         self.mass_group.setTitle(f"Mass budget ({mass.policy})")
-        limit = "" if mass.mass_limit_kg is None else (
-            f"; limit {mass.mass_limit_kg:g} kg ({mass.limit_source or 'no source given'}), headroom "
-            f"{mass.headroom_kg:.2f} kg")
-        self.mass_label.setText(f"Basic dry {mass.basic_dry_kg:.2f} kg + growth {mass.growth_kg:.2f} kg + system "
-                                f"margin {mass.system_margin_kg:.2f} kg + propellant {mass.propellant_kg:.2f} kg = "
-                                f"launch {mass.launch_mass_kg:.2f} kg{limit}")
+        rows = [("Basic dry mass", f"{mass.basic_dry_kg:.2f}", "kg"), ("+ Growth", f"{mass.growth_kg:.2f}", "kg"),
+                ("+ System margin", f"{mass.system_margin_kg:.2f}", "kg"),
+                ("+ Propellant", f"{mass.propellant_kg:.2f}", "kg"), ("= Launch mass", f"{mass.launch_mass_kg:.2f}", "kg")]
+        if mass.mass_limit_kg is not None:
+            rows += [("Launch mass limit", f"{mass.mass_limit_kg:g}", "kg"), ("Headroom", f"{mass.headroom_kg:.2f}", "kg")]
+        self.mass_sheet.set_rows(rows)
+        self.mass_sheet.note_label.setText("" if mass.mass_limit_kg is None else
+                                           f"Limit from {mass.limit_source or 'no source given'}.")
+        self.mass_sheet.note_label.setVisible(mass.mass_limit_kg is not None)
         check = report.launcher
         self.launcher_table.set_table(("Part", "Outside [mm]", "Where"),
                                       [Row((p.part, f"{1000.0 * p.distance_m:.0f}", p.where))
@@ -222,21 +222,23 @@ class DesignChecksWidget(QWidget):
                                       stretch=2)
         self.launcher_group.setVisible(check is not None)
         if check is not None:
-            parts = [f"Envelope {check.envelope} ({check.source or 'no source given'}), {check.configuration} "
-                     f"configuration: " + ("fits" if check.fits else f"{len(check.protrusions)} part(s) outside"),
-                     f"faceting error up to {1000.0 * check.largest_faceting_error_m:.2f} mm"]
+            rows = [("Envelope", check.envelope, ""), ("Configuration", check.configuration, ""),
+                    ("Parts outside", "none" if check.fits else f"{len(check.protrusions)}", ""),
+                    ("Faceting error, at most", f"{1000.0 * check.largest_faceting_error_m:.2f}", "mm")]
             if check.mass_kg is not None:
-                parts.append(f"centre of mass {check.com_height_m:.3f} m above the separation plane, "
-                             f"{check.com_lateral_m:.3f} m off the axis")
-            self.launcher_label.setText("; ".join(parts) + ".")
+                rows += [("Centre of mass above the separation plane", f"{check.com_height_m:.3f}", "m"),
+                         ("Centre of mass off the axis", f"{check.com_lateral_m:.3f}", "m")]
+            self.launcher_sheet.set_rows(rows)
+            self.launcher_sheet.note_label.setText(f"Envelope from {check.source or 'no source given'}.")
+            self.launcher_sheet.note_label.setVisible(True)
         else:
-            self.launcher_label.setText("")
+            self.launcher_sheet.set_rows([])
         notes = [f"field of view not checked: {item}: {why}" for item, why in
                  (report.fov.skipped if report.fov is not None else [])]
         notes += [f"plume not checked: {item}: {why}" for item, why in report.plume_skipped]
         for part in (authority, mass, check):
             notes += list(getattr(part, "notes", []) or [])
-        self.notes_label.setText("\n".join([f"- {n}" for n in notes] + [STIFFNESS_NOTE]))
+        self.notes_label.set_notes(notes + [STIFFNESS_NOTE])
         self.status_label.setText(f"{report.spacecraft}: checked with {report.samples} rays per cone.")
         self.save_button.setEnabled(True)
 
