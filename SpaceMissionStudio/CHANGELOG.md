@@ -8,7 +8,7 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## 2.8.0 (2026-11-15)
+## 2.8.0 (2026-11-16)
 
 SpaceMissionStudio becomes calmer and easier to read. The window has a
 menu bar (File, Edit, View, Go, Run, Tools, Help) with every command and

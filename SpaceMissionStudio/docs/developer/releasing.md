@@ -443,8 +443,9 @@ code on the 32 templates as 2.8.0 saves them). The space weather was
 refreshed (observations to 2026-11-14); CelesTrak reset the first two
 connections and answered the third. NASA MSFC's November 2026
 prediction is still not adopted (SRelD K-33). The CHANGELOG's heading
-carries the day it was prepared; the release check wants the day of the
-tag, so a tag on a later day first needs the heading's date changed.
+carries 2026-11-16, the day of the tag, not the day it was prepared: the
+release check wants the tag's day, and the release pull request's CI and
+then `develop`'s take about two hours, past midnight UTC.
 
 ---
 
