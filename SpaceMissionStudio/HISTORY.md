@@ -17747,3 +17747,37 @@ helper that built the menus, a closure cycle holding that method.
 module function; `test_the_window_is_freed_as_soon_as_it_is_dropped`
 checks the window is freed by reference count with the collector off.
 `test_help.py` alone: 5 of 5 runs pass.
+
+## Calm by default (2026-11-12)
+
+The owner, with a screenshot of Home (32 cards with their orbits and
+descriptions, the whole description beside them, the Calculation and
+Problems panels open, a full status bar): "this is too much noise. A
+user easily could get overwhelmed by the amount of information that is
+dumped on them." Home now shows Home: a card is its title and kind, its
+Open and Customize appear on the card picked or pointed at (their room
+kept, so nothing moves), and the details give the summary with "What to
+look at" and "Try changing" folded (`value_sheet.FoldSection`). The
+Inspector, Calculation and Problems panels step aside on Home and come
+back as they were when another area is shown; the saved layout keeps
+them as they are outside Home. The status bar shows the problem count
+and only what needs attention; View > Status Bar: All Details shows the
+rest. Then two more screenshots: the 3D View's note repeating "no
+attitude in this run; drawn aligned with the inertial axes" for fourteen
+spacecraft, now one line with their number and the names in the
+tooltip; and the formation dialog's "a·δex [m]" rows ("the units make no
+sense here"): each element is named by what it does, its symbol after
+it, in three groups, with a line saying why they are distances.
+
+"This also is very noisy and unclear. maybe restructure in more dropdown
+levels", read as the Results plot catalog: 44 lines under seven topics,
+each "smallsat-1: Mean (first-order J2) Semi-Major Axis" and so on (the
+spacecraft repeated because the Sun's, Moon's and Earth's positions
+counted as a second "spacecraft"), and eleven code names under Other
+(`smallsat-1.disturbance.aero_torque`). `plot_categories.catalog_path`
+places each entry: topic, spacecraft (only when the run has several),
+group of related plots, plot by what is left of its title; disturbances
+go to Attitude and shading to Power with readable names, the Sun, Moon
+and planets under their own group. A group named as its topic, or of one
+plot, is no level. Groups open when one of their plots is shown, and a
+search opens what holds its matches.

@@ -56,6 +56,25 @@ fixes bugs.
   which spans the row. The toolbar above the plots is one row on a wide
   window (it was three, mostly empty) and wraps only when the pane is
   narrow.
+- **Calm by default.** Home's template cards show the title and kind;
+  Open and Customize appear on the card picked or pointed at, and the
+  details fold "What to look at" and "Try changing" under the summary.
+  The Inspector, Calculation and Problems panels step aside on Home and
+  come back when it is left. The status bar shows only what needs
+  attention (View > Status Bar: All Details shows every entry).
+- **The plot list in levels.** Results › Plots lists topic, then
+  spacecraft (when the run has several), then a group of related plots
+  (osculating elements, mean elements, station keeping, disturbances,
+  array shading, Sun, Moon and planets), then the plot by its short name;
+  groups fold. Disturbance torques and array shading, listed under Other
+  by their code names, are under Attitude and Power with readable names.
+- **Shorter notes in the 3D View.** A note shared by several spacecraft
+  ("no attitude in this run") is said once, with their number; the names
+  are in its tooltip.
+- **The formation dialog names its elements.** Each relative orbital
+  element is labelled by what it does (drift, along-track offset, ellipse,
+  cross-track), its symbol after it, in three groups, with a line saying
+  why they are in metres.
 - **Dialogs no longer cut off their text.** A dialog with wrapped text
   could show only the first line of each paragraph and clip its buttons
   (the orbit-type switch did); every dialog now grows to fit its text.
