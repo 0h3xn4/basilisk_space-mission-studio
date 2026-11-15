@@ -17823,3 +17823,30 @@ with the main window, took its activation. The labels now get their
 parent first; `test_a_titled_sheet_opens_no_window_of_its_own` watches
 for any window shown while sheets and note lists are built, and fails
 with the old order.
+
+## Release 2.8.0 prepared (2026-11-15)
+
+A minor release: it adds features, all in the interface. Contents since
+2.7.0: the 2.7.0 publication record (#253), the compliance lists
+pointing to ECSS clauses (#254), the release check and tag workflows
+(#255), private vulnerability reporting (#256), the menu bar, readable
+lists, values as sheets and dialogs that fit (#257), calm by default
+and the plot list in levels (#259), tornado 6.6.1 and two pillow
+advisories accepted (#260), notes as lists and the remaining values as
+sheets (#261), and the documentation's screenshots retaken.
+
+Prepared by `docs/developer/releasing.md`: version 2.8.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script; the
+CHANGELOG's Unreleased entries under 2.8.0 with an introduction, Who
+should update and Known limits; SRelD issue 35 (2.8.0 prepared, 2.7.0
+previous, K-13 refreshed, K-25 with the two new pillow advisories, K-33
+still open); the SDP, SRS, ICD, CSD, SUM and both READMEs name 2.8.0.
+The space weather was refreshed first: CelesTrak's file of 2026-11-15,
+on the third try (CelesTrak reset the first two connections). NASA
+MSFC's November 2026 prediction is still not adopted (K-33, the owner's
+decision: it changes every template's drag).
+
+Compatibility checked with 2.7.0's own code (the tagged commit
+`ae5525cb8`, extracted with `git archive`): the 32 templates, saved by
+this code, open and validate in 2.7.0 with no message. No golden file,
+template, schema field, command or exit status changed since 2.7.0.

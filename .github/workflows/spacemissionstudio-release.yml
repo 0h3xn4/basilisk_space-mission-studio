@@ -7,7 +7,10 @@
 # the tag runs it again for an existing tag. The build jobs only read the
 # repository and hand their files on as artifacts; the last job, the only
 # one with write access, attaches them. A release that does not exist yet
-# is created as a draft, so publishing stays a person's step. On an
+# is created as a draft, so publishing stays a person's step, unless the
+# run was started with publish (the owner, 2026-11-15: "automatically
+# publish"): then the draft is published once every file is built,
+# installed, checked against its checksum and attached. On an
 # existing release the files are replaced and its notes are written only
 # when they are empty. A pull request that changes this workflow runs the
 # build and install jobs for the version in its files, and attaches nothing.
@@ -35,6 +38,11 @@ on:
         description: "Existing tag to build and attach, for example spacemissionstudio-v1.2.0"
         required: true
         type: string
+      publish:
+        description: "Publish the release once every file is attached (otherwise it stays a draft)"
+        required: false
+        default: false
+        type: boolean
   pull_request:
     paths:
       - ".github/workflows/spacemissionstudio-release.yml"
@@ -416,3 +424,18 @@ jobs:
               --notes-file "$RUNNER_TEMP/notes.md" "${files[@]}"
           fi
           gh release view "$TAG" --json isDraft,assets --jq '"draft: \(.isDraft)", (.assets[] | "\(.name)  \(.size) bytes")'
+      - name: Publish the release (when asked)
+        # Only on a run started with publish, and only here: after every
+        # file was built, installed and run, checked against its checksum
+        # and attached by the steps above (any failure stops before this).
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
+        run: |
+          expected=$(ls ../release/*.whl ../release/*.tar.gz ../release/*.deb ../release/*-setup.exe ../release/*.cdx.json \
+            ../release/SHA256SUMS-linux ../release/SHA256SUMS-windows ../sources/*.tar.xz ../sources/SHA256SUMS-sources | wc -l)
+          attached=$(gh release view "$TAG" --json assets --jq '.assets | length')
+          if [ "$attached" -lt "$expected" ]; then
+            echo "::error::$attached files attached, $expected expected: the release stays a draft."
+            exit 1
+          fi
+          gh release edit "$TAG" --draft=false
+          gh release view "$TAG" --json isDraft,url --jq '"draft: \(.isDraft)", .url'

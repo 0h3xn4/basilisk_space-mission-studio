@@ -30,6 +30,11 @@ on:
         required: true
         default: develop
         type: string
+      publish:
+        description: "Publish the release once the release build has attached every file (otherwise it stays a draft)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -56,6 +61,7 @@ jobs:
       actions: write  # start the release workflow
     env:
       VERSION: ${{ inputs.version }}
+      PUBLISH: ${{ inputs.publish }}
       CHECKED_VERSION: ${{ needs.check.outputs.version }}
       SHA: ${{ needs.check.outputs.sha }}
     steps:
@@ -88,11 +94,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run spacemissionstudio-release.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG"
+          gh workflow run spacemissionstudio-release.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG" \
+            -f publish="$PUBLISH"
           {
             echo "# Tagged $TAG"
             echo
             echo "- Commit: \`$SHA\`"
             echo "- The release build was started: Actions > SpaceMissionStudio release."
-            echo "- When it has attached the files to the draft release, check them and publish the draft."
+            if [ "$PUBLISH" = "true" ]; then
+              echo "- It publishes the release once every file is built, checked and attached."
+            else
+              echo "- When it has attached the files to the draft release, check them and publish the draft."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
