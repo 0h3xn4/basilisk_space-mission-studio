@@ -3273,3 +3273,15 @@ what is open. Not legal advice.
   when it is made, never after. **Why:** a title label shown before its
   layout took it was a window for a moment and took the main window's
   activation (its shortcuts went dead in `test_panels.py`).
+
+## Publishing a release automatically (2026-11-15)
+
+- **Decision:** the tag workflow and the release workflow take a
+  `publish` input (default off). With it, the release workflow
+  publishes the release as its last step, only after every file was
+  built, installed and run, checked against its checksum and attached,
+  and only if as many files are attached as were built. **Why:** the
+  owner, preparing 2.8.0: "Afterwards I want you to automatically
+  publish." The draft-first default stays for a run started without
+  it, and a push of a tag by hand (2.6.0 and 2.7.0 were public without
+  files when published early, `releasing.md`).

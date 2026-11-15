@@ -8,20 +8,26 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.8.0 (2026-11-15)
+
+SpaceMissionStudio becomes calmer and easier to read. The window has a
+menu bar (File, Edit, View, Go, Run, Tools, Help) with every command and
+its shortcut. Home shows a template's title and kind, its details fold,
+and the side panels and most of the status bar step aside until they
+have something to say. Everywhere, values that were a sentence of
+numbers are tables, one value a row with its unit, and notes and
+warnings are lists, one a row behind an icon. Drop-down lists open below
+their field, scroll and can be filtered; dialogs never cut off their
+text; plots fill their area when some are cleared; and the plot list is
+grouped in levels.
+
+Nothing the tool computes changes: every template gives the same results
+as in 2.7.0, and the scenario format is unchanged. The bundled space
+weather is refreshed, and tornado moves to 6.6.1 for a security
+advisory.
 
 ### Added
 
-- **A release check before the tag.** Actions > "SpaceMissionStudio
-  release check" checks the commit at `develop`'s head before it is
-  tagged: CI passed on it, no vulnerability that is not accepted, the
-  version files and the CHANGELOG agree and are dated today, nothing is
-  left under Unreleased, the tag is new and the notes render. It names
-  the commit to tag. For maintainers; the app is not affected.
-- **Tagging from the Actions tab.** Actions > "SpaceMissionStudio tag
-  release" runs the same check, tags exactly the commit it passed and
-  starts the release build, so no terminal is needed (and the assistant
-  can start it when asked). Publishing the draft stays a person's step.
 - **A menu bar: File, Edit, View, Go, Run, Tools, Help.** Every command
   is in a menu, with its shortcut, greyed out when it cannot run. File >
   Open Recent lists the recent scenarios, and Edit > Settings...
@@ -32,11 +38,24 @@ fixes bugs.
   matrix and the principal axes a table with each axis's moment,
   direction and nearest body axis; its surface summary is a sheet too.
   Switching the orbit type shows the orbit now, after converting and on
-  the new page side by side, one value a row with its unit. More of the
-  app follows.
+  the new page side by side, one value a row with its unit. The other
+  pages have the same (see Changed: notes, warnings and findings as
+  lists).
 - **Drop-down lists you can filter.** A list of 12 entries or more has a
   "Type to filter" field: type while it is open and only the entries
   containing the text stay; `Enter` picks the first, the arrows move.
+- **A release check before the tag.** Actions > "SpaceMissionStudio
+  release check" checks the commit at `develop`'s head before it is
+  tagged: CI passed on it, no vulnerability that is not accepted, the
+  version files and the CHANGELOG agree and are dated today, nothing is
+  left under Unreleased, the tag is new and the notes render. It names
+  the commit to tag. For maintainers; the app is not affected.
+- **Tagging from the Actions tab.** Actions > "SpaceMissionStudio tag
+  release" runs the same check, tags exactly the commit it passed and
+  starts the release build, so no terminal is needed (and the assistant
+  can start it when asked). With **publish**, the release is published
+  once every file is built, checked and attached; without it, it stays a
+  draft for a person to publish.
 
 ### Changed
 
@@ -100,6 +119,12 @@ fixes bugs.
   for and how to get them, and need no attention until used. The
   reference-data guide no longer says the installers fetch the ITU file:
   they may not carry it.
+- **The bundled space weather is current again.** CelesTrak's file,
+  downloaded on 2026-11-15: observations to 2026-11-14 and CelesTrak's
+  daily forecast to 2026-12-29 (they ended on 2026-11-09 and 2026-12-24
+  in 2.7.0). Drag on dates from 2026-11-10 to 2026-12-29 changes; runs
+  after that use NASA MSFC's prediction, as before, so no template's
+  results change.
 
 ### Fixed
 
@@ -112,6 +137,32 @@ fixes bugs.
     Basilisk allows, and both are accepted with that reason in
     `packaging/audit-exceptions.txt`: nothing here reads or writes a TIFF
     with pillow.
+
+### Who should update
+
+- **Everyone:** the window is calmer and its information easier to read;
+  nothing you computed before changes.
+- **Anyone who prefers menus:** every command is in the menu bar, with
+  its shortcut. View > Menu Bar hides it again.
+- **Compatibility:** results and the scenario format's version (4) are
+  as in 2.7.0, and 2.7.0 opens the files 2.8.0 saves.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.8.0_amd64.deb` replaces 2.7.0; on Windows, run
+  the 2.8.0 setup over 2.7.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The bundled NASA MSFC prediction is October 2026's**; NASA's
+  November issue is out, and can be set in **MSFC prediction** on the
+  Scenario area's **Environment** page
+  ([Limitations](docs/reference/limitations.md)).
+- **The 3D View without a graphics card is slow,** as in 2.7.0: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.7.0 (2026-11-11)
 
