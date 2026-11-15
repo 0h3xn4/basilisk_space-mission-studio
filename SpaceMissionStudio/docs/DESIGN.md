@@ -416,6 +416,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Area | `shell.Shell.register(id, icon, label, content, order)`, `AreaPage.add_command(action)` | A top-level area of the navigation rail, hosting a screen, with its commands in its header |
 | Value sheet | `value_sheet.ValueSheet(title, rows=[(name, value, unit)], note=, empty=)` | Several values of one thing, to be read: one row each, the number right-aligned in tabular figures beside its unit, a title and a note (frame, source). Never a sentence of numbers |
 | Value table | `value_sheet.ValueTable(title, headers, rows, numeric=)` | A matrix (an inertia tensor) or a few rows with several columns (principal axes); a long or sortable list is a `DataTable` |
+| Note list | `value_sheet.NoteList(kind, notes, empty=, fold_after=4)` | Notes (`"note"`, info icon, secondary text), warnings (`"warning"`, caution triangle) or findings (`"finding"`): one row each, the icon then the wrapped text; past `fold_after`, "Show n more". `text()` gives the lines behind a mark for copying. Never a block of dash-led lines |
 | Elided label | `app_shell.ElidedLabel` | One line that ends in "..." rather than widening the window; the whole text is its tooltip |
 | Event table | `EventTimelineWidget.table`, a `DataTable` over `event_timeline_widget._EventRows` | Events, sortable; Ctrl+C copies the selection as TSV |
 

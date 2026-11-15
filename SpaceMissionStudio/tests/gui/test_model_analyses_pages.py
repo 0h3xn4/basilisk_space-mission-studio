@@ -88,7 +88,8 @@ def test_the_model_analyses_tab_shows_a_runs_analyses(qtbot, tmp_path):
     page.set_run(scenario, result)
     assert page.groups["disturbance_torques"].isVisibleTo(page) and page.groups["blinding"].isVisibleTo(page)
     assert not page.groups["brightness"].isVisibleTo(page)
-    assert page.tables["disturbance_torques"].row_count() == 5 and "Momentum" in page.summary_label.text()
+    assert page.tables["disturbance_torques"].row_count() == 5 and page.momentum_table.isVisibleTo(page)
+    assert page.momentum_table.rows[0][0].startswith("Needed") and len(page.momentum_table.rows[0]) == 4
     written = page.save(tmp_path / "out")
     assert {p.name for p in written} >= {"model_analyses.json", "disturbance_torques.csv", "blinding.csv"}
     assert export_log.last("model_analyses")[1] == str(tmp_path / "out")

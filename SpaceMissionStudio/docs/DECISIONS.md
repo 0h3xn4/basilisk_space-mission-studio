@@ -3252,3 +3252,24 @@ what is open. Not legal advice.
   the tooltip; the relative orbital elements are named by their effect.
   **Why:** the owner's screenshots: one note fourteen times; "the units
   make no sense here".
+
+## Notes as lists, the remaining values as sheets (2026-11-15)
+
+- **Decision:** notes, warnings and findings are a `NoteList`: one row
+  each behind a Lucide icon (info, triangle, circle), the text wrapped
+  beside it; past four, "Show n more". The text keeps the body colour,
+  and the icon carries the status. **Why:** the owner: raw text "is
+  visually always like noise"; the dash-led blocks on the budget, design
+  checks, lifetime, model analyses and re-entry pages, and the "⚠" lines
+  in Results and the scenario editor, were the remaining raw text.
+- **Decision:** the sentences of numbers left are sheets: the budget's
+  totals and inputs, the mass sum and launcher verdict (under their
+  tables, not under every group), momentum per axis, casualty areas and
+  risk, the spacecraft's model summary, products of inertia, and
+  Settings' hosts. A text value in a sheet ("Fairing A") keeps the body
+  font; numbers keep tabular figures. **Why:** the same, and CLAUDE.md
+  design rule 4.
+- **Decision:** a widget a component shows or hides is given its parent
+  when it is made, never after. **Why:** a title label shown before its
+  layout took it was a window for a moment and took the main window's
+  activation (its shortcuts went dead in `test_panels.py`).

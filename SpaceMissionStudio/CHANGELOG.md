@@ -75,6 +75,21 @@ fixes bugs.
   element is labelled by what it does (drift, along-track offset, ellipse,
   cross-track), its symbol after it, in three groups, with a line saying
   why they are in metres.
+- **Notes, warnings and findings as lists, values as tables, on every
+  page.** A note or warning gets its own row behind an icon, not a block
+  of dash-led lines; after four, the rest wait behind "Show n more".
+  Values that were a sentence are now a table, a value per row with its
+  unit:
+  - the budget's totals and what it was computed with;
+  - the design checks' mass sum (basic, growth, margin, propellant,
+    launch mass) and launcher verdict, each under its table;
+  - the momentum per body axis in the model analyses;
+  - the re-entry casualty areas and risk;
+  - the spacecraft's 3D model summary and products of inertia;
+  - the hosts in Settings, one per row under their purpose.
+
+  This applies to the Results warnings, the scenario plausibility
+  warnings, the lifetime notes and the 3D model editor's problems.
 - **Dialogs no longer cut off their text.** A dialog with wrapped text
   could show only the first line of each paragraph and clip its buttons
   (the orbit-type switch did); every dialog now grows to fit its text.

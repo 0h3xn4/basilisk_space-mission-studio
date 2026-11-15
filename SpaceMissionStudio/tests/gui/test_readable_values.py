@@ -74,6 +74,82 @@ def test_the_3d_model_editor_shows_mass_properties_as_tables(qtbot):
     assert surfaces.sheet.value("Number of facets") == "12" and surfaces.areas.value("From +z") == "2.828"
 
 
+def test_a_titled_sheet_opens_no_window_of_its_own(qtbot):
+    """A title or note label shown before the layout took it was a window of
+    its own for a moment: it took the activation from the main window, whose
+    shortcuts then went dead (tests/gui/test_panels.py, after a window with
+    the budget's "Totals" sheet)."""
+    from PySide6.QtCore import QEvent, QObject
+    from PySide6.QtWidgets import QApplication
+
+    from spacemissionstudio.gui.value_sheet import NoteList, ValueSheet, ValueTable
+
+    windows = []
+
+    class Watch(QObject):
+        def eventFilter(self, watched, event):  # noqa: N802 -- Qt's name
+            if event.type() == QEvent.Type.Show and getattr(watched, "isWindow", None) and watched.isWindow():
+                windows.append(type(watched).__name__)
+            return False
+
+    watch = Watch()
+    QApplication.instance().installEventFilter(watch)
+    try:
+        sheet = ValueSheet("Totals", [("Delta-V", "41.27", "m/s")], note="From the last run.")
+        table = ValueTable("Momentum [N·m·s]", ["", "x"], [["Needed", "0.1"]], note="Body frame.")
+        notes = NoteList("warning", ["one", "two", "three", "four", "five"])
+        for widget in (sheet, table, notes):
+            qtbot.addWidget(widget)
+        QApplication.processEvents()
+    finally:
+        QApplication.instance().removeEventFilter(watch)
+    assert windows == []
+
+
+def test_a_note_list_puts_each_note_on_its_row_and_folds_a_long_list(qtbot):
+    """Each note behind its icon, wrapped beside it; after four, the rest
+    wait behind "Show n more"; ``text()`` keeps every note."""
+    from spacemissionstudio.gui.value_sheet import NoteList
+
+    notes = NoteList("warning", [f"warning {n}" for n in range(6)])
+    qtbot.addWidget(notes)
+    notes.show()
+    assert len(notes.rows) == 6 and [row.isVisible() for row in notes.rows] == [True] * 4 + [False] * 2
+    assert notes.more_button.isVisible() and notes.more_button.text() == "Show 2 more"
+    notes.more_button.click()
+    assert all(row.isVisible() for row in notes.rows) and notes.more_button.text() == "Show fewer"
+    assert notes.text().splitlines()[0] == "⚠ warning 0" and len(notes.text().splitlines()) == 6
+    notes.set_notes(["one", " ", ""])
+    assert len(notes.rows) == 1 and not notes.more_button.isVisible()  # blank notes are dropped
+    empty = NoteList("finding", empty="No design finding.")
+    qtbot.addWidget(empty)
+    empty.show()
+    assert empty.text() == "No design finding." and empty.empty_label.isVisible() and not empty.rows
+
+
+def test_text_values_in_a_sheet_keep_the_body_font(qtbot):
+    from spacemissionstudio.gui.value_sheet import ValueSheet
+
+    sheet = ValueSheet("Launcher", [("Envelope", "Fairing A", ""), ("Faceting error", "0.42", "mm"),
+                                    ("Offset", "-.5", "m"), ("Iterations", "4", "")])
+    qtbot.addWidget(sheet)
+    numeric = [bool(sheet.grid.itemAtPosition(row, 1).widget().property("smsNumeric")) for row in range(4)]
+    assert numeric == [False, True, True, True]
+
+
+def test_the_spacecraft_model_summary_is_a_sheet(qtbot):
+    from spacemissionstudio.gui.spacecraft_editor import ModelSummary
+
+    summary = ModelSummary()
+    qtbot.addWidget(summary)
+    summary.show_model([("Parts", "2", ""), ("Mass", "86", "kg")], "Parts: prism, panel.", ["open mesh"],
+                       "Out of date: dry mass. Click Apply the model.", stale=True)
+    assert summary.sheet.value("Mass") == "86" and summary.problems.notes == ["open mesh"]
+    assert summary.text().startswith("Out of date: dry mass.")
+    summary.show_text("No 3D model: mass, inertia and facets are typed in.")
+    assert not summary.sheet.rows and not summary.problems.notes
+
+
 @pytest.fixture
 def themed(restored_theme):
     from spacemissionstudio.gui.theme import apply_theme

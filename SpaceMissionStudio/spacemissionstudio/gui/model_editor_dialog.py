@@ -80,7 +80,7 @@ from .model_property_tabs import BudgetLauncherTab, FacePropertiesTable, Materia
 from .model_view_widget import ModelViewWidget
 from .theme import SPACE, set_role
 from .theme.palettes import swatch_style
-from .value_sheet import ValueSheet, ValueTable
+from .value_sheet import NoteList, ValueSheet, ValueTable
 from .widgets import ComboBox, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, make_window, show_window
 
 _RECOMPUTE_DELAY_MS = 150  # [ms] after the last edit
@@ -280,9 +280,7 @@ class ModelEditorDialog(QDialog):
         vertical.setSizes([560, 240])
         outer.addWidget(vertical)
 
-        self.messages = QLabel()
-        self.messages.setWordWrap(True)
-        set_role(self.messages, tone="caution")
+        self.messages = NoteList("warning")  # each problem on its own row
         outer.addWidget(self.messages)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self._on_ok)
@@ -457,8 +455,8 @@ class ModelEditorDialog(QDialog):
             ".antenna_mount").removeprefix("model.") for ref in references.find_part_references(self._holder(), name)
                    if "mount" in ref.path]
         if mounted:
-            self.messages.setText(f"{name!r} carries {', '.join(mounted)}: move them to another part (Equipment "
-                                  "tab) before deleting it")
+            self.messages.set_notes([f"{name!r} carries {', '.join(mounted)}: move them to another part (Equipment "
+                                     "tab) before deleting it."])
             return
         # Its stowed pose and face properties go with it.
         self._model.stowed = [pose for pose in self._model.stowed if pose.part != name]
@@ -857,7 +855,7 @@ class ModelEditorDialog(QDialog):
         problem = name_error("part", name) or (f"another part is called {name!r}" if name in others else None)
         if problem:
             self.part_widgets["name"].setText(part.name)
-            self.messages.setText(problem)
+            self.messages.set_notes([problem])
             return
         if name != part.name:  # the mounts, stowed pose and face properties that name it follow
             references.rename_part(self._holder(), part.name, name)
@@ -1046,7 +1044,7 @@ class ModelEditorDialog(QDialog):
                 report(self, f"Could not import the mass properties from {name}: {exc}")
                 return
             if notes:
-                self.messages.setText("; ".join(notes))
+                self.messages.set_notes(notes)
 
     def import_mass_properties(self, path) -> list[str]:
         """Read a mass-properties file and use it (source "imported")."""
@@ -1130,7 +1128,7 @@ class ModelEditorDialog(QDialog):
         except (ValueError, TypeError, KeyError, IndexError) as exc:  # a device half-edited: draw the model alone
             self.items = []
             problems = [*problems, f"equipment not drawn: {exc}"]
-        self.messages.setText("\n".join(problems))
+        self.messages.set_notes(problems)
         self._redraw()
 
     def _redraw(self) -> None:

@@ -190,6 +190,7 @@ from .readout_panel import ReadoutPanel, value_at
 from .feedback import report
 from .theme import SERIES_COLORS, SIZE, SPACE, TOKENS, WEB_FONT_STACK, on_change, set_role
 from .theme import plotly_template as pt
+from .value_sheet import NoteList
 from .widgets import ComboBox, make_window, show_window
 
 # Categorical series colours: the theme's categorical palette (theme/
@@ -742,17 +743,12 @@ class ResultsWidget(QWidget):
 
         # The conservation/drift diagnostic (engine.results.
         # conservation_drift_warnings); hidden when there are none.
-        self.warnings_label = QLabel("")
-        self.warnings_label.setWordWrap(True)
-        set_role(self.warnings_label, role="small", tone="caution")
-        self.warnings_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.warnings_label = NoteList("warning")  # one row per warning, behind its icon
         self.warnings_label.setVisible(False)
         self.warnings_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.warnings_label)
         # Event kinds left off a plot because there were too many bands.
-        self.events_note = QLabel("")
-        self.events_note.setWordWrap(True)
-        set_role(self.events_note, role="small", tone="secondary")
+        self.events_note = NoteList("note")
         self.events_note.setVisible(False)
         self.events_note.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.events_note)
@@ -1066,9 +1062,9 @@ class ResultsWidget(QWidget):
         warnings = self._result.warnings if self._result is not None else []
         if not warnings:
             self.warnings_label.setVisible(False)
-            self.warnings_label.setText("")
+            self.warnings_label.set_notes([])
             return
-        self.warnings_label.setText("\n".join(f"⚠ {w}" for w in warnings))
+        self.warnings_label.set_notes(warnings)
         self.warnings_label.setToolTip(warnings_tooltip(warnings))
         self.warnings_label.setVisible(True)
 
@@ -1403,7 +1399,7 @@ class ResultsWidget(QWidget):
         self.figures = [fig for _name, fig in built if fig is not None]
         self._x_is_epoch = self._x_mode() == "epoch" and any(name != ACCESS_TIMELINE for name in self._shown)
         self._focused = min(self._focused, max(len(self.figures) - 1, 0))
-        self.events_note.setText("\n".join(self._band_notes))
+        self.events_note.set_notes(self._band_notes)
         self.events_note.setVisible(bool(self._band_notes))
 
     def _build_access_timeline_figure(self) -> go.Figure | None:
