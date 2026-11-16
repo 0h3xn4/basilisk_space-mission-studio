@@ -118,11 +118,11 @@ while a scenario runs -- never touches the network. Space weather is real
 data only: `source` is `"bundled"` (the default: CelesTrak's SW-All file
 shipped in `spacemissionstudio/data/spaceweather/`, or a newer copy the
 reference-data card on Home downloaded) or `"local_file"` (your own CelesTrak file).
-The shipped file (updated 2026-10-25; <https://celestrak.org/SpaceData/>)
+The shipped file (updated 2026-11-15; <https://celestrak.org/SpaceData/>)
 holds observed daily F10.7 and Ap from 1957-10-01 and CelesTrak's 45-day
-forecast. Beyond that, solar activity comes from NASA MSFC's October 2026
+forecast. Beyond that, solar activity comes from NASA MSFC's November 2026
 prediction (also shipped; F10.7 and Ap at the 95th/50th/5th percentiles,
-2026-04 to 2041-10, the last 132 months repeated after that), as ESA's
+2026-05 to 2041-10, the last 132 months repeated after that), as ESA's
 AD10 guideline (EOP-FM/2024-07-177, Sec. 5.9) prescribes. "Solar
 activity" picks the column: Nominal (50th) by default, Conservative
 (95th) as AD10 asks for operations budgets, the 50th for end of life. Months before MSFC's

@@ -97,12 +97,12 @@ def test_a_past_run_gets_the_observed_days_unchanged(tmp_path):
 
 @pytest.mark.requirement("E-ST-10-04C 6.2.3b", "E-ST-10-04C 7.2.1.2e")
 def test_a_future_run_uses_msfcs_prediction_at_the_chosen_percentile(tmp_path):
-    """January 2030 from MSFC's October 2026 table: 74.2 sfu / Ap 11.5 at
-    the 50th percentile, 78.7 / 16.2 at the 95th (AD10: operations)."""
-    for percentile, f107, ap in ((50.0, 74.2, 11.5), (95.0, 78.7, 16.2)):  # [%], [sfu], [-]
+    """January 2030 from MSFC's November 2026 table: 74.1 sfu / Ap 11.3 at
+    the 50th percentile, 78.7 / 15.9 at the 95th (AD10: operations)."""
+    for percentile, f107, ap in ((50.0, 74.1, 11.3), (95.0, 78.7, 15.9)):  # [%], [sfu], [-]
         resolved = sw.resolve("bundled", datetime(2030, 1, 1), datetime(2030, 2, 1), cache_dir=tmp_path,
                               forecast_percentile=percentile)
-        assert resolved.warnings == [f"space weather uses MSFC's prediction (oct2026f10-prd.txt), "
+        assert resolved.warnings == [f"space weather uses MSFC's prediction (nov2026f10-prd.txt), "
                                      f"{percentile:g}th percentile F10.7 and Ap"]
         row = next(r for r in csv.DictReader(open(resolved.path)) if r["DATE"] == "2030-01-15")
         assert (float(row["F10.7_OBS"]), float(row["F10.7_OBS_CENTER81"]), float(row["AP_AVG"])) == (f107, f107, ap)
@@ -116,7 +116,7 @@ def test_noaa_fills_only_the_months_before_msfc_starts(tmp_path):
     MSFC table is cut to start in June 2027 (its own rows, unchanged)."""
     lines = sw.MSFC_BUNDLED_PATH.read_text(encoding="utf-8").splitlines(keepends=True)
     first_row = next(i for i, line in enumerate(lines) if line.split()[:1] == ["2027.4170"])
-    header_end = next(i for i, line in enumerate(lines) if line.split()[:1] == ["2026.2503"])
+    header_end = next(i for i, line in enumerate(lines) if line.split()[:1] == ["2026.3337"])
     later_msfc = tmp_path / "msfc_from_2027_06.txt"
     later_msfc.write_text("".join(lines[:header_end] + lines[first_row:]), encoding="utf-8")
     resolved = sw.resolve("bundled", datetime(2027, 1, 20), datetime(2027, 8, 1), cache_dir=tmp_path,
@@ -125,18 +125,18 @@ def test_noaa_fills_only_the_months_before_msfc_starts(tmp_path):
                for w in resolved.warnings)
     rows = {r["DATE"]: r for r in csv.DictReader(open(resolved.path))}
     assert float(rows["2027-02-15"]["F10.7_OBS"]) == sw.load_celestrak(_SHIPPED).days[date(2027, 2, 15)].f107_obs
-    assert float(rows["2027-06-15"]["F10.7_OBS"]) == 105.1  # [sfu] MSFC, June 2027, 50th
+    assert float(rows["2027-06-15"]["F10.7_OBS"]) == 104.3  # [sfu] MSFC, June 2027, 50th
 
 
 def test_msfc_parses_as_published_and_repeats_its_last_132_months():
     """AD10 Sec. 5.9: past the prediction's end, its last 132 months repeat."""
     msfc = sw.load_msfc(sw.MSFC_BUNDLED_PATH)
-    assert (msfc.first_month, msfc.last_month, len(msfc.months)) == (date(2026, 4, 1), date(2041, 10, 1), 187)
-    assert msfc.months[date(2026, 4, 1)] == ((137.7, 133.9, 131.3), (13.9, 13.1, 12.1))
+    assert (msfc.first_month, msfc.last_month, len(msfc.months)) == (date(2026, 5, 1), date(2041, 10, 1), 186)
+    assert msfc.months[date(2026, 5, 1)] == ((133.5, 130.4, 127.3), (13.9, 12.8, 12.0))
     assert msfc.values(date(2041, 10, 1), 50.0) == (70.0, 8.9, False)
     assert msfc.values(date(2041, 11, 1), 50.0) == (*msfc.values(date(2030, 11, 1), 50.0)[:2], True)
     assert msfc.values(date(2052, 10, 1), 95.0) == (*msfc.values(date(2041, 10, 1), 95.0)[:2], True)
-    assert msfc.values(date(2026, 3, 1), 50.0) is None
+    assert msfc.values(date(2026, 4, 1), 50.0) is None
 
 
 def test_runs_past_2041_continue_on_the_repeated_cycle(tmp_path):

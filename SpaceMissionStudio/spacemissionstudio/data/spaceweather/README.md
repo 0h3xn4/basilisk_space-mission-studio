@@ -24,15 +24,17 @@ A newer copy downloaded from the app's reference-data card on Home or
 the Reference data dialog (with your consent)
 replaces this one automatically; see `engine/spaceweather.py`.
 
-`oct2026f10-prd.txt` is NASA Marshall Space Flight Center's solar-cycle
-prediction of October 2026 ("Table 3: estimates of 13-month smoothed solar
+`nov2026f10-prd.txt` is NASA Marshall Space Flight Center's solar-cycle
+prediction of November 2026 ("Table 3: estimates of 13-month smoothed solar
 activity for the balance of cycle 25, with a mean cycle for cycle 26"),
 unmodified except for line endings (stored with LF): monthly F10.7 and Ap
 at the 95th, 50th and 5th percentiles
-from 2026-04 to 2041-10.
+from 2026-05 to 2041-10. Downloaded from the source below on 2026-11-16;
+it replaces the October 2026 issue (`oct2026f10-prd.txt`), bundled from
+2.0.0 to 2.8.0.
 
 * source: <https://www.nasa.gov/solar-cycle-progression-and-forecast/>
-  (this issue: `wp-content/uploads/2026/10/oct2026f10-prd.txt`);
+  (this issue: `wp-content/uploads/2026/11/nov2026f10-prd.txt`);
 * a NASA work, so not subject to copyright in the US.
 
 ESA's guideline EOP-FM/2024-07-177 (AD10) Sec. 5.9 prescribes MSFC's
@@ -43,6 +45,6 @@ repeated past the file's end. A study's own MSFC file can be set in
 
 The two files differ from the published originals only in whitespace that
 this repository's pre-commit hooks remove: trailing spaces at the end of
-two header lines (`SW-All.txt`: one comment line; `oct2026f10-prd.txt`: the
+two header lines (`SW-All.txt`: one comment line; `nov2026f10-prd.txt`: the
 percentile header), and LF instead of CRLF line endings. No value changed.
 A run records the SHA-256 of the file it used in its provenance.

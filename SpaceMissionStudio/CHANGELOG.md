@@ -8,6 +8,24 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Changed
+
+- **NASA MSFC's November 2026 solar-cycle prediction replaces October's.**
+  Drag beyond CelesTrak's 45-day forecast now comes from
+  `nov2026f10-prd.txt`, which starts in May 2026 and runs to October 2041
+  like its predecessor. Its values are a little lower (January 2030 at the
+  50th percentile: F10.7 74.1 sfu and Ap 11.3, were 74.2 and 11.5), so
+  orbits decay a little more slowly. Runs that start after CelesTrak's
+  forecast ends (2026-12-29) move by millimetres of semi-major axis; the
+  lifetimes move more: after a year, perigee ends up 1 m to 0.3 km
+  higher in most of them and 1.2 km higher in LEO station keeping, and
+  that template's satellite, with its own drag coefficient, re-enters
+  2.0 days later (327.6 days instead of 325.6; see
+  [`docs/changes.md`](docs/changes.md)). A study that set its own MSFC
+  file under **MSFC prediction** is not affected.
+
 ## 2.8.0 (2026-11-16)
 
 SpaceMissionStudio becomes calmer and easier to read. The window has a
