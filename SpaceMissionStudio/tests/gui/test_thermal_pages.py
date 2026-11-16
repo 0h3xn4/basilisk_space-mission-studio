@@ -182,6 +182,7 @@ def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path):
     widget.solve()
     qtbot.waitUntil(lambda: widget.analysis is not None and widget._worker is None, timeout=240000)
     assert widget.status_label.text().startswith("Solved nominal: periodic after")
+    assert "Beta angle over the run:" in widget.status_label.text()
     assert widget.summary_table.row_count() == 3 * len(sc.thermal.nodes)
     assert [widget.case_combo.itemText(i) for i in range(widget.case_combo.count())] == ["nominal", "hot", "cold"]
     assert ET.fromstring(widget.temperature_svg).tag.endswith("svg") and widget.flow_plot.isHidden()

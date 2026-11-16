@@ -12,6 +12,7 @@ do it, and what has been verified.
   - [Attitude, sensors & actuators](#attitude-sensors--actuators)
   - [3D spacecraft models](#3d-spacecraft-models)
   - [Analyses built on the 3D model](#analyses-built-on-the-3d-model)
+  - [Thermal analysis](#thermal-analysis)
   - [Flight-software export](#flight-software-export)
   - [Software in the loop](#software-in-the-loop)
   - [Mission planning](#mission-planning)
@@ -178,6 +179,39 @@ bounding-volume hierarchy for meshes, with a stated sampling error):
 Findings go to the Problems panel; every table exports with its
 provenance. See template 32 and
 [Analyses built on the 3D model](../user-manual/model-analyses.md).
+
+### Thermal analysis
+
+A lumped-parameter thermal model on the 3D model, solved after a run
+(Run › Thermal, `thermal`, `api.thermal`), for Earth and Mars orbits:
+
+- **generated from the model**: a node per part with its mass and
+  specific heat, every outer face with its material's optics, contact
+  conductors over the parts' exact touching areas (NASA GSFC's bare-joint
+  coefficient), internal parts mounted on the part around them;
+- **what a thermal engineer adds**: optics per face and per side of a thin
+  panel (a library of coatings with their sources), MLI as an effective
+  emittance, radiators, conductors with a calculator (`k A / L` or contact
+  area times coefficient, the inputs stored), heat pipes, radiative links,
+  dissipation (constant or a power-budget load), thermostatic heaters,
+  operating and survival limits;
+- **the environment on every face** from the run's orbit, attitude and
+  eclipses: sunlight at the actual distance, albedo from Basilisk's
+  `albedo` module (CERES or TES map, or a constant), planetary infrared by
+  the plate-to-sphere view factor;
+- **cases**: nominal, hot and cold from NASA/TM-2001-211221 by inclination
+  band and beta, and any parameter overridden by its path;
+- **an implicit second-order solver** with its own step, a step check, an
+  energy balance and an orbit-periodic start that does not depend on a
+  starting temperature;
+- **results**: temperatures with limit bands, heat flows per node by kind
+  (series and orbit averages), heater duty, energy and sized power,
+  radiator heat, limit violations on the Timeline, the checks in the
+  Problems panel (including a warning for faces other parts can shade),
+  and exports (JSON record, CSV, SVG and PNG) with provenance.
+
+See template 33, [Thermal analysis](../user-manual/thermal.md) and
+[the thermal model](../models/thermal.md).
 
 ### Flight-software export
 
@@ -456,10 +490,13 @@ compliance matrix.
   the shell's areas and commands, dialogs and the plots in their embedded
   web view.
 - **Template claims are re-checked.** `tests/test_template_claims.py`
-  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-32 in Basilisk and
+  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-33 in Basilisk and
   checks the headline numbers their descriptions quote; template 25 runs
   in `tests/test_examples.py`. `tests/test_golden_outputs.py` checks that
-  all 32 templates still give the outputs recorded in `tests/golden/`.
+  all 33 templates still give the outputs recorded in `tests/golden/`.
+- **The thermal model** is verified against closed forms, hand
+  calculations and Basilisk's own `sensorThermal` module
+  ([compliance/validation/thermal-vv.md](../../compliance/validation/thermal-vv.md)).
 - **Long runs**: a real 5-year LEO station-keeping run and a 7-day run of
   template 05 were run to completion.
 - **Packaging**: for 1.0.0 the Linux `.deb` and `install.sh`, and for

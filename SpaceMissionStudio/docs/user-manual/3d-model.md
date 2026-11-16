@@ -189,7 +189,11 @@ The model can also carry the spacecraft's mounted equipment (with
 boresights, fields of view and exclusion angles), a stowed configuration,
 materials and maturity categories, and a launcher envelope. With them the
 tool checks the design and analyses a run: see
-[Analyses built on the 3D model](model-analyses.md).
+[Analyses built on the 3D model](model-analyses.md). The model is also
+the base of the spacecraft's thermal model: **Generate from the 3D
+model** (group **Thermal model** on the same page) makes a node per part,
+its faces and the contacts between parts; see
+[Thermal analysis](thermal.md#build-a-thermal-model-from-your-3d-model).
 
 In the 3D model editor:
 

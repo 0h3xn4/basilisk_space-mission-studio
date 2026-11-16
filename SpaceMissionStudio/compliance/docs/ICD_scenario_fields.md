@@ -715,6 +715,7 @@ See engine/spaceweather.py and engine/service.py. Real data only (user requireme
 | `propellant_budget` | PropellantBudgetConfig / None | `None` | see engine/propellant_budget.py |
 | `model` | SpacecraftModelConfig / None | `None` |  |
 | `model_analyses` | ModelAnalysesConfig / None | `None` |  |
+| `thermal` | ThermalConfig / None | `None` | the thermal model on the 3D model (schema/thermal.py, SRS-F-29) |
 
 ## SpacecraftModelConfig
 
@@ -749,6 +750,155 @@ Automated altitude/semi-major-axis station-keeping for one spacecraft, with delt
 | `eclipse_sunlit_threshold` | float | `0.99` | [-] shadow factor above which the spacecraft is treated as sunlit |
 | `min_on_time_s` | float | `0.0` | [s] minimum firing duration (minimum impulse bit = thrust_n * min_on_time_s) |
 | `eccentricity_neutral_burns` | bool | `False` |  |
+
+## ThermalCaseConfig
+
+A named case: a preset (``nominal``, ``hot``, ``cold``; section 4 of the design) and parameter overrides ``{path: value}`` on top of it, paths into the thermal section (T-13).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `preset` | str | `''` |  |
+| `overrides` | dict | `{}` |  |
+
+## ThermalConductorConfig
+
+A linear conductance between two nodes [W/K]. ``kind`` says how it is given, so the value can be traced (``thermal.conductors``): ``value`` (``conductance_w_k``), ``material`` (``conductivity_w_m_k``, or the material's, times ``section_m2`` over ``length_m``) or ``contact`` (``contact_area_m2`` times ``contact_coefficient_w_m2_k``).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `a` | str | `required` |  |
+| `b` | str | `required` |  |
+| `kind` | str | `'value'` |  |
+| `conductance_w_k` | float / None | `None` | [W/K] |
+| `material` | str | `''` |  |
+| `conductivity_w_m_k` | float / None | `None` | [W/(m*K)] |
+| `length_m` | float / None | `None` | [m] |
+| `section_m2` | float / None | `None` | [m^2] |
+| `contact_area_m2` | float / None | `None` | [m^2] |
+| `contact_coefficient_w_m2_k` | float / None | `None` | [W/(m^2*K)] |
+| `conductivity_table` | list / None | `None` | [[degC, W/(m*K)], ...] Phase 2, for kind "material" |
+
+## ThermalConfig
+
+A spacecraft's thermal model (module docstring).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `version` | int | `1` |  |
+| `nodes` | list | `[]` | list[ThermalNodeConfig] |
+| `faces` | list | `[]` | list[ThermalFaceConfig] |
+| `conductors` | list | `[]` | list[ThermalConductorConfig] |
+| `heat_pipes` | list | `[]` | list[ThermalHeatPipeConfig] |
+| `radiative_links` | list | `[]` | list[ThermalRadiativeLinkConfig] |
+| `dissipations` | list | `[]` | list[ThermalDissipationConfig] |
+| `heaters` | list | `[]` | list[ThermalHeaterConfig] |
+| `environment` | ThermalEnvironmentConfig | `ThermalEnvironmentConfig(solar_flux_w_m2=None, albedo=None, ` |  |
+| `solver` | ThermalSolverConfig | `ThermalSolverConfig(time_step_s=30.0, start='periodic', tole` |  |
+| `cases` | list | `[]` | list[ThermalCaseConfig] |
+
+## ThermalDissipationConfig
+
+Heat a unit dissipates in a node: ``power_w``, or the power of the power-budget load ``source`` names (``bus``, ``comms``, ``transmitter``, ``instrument:<name>``; T-11).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `node` | str | `required` |  |
+| `power_w` | float / None | `None` | [W] |
+| `source` | str | `''` |  |
+
+## ThermalEnvironmentConfig
+
+The environment the base model is solved in; None takes the run's (the solar flux at the spacecraft's distance from 1361 W/m^2 at 1 AU, the central body's albedo map and its mean infrared). Cases override these (``thermal.cases``).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `solar_flux_w_m2` | float / None | `None` | [W/m^2] at 1 AU |
+| `albedo` | float / None | `None` | [-] a constant albedo coefficient (the map's otherwise) |
+| `planet_ir_w_m2` | float / None | `None` | [W/m^2] outgoing longwave radiation at the top of the atmosphere |
+| `albedo_model` | str | `'map'` | "map" (Basilisk's CERES/TES data) or "average" |
+
+## ThermalFaceConfig
+
+A face of a part (``face`` "" for every face of the part, or a face group such as "sides"): its optics, the node it belongs to when not its part's node, MLI and the radiator flag. A thin panel's two sides are its faces "+z" and "-z".
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `part` | str | `required` |  |
+| `face` | str | `''` |  |
+| `node` | str | `''` | "" for the node owning the part |
+| `coating` | str | `''` | a library or model material giving absorptance and emissivity |
+| `absorptance` | float / None | `None` | [-] solar |
+| `emissivity` | float / None | `None` | [-] infrared, hemispherical |
+| `mli_effective_emittance` | float / None | `None` | [-] e* of an MLI blanket on the face (T-09) |
+| `radiator` | bool | `False` |  |
+
+## ThermalHeatPipeConfig
+
+A heat pipe as a high conductance between two nodes while its hotter end is within ``operating_c``, and ``off_conductance_w_k`` outside (an approximation, decision T-08).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `a` | str | `required` |  |
+| `b` | str | `required` |  |
+| `conductance_w_k` | float | `required` | [W/K] while operating |
+| `operating_c` | list | `[-40.0, 80.0]` | [degC] [lowest, highest] |
+| `off_conductance_w_k` | float | `0.01` | [W/K] frozen or dried out |
+
+## ThermalHeaterConfig
+
+A thermostatic heater: on below ``on_c``, off above ``off_c`` (hysteresis), ``power_w`` while on. Sizing finds the least power that holds the node at or above ``on_c`` (T-12).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `node` | str | `required` |  |
+| `power_w` | float | `required` | [W] |
+| `on_c` | float | `required` | [degC] |
+| `off_c` | float | `required` | [degC] |
+| `enabled` | bool | `True` |  |
+
+## ThermalNodeConfig
+
+A node: one temperature with a heat capacity. It owns the external faces of ``parts`` (less those a ``faces`` entry moves elsewhere); a node with none is internal. The capacity is ``capacitance_j_k``, or ``mass_kg`` (else its parts' mass) times ``specific_heat_j_kg_k`` (else its ``material``'s, else its parts' material's, else aluminium's, T-05).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `parts` | list | `[]` | names of the model's parts |
+| `capacitance_j_k` | float / None | `None` | [J/K] |
+| `mass_kg` | float / None | `None` | [kg] |
+| `specific_heat_j_kg_k` | float / None | `None` | [J/(kg*K)] |
+| `material` | str | `''` | a library or model material, for its specific heat |
+| `operating_c` | list / None | `None` | [degC] [lowest, highest] |
+| `survival_c` | list / None | `None` | [degC] [lowest, highest] |
+| `initial_c` | float / None | `None` | [degC] for start "fixed" |
+
+## ThermalRadiativeLinkConfig
+
+Radiation between two nodes, ``sigma * eA * (Ta^4 - Tb^4)`` with ``effective_area_m2`` = eA given by the user (T-10).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `a` | str | `required` |  |
+| `b` | str | `required` |  |
+| `effective_area_m2` | float | `required` | [m^2] emittance times area, view factor included |
+
+## ThermalSolverConfig
+
+How the network is solved (T-07): the time step, independent of the run's recording; the start (``periodic``: the first orbit repeated until no node changes by more than ``tolerance_k`` over an orbit; ``steady``: the orbit-average steady state; ``fixed``: each node's ``initial_c``, else ``initial_c`` here).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `time_step_s` | float | `30.0` | [s] |
+| `start` | str | `'periodic'` |  |
+| `tolerance_k` | float | `0.01` | [K] |
+| `max_orbits` | int | `50` |  |
+| `initial_c` | float / None | `None` | [degC] |
 
 ## ValueMark
 

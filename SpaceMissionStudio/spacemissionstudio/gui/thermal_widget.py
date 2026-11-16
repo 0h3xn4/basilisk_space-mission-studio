@@ -260,7 +260,9 @@ class ThermalWidget(QWidget):
         cases = analysis.cases
         solved = [f"{c.name}: periodic after {c.solution.periodic.orbits} orbits"
                   if c.solution.periodic is not None else f"{c.name}: from the initial temperatures" for c in cases]
-        self.status_label.setText("Solved " + "; ".join(solved) + ".")
+        env = analysis.prepared.environment
+        self.status_label.setText("Solved " + "; ".join(solved) + f". Beta angle over the run: "
+                                  f"{float(env.beta_deg.min()):.1f} to {float(env.beta_deg.max()):.1f} deg.")
         tables = records.tables(analysis)
         self._fill(self.summary_table, tables["thermal_summary"])
         self.summary_group.setVisible(True)

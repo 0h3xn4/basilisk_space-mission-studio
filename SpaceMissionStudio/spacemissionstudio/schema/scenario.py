@@ -2310,7 +2310,7 @@ class SpacecraftConfig:
     model_analyses: ModelAnalysesConfig | None = None
     # The thermal model built on the 3D model (schema.thermal.ThermalConfig;
     # docs/developer/thermal-design.md); None, as every scenario before it.
-    thermal: ThermalConfig | None = None
+    thermal: ThermalConfig | None = None  # the thermal model on the 3D model (schema/thermal.py, SRS-F-29)
 
     def mounted_definitions(self) -> list:
         """``(where, mount)`` for every sensor, actuator and RF antenna with

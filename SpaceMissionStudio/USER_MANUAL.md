@@ -1001,6 +1001,26 @@ Every number comes with its method and source
 results come with their sampling error. Template 32 shows them all. On
 the command line: `check-design`, `model-analyses` and `reentry`.
 
+### Thermal analysis
+
+A spacecraft with a 3D model can carry a thermal model (the spacecraft
+editor's **3D model** page, group **Thermal model**): a node per part,
+generated from the model with its masses, materials and contacts, then
+the optics of every face, MLI, radiators, conductors, heat pipes, the
+heat each unit dissipates, thermostatic heaters and each node's limits.
+After a run, **Run › Thermal** solves it in a nominal, a hot and a cold
+case (NASA/TM-2001-211221), or the cases you define, from the run's
+orbit, attitude and eclipses: sunlight, the planet's albedo (Basilisk's
+`albedo` module) and its infrared on every face.
+
+It shows each node's temperatures with their limits, the heat flows, the
+heaters' duty and sized power, the heat the radiators reject, and limit
+violations on the Timeline; the checks (including faces that other parts
+can shade, which the model does not account for) are in the Problems
+panel. Everything exports with its provenance. Template 33 shows it; see
+[Thermal analysis](docs/user-manual/thermal.md) and the method in
+`docs/models/thermal.md`. On the command line: `thermal`.
+
 ### Flexible solar arrays
 
 **Flexible solar arrays** (the spacecraft's **Orbit / mass** page) lists

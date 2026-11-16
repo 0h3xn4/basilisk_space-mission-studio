@@ -384,6 +384,30 @@ From the [changelog](../../CHANGELOG.md):
 * **Python 3.14 only:** 3.11 to 3.13 are no longer supported, and
   Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet.
 
+## Thermal analysis
+
+The thermal model ([docs/models/thermal.md](../models/thermal.md)) is a
+lumped-parameter network for preliminary design. It does not do:
+
+* **Ray tracing and self-shadowing.** Radiation between the spacecraft's
+  own surfaces is only what radiative links give, and one part does not
+  shade another: a face that can be shaded gets its full sunlight. The
+  analysis warns, naming those faces and the parts that can shade them.
+* **Specular and spectral radiation.** Surfaces are diffuse and grey
+  (one solar absorptance, one infrared emissivity).
+* **Fluid loops**, **meshing** (a part is one isothermal node; split a
+  part into several to resolve gradients), **phase-change materials** and
+  **thermoelectric coolers**.
+* **Power feedback.** Heater power is reported, sized and meant for the
+  power budget, but it is not drawn from the battery in the run.
+* **STEP-TAS** exchange with other thermal tools.
+* **Other central bodies than Earth and Mars**; and Mars's planetary
+  infrared is an estimate from its radiative balance.
+* **End-of-life optics.** The library has no sourced end-of-life values
+  yet; a case can override any face's optics.
+* **Thermostat cycles longer than an orbit** have no orbit-periodic
+  state: the start then reports that it did not converge.
+
 ---
 
 **Next:** [Capabilities and verification](capabilities.md) ·

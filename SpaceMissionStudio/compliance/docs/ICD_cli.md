@@ -136,6 +136,21 @@ run the scenario and report its model analyses: disturbance torques, blinding, o
 | `--out` | write the record (one spacecraft) |
 | `--tables` | write each table as CSV, with its provenance |
 
+## `thermal`
+
+run the scenario and solve each spacecraft's thermal model (nominal, hot and cold, or its own cases); or --generate one from the 3D model
+
+| Argument | Help |
+|---|---|
+| `scenario` |  |
+| `--spacecraft` | spacecraft name (default: every one with a thermal model) |
+| `--case` | solve this case only (repeatable) |
+| `--no-sizing` | do not size the heaters (faster) |
+| `--out` | write the record (one spacecraft) |
+| `--tables` | write the tables and the temperature and heat-flow series as CSV and their plots as SVG, with provenance |
+| `--generate` | write the scenario with a thermal model generated from each 3D model; no run |
+| `--replace` | with --generate: replace an existing thermal model |
+
 ## `reentry`
 
 a preliminary re-entry casualty estimate from the 3D model (DAS-like, simplified)
