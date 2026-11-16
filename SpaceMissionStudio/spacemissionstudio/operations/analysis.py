@@ -106,3 +106,50 @@ def plan(scenario, result=None) -> Planning:
     planning = prepare(scenario, result)
     schedule(planning)
     return planning
+
+
+def flight_scenario(scenario, plan: Plan):
+    """The scenario as the plan is flown: run from its epoch to the plan's
+    end; planned maneuvers as a generated Mission Sequence (propagate to
+    each one's time, burn; decision O-16) when the scenario has none."""
+    import copy
+
+    from ..schema.command import Command, runs_sequence
+
+    flown = copy.deepcopy(scenario)
+    flown.sim_settings.duration_days = plan.end_s / 86400.0  # [day] TDB seconds, a few microseconds past UTC
+    maneuvers = sorted((a for a in plan.activities if a.kind == "maneuver"), key=lambda a: a.start_s)
+    if maneuvers:
+        if runs_sequence(flown.mission_sequence):
+            raise PlanningError("planned maneuvers need a scenario without a Mission Sequence (its own maneuvers "
+                                "are the planning events)")
+        section = flown.operations
+        commands = []
+        for activity in maneuvers:
+            kind = section.activity_type(activity.type)
+            commands.append(Command("propagate", f"to {activity.id}", {"stop_condition": "epoch",
+                                                                       "stop_epoch_utc": activity.start_utc}))
+            commands.append(Command("maneuver", activity.id, {"spacecraft": activity.spacecraft,
+                                                              "delta_v_m_s": list(kind.delta_v_m_s),
+                                                              "frame": kind.frame}))
+        commands.append(Command("propagate", "to the plan's end", {"stop_condition": "epoch",
+                                                                   "stop_epoch_utc": plan.end_utc}))
+        flown.mission_sequence = commands
+    return flown
+
+
+def fly(scenario, plan: Plan, should_cancel=None):
+    """Fly ``plan`` in the simulation (operations.execution) and return the
+    run's results."""
+    from ..engine.service import SimulationService
+    from ..schema.command import runs_sequence
+
+    flown = flight_scenario(scenario, plan)
+    flown.validate()
+    service = SimulationService(flown, plan=plan)
+    if runs_sequence(flown.mission_sequence):
+        from ..engine.mission_engine import MissionEngine
+
+        result, _summary = MissionEngine(flown, service=service, should_cancel=should_cancel).run()
+        return result
+    return service.run(should_cancel=should_cancel) if should_cancel is not None else service.run()

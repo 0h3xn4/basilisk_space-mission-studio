@@ -125,10 +125,12 @@ class PlanningGeometry:
 
 
 def grid(start_s: float, end_s: float, step_s: float) -> np.ndarray:
-    """``start_s`` to ``end_s`` [s] every ``step_s``, ending exactly at ``end_s``."""
-    count = max(2, int(math.ceil((end_s - start_s) / step_s - 1e-9)) + 1)
-    return np.linspace(start_s, end_s, count) if (end_s - start_s) % step_s > 1e-6 else \
-        start_s + step_s * np.arange(count)
+    """``start_s`` every ``step_s`` up to ``end_s`` [s]: a uniform grid,
+    whose last sample is less than a step before ``end_s`` when the span is
+    not a whole number of steps (TDB runs a few microseconds a day ahead of
+    UTC, so a UTC horizon never is exactly)."""
+    count = max(2, int(math.floor((end_s - start_s) / step_s + 1e-6)) + 1)
+    return start_s + step_s * np.arange(count)
 
 
 def _tdb_centuries_and_days(epoch_utc, t: np.ndarray) -> tuple[np.ndarray, np.ndarray]:

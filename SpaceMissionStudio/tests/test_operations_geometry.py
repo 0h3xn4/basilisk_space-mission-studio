@@ -48,12 +48,15 @@ def test_utc_and_simulation_time_convert_with_leap_seconds_and_tdb():
     assert format_utc(datetime(2030, 1, 1, 0, 0, 0, 999600)) == "2030-01-01T00:00:01.000Z"
 
 
-def test_grid_ends_exactly_at_the_horizon():
-    """The grid starts and ends on the horizon's bounds."""
+def test_the_grid_is_uniform_within_the_horizon():
+    """The grid starts on the horizon's start, keeps its step and ends at
+    most a step before the horizon's end."""
     t = geometry.grid(5.0, 125.0, 10.0)
     assert t[0] == 5.0 and t[-1] == 125.0 and np.allclose(np.diff(t), 10.0)
     uneven = geometry.grid(0.0, 86400.00003, 10.0)
-    assert uneven[-1] == 86400.00003 and len(uneven) == 8642
+    assert uneven[-1] == 86400.0 and len(uneven) == 8641
+    short = geometry.grid(0.0, 95.0, 10.0)
+    assert short[-1] == 90.0
 
 
 @pytest.fixture(scope="module")

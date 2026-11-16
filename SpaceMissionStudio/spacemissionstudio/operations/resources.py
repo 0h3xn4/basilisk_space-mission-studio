@@ -373,3 +373,36 @@ class SpacecraftModel:
             downlinked += taken
             memory[k] = stored
         return memory, lost, downlinked
+
+
+def attitude_series(model: SpacecraftModel, activities: list, timeline: list | None = None) -> np.ndarray:
+    """The planned attitude ``[BN]`` (n, 3, 3) at every grid sample: the
+    default mode, each activity's mode from its ``point_from_s`` to the end
+    of its teardown (a slew is shown as its destination), as the energy
+    model takes it. For the AEM and the 3D view of a plan."""
+    timeline = model.timeline(activities) if timeline is None else timeline
+    n = len(model.t)
+    out = np.empty((n, 3, 3))
+    spans = [(model.index(entry["point_from_s"]), model.index(activity.occupied[1]), activity, entry)
+             for activity, entry in zip(activities, timeline)]
+    current = model.default_attitude(0, np.eye(3))
+    k = 0
+    for k0, k1, activity, entry in spans + [(n, n, None, None)]:
+        for j in range(k, min(k0, n)):  # the default mode
+            current = model.default_attitude(j, current)
+            out[j] = current
+        if activity is None:
+            break
+        kind = model.section.activity_type(activity.type)
+        current = entry["start_attitude"]
+        aim = model.aim(activity)
+        for j in range(max(k0, k), min(k1 + 1, n)):
+            if activity.pointing == "nadir":
+                current = model.hill[j]
+            elif activity.pointing == "inertial":
+                current = attitude.inertial_dcm(kind.sigma_rn)
+            else:
+                current = attitude.point_axis(current, model.boresight(kind), aim[j])
+            out[j] = current
+        k = min(k1 + 1, n)
+    return out
