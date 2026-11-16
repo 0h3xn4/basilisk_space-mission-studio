@@ -150,6 +150,10 @@ run the scenario and solve each spacecraft's thermal model (nominal, hot and col
 | `--tables` | write the tables and the temperature and heat-flow series as CSV and their plots as SVG, with provenance |
 | `--generate` | write the scenario with a thermal model generated from each 3D model; no run |
 | `--replace` | with --generate: replace an existing thermal model |
+| `--sweep` | solve the first --case (default nominal) at each value of a parameter (e.g. faces[radiator].absorptance=0.1,0.2,0.3); repeatable |
+| `--sensitivity` | one-at-a-time sensitivity of the first --case: each parameter (comma-separated paths; default: every face's optics, conductances, dissipation, heaters, sunlight and infrared) up and down by --relative |
+| `--relative` | the sensitivity's step, a fraction of each value (default 0.1) |
+| `--monte-carlo` | run the thermal model's monte_carlo section and save the batch in DIR (the Monte Carlo view opens it) |
 
 ## `reentry`
 

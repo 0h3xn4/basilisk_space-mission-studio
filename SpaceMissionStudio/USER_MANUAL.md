@@ -1017,7 +1017,15 @@ It shows each node's temperatures with their limits, the heat flows, the
 heaters' duty and sized power, the heat the radiators reject, and limit
 violations on the Timeline; the checks (including faces that other parts
 can shade, which the model does not account for) are in the Problems
-panel. Everything exports with its provenance. Template 33 shows it; see
+panel. Everything exports with its provenance.
+
+On the same run, without running Basilisk again, you can sweep any
+parameter, rank the parameters by their effect (a one-at-a-time
+sensitivity), and run a seeded thermal Monte Carlo that opens in the
+Monte Carlo view. The 3D model can be coloured by temperature. Flexible
+solar arrays are nodes whose faces turn with their hinge, and a node's
+specific heat or a conductor's conductivity can follow a table of
+temperature. Templates 33 and 34 show it; see
 [Thermal analysis](docs/user-manual/thermal.md) and the method in
 `docs/models/thermal.md`. On the command line: `thermal`.
 

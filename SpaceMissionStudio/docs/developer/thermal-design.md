@@ -167,8 +167,12 @@ albedo evaluator, which imports Basilisk lazily):
 | `results.py` | Temperatures, heat flows, summaries, energy balance, series, events |
 | `records.py` | The record with provenance and CSV tables |
 | `library.py` | Thermal views of the material library (optics, specific heat, conductivity) |
-| `studies.py` | Phase 2: sweeps, one-at-a-time sensitivity, thermal Monte Carlo |
-| `properties.py` | Phase 2: temperature-dependent tables |
+| `sweeps.py` | Phase 2: sweeps, one-at-a-time sensitivity, thermal Monte Carlo (planned as `studies.py`) |
+| `plots.py` | The SVG plots of temperatures and heat flows |
+
+Phase 2's temperature-dependent tables live in `network.py` (the
+capacitance tables, enthalpy) and `conductors.py` (conductivity tables),
+not in a `properties.py` of their own: they are a few functions each.
 
 Around it: `schema/scenario.py` (the `thermal` section, validation),
 `schema/references.py` (part and face references), `engine/service.py`
@@ -406,15 +410,17 @@ is at the top of the Thermal page and in every result.
 
 - Sweeps and sensitivity call the same `solve(thermal_with_overrides)` on
   the cached fluxes, so only the network changes.
-- Thermal Monte Carlo draws overrides with `seeds.derived_seed`, the same
-  call again.
-- Temperature-dependent properties enter the Newton iteration as
-  `C(T)` and `G(T)` evaluated at the iterate; constant tables reduce to
+- Thermal Monte Carlo draws overrides from one generator seeded with the
+  section's `monte_carlo.seed` (as built: T-36), the same call again.
+- Temperature-dependent properties: as built, a specific-heat table makes
+  the node's state its enthalpy (exact energy, T-35), and a conductivity
+  table is evaluated at the start of each step; flat tables reduce to
   Phase 1.
 - The material library gains fields, nothing else changes.
 - Coloring the 3D model reads the node temperature of each face's node.
 - Flexible solar-array panels become nodes through their recorded
-  attitude: their facet normals rotate with the array angle series.
+  attitude: their facet normals rotate with the array angle series
+  (as built: T-37, albedo at the initial normal).
 
 ## 3. Basilisk modules used
 

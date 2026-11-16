@@ -30,11 +30,21 @@ C_i dT_i/dt = sum over its faces [ alpha_f (q_s + q_a) + eps_f q_ir ] A_f
 - **Capacitance** `C_i`: given, or mass times specific heat; the mass is
   the parts' (from the 3D model) and the specific heat the node's, its
   material's (library or the model's own), or aluminium 6061-T6's from
-  NASA DAS 3.0 (T-05). Each node's record says which.
+  NASA DAS 3.0 (T-05). Each node's record says which. A node can instead
+  have a **specific-heat table** of temperature (`specific_heat_table`,
+  `[[degC, J/(kg K)], ...]`, linear between rows, held beyond the ends):
+  the solver then integrates its enthalpy `H(T) = m * integral of cp dT`,
+  so the stored heat stays exact as cp changes (T-35).
 - **Faces** are the 3D model's outer faces (curved faces in their
   segments, which keep the true curved area). A face touching another
   part is not radiating over the touching area (T-25). Internal parts
   (out of the surface model) have no faces.
+- **Flexible solar arrays** (the spacecraft's `solar_arrays`, Basilisk's
+  hinged panels in the run) are parts of their own, `solar array <name>`:
+  a flat panel of span x width with a `cells` and a `back` face and the
+  array's mass. Their faces turn about the hinge by the angle the run
+  recorded (T-37). A model part drawn for an array (`counts_toward_mass`
+  off) is left out by the generator, so the array is not counted twice.
 - **Optics** per face: a coating or material from the library
   (`config/materials.py`, Henninger, NASA RP-1121, 1984, for the
   coatings), or absorptance and emissivity given. A thin panel has a
@@ -45,8 +55,10 @@ C_i dT_i/dt = sum over its faces [ alpha_f (q_s + q_a) + eps_f q_ir ] A_f
 - **Radiators**: faces marked `radiator`; their area and their emitted,
   absorbed and net rejected heat are reported, orbit-averaged.
 - **Conductors**: a conductance given (`value`), `k A / L` from a
-  material's conductivity or a value given (`material`), or a contact
-  area times a coefficient (`contact`). The inputs are stored, and the
+  material's conductivity, a value given or a **conductivity table** of
+  temperature (`material`; the table is read at the mean of the two nodes
+  at the start of each step), or a contact area times a coefficient
+  (`contact`). The inputs are stored, and the
   calculator says how it computed. A contact between two parts of the
   model is found from the meshes, with its exact overlap area, and gets
   the coefficient of a bare bolted aluminium joint, 136 W/(m^2 K), from
@@ -87,6 +99,12 @@ and eclipse:
   the partial closed form between. `R_ir` is the Earth's equatorial
   radius plus 30 km (the top of the atmosphere the NASA guideline's OLR
   refers to); Mars uses its radius.
+- **Flexible arrays**: their sunlight and planetary infrared follow the
+  turned normal at each recorded time; their albedo is taken at the
+  initial normal (Basilisk's albedo module runs once per fixed normal; at
+  the few degrees a flexible array deflects, the difference is second
+  order). A run without the hinge record keeps the initial deflection,
+  with a warning.
 - Earth and Mars only; any other central body is refused (T-17).
 
 **Shading between parts is not modelled.** A face another part can
@@ -151,6 +169,27 @@ eclipse entry and exit, so no load jumps inside a step (T-29).
   - `steady`: the steady state on the orbit-averaged loads.
   - `fixed`: every node from its `initial_c` (or one value).
 
+## Studies
+
+Three studies solve a case again with parameters changed by path, on the
+same fluxes: nothing is rerun in Basilisk (T-36).
+
+- **Sweep**: the case at each value of one parameter.
+- **Sensitivity**, one at a time: each parameter up and down by a
+  fraction of its value (10 % by default; optics kept within [0, 1]); the
+  change of every node's minimum, maximum and mean between the two, per
+  step and per unit, ranked by the largest. By default it varies every
+  face entry's optics, the conductances, heat pipes, constant
+  dissipations, heater powers, the sunlight and the infrared.
+- **Thermal Monte Carlo**: the section's `monte_carlo` (`runs`, `seed`,
+  `case`, `dispersions`: a path, a sigma, `normal` or `uniform`, absolute
+  or relative). One generator seeded once draws every run in a fixed
+  order, so the same seed gives the same runs. A draw outside a
+  parameter's range is clipped (optics to [0, 1], the rest to 0 and up);
+  a draw the model refuses is a failed run. The batch is saved in the
+  Monte Carlo summary format with `kind: thermal` and opens in the Monte
+  Carlo view, by node.
+
 ## Results
 
 Per case: every node's temperature with its operating and survival
@@ -165,10 +204,16 @@ Exports: a JSON record with provenance (`kind: thermal_analysis`), the
 tables and every series as CSV, and the plots as SVG and PNG, each with a
 provenance sidecar (T-31).
 
+The 3D model can be coloured by temperature (Run › Thermal): each part
+takes its node's hottest, coldest or mean value, or its value at a chosen
+time, on a diverging scale; parts without a node are grey.
+
 ## Not modelled
 
 Ray-traced radiation between parts and self-shadowing, specular and
 spectral radiation, fluid loops, meshing (a part is one node), phase
 change materials and thermoelectric coolers, heater power fed back to the
-battery, and STEP-TAS exchange: see
+battery, the electrical power solar cells take out of the sunlight they
+absorb, arrays turned by a drive (only flexible hinges turn), shading by
+or of the flexible arrays, and STEP-TAS exchange: see
 [limitations](../reference/limitations.md#thermal-analysis).

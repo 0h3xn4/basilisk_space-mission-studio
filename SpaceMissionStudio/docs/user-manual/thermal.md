@@ -1,8 +1,9 @@
 # Thermal analysis
 
 How to give a spacecraft a thermal model built on its 3D model, solve it
-on a run, and read and export its temperatures. Template 33 shows it all
-on a 150 kg microsatellite. The method and its sources are in
+on a run, study it, and read and export its temperatures. Template 33
+shows the basics on a 150 kg microsatellite; template 34 adds flexible
+solar arrays and a thermal Monte Carlo. The method and its sources are in
 [docs/models/thermal.md](../models/thermal.md).
 
 The analysis is for spacecraft of about 100 kg and more around the Earth
@@ -23,7 +24,13 @@ mass on each part and, where you can, each part's material.
    - a contact conductor wherever two parts touch, over their exact
      touching area, at the coefficient of a bare bolted joint
      (136 W/(m^2 K)); a part inside another one (out of the surface
-     model) is mounted over its largest face.
+     model) is mounted over its largest face;
+   - a node for each flexible solar array (**Spacecraft › Solar arrays**),
+     named `solar array <name>`, with solar cells on its `cells` face
+     and black paint on its `back`. Join it to the bus yourself: add a
+     conductor of kind `value` with the hinge's conductance. A model part
+     drawn for an array, with **Counts toward mass** off, is left out, so
+     the array is not counted twice.
 3. Give the faces their optics on the **Faces** tab. A row with a part
    and no face covers all the part's faces; a row with a face (`+z`,
    `side 1`) overrides it for that face. Pick a **Coating** from the
@@ -32,12 +39,17 @@ mass on each part and, where you can, each part's material.
    blanket, give **MLI e\*** (0.01 to 0.05 is usual) with the outer
    layer's coating. Mark radiator faces **Radiator**. A thin panel has a
    face per side, each with its own optics.
-4. Replace contacts that are not bolted joints. On **Conductors**, a
+4. Where a property changes with temperature, give a table instead of
+   one value: a node's **specific_heat_table** (`[[degC, J/(kg K)], ...]`)
+   or a `material` conductor's **conductivity_table**
+   (`[[degC, W/(m K)], ...]`), on the JSON page. Linear between rows,
+   held beyond the ends.
+5. Replace contacts that are not bolted joints. On **Conductors**, a
    conductor of kind `value` takes a conductance in W/K (standoffs,
    isolating washers); kind `material` computes `k A / L` from a length
    and a section; kind `contact` takes an area and a coefficient. Select a
    row and press **Conductance** to see the value and how it was computed.
-5. Add what the model cannot know:
+6. Add what the model cannot know:
    - **Dissipation**: the heat each unit gives off, a power in W, or the
      name of a power-budget load (`bus`, `comms`, `transmitter`,
      `instrument:<name>`) to follow it;
@@ -49,7 +61,7 @@ mass on each part and, where you can, each part's material.
      inner surfaces see each other;
    - each node's **Operating** and **Survival** ranges (`lowest, highest`
      in degC).
-6. Look at the **Problems** panel. It lists faces in no node or without
+7. Look at the **Problems** panel. It lists faces in no node or without
    optics, nodes without capacity or without a path to space, and the
    faces another part can shade (see "Shading" below).
 
@@ -131,6 +143,50 @@ than it would be. The analysis names those faces and the parts in its
 warning. For a face that matters, check its worst case by hand, or
 override its absorptance in a case.
 
+## Colour the 3D model by temperature
+
+Under **Temperatures on the 3D model** on the Thermal page, each part
+takes its node's colour: blue is cold, red is warm. Pick **Hottest over
+the run**, **Coldest over the run**, **Mean over the run**, or **At a
+time** and move the slider. Parts without a node are grey. Flexible
+arrays are not drawn in the 3D model, so they do not appear there.
+
+## Study the case: sweeps, sensitivity, Monte Carlo
+
+Under **Studies on the case shown**, each study solves the case again on
+the same run. Nothing runs in Basilisk again, so a study takes seconds.
+
+- **Sweep**: type a **Parameter** path (`faces[radiator].absorptance`)
+  and its **Values** (`0.1, 0.2, 0.3`), then press **Sweep**. The table
+  gives every node's minimum, maximum and mean at each value.
+- **Sensitivity**: press **Sensitivity**. Each optic, conductance, heat
+  pipe, dissipation, heater power, the sunlight and the infrared moves
+  10 % up and down, one at a time. The table ranks them by the largest
+  change they cause. Parameters without a number (a dissipation that
+  follows the power budget) are listed as left out.
+- **Monte Carlo...**: first set the runs, the seed, the case and the
+  dispersions on the thermal model's **Monte Carlo** tab (a path, a
+  sigma, normal or uniform, absolute or relative to the value). Press
+  **Monte Carlo...** and pick a folder. The batch opens in the Monte Carlo
+  view by node: the hottest and coldest any run reached, each run's
+  curve with the mean and its band, and the run table with the drawn
+  values. The same seed gives the same runs.
+
+Template 34's Monte Carlo varies the radiator's absorptance, the heat
+pipe and the battery's isolators: in 4 of its 20 runs the battery passes
+its 30 degC limit.
+
+From the command line:
+
+```
+spacemissionstudio thermal scenario.json --case hot --sweep "faces[radiator].absorptance=0.1,0.2,0.3"
+spacemissionstudio thermal scenario.json --sensitivity --relative 0.2
+spacemissionstudio thermal scenario.json --monte-carlo mc_folder/
+```
+
+From Python: `api.thermal_sweep`, `api.thermal_sensitivity` and
+`api.thermal_monte_carlo` ([The Python API](../api.md)).
+
 ## Save and export
 
 - **Save...** writes `thermal.json` (the record: inputs, every case's
@@ -150,9 +206,12 @@ spacemissionstudio thermal scenario.json --case cold --out thermal.json --tables
 
 ## Limits of the model
 
-One node per part (no meshing), no shading between parts, diffuse grey
-optics, no fluid loops, phase-change materials or coolers, heater power
-not taken from the battery, Earth and Mars only. See
+One node per part (no meshing), no shading between parts (flexible arrays
+included), diffuse grey optics, no fluid loops, phase-change materials or
+coolers, heater power not taken from the battery, no electrical power
+taken out of the cells' sunlight, Earth and Mars only. The library's
+optics are beginning of life, apart from three coatings measured after
+ultraviolet exposure; it has no conductivities. See
 [limitations](../reference/limitations.md#thermal-analysis).
 
 ---

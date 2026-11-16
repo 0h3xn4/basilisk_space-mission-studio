@@ -404,7 +404,17 @@ lumped-parameter network for preliminary design. It does not do:
 * **Other central bodies than Earth and Mars**; and Mars's planetary
   infrared is an estimate from its radiative balance.
 * **End-of-life optics.** The library has no sourced end-of-life values
-  yet; a case can override any face's optics.
+  for a mission's duration; three coatings have the values measured
+  after ultraviolet exposure (NASA RP-1121). A case can override any
+  face's optics.
+* **Library conductivities and honeycomb properties.** No readable source
+  gave them: a conductor takes its conductance, a conductivity or a
+  conductivity table in the thermal model.
+* **Flexible arrays.** Their faces turn with the hinge angle the run
+  records, but their albedo is taken at the initial angle, they neither
+  shade nor are shaded, and the electrical power the cells take out of
+  the sunlight is not subtracted. Arrays turned by a drive are not
+  modelled.
 * **Thermostat cycles longer than an orbit** have no orbit-periodic
   state: the start then reports that it did not converge.
 

@@ -201,6 +201,16 @@ A lumped-parameter thermal model on the 3D model, solved after a run
   the plate-to-sphere view factor;
 - **cases**: nominal, hot and cold from NASA/TM-2001-211221 by inclination
   band and beta, and any parameter overridden by its path;
+- **temperature-dependent properties**: a node's specific-heat table
+  (solved on the enthalpy, so the stored heat stays exact) and a
+  conductor's conductivity table;
+- **flexible solar arrays as nodes**, whose faces turn with the hinge
+  angle the run records;
+- **studies on the same run**, without running Basilisk again: sweeps of
+  any parameter, a one-at-a-time sensitivity ranked by effect, and a
+  seeded thermal Monte Carlo that opens in the Monte Carlo view;
+- **the 3D model coloured by temperature** (hottest, coldest, mean, or at
+  a time);
 - **an implicit second-order solver** with its own step, a step check, an
   energy balance and an orbit-periodic start that does not depend on a
   starting temperature;
@@ -210,8 +220,8 @@ A lumped-parameter thermal model on the 3D model, solved after a run
   Problems panel (including a warning for faces other parts can shade),
   and exports (JSON record, CSV, SVG and PNG) with provenance.
 
-See template 33, [Thermal analysis](../user-manual/thermal.md) and
-[the thermal model](../models/thermal.md).
+See templates 33 and 34, [Thermal analysis](../user-manual/thermal.md)
+and [the thermal model](../models/thermal.md).
 
 ### Flight-software export
 

@@ -399,7 +399,7 @@ its Scenario page ("Building your own scenario, step by step", below).
 
 ## 4. Your first simulation, in five minutes
 
-1. **Pick a template.** Home shows all 32 built-in example missions as
+1. **Pick a template.** Home shows all 34 built-in example missions as
    cards, numbered roughly from simplest to most advanced -- "01 -
    Two-body circular orbit" is the simplest possible case (one
    satellite, one orbit, nothing else going on) and a good first choice.
@@ -1000,6 +1000,34 @@ Every number comes with its method and source
 (`docs/models/model-analyses.md`, `docs/models/reentry.md`); ray-cast
 results come with their sampling error. Template 32 shows them all. On
 the command line: `check-design`, `model-analyses` and `reentry`.
+
+### Thermal analysis
+
+A spacecraft with a 3D model can carry a thermal model (the spacecraft
+editor's **3D model** page, group **Thermal model**): a node per part,
+generated from the model with its masses, materials and contacts, then
+the optics of every face, MLI, radiators, conductors, heat pipes, the
+heat each unit dissipates, thermostatic heaters and each node's limits.
+After a run, **Run › Thermal** solves it in a nominal, a hot and a cold
+case (NASA/TM-2001-211221), or the cases you define, from the run's
+orbit, attitude and eclipses: sunlight, the planet's albedo (Basilisk's
+`albedo` module) and its infrared on every face.
+
+It shows each node's temperatures with their limits, the heat flows, the
+heaters' duty and sized power, the heat the radiators reject, and limit
+violations on the Timeline; the checks (including faces that other parts
+can shade, which the model does not account for) are in the Problems
+panel. Everything exports with its provenance.
+
+On the same run, without running Basilisk again, you can sweep any
+parameter, rank the parameters by their effect (a one-at-a-time
+sensitivity), and run a seeded thermal Monte Carlo that opens in the
+Monte Carlo view. The 3D model can be coloured by temperature. Flexible
+solar arrays are nodes whose faces turn with their hinge, and a node's
+specific heat or a conductor's conductivity can follow a table of
+temperature. Templates 33 and 34 show it; see
+[Thermal analysis](docs/user-manual/thermal.md) and the method in
+`docs/models/thermal.md`. On the command line: `thermal`.
 
 ### Flexible solar arrays
 
@@ -1878,7 +1906,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-two built-in templates teaches, in
+  describes what each of the thirty-four built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

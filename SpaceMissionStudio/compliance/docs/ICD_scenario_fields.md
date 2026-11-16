@@ -797,6 +797,18 @@ A spacecraft's thermal model (module docstring).
 | `environment` | ThermalEnvironmentConfig | `ThermalEnvironmentConfig(solar_flux_w_m2=None, albedo=None, ` |  |
 | `solver` | ThermalSolverConfig | `ThermalSolverConfig(time_step_s=30.0, start='periodic', tole` |  |
 | `cases` | list | `[]` | list[ThermalCaseConfig] |
+| `monte_carlo` | ThermalMonteCarloConfig / None | `None` | Phase 2 (T-36) |
+
+## ThermalDispersionConfig
+
+One parameter a thermal Monte Carlo draws (Phase 2, T-36): its ``path`` (as an override's), and ``sigma``, the 1-sigma of a normal draw or the half-width of a uniform one, in the parameter's unit or, ``relative``, as a fraction of its value.
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `path` | str | `required` |  |
+| `sigma` | float | `required` |  |
+| `distribution` | str | `'normal'` |  |
+| `relative` | bool | `False` |  |
 
 ## ThermalDissipationConfig
 
@@ -822,7 +834,7 @@ The environment the base model is solved in; None takes the run's (the solar flu
 
 ## ThermalFaceConfig
 
-A face of a part (``face`` "" for every face of the part, or a face group such as "sides"): its optics, the node it belongs to when not its part's node, MLI and the radiator flag. A thin panel's two sides are its faces "+z" and "-z".
+A face of a part (``face`` "" for every face of the part, or a face group such as "sides"): its optics, the node it belongs to when not its part's node, MLI and the radiator flag. A thin panel's two sides are its faces "+z" and "-z"; a flexible solar array's are "cells" and "back".
 
 | Field | Type | Default | Unit / note |
 |---|---|---|---|
@@ -861,18 +873,30 @@ A thermostatic heater: on below ``on_c``, off above ``off_c`` (hysteresis), ``po
 | `off_c` | float | `required` | [degC] |
 | `enabled` | bool | `True` |  |
 
+## ThermalMonteCarloConfig
+
+A thermal Monte Carlo on one run (Phase 2, T-36): ``runs`` draws of the ``dispersions``, from ``seed``, each solved in ``case``.
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `runs` | int | `50` |  |
+| `seed` | int | `1` |  |
+| `case` | str | `'nominal'` |  |
+| `dispersions` | list | `[]` | list[ThermalDispersionConfig] |
+
 ## ThermalNodeConfig
 
-A node: one temperature with a heat capacity. It owns the external faces of ``parts`` (less those a ``faces`` entry moves elsewhere); a node with none is internal. The capacity is ``capacitance_j_k``, or ``mass_kg`` (else its parts' mass) times ``specific_heat_j_kg_k`` (else its ``material``'s, else its parts' material's, else aluminium's, T-05).
+A node: one temperature with a heat capacity. It owns the external faces of ``parts`` (less those a ``faces`` entry moves elsewhere); a node with none is internal. The capacity is ``capacitance_j_k``, or ``mass_kg`` (else its parts' mass) times ``specific_heat_j_kg_k`` (else its ``material``'s, else its parts' material's, else aluminium's, T-05), or that mass times a ``specific_heat_table`` of temperature (Phase 2: the solver then integrates the enthalpy). A flexible solar array is the part ``"solar array <name>"``, with the faces ``cells`` and ``back`` (T-37).
 
 | Field | Type | Default | Unit / note |
 |---|---|---|---|
 | `name` | str | `required` |  |
-| `parts` | list | `[]` | names of the model's parts |
+| `parts` | list | `[]` | names of the model's parts ("solar array <name>" for a flexible one) |
 | `capacitance_j_k` | float / None | `None` | [J/K] |
 | `mass_kg` | float / None | `None` | [kg] |
 | `specific_heat_j_kg_k` | float / None | `None` | [J/(kg*K)] |
 | `material` | str | `''` | a library or model material, for its specific heat |
+| `specific_heat_table` | list / None | `None` | [[degC, J/(kg*K)], ...] temperature-dependent (Phase 2) |
 | `operating_c` | list / None | `None` | [degC] [lowest, highest] |
 | `survival_c` | list / None | `None` | [degC] [lowest, highest] |
 | `initial_c` | float / None | `None` | [degC] for start "fixed" |

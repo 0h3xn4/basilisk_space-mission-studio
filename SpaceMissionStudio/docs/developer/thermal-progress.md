@@ -32,14 +32,14 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | done |
 | 10 | V&V records (Phase 1) | done |
 | 11 | Template 33 (150 kg bus), claims, golden file | done |
-| 12 | Documentation (Phase 1) | next |
-| 13 | Library: conductivity, honeycomb, MLI, EOL optics where sourced | |
-| 14 | Temperature-dependent properties | |
-| 15 | Sweeps and sensitivity | |
-| 16 | Thermal Monte Carlo | |
-| 17 | Temperature colouring of the 3D model | |
-| 18 | Solar-array panels as nodes | |
-| 19 | Phase 2 template, V&V, docs, final checks | |
+| 12 | Documentation (Phase 1) | done |
+| 13 | Library: conductivity, honeycomb, MLI, EOL optics where sourced | done (coatings and UV-aged values; the rest logged unsourced, T-38) |
+| 14 | Temperature-dependent properties | done |
+| 15 | Sweeps and sensitivity | done |
+| 16 | Thermal Monte Carlo | done |
+| 17 | Temperature colouring of the 3D model | done |
+| 18 | Solar-array panels as nodes | done |
+| 19 | Phase 2 template, V&V, docs, final checks | done (final checks: see below) |
 
 ## Done
 
@@ -124,10 +124,38 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   `tests/golden_capture.py`), claims (`test_33_...`). The periodic start
   learned slow modes and thermostats (T-34).
 
+- Step 12 (Phase 1 docs): `docs/models/thermal.md`,
+  `docs/user-manual/thermal.md`, the 3D model guide, capabilities,
+  limitations, glossary, USER_MANUAL, SRS-F-29 rows and the regenerated
+  ICD, SDD and SUITP.
+
+- Phase 2, steps 13-19:
+  - specific-heat tables solved on the enthalpy, conductivity tables
+    (T-35; `tests/test_thermal_tables.py`);
+  - sweeps, one-at-a-time sensitivity and the seeded thermal Monte Carlo
+    in the Monte Carlo view, in the API, the CLI and the Thermal page
+    (T-36; `thermal/sweeps.py`, `tests/test_thermal_studies.py`);
+  - the 3D model coloured by temperature (`gui/model_view_widget.py`,
+    the Thermal page);
+  - flexible solar arrays as nodes whose faces turn with the recorded
+    hinge angle (T-37; `tests/test_thermal_arrays.py`);
+  - 26 coatings from NASA RP-1121, three of them UV-aged; conductivity,
+    honeycomb and mission end-of-life optics logged as unsourced (T-38;
+    `tests/test_thermal_library.py`);
+  - template 34 with its claims, golden output, hashes and wizard page
+    (T-39);
+  - the Phase 2 verification records in
+    `compliance/validation/thermal-vv.md`;
+  - documentation: the model, the user guide, capabilities,
+    limitations, USER_MANUAL, CHANGELOG.
+
 ## Next
 
-Step 12: documentation.
+Final checks: the full suite with coverage, lint, the document and
+traceability checks, the Basilisk boundary check, and the final report.
 
 ## Known issues
 
-None yet.
+- NIST's property site is not reachable from the build environment, so
+  the library has no conductivity or specific-heat tables (T-38).
+- The albedo on a flexible array is taken at its initial angle (T-37).
