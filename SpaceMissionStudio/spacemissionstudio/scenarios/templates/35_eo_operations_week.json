@@ -1,0 +1,811 @@
+{
+  "name": "35 - Operations: a week of an Earth observation microsatellite",
+  "epoch_utc": "2030-06-03T08:30:00",
+  "simulation_mode": "full_attitude",
+  "gravity": {
+    "central_body": "earth",
+    "central_body_degree": 10,
+    "third_body_perturbers": [
+      "sun",
+      "moon"
+    ],
+    "polyhedral_gravity": false,
+    "albedo": false
+  },
+  "spacecraft": [
+    {
+      "name": "eo-micro",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6928.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.59,
+        "raan_deg": 259.42,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.1,
+        0.2,
+        -0.15
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.001,
+        -0.001,
+        0.0005
+      ],
+      "enable_drag": true,
+      "drag_coeff": 2.2,
+      "drag_area_m2": 0.8,
+      "enable_srp": true,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.5,
+      "facets": [
+        {
+          "name": "bus +x",
+          "area_m2": 0.8,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -x",
+          "area_m2": 0.8,
+          "normal_b": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            -0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            -0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "array front",
+          "area_m2": 1.0,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.16,
+          "diffuse_coeff": 0.16
+        },
+        {
+          "name": "array back",
+          "area_m2": 1.0,
+          "normal_b": [
+            -1.0,
+            -0.0,
+            -0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.0,
+          "diffuse_coeff": 0.56
+        }
+      ],
+      "enable_gravity_gradient": false,
+      "sensors": [
+        {
+          "kind": "star_tracker",
+          "name": "st-1",
+          "params": {
+            "noise_arcsec": 5.0
+          }
+        },
+        {
+          "kind": "imu",
+          "name": "imu-1",
+          "params": {
+            "gyro_noise_rad_s": 1e-05
+          }
+        },
+        {
+          "kind": "coarse_sun_sensor",
+          "name": "css-1",
+          "params": {
+            "nHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "actuators": [
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-x",
+          "params": {
+            "gsHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-y",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-z",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-x",
+          "params": {
+            "gtHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-y",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-z",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        }
+      ],
+      "fsw_mode": "hillPoint",
+      "fsw_params": {},
+      "control_params": {
+        "K": 1.0,
+        "P": 8.0
+      },
+      "power": {
+        "panel_area_m2": 1.0,
+        "panel_efficiency": 0.29,
+        "panel_normal_b": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "bus_idle_power_w": 60.0,
+        "battery_capacity_wh": 300.0,
+        "battery_initial_soc": 0.9
+      },
+      "rf_link": {
+        "tx_power_w": 2.0,
+        "frequency_hz": 2200000000.0,
+        "data_rate_bps": 5000000.0,
+        "tx_antenna_gain_dbi": 6.0,
+        "implementation_loss_db": 2.0,
+        "required_ebno_db": 10.0,
+        "antenna_beamwidth_deg": null,
+        "antenna_pattern": "cosine",
+        "antenna_gain_table": [],
+        "antenna_front_to_back_db": 15.0,
+        "antenna_boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "comms_pointing": null,
+      "data_handling": {
+        "storage_capacity_gbit": 3.0,
+        "instruments": [
+          {
+            "name": "camera",
+            "data_rate_bps": 40000000.0,
+            "power_w": 25.0,
+            "initial_data_gbit": 0.0
+          },
+          {
+            "name": "housekeeping",
+            "data_rate_bps": 4000.0,
+            "power_w": 0.0,
+            "initial_data_gbit": 0.0
+          }
+        ],
+        "transmitter_power_w": 12.0
+      },
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": {
+        "wheel_speed_biases_rad_s": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "c_gain": 0.003
+      },
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    }
+  ],
+  "ground_stations": [
+    {
+      "name": "svalbard-gs",
+      "latitude_deg": 78.23,
+      "longitude_deg": 15.41,
+      "altitude_m": 480.0,
+      "min_elevation_deg": 5.0,
+      "rx_antenna_gain_dbi": 35.0,
+      "system_noise_temp_k": 150.0
+    },
+    {
+      "name": "berlin-gs",
+      "latitude_deg": 52.52,
+      "longitude_deg": 13.405,
+      "altitude_m": 34.0,
+      "min_elevation_deg": 10.0,
+      "rx_antenna_gain_dbi": 35.0,
+      "system_noise_temp_k": 150.0
+    },
+    {
+      "name": "santiago-gs",
+      "latitude_deg": -33.45,
+      "longitude_deg": -70.66,
+      "altitude_m": 570.0,
+      "min_elevation_deg": 10.0,
+      "rx_antenna_gain_dbi": 35.0,
+      "system_noise_temp_k": 150.0
+    }
+  ],
+  "space_weather": {
+    "source": "bundled",
+    "local_file_path": null,
+    "cache_dir": null,
+    "atmosphere_model": "nrlmsise00",
+    "forecast_percentile": 50.0,
+    "msfc_file_path": null
+  },
+  "sim_settings": {
+    "duration_days": 7.0,
+    "dynamics_task_rate_s": 1.0,
+    "integrator": "rkf78",
+    "record_interval_s": 10.0,
+    "seed": 0
+  },
+  "monte_carlo": {
+    "enabled": false,
+    "num_runs": 10,
+    "thread_count": 1,
+    "verbose": false,
+    "dispersions": []
+  },
+  "mission_sequence": [],
+  "fsw_exports": [],
+  "description": "A week of operations for the 150 kg imager: twenty targets around the world, stations at 78 N, 52 N and 33 S, a daily star-tracker calibration and 40 min of contacts a day. Run > Plan makes the week's plan in about a minute.\n\nWhat to look at:\n- Run > Plan: about 18 of the 23 images wanted, 7 calibrations and 37 contacts, most over Svalbard.\n- The memory chart climbs to 2.6 of 3 Gbit by the end: the booked contacts cannot empty it.\n- Requests not placed: Rotterdam's second image loses to the passes over Europe; Kilimanjaro and the Danube delta have no lit window within 30 deg off nadir.\n- Fly and verify flies the plan in the simulation and compares it with the plan.\n\nTry changing:\n- The daily contact time (operations, spacecraft, max_contact_s_per_day) to 3600 s.\n- Lose a Svalbard pass (select a contact, Lose this pass) and see what the replan moves.",
+  "schema_version": 4,
+  "operations": {
+    "version": 1,
+    "horizon": {
+      "start_utc": "2030-06-03T08:30:00Z",
+      "end_utc": "2030-06-10T08:30:00Z"
+    },
+    "geometry": {
+      "step_s": 30.0
+    },
+    "scheduler": {
+      "seed": 1,
+      "improvement_iterations": 20
+    },
+    "targets": [
+      {
+        "name": "rotterdam-port",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 51.95,
+        "longitude_deg": 4.14,
+        "acquisitions": 2,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "rhine-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 51.85,
+        "longitude_deg": 4.6,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "alps-glacier",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 46.5,
+        "longitude_deg": 8.0,
+        "acquisitions": 2,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "po-valley",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 45.1,
+        "longitude_deg": 10.0,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "danube-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 45.2,
+        "longitude_deg": 29.5,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "lisbon",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 38.72,
+        "longitude_deg": -9.14,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "madrid",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 40.42,
+        "longitude_deg": -3.7,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "etna",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 37.75,
+        "longitude_deg": 14.99,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "nile-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 31.0,
+        "longitude_deg": 31.0,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "lake-chad",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 13.3,
+        "longitude_deg": 14.1,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "kilimanjaro",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": -3.07,
+        "longitude_deg": 37.35,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "amazon-manaus",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": -3.1,
+        "longitude_deg": -60.0,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "atacama",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": -24.5,
+        "longitude_deg": -69.25,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "patagonia-icefield",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": -49.0,
+        "longitude_deg": -73.3,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "iceland-vatnajokull",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 64.4,
+        "longitude_deg": -16.8,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "greenland-jakobshavn",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 69.2,
+        "longitude_deg": -49.8,
+        "acquisitions": 2,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "aral-sea",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 45.0,
+        "longitude_deg": 59.5,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "ganges-delta",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 22.0,
+        "longitude_deg": 89.0,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "tokyo-bay",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 35.5,
+        "longitude_deg": 139.8,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "mississippi-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 29.2,
+        "longitude_deg": -89.3,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      }
+    ],
+    "activity_types": [
+      {
+        "name": "image",
+        "kind": "acquisition",
+        "pointing": "target",
+        "duration_s": 20.0,
+        "setup_s": 15.0,
+        "boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "instruments": [
+          "camera"
+        ]
+      },
+      {
+        "name": "downlink",
+        "kind": "contact",
+        "pointing": "station",
+        "min_duration_s": 180.0,
+        "setup_s": 30.0,
+        "boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "transmitter": true
+      },
+      {
+        "name": "star cal",
+        "kind": "calibration",
+        "pointing": "inertial",
+        "duration_s": 600.0,
+        "sigma_rn": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "requests": [
+      {
+        "name": "daily-cal",
+        "activity": "star cal",
+        "spacecraft": "eo-micro",
+        "priority": 2,
+        "per": "day"
+      }
+    ],
+    "stations": [
+      {
+        "station": "svalbard-gs",
+        "azimuth_mask": [
+          [
+            0.0,
+            5.0
+          ],
+          [
+            90.0,
+            8.0
+          ],
+          [
+            200.0,
+            12.0
+          ],
+          [
+            300.0,
+            5.0
+          ]
+        ],
+        "setup_s": 120.0
+      },
+      {
+        "station": "berlin-gs",
+        "setup_s": 120.0
+      },
+      {
+        "station": "santiago-gs",
+        "azimuth_mask": [
+          [
+            0.0,
+            10.0
+          ],
+          [
+            45.0,
+            20.0
+          ],
+          [
+            135.0,
+            10.0
+          ]
+        ],
+        "setup_s": 120.0
+      }
+    ],
+    "spacecraft": [
+      {
+        "spacecraft": "eo-micro",
+        "contact_activity": "downlink",
+        "min_soc": 0.4,
+        "max_activities_per_orbit": 4,
+        "max_contact_s_per_day": 2400.0
+      }
+    ]
+  }
+}

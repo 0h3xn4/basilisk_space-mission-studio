@@ -95,11 +95,12 @@ def test_the_controller_model_matches_the_linear_pd_response():
 
 def test_the_slew_model_of_the_template_spacecraft():
     """The 150 kg template flies MRP feedback with wheels: its gains, the
-    wheels' 0.05 N*m and 6 N*m*s, the 5 deg convergence threshold."""
+    wheels' 0.05 N*m and 6 N*m*s, settled to half the 5 deg convergence
+    threshold the verification checks (decision O-25)."""
     scenario = fixtures.scenario()
     model = attitude.slew_model(scenario.spacecraft[0], scenario.operations.planned("eo-sat").agility, scenario)
-    assert "0.05 N*m" in model.description and "settled within 5 deg" in model.description
-    assert 30.0 < model.time_s(30.0) < 120.0 and model.time_s(3.0) == 0.0
+    assert "0.05 N*m" in model.description and "settled within 2.5 deg" in model.description
+    assert 30.0 < model.time_s(30.0) < 120.0 and model.time_s(2.0) == 0.0 and model.time_s(3.0) > 0.0
     assert attitude.wheel_limits(scenario.spacecraft[0]) == (pytest.approx(0.05), pytest.approx(6.0))
 
 

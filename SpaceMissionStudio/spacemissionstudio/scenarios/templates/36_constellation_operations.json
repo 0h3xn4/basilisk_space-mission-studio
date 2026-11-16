@@ -1,0 +1,1418 @@
+{
+  "name": "36 - Operations: three imagers sharing two stations",
+  "epoch_utc": "2030-06-03T08:30:00",
+  "simulation_mode": "full_attitude",
+  "gravity": {
+    "central_body": "earth",
+    "central_body_degree": 10,
+    "third_body_perturbers": [
+      "sun",
+      "moon"
+    ],
+    "polyhedral_gravity": false,
+    "albedo": false
+  },
+  "spacecraft": [
+    {
+      "name": "eo-a",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6928.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.59,
+        "raan_deg": 259.42,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.1,
+        0.2,
+        -0.15
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.001,
+        -0.001,
+        0.0005
+      ],
+      "enable_drag": true,
+      "drag_coeff": 2.2,
+      "drag_area_m2": 0.8,
+      "enable_srp": true,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.5,
+      "facets": [
+        {
+          "name": "bus +x",
+          "area_m2": 0.8,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -x",
+          "area_m2": 0.8,
+          "normal_b": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            -0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            -0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "array front",
+          "area_m2": 1.0,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.16,
+          "diffuse_coeff": 0.16
+        },
+        {
+          "name": "array back",
+          "area_m2": 1.0,
+          "normal_b": [
+            -1.0,
+            -0.0,
+            -0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.0,
+          "diffuse_coeff": 0.56
+        }
+      ],
+      "enable_gravity_gradient": false,
+      "sensors": [
+        {
+          "kind": "star_tracker",
+          "name": "st-1",
+          "params": {
+            "noise_arcsec": 5.0
+          }
+        },
+        {
+          "kind": "imu",
+          "name": "imu-1",
+          "params": {
+            "gyro_noise_rad_s": 1e-05
+          }
+        },
+        {
+          "kind": "coarse_sun_sensor",
+          "name": "css-1",
+          "params": {
+            "nHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "actuators": [
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-x",
+          "params": {
+            "gsHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-y",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-z",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-x",
+          "params": {
+            "gtHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-y",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-z",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        }
+      ],
+      "fsw_mode": "hillPoint",
+      "fsw_params": {},
+      "control_params": {
+        "K": 1.0,
+        "P": 8.0
+      },
+      "power": {
+        "panel_area_m2": 1.0,
+        "panel_efficiency": 0.29,
+        "panel_normal_b": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "bus_idle_power_w": 60.0,
+        "battery_capacity_wh": 300.0,
+        "battery_initial_soc": 0.9
+      },
+      "rf_link": {
+        "tx_power_w": 2.0,
+        "frequency_hz": 2200000000.0,
+        "data_rate_bps": 5000000.0,
+        "tx_antenna_gain_dbi": 6.0,
+        "implementation_loss_db": 2.0,
+        "required_ebno_db": 10.0,
+        "antenna_beamwidth_deg": null,
+        "antenna_pattern": "cosine",
+        "antenna_gain_table": [],
+        "antenna_front_to_back_db": 15.0,
+        "antenna_boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "comms_pointing": null,
+      "data_handling": {
+        "storage_capacity_gbit": 3.0,
+        "instruments": [
+          {
+            "name": "camera",
+            "data_rate_bps": 40000000.0,
+            "power_w": 25.0,
+            "initial_data_gbit": 0.0
+          },
+          {
+            "name": "housekeeping",
+            "data_rate_bps": 4000.0,
+            "power_w": 0.0,
+            "initial_data_gbit": 0.0
+          }
+        ],
+        "transmitter_power_w": 12.0
+      },
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": {
+        "wheel_speed_biases_rad_s": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "c_gain": 0.003
+      },
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    },
+    {
+      "name": "eo-b",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6928.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.59,
+        "raan_deg": 289.42,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.1,
+        0.2,
+        -0.15
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.001,
+        -0.001,
+        0.0005
+      ],
+      "enable_drag": true,
+      "drag_coeff": 2.2,
+      "drag_area_m2": 0.8,
+      "enable_srp": true,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.5,
+      "facets": [
+        {
+          "name": "bus +x",
+          "area_m2": 0.8,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -x",
+          "area_m2": 0.8,
+          "normal_b": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            -0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            -0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "array front",
+          "area_m2": 1.0,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.16,
+          "diffuse_coeff": 0.16
+        },
+        {
+          "name": "array back",
+          "area_m2": 1.0,
+          "normal_b": [
+            -1.0,
+            -0.0,
+            -0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.0,
+          "diffuse_coeff": 0.56
+        }
+      ],
+      "enable_gravity_gradient": false,
+      "sensors": [
+        {
+          "kind": "star_tracker",
+          "name": "st-1",
+          "params": {
+            "noise_arcsec": 5.0
+          }
+        },
+        {
+          "kind": "imu",
+          "name": "imu-1",
+          "params": {
+            "gyro_noise_rad_s": 1e-05
+          }
+        },
+        {
+          "kind": "coarse_sun_sensor",
+          "name": "css-1",
+          "params": {
+            "nHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "actuators": [
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-x",
+          "params": {
+            "gsHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-y",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-z",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-x",
+          "params": {
+            "gtHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-y",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-z",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        }
+      ],
+      "fsw_mode": "hillPoint",
+      "fsw_params": {},
+      "control_params": {
+        "K": 1.0,
+        "P": 8.0
+      },
+      "power": {
+        "panel_area_m2": 1.0,
+        "panel_efficiency": 0.29,
+        "panel_normal_b": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "bus_idle_power_w": 60.0,
+        "battery_capacity_wh": 300.0,
+        "battery_initial_soc": 0.9
+      },
+      "rf_link": {
+        "tx_power_w": 2.0,
+        "frequency_hz": 2200000000.0,
+        "data_rate_bps": 5000000.0,
+        "tx_antenna_gain_dbi": 6.0,
+        "implementation_loss_db": 2.0,
+        "required_ebno_db": 10.0,
+        "antenna_beamwidth_deg": null,
+        "antenna_pattern": "cosine",
+        "antenna_gain_table": [],
+        "antenna_front_to_back_db": 15.0,
+        "antenna_boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "comms_pointing": null,
+      "data_handling": {
+        "storage_capacity_gbit": 3.0,
+        "instruments": [
+          {
+            "name": "camera",
+            "data_rate_bps": 40000000.0,
+            "power_w": 25.0,
+            "initial_data_gbit": 0.0
+          },
+          {
+            "name": "housekeeping",
+            "data_rate_bps": 4000.0,
+            "power_w": 0.0,
+            "initial_data_gbit": 0.0
+          }
+        ],
+        "transmitter_power_w": 12.0
+      },
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": {
+        "wheel_speed_biases_rad_s": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "c_gain": 0.003
+      },
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    },
+    {
+      "name": "eo-c",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6928.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.59,
+        "raan_deg": 319.42,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.1,
+        0.2,
+        -0.15
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.001,
+        -0.001,
+        0.0005
+      ],
+      "enable_drag": true,
+      "drag_coeff": 2.2,
+      "drag_area_m2": 0.8,
+      "enable_srp": true,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.5,
+      "facets": [
+        {
+          "name": "bus +x",
+          "area_m2": 0.8,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -x",
+          "area_m2": 0.8,
+          "normal_b": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            -0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            -0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus +z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "bus -z",
+          "area_m2": 0.64,
+          "normal_b": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.336,
+          "diffuse_coeff": 0.139
+        },
+        {
+          "name": "array front",
+          "area_m2": 1.0,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.16,
+          "diffuse_coeff": 0.16
+        },
+        {
+          "name": "array back",
+          "area_m2": 1.0,
+          "normal_b": [
+            -1.0,
+            -0.0,
+            -0.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.0,
+          "diffuse_coeff": 0.56
+        }
+      ],
+      "enable_gravity_gradient": false,
+      "sensors": [
+        {
+          "kind": "star_tracker",
+          "name": "st-1",
+          "params": {
+            "noise_arcsec": 5.0
+          }
+        },
+        {
+          "kind": "imu",
+          "name": "imu-1",
+          "params": {
+            "gyro_noise_rad_s": 1e-05
+          }
+        },
+        {
+          "kind": "coarse_sun_sensor",
+          "name": "css-1",
+          "params": {
+            "nHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "actuators": [
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-x",
+          "params": {
+            "gsHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-y",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-z",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-x",
+          "params": {
+            "gtHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-y",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-z",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        }
+      ],
+      "fsw_mode": "hillPoint",
+      "fsw_params": {},
+      "control_params": {
+        "K": 1.0,
+        "P": 8.0
+      },
+      "power": {
+        "panel_area_m2": 1.0,
+        "panel_efficiency": 0.29,
+        "panel_normal_b": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "bus_idle_power_w": 60.0,
+        "battery_capacity_wh": 300.0,
+        "battery_initial_soc": 0.9
+      },
+      "rf_link": {
+        "tx_power_w": 2.0,
+        "frequency_hz": 2200000000.0,
+        "data_rate_bps": 5000000.0,
+        "tx_antenna_gain_dbi": 6.0,
+        "implementation_loss_db": 2.0,
+        "required_ebno_db": 10.0,
+        "antenna_beamwidth_deg": null,
+        "antenna_pattern": "cosine",
+        "antenna_gain_table": [],
+        "antenna_front_to_back_db": 15.0,
+        "antenna_boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ]
+      },
+      "comms_pointing": null,
+      "data_handling": {
+        "storage_capacity_gbit": 3.0,
+        "instruments": [
+          {
+            "name": "camera",
+            "data_rate_bps": 40000000.0,
+            "power_w": 25.0,
+            "initial_data_gbit": 0.0
+          },
+          {
+            "name": "housekeeping",
+            "data_rate_bps": 4000.0,
+            "power_w": 0.0,
+            "initial_data_gbit": 0.0
+          }
+        ],
+        "transmitter_power_w": 12.0
+      },
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": {
+        "wheel_speed_biases_rad_s": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "c_gain": 0.003
+      },
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    }
+  ],
+  "ground_stations": [
+    {
+      "name": "svalbard-gs",
+      "latitude_deg": 78.23,
+      "longitude_deg": 15.41,
+      "altitude_m": 480.0,
+      "min_elevation_deg": 5.0,
+      "rx_antenna_gain_dbi": 35.0,
+      "system_noise_temp_k": 150.0
+    },
+    {
+      "name": "berlin-gs",
+      "latitude_deg": 52.52,
+      "longitude_deg": 13.405,
+      "altitude_m": 34.0,
+      "min_elevation_deg": 10.0,
+      "rx_antenna_gain_dbi": 35.0,
+      "system_noise_temp_k": 150.0
+    }
+  ],
+  "space_weather": {
+    "source": "bundled",
+    "local_file_path": null,
+    "cache_dir": null,
+    "atmosphere_model": "nrlmsise00",
+    "forecast_percentile": 50.0,
+    "msfc_file_path": null
+  },
+  "sim_settings": {
+    "duration_days": 2.0,
+    "dynamics_task_rate_s": 1.0,
+    "integrator": "rkf78",
+    "record_interval_s": 10.0,
+    "seed": 0
+  },
+  "monte_carlo": {
+    "enabled": false,
+    "num_runs": 10,
+    "thread_count": 1,
+    "verbose": false,
+    "dispersions": []
+  },
+  "mission_sequence": [],
+  "fsw_exports": [],
+  "description": "Three of template 35's imagers in Sun-synchronous planes 30 deg apart, reaching the pole together, sharing a Svalbard and a Berlin station that serve one spacecraft at a time, for two days. Any of them may take a target.\n\nWhat to look at:\n- Run > Plan: 33 passes are wanted by two or three spacecraft; each spacecraft gets 11 contacts.\n- The station rows of the chart: whose contact each pass holds.\n- Requests not placed: passes lost to a busy station, and the European targets that conflict with contacts.\n\nTry changing:\n- One spacecraft's contact priority to 1 and the others' to 2: it takes the contested passes.\n- The stations' capacity to 2: two spacecraft at a time.",
+  "schema_version": 4,
+  "operations": {
+    "version": 1,
+    "horizon": {
+      "start_utc": "2030-06-03T08:30:00Z",
+      "end_utc": "2030-06-05T08:30:00Z"
+    },
+    "geometry": {
+      "step_s": 30.0
+    },
+    "scheduler": {
+      "seed": 1,
+      "improvement_iterations": 10
+    },
+    "targets": [
+      {
+        "name": "rotterdam-port",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 51.95,
+        "longitude_deg": 4.14,
+        "acquisitions": 2,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "rhine-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 51.85,
+        "longitude_deg": 4.6,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "alps-glacier",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 46.5,
+        "longitude_deg": 8.0,
+        "acquisitions": 2,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "po-valley",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 45.1,
+        "longitude_deg": 10.0,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "danube-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 45.2,
+        "longitude_deg": 29.5,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "lisbon",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 38.72,
+        "longitude_deg": -9.14,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "madrid",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 40.42,
+        "longitude_deg": -3.7,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "etna",
+        "priority": 1,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 37.75,
+        "longitude_deg": 14.99,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "nile-delta",
+        "priority": 2,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 31.0,
+        "longitude_deg": 31.0,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      },
+      {
+        "name": "lake-chad",
+        "priority": 3,
+        "activity": "image",
+        "max_off_nadir_deg": 30.0,
+        "latitude_deg": 13.3,
+        "longitude_deg": 14.1,
+        "sun_elevation_deg": [
+          15.0,
+          90.0
+        ]
+      }
+    ],
+    "activity_types": [
+      {
+        "name": "image",
+        "kind": "acquisition",
+        "pointing": "target",
+        "duration_s": 20.0,
+        "setup_s": 15.0,
+        "boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "instruments": [
+          "camera"
+        ]
+      },
+      {
+        "name": "downlink",
+        "kind": "contact",
+        "pointing": "station",
+        "min_duration_s": 180.0,
+        "setup_s": 30.0,
+        "boresight_b": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "transmitter": true
+      },
+      {
+        "name": "star cal",
+        "kind": "calibration",
+        "pointing": "inertial",
+        "duration_s": 600.0,
+        "sigma_rn": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "stations": [
+      {
+        "station": "svalbard-gs",
+        "azimuth_mask": [
+          [
+            0.0,
+            5.0
+          ],
+          [
+            90.0,
+            8.0
+          ],
+          [
+            200.0,
+            12.0
+          ],
+          [
+            300.0,
+            5.0
+          ]
+        ],
+        "setup_s": 120.0
+      },
+      {
+        "station": "berlin-gs",
+        "setup_s": 120.0
+      }
+    ],
+    "spacecraft": [
+      {
+        "spacecraft": "eo-a",
+        "contact_activity": "downlink",
+        "min_soc": 0.4,
+        "max_activities_per_orbit": 4,
+        "max_contact_s_per_day": 2400.0
+      },
+      {
+        "spacecraft": "eo-b",
+        "contact_activity": "downlink",
+        "min_soc": 0.4,
+        "max_activities_per_orbit": 4,
+        "max_contact_s_per_day": 2400.0
+      },
+      {
+        "spacecraft": "eo-c",
+        "contact_activity": "downlink",
+        "min_soc": 0.4,
+        "max_activities_per_orbit": 4,
+        "max_contact_s_per_day": 2400.0
+      }
+    ]
+  }
+}

@@ -116,7 +116,9 @@ class Plan:
     unscheduled: list = field(default_factory=list)  # list[Unscheduled]
     score: dict = field(default_factory=dict)
     provenance: dict = field(default_factory=dict)
-    resources: dict = field(default_factory=dict)  # spacecraft -> {"time_s", "soc", "memory_bit", ...} (decimated)
+    # spacecraft -> {"time_s", "soc", "memory_bit", ...} (decimated); each value is the state at its time_s,
+    # the end of the planner's step it closes
+    resources: dict = field(default_factory=dict)
     contention: list = field(default_factory=list)  # contested passes and who got them
     notes: list = field(default_factory=list)
 

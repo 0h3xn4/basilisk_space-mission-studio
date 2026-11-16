@@ -37,7 +37,7 @@ pytestmark = pytest.mark.requires_basilisk
 # About a minute or more each here (their budgets solve the re-entry), so
 # "slow" as the repository marks such tests; CI runs them.
 _SLOW = {"03_geo_station_keeping", "05_formation_flying_phasing", "24_formation_mean_element_control",
-         "29_roe_formation_helix"}
+         "29_roe_formation_helix", "35_eo_operations_week", "36_constellation_operations"}  # 35, 36: the plans
 
 
 @pytest.mark.parametrize("path", [pytest.param(p, marks=pytest.mark.slow) if p.stem in _SLOW else p

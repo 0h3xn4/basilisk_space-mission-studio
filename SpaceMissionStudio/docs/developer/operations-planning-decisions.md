@@ -265,3 +265,29 @@ mode, state of charge, memory, activities done) is the plan's dashboard.
 **Alternatives:** feed the flown run to Results like a normal run.
 **Why:** a run from Run is reproducible from the scenario alone; a flown
 plan also needs the plan file, so it is kept apart from the run history.
+
+## O-25 The planner's slews settle to half the verification threshold (2026-11-16)
+
+**Found:** flying template 35, the slews of the one-axis model (MRP PD on
+the largest principal inertia, settled to `results.pointing_converged_deg`,
+5 deg) left the flown attitude 0.7 to 0.9 deg beyond 5 deg at the start of
+two activities: the model ignores the three-axis coupling and a target
+that moves during the slew. **Chosen:** the model settles to half the
+threshold (2.5 deg); the verification still checks 5 deg. Measured on the
+same six hours: every activity starts 1.0 to 3.1 deg off. **Alternatives:**
+a longer setup in each template (moves the problem to the user); a
+three-axis simulation per slew (seconds per candidate). **Why:** a margin
+in the planner is what operations practice keeps; it costs about 20 s per
+slew.
+
+## O-26 Resource profiles are labelled at the end of each step (2026-11-16)
+
+**Found:** each profile value is the state after the step [t_k, t_k +
+step) (the energy and memory are sums over the step), but the plan file
+labelled it t_k: with a 30 s step and a 40 Mbit/s camera the planned
+memory led the flown one by half an image. The verification also
+compared every planned sample, after the end of a shorter flight too.
+**Chosen:** `resources.time_s` is t_k + step; the verification compares
+only where the run flew. Measured on template 35's first six hours: the
+memory agrees within 0.09 % of the capacity, the state of charge within
+1.6 points.

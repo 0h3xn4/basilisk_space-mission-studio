@@ -68,7 +68,7 @@ def test_every_template_has_a_card_with_its_type_orbit_and_first_sentence(home):
     from spacemissionstudio.schema import load_scenario
 
     files = sorted(_TEMPLATES.glob("*.json"))
-    assert len(files) == 34
+    assert len(files) == 36
     assert [card.path for card in home.cards] == files
     for card, path in zip(home.cards, files):
         scenario = load_scenario(path)
@@ -123,11 +123,11 @@ def test_the_filter_narrows_the_cards_and_says_how_many(home, qtbot):
     home.filter_edit.setText("monte carlo")
     shown = home.grid.visible_cards()
     assert {card.name[:2] for card in shown} == {"09", "25", "34"}
-    assert home.templates_count.text() == "3 of 34"
+    assert home.templates_count.text() == "3 of 36"
     home.filter_edit.setText("no such template anywhere")
     assert home.grid.visible_cards() == [] and home.grid.empty_label.isVisible()
     home.filter_edit.clear()
-    assert len(home.grid.visible_cards()) == 34 and home.templates_count.text() == "34"
+    assert len(home.grid.visible_cards()) == 36 and home.templates_count.text() == "36"
 
 
 def test_the_cards_fill_the_width_in_columns(home, qtbot):

@@ -913,7 +913,8 @@ class Scheduler:
                     notes.append(f"{name}: activity {activity.id} has no time for its slew in the final plan")
             profile = state.model.evaluate(mine, timeline)
             keep = slice(None, None, max(1, int(round(60.0 / self.step))))
-            resources[name] = {"time_s": profile.time_s[keep].tolist(), "soc": profile.soc[keep].tolist(),
+            # each value is the state at the end of its step [t_k, t_k + step): labelled with that time
+            resources[name] = {"time_s": (profile.time_s[keep] + self.step).tolist(), "soc": profile.soc[keep].tolist(),
                                "memory_bit": profile.memory_bit[keep].tolist(), "min_soc": profile.min_soc,
                                "max_memory_bit": profile.max_memory_bit, "lost_bit": profile.lost_bit,
                                "downlinked_bit": profile.downlinked_bit, "capacity_wh": profile.capacity_wh,

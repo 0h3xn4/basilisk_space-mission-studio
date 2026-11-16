@@ -181,6 +181,26 @@ def _equipment(scenario, name: str):
     return next(item for item in scenario.spacecraft[0].model.equipment if item.name == name)
 
 
+def _planned(scenario):
+    """The first planned spacecraft's planning settings (templates 35, 36)."""
+    return scenario.operations.spacecraft[0]
+
+
+def _set_daily_contact(scenario, minutes: float) -> None:
+    for item in scenario.operations.spacecraft:
+        item.max_contact_s_per_day = minutes * 60.0  # [s]
+
+
+def _set_off_nadir(scenario, degrees: float) -> None:
+    for target in scenario.operations.targets:
+        target.max_off_nadir_deg = degrees
+
+
+def _set_capacity(scenario, capacity: float) -> None:
+    for station in scenario.operations.stations:
+        station.capacity = int(capacity)
+
+
 _SAFE_MODE_POWER = "dissipations[avionics].power_w"
 
 
@@ -1859,6 +1879,52 @@ _SPECS: dict[str, TemplateWizardSpec] = {
             ),
             _duration_page("The thermal cases are orbit-periodic: a longer run adds orbits, not accuracy.",
                            SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "35_eo_operations_week.json": TemplateWizardSpec(
+        template_filename="35_eo_operations_week.json",
+        pages=[
+            WizardPageSpec(
+                title="Operations",
+                intro="Run › Plan plans the week with these limits.",
+                fields=[
+                    WizardField(
+                        "Daily contact time", "How long the ground segment books contacts each day.",
+                        lambda s: _planned(s).max_contact_s_per_day / 60.0,
+                        _set_daily_contact,
+                        5.0, 600.0, decimals=0, step=5.0, suffix=" min", hint="More empties the memory",
+                    ),
+                    WizardField(
+                        "Off-nadir limit", "The largest off-nadir angle at which a target may be imaged.",
+                        lambda s: s.operations.targets[0].max_off_nadir_deg,
+                        _set_off_nadir,
+                        5.0, 60.0, decimals=0, step=5.0, suffix=" deg", hint="Larger opens more windows",
+                    ),
+                ],
+            ),
+        ],
+    ),
+    "36_constellation_operations.json": TemplateWizardSpec(
+        template_filename="36_constellation_operations.json",
+        pages=[
+            WizardPageSpec(
+                title="Operations",
+                intro="Run › Plan shares the two stations among the three spacecraft.",
+                fields=[
+                    WizardField(
+                        "Station capacity", "How many spacecraft each station serves at once.",
+                        lambda s: float(s.operations.stations[0].capacity),
+                        _set_capacity,
+                        1.0, 3.0, decimals=0, step=1.0, suffix=" spacecraft", hint="More removes contention",
+                    ),
+                    WizardField(
+                        "Daily contact time", "How long each spacecraft may be in contact each day.",
+                        lambda s: _planned(s).max_contact_s_per_day / 60.0,
+                        _set_daily_contact,
+                        5.0, 600.0, decimals=0, step=5.0, suffix=" min", hint="Per spacecraft",
+                    ),
+                ],
+            ),
         ],
     ),
     "29_roe_formation_helix.json": TemplateWizardSpec(

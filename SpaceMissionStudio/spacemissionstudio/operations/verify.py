@@ -209,24 +209,33 @@ def _contact(row: ActivityCheck, activity, result, name: str) -> None:
         row.downlinked_bit = float(np.interp(activity.end_s, t, data) - np.interp(activity.start_s, t, data))
 
 
+def _within(t_plan: np.ndarray, series) -> np.ndarray:
+    """The planned samples inside the flown series' span."""
+    if series.time_s.size == 0:
+        return np.zeros(len(t_plan), dtype=bool)
+    return (t_plan >= series.time_s[0] - 1e-6) & (t_plan <= series.time_s[-1] + 1e-6)
+
+
 def _resources(plan, result, scenario, name: str, tolerances) -> ResourceCheck:
     check_ = ResourceCheck(name)
     planned = plan.resources[name]
     t_plan = np.asarray(planned["time_s"], dtype=float)
     sc = next(s for s in scenario.spacecraft if s.name == name)
     battery = result.series.get(f"{name}.battery_charge")
-    if battery is not None and sc.power is not None and len(t_plan):
-        flown = np.interp(t_plan, battery.time_s, np.asarray(battery.data, dtype=float)[:, 0]) \
+    if battery is not None and sc.power is not None and _within(t_plan, battery).any():
+        inside = _within(t_plan, battery)  # only where the run flew: a shorter flight is not a difference
+        flown = np.interp(t_plan[inside], battery.time_s, np.asarray(battery.data, dtype=float)[:, 0]) \
             / sc.power.battery_capacity_wh
-        soc = np.asarray(planned["soc"], dtype=float)
+        soc = np.asarray(planned["soc"], dtype=float)[inside]
         check_.soc_max_difference_points = float(np.max(np.abs(flown - soc))) * 100.0
         check_.soc_min_planned, check_.soc_min_flown = float(np.min(soc)), float(np.min(flown))
         if check_.soc_max_difference_points > tolerances.soc_points:
             check_.flags.append(f"state of charge differs by {check_.soc_max_difference_points:.1f} points")
     stored = result.series.get(f"{name}.data_handling.stored")
-    if stored is not None and sc.data_handling is not None and len(t_plan):
-        flown = np.interp(t_plan, stored.time_s, np.asarray(stored.data, dtype=float)[:, 0])
-        memory = np.asarray(planned["memory_bit"], dtype=float)
+    if stored is not None and sc.data_handling is not None and _within(t_plan, stored).any():
+        inside = _within(t_plan, stored)
+        flown = np.interp(t_plan[inside], stored.time_s, np.asarray(stored.data, dtype=float)[:, 0])
+        memory = np.asarray(planned["memory_bit"], dtype=float)[inside]
         capacity = sc.data_handling.storage_capacity_gbit * 1e9
         check_.memory_max_difference_fraction = float(np.max(np.abs(flown - memory))) / capacity
         check_.memory_max_planned_bit, check_.memory_max_flown_bit = float(np.max(memory)), float(np.max(flown))

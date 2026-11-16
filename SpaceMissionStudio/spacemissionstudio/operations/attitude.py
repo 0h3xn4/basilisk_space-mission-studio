@@ -210,6 +210,13 @@ def wheel_limits(sc) -> tuple[float | None, float | None]:
     return (torque if math.isfinite(torque) else None), (momentum if math.isfinite(momentum) else None)
 
 
+#: The planner's slews settle to this fraction of the convergence threshold
+#: the verification checks (decision O-25): the one-axis model ignores the
+#: three-axis coupling and a moving target, which left flown slews 0.7 to
+#: 0.9 deg beyond the threshold at the activity's start (template 35).
+_SETTLE_FRACTION = 0.5
+
+
 def slew_model(sc, agility, scenario=None) -> SlewModel:
     """The :class:`SlewModel` of a spacecraft's planning ``agility``."""
     if agility.source == "limits":
@@ -224,5 +231,5 @@ def slew_model(sc, agility, scenario=None) -> SlewModel:
     k, p = float(params.get("K", gains["K"])), float(params.get("P", gains["P"]))
     largest = float(np.max(np.linalg.eigvalsh(np.asarray(inertia, dtype=float).reshape(3, 3))))
     torque, momentum = wheel_limits(sc)
-    settle = float(registry.value("results.pointing_converged_deg", scenario))
+    settle = _SETTLE_FRACTION * float(registry.value("results.pointing_converged_deg", scenario))
     return SlewModel.from_controller(largest, k, p, settle, torque, momentum)
