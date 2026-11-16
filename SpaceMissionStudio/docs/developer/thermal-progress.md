@@ -24,8 +24,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 1 | Schema `thermal` section, validation, references, recording | done |
 | 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | done |
 | 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | done |
-| 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | next |
-| 5 | Cases, presets, overrides | |
+| 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | done |
+| 5 | Cases, presets, overrides | next |
 | 6 | Checks and the shadowing warning | |
 | 7 | Results, series, events, record, CSV | |
 | 8 | `api.thermal`, CLI `thermal` | |
@@ -74,9 +74,18 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   normal); `tests/thermal_fixtures.py` (a synthetic run),
   `tests/test_thermal_environment.py`.
 
+- Step 4: `thermal/network.py` (facet ownership and optics resolution,
+  MLI scaling, capacitances with their sources, conductors, heat pipes,
+  links, dissipations from the power budget, heaters),
+  `thermal/solver.py` (BDF2 + Newton, steady state, orbit-periodic start
+  carrying the step history, energy balance, step check, heater sizing);
+  `tests/test_thermal_solver.py` (plate, faceted sphere, conductor, heat
+  pipe, MLI, energy balance, periodic start against a cold transient,
+  sizing against E T^4, step check).
+
 ## Next
 
-Step 4.
+Step 5.
 
 ## Known issues
 

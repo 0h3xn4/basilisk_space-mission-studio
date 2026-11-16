@@ -68,15 +68,22 @@ albedo) term there. **Why:** curved parts and meshes get their true
 distribution; a coating change does not recompute fluxes; self-shadowing
 can be added without rework.
 
-## T-07 Backward Euler with Newton (2026-11-16)
+## T-07 BDF2 with Newton (2026-11-16)
 
-**Chosen:** implicit Euler, Newton on the full network, dense Jacobian;
-step independent of the recording; a step check comparing the step with
-half the step. **Alternatives:** Crank-Nicolson (second order, but rings
-on stiff heat pipes and heater switching), explicit RK (step limited by
-the smallest capacitance), scipy's BDF (new dependency). **Why:** stable
-for any step, simple, numpy only; the step check shows when the step is
-too long.
+**Chosen:** second-order backward differentiation (variable step; the
+first step backward Euler, and continued across orbits of the periodic
+start), Newton on the full network, dense Jacobian; step independent of
+the recording; a step check comparing the step with half the step.
+**Alternatives:** backward Euler (tried first: first order, 0.28 K off
+on a 20 s step in the step-check test against 0.12 K now);
+Crank-Nicolson (second order, but not L-stable: rings on stiff heat
+pipes and heater switching); explicit RK (step limited by the smallest
+capacitance); scipy's BDF (new dependency). **Why:** A-stable for any
+step, second order, numpy only; the step check shows when the step is
+too long. The energy balance is the heat stored against the
+trapezoidal integral of the net heat in: its residual is the
+integration's (2.9e-4 of the throughput on a 30 s step in the test,
+smaller with a smaller step), reported with every solve.
 
 ## T-08 Heat pipes switch on the start-of-step state (2026-11-16)
 

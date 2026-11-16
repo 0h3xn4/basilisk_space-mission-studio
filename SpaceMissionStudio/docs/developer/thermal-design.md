@@ -337,8 +337,9 @@ For node i with capacitance `C_i`:
 
 ### 2.7 Solver
 
-Backward Euler with Newton's method on the full network (dense `n x n`
-Jacobian, tens of nodes): unconditionally stable for the stiff `T^4` and
+BDF2 (second-order backward differentiation, variable step, its first
+step backward Euler) with Newton's method on the full network (dense
+`n x n` Jacobian, tens of nodes): A-stable for the stiff `T^4` and
 heat-pipe terms. The step `time_step_s` is independent of the recording
 interval; fluxes are interpolated linearly between recorded samples. The
 solver runs the step and half the step and reports the largest
@@ -356,8 +357,8 @@ Initial conditions (`solver.start`):
 
 The result does not depend on a starting temperature unless the user
 asks for `fixed`. An energy balance closes every solve:
-`sum(C dT) - integral(sum Q) dt` over the window, reported in J and as a
-fraction of the throughput.
+`sum(C dT)` against the trapezoidal `integral(sum Q) dt` over the window,
+reported in J and as a fraction of the throughput.
 
 ### 2.8 Case sets
 
