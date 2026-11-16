@@ -1,0 +1,4 @@
+# SpaceMissionStudio's C sources are templates of the flight software it
+# exports and keep their own layout: the repository's clang-format hook
+# (upstream Basilisk's style) leaves them as they are.
+DisableFormat: true

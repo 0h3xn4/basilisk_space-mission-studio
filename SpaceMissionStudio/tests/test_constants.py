@@ -19,6 +19,7 @@
 plan Phase 3c): Basilisk's own values, and the only ones the analyses use."""
 
 import math
+import re
 from pathlib import Path
 
 import pytest
@@ -60,8 +61,12 @@ def test_the_c_header_defines_what_the_python_binding_rounds():
     if not header.exists():
         pytest.skip("Basilisk's sources are not next to SpaceMissionStudio")
     text = header.read_text(encoding="utf-8")
-    assert "#define SOLAR_FLUX_EARTH    1361.0" in text and constants.SOLAR_FLUX_1AU_W_M2 == 1361.0
-    assert "#define EARTH_GRAV 9.80665" in text and constants.STANDARD_GRAVITY_M_S2 == 9.80665
+
+    def defined(name: str) -> float:  # the value, whatever the header's spacing (upstream reformats it)
+        return float(re.search(rf"^#define {name}\s+([0-9.eE+-]+)", text, re.MULTILINE).group(1))
+
+    assert defined("SOLAR_FLUX_EARTH") == 1361.0 == constants.SOLAR_FLUX_1AU_W_M2
+    assert defined("EARTH_GRAV") == 9.80665 == constants.STANDARD_GRAVITY_M_S2
 
 
 def test_the_earth_turns_as_spice_turns_it():
