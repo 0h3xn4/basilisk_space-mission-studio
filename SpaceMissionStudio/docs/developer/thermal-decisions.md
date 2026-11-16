@@ -1,0 +1,175 @@
+# Spacecraft thermal analysis: decision log
+
+Every non-trivial choice made while building the thermal analysis, with
+the alternatives and the reason, in place of asking the owner. Design:
+[thermal-design.md](thermal-design.md); progress:
+[thermal-progress.md](thermal-progress.md).
+
+## T-01 Post-processing on a finished run (2026-11-16)
+
+**Chosen:** the thermal solve runs after the run, on its recorded states:
+Run › Thermal, `spacemissionstudio thermal`, `api.thermal`, one engine.
+**Alternatives:** a Basilisk module in the loop (a C++ or Python
+`SysModel`). **Why:** temperatures do not feed back into orbit or
+attitude, so nothing is lost; cases, sweeps and Monte Carlo then cost a
+network solve, not a Basilisk run; it follows End of Life and the model
+analyses. As the brief proposed.
+
+## T-02 The thermal section references the 3D model; optics stored there, model materials as fallback (2026-11-16)
+
+**Chosen:** a `thermal` section per spacecraft (`SpacecraftConfig.thermal`)
+with its own `version` (1). Optical properties are stored in its `faces`
+entries, keyed by (part, face) or by part. When an entry gives neither
+values nor a coating, the face's or part's material in the model is used
+(the existing `model.face_properties` and `ModelPartConfig.material`).
+**Alternatives:** optics on the model's parts and faces (geometry would
+carry thermal concepts, and a case override would edit the model); a
+separate thermal geometry (refused by the brief). **Why:** the owner's
+preference; cases override faces without touching the model; reusing the
+model's materials gives a model that names them optics for free.
+`CURRENT_SCHEMA_VERSION` stays 4 (the section is optional and new); the
+section's own version lets it change without moving the scenario's.
+
+## T-03 Part and face identifiers: no change needed (2026-11-16)
+
+**Found:** parts are identified by their unique name and faces by
+(part, face name), with face names fixed by the shape and its facet count
+(model analyses D-02); renames go through `references.rename_part`.
+Imported meshes' `plane k` faces change with the mesh. **Chosen:** keep
+the identifiers; the thermal model references a mesh part as a whole
+(all its planes in one node, one set of optics), as the model's face
+properties already do. **Alternatives:** stable ids per face (uuids) with
+a migration. **Why:** primitive face names are already stable; a uuid
+per mesh plane would not survive re-importing the mesh either.
+
+## T-04 One node per part by default; thin panels one node (2026-11-16)
+
+**Chosen:** "Generate from model" makes one node per part with mass;
+parts in the surface model are external (their faces, less
+`excluded_faces`), the others internal; a panel's two sides are two
+faces of one node. Equipment point masses are offered as internal nodes.
+The user merges, splits (moving faces to another node) and renames.
+**Why:** the brief.
+
+## T-05 Default specific heat (2026-11-16)
+
+**Chosen:** a node's specific heat is its own, else its parts' material's
+(the library's DAS 3.0 value), else aluminium 6061-T6's from the library,
+and the default is reported in the node's description. **Why:** sourced,
+and the structure of this size class is mostly aluminium.
+
+## T-06 Fluxes per facet, incident, with a place for shading (2026-11-16)
+
+**Chosen:** incident solar, albedo and IR flux per facet and time, before
+absorption; a shading factor per facet and time multiplies the solar (and
+albedo) term there. **Why:** curved parts and meshes get their true
+distribution; a coating change does not recompute fluxes; self-shadowing
+can be added without rework.
+
+## T-07 Backward Euler with Newton (2026-11-16)
+
+**Chosen:** implicit Euler, Newton on the full network, dense Jacobian;
+step independent of the recording; a step check comparing the step with
+half the step. **Alternatives:** Crank-Nicolson (second order, but rings
+on stiff heat pipes and heater switching), explicit RK (step limited by
+the smallest capacitance), scipy's BDF (new dependency). **Why:** stable
+for any step, simple, numpy only; the step check shows when the step is
+too long.
+
+## T-08 Heat pipes switch on the start-of-step state (2026-11-16)
+
+**Chosen:** a heat pipe conducts `G_on` while its hotter end is within
+its operating range, else `G_off`, the state set from the temperatures at
+the start of each step. **Why:** keeps Newton smooth; the error is one
+step at a switch, which the step check measures. Documented as an
+approximation of a heat pipe's transport limit and freeze/dry-out.
+
+## T-09 MLI as an effective emittance through a massless outer layer (2026-11-16)
+
+**Chosen:** a face with MLI keeps its outer layer's optics (alpha_o,
+eps_o) and the effective emittance e*; eliminating the massless layer
+scales the face's optics by `e*/(eps_o + e*)`. **Alternatives:** an
+extra node per blanket (a capacitance the user does not know); e* in
+place of the emissivity alone (ignores the sunlight the blanket absorbs).
+**Why:** exact for a massless blanket, no extra node, and it keeps the
+sunlit blanket's heating.
+
+## T-10 Radiative links are user-given effective areas (2026-11-16)
+
+**Chosen:** `sigma * eA * (T_i^4 - T_j^4)` with `eA` given by the user.
+**Why:** view factors between parts are out of scope (no ray tracing).
+
+## T-11 Dissipation from the power budget names a load (2026-11-16)
+
+**Found:** the power budget has a constant bus load, the comms load, the
+transmitter's power and each instrument's power; no per-unit modes or
+series. **Chosen:** a dissipation is a constant power or names one of
+those loads (`bus`, `comms`, `transmitter`, `instrument:<name>`), whose
+configured power is used. **Why:** that is what the power budget knows.
+
+## T-12 Heaters on start-of-step state; sizing by bisection (2026-11-16)
+
+**Chosen:** thermostats with hysteresis (on below `on_c`, off above
+`off_c`), state from the start of the step. Sizing: the least constant
+power that keeps the node at or above `on_c` over the periodic orbit of
+the case, found by bisection (to 0.1 W) on periodic solves. **Why:**
+direct, and it matches what a designer carries into the power budget.
+
+## T-13 One override mechanism: paths into the thermal section (2026-11-16)
+
+**Chosen:** overrides are `{path: value}` with paths in
+`scenario.resolve_value_path`'s form, rooted at the spacecraft's thermal
+section (`nodes[battery].capacitance_j_k`, `faces[bus:+x].absorptance`,
+`environment.solar_flux_w_m2`). Cases, sweeps, sensitivity and Monte
+Carlo all use it. **Why:** reuses the existing path syntax; one place to
+validate.
+
+## T-16 What the run records for a thermal spacecraft (2026-11-16)
+
+**Chosen:** a spacecraft with a `thermal` section makes the run record
+the central body's and the Sun's positions and the central body's
+orientation (`J20002Pfix`), as the model analyses do for theirs; the
+thermal solve refuses a run without attitude (`attitude_sigma_BN`) with
+a message saying to set an FSW mode or full attitude. **Why:** the fluxes
+need them; recording nothing more for other scenarios keeps every
+existing template's output unchanged.
+
+## T-17 Central bodies: Earth and Mars (2026-11-16)
+
+**Chosen:** Earth (CERES albedo map, NASA guideline albedo and OLR) and
+Mars (TES map; OLR from radiative balance); any other central body is
+refused by validation. **Alternatives:** direct sunlight only for other
+bodies. **Why:** a result without albedo and IR would look complete and
+not be; refusing is clearer.
+
+## T-18 SATMO could not be reached (2026-11-16)
+
+arxiv.org is outside the development environment's network (the proxy
+refuses it; a fetch through another path failed to resolve the host).
+**Chosen:** rely on the analytical checks and on Basilisk's SensorThermal
+and albedo modules as references; the record says so. **Why:** the
+brief's fallback.
+
+## T-19 The TU Delft tool has no licence (2026-11-16)
+
+The repository (github.com/FrankMeijering/ThermalAnalysis) has no LICENSE
+file and no licence in its metadata, so its code is all rights reserved.
+**Chosen:** nothing read from or copied out of its code; only published
+equations (Gilmore, the NASA guideline) are used. Its thesis's finding
+that solar absorptivity is the most sensitive parameter is used only as
+a sanity check of the sensitivity ranking. (The brief asks for ISC
+compatibility; SpaceMissionStudio is EUPL-1.2 since 2.7.0. Nothing is
+copied, so neither applies.)
+
+## T-23 The bus presets have no 3D model (2026-11-16)
+
+**Chosen:** the new template builds a 3D model of the 150 kg bus (bus
+box, two deployed arrays, a radiator panel, internal battery and
+avionics) in its generator; the presets are unchanged. **Why:** changing
+the presets would change templates 23 and 26 and their golden files.
+
+## T-24 Library additions only with a source (2026-11-16)
+
+**Chosen:** new library fields (conductivity, end-of-life optics,
+honeycomb) are filled only where a source is in hand; others stay empty
+and the analysis says so. **Why:** the library's rule and the brief's.
