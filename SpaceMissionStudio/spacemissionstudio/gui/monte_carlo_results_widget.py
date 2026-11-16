@@ -148,7 +148,7 @@ class MonteCarloResultsWidget(QWidget):
         self.spacecraft_combo.blockSignals(False)
         several = has_batch and len(batch.items) > 1
         if has_batch:
-            self.spacecraft_label.setText("Node:" if batch.kind == "thermal" else "Spacecraft:")
+            self.spacecraft_label.setText({"thermal": "Node:", "operations": "Profile:"}.get(batch.kind, "Spacecraft:"))
         self.spacecraft_label.setVisible(several)
         self.spacecraft_combo.setVisible(several)
         if not has_batch:
@@ -165,7 +165,11 @@ class MonteCarloResultsWidget(QWidget):
         note = f" Plots show the first {shown} runs; the spread uses all." if shown < len(batch.runs) else ""
         source = f"saved in {self.folder.name}" if self.folder else "from this session"
         statistic = mcr.spread_model(batch)
-        if batch.kind == "thermal":
+        if batch.kind == "operations":
+            self.hint_label.setText(f"An operations robustness batch on one plan ({days:.3g} days), {source}: every "
+                                    f"draw's profile, and the 1-sigma over the draws ({statistic.title.lower()}); "
+                                    f"the drawn values and the outcomes per draw are in the table.{note}")
+        elif batch.kind == "thermal":
             self.hint_label.setText(f"A thermal Monte Carlo on one run ({days:.3g} days), case {batch.case}, "
                                     f"{source}: every run's temperatures, and the 1-sigma of each node's minimum and "
                                     f"maximum over the runs ({statistic.title.lower()}).{note}")
@@ -195,6 +199,20 @@ class MonteCarloResultsWidget(QWidget):
             return
         spacecraft = self.spacecraft_combo.currentText() or batch.items[0]
         requested = len(batch.runs) + len(batch.failed)
+        if batch.kind == "operations":  # a profile (decision O-18)
+            spread = mcr.node_spread(batch, spacecraft)
+            unit = batch.profile_units.get(spacecraft, "")
+            self._set_tiles([
+                ("Draws", f"{len(batch.runs)} of {requested}"),
+                ("Lowest", f"{spread.coldest_c:.3g} {unit}"),
+                ("Highest", f"{spread.hottest_c:.3g} {unit}"),
+                ("Lowest, 1-sigma", f"{spread.sigma_min_k:.3g} {unit}"),
+            ])
+            self.plots.set_featured_series([f"operations_monte_carlo.{spacecraft}.{field}"
+                                            for field in ("spread", "value")])
+            self.plots.show_series(f"operations_monte_carlo.{spacecraft}.spread")
+            self._fill_table(spacecraft)
+            return
         if batch.kind == "thermal":  # a node (decision T-36)
             spread = mcr.node_spread(batch, spacecraft)
             self._set_tiles([

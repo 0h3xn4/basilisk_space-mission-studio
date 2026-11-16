@@ -950,6 +950,232 @@ def cmd_thermal(args: argparse.Namespace) -> int:
     return 0
 
 
+def _plan_scenario(args: argparse.Namespace):
+    """The scenario of a ``plan`` command, with its overrides; or an exit
+    status."""
+    loaded = _load_hashed(args.scenario)
+    if isinstance(loaded, int):
+        return loaded
+    scenario, file_record = loaded
+    if scenario.operations is None:
+        print("ERROR: the scenario has no 'operations' section to plan from", file=sys.stderr)
+        return 1
+    if getattr(args, "geometry", None):
+        scenario.operations.geometry.source = args.geometry
+    if getattr(args, "seed", None) is not None:
+        scenario.operations.scheduler.seed = args.seed
+    if getattr(args, "iterations", None) is not None:
+        scenario.operations.scheduler.improvement_iterations = args.iterations
+    return scenario, file_record
+
+
+def _plan_result(args, scenario):
+    """A full run first when ``--from-run`` asks for it (the geometry then
+    comes from it), else None; or an exit status."""
+    if not getattr(args, "from_run", False):
+        return None
+    from . import api
+
+    print(f"Running {scenario.name!r} for its geometry...")
+    try:
+        return api.run(scenario)
+    except Exception as exc:  # noqa: BLE001 -- report ANY run failure with a specific message
+        print(f"ERROR: run failed: {exc}", file=sys.stderr)
+        return 3
+
+
+def cmd_plan(args: argparse.Namespace) -> int:
+    """Mission operations planning (operations/): opportunities, a plan,
+    the plan flown and verified, its products."""
+    loaded = _plan_scenario(args)
+    if isinstance(loaded, int):
+        return loaded
+    scenario, file_record = loaded
+    try:
+        from .operations import analysis, exports
+        from .operations.plan import Plan
+    except ImportError as exc:  # pragma: no cover - depends on the install
+        print(f"ERROR: Basilisk is not installed/built ({exc}) -- see SpaceMissionStudio/README.md", file=sys.stderr)
+        return 2
+    result = _plan_result(args, scenario)
+    if isinstance(result, int):
+        return result
+    try:
+        planning = analysis.prepare(scenario, result)
+    except analysis.PlanningError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001 -- the planning propagation is a run
+        print(f"ERROR: the planning geometry could not be built: {exc}", file=sys.stderr)
+        return 3
+    base = planning.timebase
+    found = planning.opportunities
+    if args.action == "opportunities":
+        print(f"{scenario.name}: geometry {planning.geometry.source}, {len(planning.geometry.time_s)} samples every "
+              f"{planning.geometry.step_s:g} s ({planning.seconds['geometry']:.2f} s)")
+        for target in scenario.operations.targets:
+            windows = found.windows_of(target.name)
+            best = min((w.min_off_nadir_deg for w in windows), default=None)
+            print(f"  target {target.name}: {len(windows)} window(s)"
+                  + (f", best off-nadir {best:.1f} deg" if best is not None else ""))
+        for item in found.passes:
+            print(f"  pass {item.station} {item.spacecraft}: AOS {base.text(item.aos_s)}, {item.duration_s / 60:.1f} "
+                  f"min, max elevation {item.max_elevation_deg:.1f} deg")
+        if args.csv is not None:
+            plan = Plan(scenario.epoch_utc, float(planning.geometry.time_s[0]), float(planning.geometry.time_s[-1]))
+            plan.provenance = analysis.provenance(planning)
+            try:
+                path = exports.write_passes_csv(args.csv / "passes.csv", plan, found, base)
+                rows = [[w.target, w.spacecraft, base.text(w.start_s), base.text(w.end_s),
+                         f"{w.end_s - w.start_s:.1f}", f"{w.min_off_nadir_deg:.3f}",
+                         f"{w.at(w.best_s, 'sun_elevation_deg'):.3f}"] for w in found.windows]
+                exports._write_csv(args.csv / "windows.csv", ["target", "spacecraft", "start_utc", "end_utc",
+                                                               "duration_s", "min_off_nadir_deg",
+                                                               "sun_elevation_deg"], rows,
+                                   exports.record(plan, "target windows") | file_record)
+            except OSError as exc:
+                print(f"ERROR: could not write {args.csv}: {exc}", file=sys.stderr)
+                return 3
+            print(f"wrote {path.parent}")
+        return 0
+    if args.action == "schedule":
+        plan = analysis.schedule(planning)
+        plan.provenance.update(file_record)
+        _print_plan(plan)
+        return _write_plan_outputs(args, planning, plan, None)
+    try:
+        plan = Plan.load(args.plan)
+    except (OSError, ValueError, TypeError) as exc:
+        print(f"ERROR: cannot read the plan {args.plan}: {exc}", file=sys.stderr)
+        return 1
+    planning.plan = plan
+    if args.action == "export":
+        return _write_plan_outputs(args, planning, plan, None)
+    if args.action == "replan":
+        from .operations import whatif
+
+        try:
+            moment = args.from_utc
+            replanned = whatif.replan(scenario, plan, moment, planning=planning)
+        except (ValueError, KeyError) as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        new = replanned.plan
+        new.provenance.update(file_record)
+        print(f"replanned from {new.provenance['replanned_from_utc']} with "
+              f"{len(scenario.operations.what_if)} what-if event(s); kept {len(new.provenance['kept'])} activities")
+        _print_plan(new)
+        return _write_plan_outputs(args, replanned, new, None)
+    if args.action == "robustness":
+        from .engine import monte_carlo_results
+        from .operations import robustness
+
+        settings = {"lost_pass_probability": args.lost_pass_probability, "margin_sigma_db": args.margin_sigma_db,
+                    "slew_spread": args.slew_spread, "replan": args.replan}
+        if args.soc_range:
+            settings["soc_range"] = tuple(args.soc_range)
+        draws = robustness.run(planning, plan, args.runs, args.seed, **settings)
+        batch = robustness.to_batch(planning, plan, draws, args.seed, settings)
+        for line in monte_carlo_results.summary_lines(batch):
+            print(line)
+        acquisitions = [d.acquisitions for d in draws]
+        print(f"acquisitions per draw: {min(acquisitions)} to {max(acquisitions)}, mean "
+              f"{sum(acquisitions) / len(acquisitions):.2f}; lowest state of charge "
+              f"{100 * min(d.min_soc for d in draws):.1f} %")
+        if args.out is not None:
+            try:
+                monte_carlo_results.save(batch, args.out)
+            except OSError as exc:
+                print(f"ERROR: could not write {args.out}: {exc}", file=sys.stderr)
+                return 3
+            print(f"wrote the batch to {args.out} (the Monte Carlo view opens it)")
+        return 0
+    if args.action == "compare":
+        from .operations import robustness
+
+        try:
+            other = Plan.load(args.other)
+        except (OSError, ValueError, TypeError) as exc:
+            print(f"ERROR: cannot read the plan {args.other}: {exc}", file=sys.stderr)
+            return 1
+        compared = robustness.compare(plan, other)
+        print(f"score: {compared['score']['a']} against {compared['score']['b']}")
+        for row in compared["spacecraft"]:
+            a, b = row["a"], row["b"]
+            print(f"{row['spacecraft']}: activities {a['activities']} / {b['activities']}, acquisitions "
+                  f"{a['acquisitions']} / {b['acquisitions']}, contact {a['contact_s'] / 60:.1f} / "
+                  f"{b['contact_s'] / 60:.1f} min")
+        for row in compared["only_in_a"]:
+            print(f"only in the first: {row['request']} ({row['spacecraft']})")
+        for row in compared["only_in_b"]:
+            print(f"only in the second: {row['request']} ({row['spacecraft']})")
+        if args.out is not None:
+            import json as _json
+
+            try:
+                args.out.parent.mkdir(parents=True, exist_ok=True)
+                args.out.write_text(_json.dumps(compared, indent=1, default=str) + "\n", encoding="utf-8")
+            except OSError as exc:
+                print(f"ERROR: could not write {args.out}: {exc}", file=sys.stderr)
+                return 3
+            print(f"wrote {args.out}")
+        return 0
+    if args.action == "verify":
+        from .operations import verify
+
+        print(f"Flying the plan ({len(plan.activities)} activities)...")
+        try:
+            flown = analysis.fly(scenario, plan)
+        except Exception as exc:  # noqa: BLE001 -- report ANY run failure with a specific message
+            print(f"ERROR: run failed: {exc}", file=sys.stderr)
+            return 3
+        checked = verify.check(scenario, plan, flown)
+        for line in checked.markdown():
+            print(line)
+        for flag in checked.flags:
+            print(f"FLAG: {flag}")
+        code = _write_plan_outputs(args, planning, plan, checked)
+        if code:
+            return code
+        if args.out is not None:
+            try:
+                verify.write_csv(args.out / "verification.csv", checked, plan.provenance | file_record)
+            except OSError as exc:
+                print(f"ERROR: could not write {args.out}: {exc}", file=sys.stderr)
+                return 3
+        return 1 if checked.flags and args.strict else 0
+    return 2  # pragma: no cover - argparse limits the actions
+
+
+def _print_plan(plan) -> None:
+    for name, resources in plan.resources.items():
+        mine = plan.of(name)
+        print(f"{name}: {len(mine)} activities, lowest state of charge {100 * resources['min_soc']:.1f} %, most "
+              f"memory {resources['max_memory_bit'] / 1e9:.3f} Gbit, lost {resources['lost_bit'] / 1e9:.3f} Gbit")
+    for activity in plan.activities:
+        print(f"  {activity.id} {activity.spacecraft} {activity.type} {activity.start_utc} "
+              f"{activity.duration_s:.0f} s {activity.target or activity.station}")
+    for item in plan.unscheduled:
+        print(f"NOT SCHEDULED: {item.request} ({item.spacecraft}, priority {item.priority}): {item.text}")
+    print(f"score ({plan.score.get('objective')}): {plan.score.get('value')}")
+
+
+def _write_plan_outputs(args, planning, plan, verification) -> int:
+    from .operations import exports
+
+    try:
+        if getattr(args, "plan_out", None) is not None:
+            plan.save(args.plan_out)
+            print(f"wrote {args.plan_out}")
+        if args.out is not None:
+            paths = exports.write_all(args.out, planning, plan, verification)
+            print(f"wrote {len(paths)} file(s) to {args.out}")
+    except OSError as exc:
+        print(f"ERROR: could not write: {exc}", file=sys.stderr)
+        return 3
+    return 0
+
+
 def _thermal_studies(args: argparse.Namespace, done, sc_name: str) -> int:
     """``thermal --sweep / --sensitivity / --monte-carlo`` on the prepared
     fluxes of ``done`` (thermal.sweeps): nothing is rerun in Basilisk."""
@@ -2275,6 +2501,63 @@ def build_parser() -> argparse.ArgumentParser:
                            help="run the thermal model's monte_carlo section and save the batch in DIR (the Monte "
                            "Carlo view opens it)")
     p_thermal.set_defaults(func=cmd_thermal)
+
+    p_plan = subparsers.add_parser("plan", help="mission operations planning: opportunities, a plan, the plan flown "
+                                   "and verified, operations products")
+    plan_actions = p_plan.add_subparsers(dest="action", required=True)
+    for action, text in (("opportunities", "target windows and station passes of the operations section"),
+                         ("schedule", "make a plan (and write it, and its products)"),
+                         ("verify", "fly a plan in the simulation and compare it with the planner"),
+                         ("export", "write a plan's operations products"),
+                         ("replan", "replan from a time, with the scenario's what-if events"),
+                         ("robustness", "a seeded batch of lost passes, link, slew time and battery draws"),
+                         ("compare", "compare two plans")):
+        sub = plan_actions.add_parser(action, help=text)
+        sub.add_argument("scenario", type=Path)
+        if action in ("verify", "export", "replan", "robustness", "compare"):
+            sub.add_argument("plan", type=Path, help="the plan file (JSON)")
+        if action == "compare":
+            sub.add_argument("other", type=Path, help="the second plan file (JSON)")
+        if action == "replan":
+            sub.add_argument("--from", dest="from_utc", required=True, metavar="UTC",
+                             help="replan from this time (ISO 8601 UTC); earlier activities are kept")
+            sub.add_argument("--plan-out", type=Path, metavar="JSON", help="write the new plan file")
+        if action == "robustness":
+            sub.add_argument("--runs", type=int, default=20, help="draws (default 20)")
+            sub.add_argument("--seed", type=int, default=0, help="the batch's seed (default 0)")
+            sub.add_argument("--lost-pass-probability", type=float, default=0.0, metavar="P",
+                             help="each planned contact's pass is lost with this probability")
+            sub.add_argument("--margin-sigma-db", type=float, default=0.0, metavar="DB",
+                             help="sigma of an offset added to every predicted link margin")
+            sub.add_argument("--slew-spread", type=float, default=0.0, metavar="F",
+                             help="every slew takes 1 +- F times as long (uniform)")
+            sub.add_argument("--soc-range", type=float, nargs=2, metavar=("LOW", "HIGH"),
+                             help="initial state of charge drawn uniformly in [LOW, HIGH]")
+            sub.add_argument("--replan", action="store_true", help="replan each draw instead of re-checking the plan")
+            sub.add_argument("--out", type=Path, metavar="DIR", help="save the batch for the Monte Carlo view")
+            sub.set_defaults(func=cmd_plan)
+            continue
+        if action == "compare":
+            sub.add_argument("--out", type=Path, metavar="JSON", help="write the comparison")
+            sub.set_defaults(func=cmd_plan)
+            continue
+        sub.add_argument("--geometry", choices=("propagation", "run", "analytic"),
+                         help="where the trajectory comes from (default: the section's)")
+        sub.add_argument("--from-run", action="store_true",
+                         help="run the scenario first and take the geometry from the run")
+        if action == "opportunities":
+            sub.add_argument("--csv", type=Path, metavar="DIR", help="write the windows and passes as CSV")
+            sub.set_defaults(func=cmd_plan)
+            continue
+        if action == "schedule":
+            sub.add_argument("--seed", type=int, help="the scheduler's seed (default: the section's)")
+            sub.add_argument("--iterations", type=int, help="improvement iterations (default: the section's)")
+            sub.add_argument("--plan-out", type=Path, metavar="JSON", help="write the plan file")
+        if action == "verify":
+            sub.add_argument("--strict", action="store_true", help="exit 1 when anything is flagged")
+        sub.add_argument("--out", type=Path, metavar="DIR", required=action == "export",
+                         help="write the operations products (and the verification) to DIR")
+        sub.set_defaults(func=cmd_plan)
 
     p_reentry = subparsers.add_parser("reentry", help="a preliminary re-entry casualty estimate from the 3D model "
                                       "(DAS-like, simplified)")

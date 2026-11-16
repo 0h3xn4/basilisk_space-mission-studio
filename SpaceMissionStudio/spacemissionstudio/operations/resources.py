@@ -128,6 +128,7 @@ class SpacecraftModel:
         self.always_on = [i for name, i in self.instruments.items() if name not in switched]
         self._sites: dict = {}
         self._equipment: dict | None = None
+        self.margin_offset_db = 0.0  # [dB] added to every predicted link margin (robustness: a degraded link)
 
     # -- directions ------------------------------------------------------
     def site(self, latitude_deg: float, longitude_deg: float, altitude_m: float) -> np.ndarray:
@@ -309,7 +310,7 @@ class SpacecraftModel:
                                                            elevation_deg=float(view.elevation_deg[k])).margin_db
             except (ValueError, ZeroDivisionError):
                 margin = -math.inf
-            if not margin >= required or view.elevation_deg[k] < 0.0:
+            if not margin + self.margin_offset_db >= required or view.elevation_deg[k] < 0.0:
                 share[k] = 0.0
         return share
 

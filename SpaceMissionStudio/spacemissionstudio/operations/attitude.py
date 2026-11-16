@@ -120,8 +120,10 @@ class SlewModel:
         self._times = np.asarray(times_s, dtype=float)
         self.description = description
 
+    scale = 1.0  # [-] robustness: slews that take longer (or shorter) than modelled
+
     def time_s(self, angle: float) -> float:
-        return float(np.interp(min(max(angle, 0.0), 180.0), _SETTLE_GRID_DEG, self._times))
+        return self.scale * float(np.interp(min(max(angle, 0.0), 180.0), _SETTLE_GRID_DEG, self._times))
 
     @classmethod
     def from_limits(cls, max_rate_deg_s: float, max_acceleration_deg_s2: float) -> SlewModel:

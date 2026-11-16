@@ -139,8 +139,11 @@ class Scheduler:
                            for p in self.section.spacecraft}
         self.outages = {s.station: [tuple(timebase.to_sim(m) for m in w) for w in s.unavailable_utc]
                         for s in self.section.stations}
-        self.instrument_outages: dict = {}
-        self.lost_passes: set = set()
+        self.instrument_outages: dict = {}  # (spacecraft, instrument) -> [(start, end)] (what-if)
+        self.lost_passes: set = set()  # (station, spacecraft, round(aos_s)) (what-if, robustness)
+        self._delays: dict = {}  # request name -> [s] a delayed maneuver (what-if)
+        self.not_before: float | None = None  # [s] replanning: nothing new starts before
+        self.done: Counter = Counter()  # replanning: request or target name -> occurrences already kept
         self.station_load: dict = {}  # station -> sorted list of (start, end) busy intervals incl. setup
         self.contention: list = []
         self.reasons: dict = {}
@@ -227,6 +230,8 @@ class Scheduler:
         if start < self.start_s - _EPS or end > self.end_s + _EPS:
             return "conflict", {}
         name = model.sc.name
+        if self.not_before is not None and not activity.locked and start < self.not_before - _EPS:
+            return "exclusion", {}
         for first, last in self.exclusions.get(name, []):
             if start < last and end > first:
                 return "exclusion", {}
@@ -454,7 +459,7 @@ class Scheduler:
                 continue
             kind = section.activity_type(target.activity)
             windows = self.opportunities.windows_of(target.name)
-            for occurrence in range(target.acquisitions):
+            for occurrence in range(self.done.get(target.name, 0), target.acquisitions):
                 out.append(Request(target.name, kind.kind, kind.name, target.priority,
                                    tuple(target.spacecraft or planned), windows, occurrence,
                                    deadline_s=max((w.end_s for w in windows), default=math.inf), target=target.name))
@@ -463,6 +468,8 @@ class Scheduler:
                 continue
             kind = section.activity_type(request.activity)
             if request.at_utc is not None:
+                if self.done.get(request.name, 0):
+                    continue
                 at = self.timebase.to_sim(request.at_utc) + self._delays.get(request.name, 0.0)
                 out.append(Request(request.name, kind.kind, kind.name, request.priority, (request.spacecraft,),
                                    [(request.spacecraft, at, at + kind.duration_s)], fixed_s=at, deadline_s=at))
@@ -483,12 +490,13 @@ class Scheduler:
                 if b - a < kind.duration_s:
                     continue
                 for _ in range(request.count):
-                    out.append(Request(request.name, kind.kind, kind.name, request.priority, (request.spacecraft,),
-                                       [(request.spacecraft, a, b)], occurrence=index, deadline_s=b))
+                    if index >= self.done.get(request.name, 0) and (self.not_before is None
+                                                                    or b > self.not_before + kind.duration_s):
+                        out.append(Request(request.name, kind.kind, kind.name, request.priority,
+                                           (request.spacecraft,), [(request.spacecraft, max(a, self.not_before or a),
+                                                                    b)], occurrence=index, deadline_s=b))
                     index += 1
         return out
-
-    _delays: dict = {}
 
     def candidates(self, request: Request) -> list[Candidate]:
         """Every placement worth trying, best first."""
@@ -660,9 +668,13 @@ class Scheduler:
             winners = []
             for item in order:
                 label = f"contact {item.station} {self.timebase.text(item.aos_s)[:16]}Z"
+                if any(a.kind == "contact" and a.station == item.station and a.start_s < item.los_s
+                       and a.end_s > item.aos_s for a in self.states[item.spacecraft].activities):
+                    winners.append(item.spacecraft)  # already held (a locked or kept contact)
+                    continue
                 if (item.station, item.spacecraft, round(item.aos_s)) in self.lost_passes:
                     self._reason(label, item.spacecraft, "contact", wanting[item.spacecraft].contact_priority,
-                                 "exclusion")
+                                 "lost_pass")
                     continue
                 placed, reason = self._place_contact(item, wanting[item.spacecraft])
                 if placed is not None:
@@ -716,9 +728,10 @@ class Scheduler:
         for item in self.section.locked:
             kind = self.section.activity_type(item.activity)
             start, end = self.timebase.to_sim(item.start_utc), self.timebase.to_sim(item.end_utc)
+            priority = next((t.priority for t in self.section.targets if t.name == item.target), None)
             activity = Activity(item.id, item.spacecraft, kind.name, kind.kind, start, end, setup_s=kind.setup_s,
                                 teardown_s=kind.teardown_s, pointing=kind.pointing, target=item.target,
-                                station=item.station, request=item.request, locked=True)
+                                station=item.station, request=item.request, priority=priority, locked=True)
             state = self.states[item.spacecraft]
             reason, pieces = self._check(state, activity, None)
             if reason in (None, "battery", "memory", "slew", "star_tracker", "per_day", "per_orbit", "exclusion"):
@@ -781,7 +794,7 @@ class Scheduler:
     def score(self) -> tuple:
         """Lexicographic (O-11): acquisitions per priority (1 first), then the
         quality sum; or the weighted priority sum then quality."""
-        placed = [a for s in self.states.values() for a in s.activities if a.kind != "contact" and not a.locked]
+        placed = [a for s in self.states.values() for a in s.activities if a.kind != "contact"]
         priorities = sorted({r.priority for r in self.requests()} | {a.priority for a in placed if a.priority})
         counts = tuple(sum(1 for a in placed if a.priority == p) for p in priorities)
         quality = 0.0
@@ -849,10 +862,13 @@ class Scheduler:
         """The plan, with final profiles from a full evaluation."""
         activities = sorted((a for s in self.states.values() for a in s.activities),
                             key=lambda a: (a.start_s, a.spacecraft))
+        taken = {a.id for a in activities if a.locked and a.id}
         number = 0
         for activity in activities:
             if not activity.locked or not activity.id:
                 number += 1
+                while f"A{number:04d}" in taken:
+                    number += 1
                 activity.id = f"A{number:04d}"
             activity.start_utc, activity.end_utc = self.timebase.text(activity.start_s), self.timebase.text(activity.end_s)
         resources, notes = {}, list(self.notes) + list(self.opportunities.notes)
@@ -885,5 +901,5 @@ class Scheduler:
                     self.contention, notes)
 
 
-_REASON_ORDER = ("no_opportunity", "outside_validity", "too_short", "exclusion", "conflict", "slew", "station_busy",
+_REASON_ORDER = ("no_opportunity", "outside_validity", "too_short", "lost_pass", "exclusion", "conflict", "slew", "station_busy",
                  "per_orbit", "per_day", "star_tracker", "battery", "memory")

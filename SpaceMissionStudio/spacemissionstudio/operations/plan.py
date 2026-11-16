@@ -46,6 +46,7 @@ REASONS = {
     "exclusion": "an exclusion window or an outage covers every chance",
     "star_tracker": "no star tracker would be clear of the Sun, Earth and Moon",
     "too_short": "every window or pass is shorter than the activity",
+    "lost_pass": "the pass is lost (a what-if event or a robustness draw)",
 }
 
 
