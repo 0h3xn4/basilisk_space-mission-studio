@@ -283,3 +283,30 @@ would be large for little gain, and the JSON view edits the same
 section. **Alternatives:** a form per record (more code, slower to fill
 for 20 nodes); JSON only (no help for the conductor calculator and
 generation).
+
+## T-33 Basilisk's sensorThermal: a regression, not the model (2026-11-16)
+
+**Found:** Basilisk 2.12.0's `sensorThermal`
+(`src/simulation/thermal/sensorThermal/sensorThermal.cpp`) models one
+plate with explicit Euler, a fixed solar constant of 1366 W/m^2 at any
+Sun distance, and `boltzmannConst = 5.76051e-8`, 1.6 % above the
+Stefan-Boltzmann constant (5.670374419e-8 W/(m^2 K^4), CODATA 2018).
+**Chosen:** the thermal model keeps its own network and the correct
+constant; `sensorThermal` is driven through its public API in a
+regression (`tests/test_thermal_vv.py`) with its own constants given to
+this tool's solver, so only the integration differs (0.072 K at 1 s,
+0.018 K at 0.25 s). Nothing in Basilisk is changed or wrapped.
+
+Draft upstream issue (not filed):
+
+> **sensorThermal: radiation constant is 5.76051e-8 instead of
+> 5.670374e-8 W/(m^2 K^4)**
+>
+> `SensorThermal::SensorThermal()` sets `boltzmannConst = 5.76051e-8`
+> (sensorThermal.cpp, line 24). The Stefan-Boltzmann constant is
+> 5.670374419e-8 W/(m^2 K^4) (CODATA 2018). The emitted power is 1.6 %
+> too high, and an equilibrium temperature is about 0.4 % (1 to 1.5 K)
+> too low. Suggested fix: use the exact value, ideally from
+> `astroConstants.h`. Also worth a note in the module documentation: the
+> solar constant `S = 1366` W/m^2 is not scaled with the Sun distance, so
+> the module assumes 1 AU.

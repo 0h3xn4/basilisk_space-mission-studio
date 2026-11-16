@@ -30,8 +30,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 7 | Results, series, events, record, CSV | done |
 | 8 | `api.thermal`, CLI `thermal` | done |
 | 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | done |
-| 10 | V&V records (Phase 1) | next |
-| 11 | Template 33 (150 kg bus), claims, golden file | |
+| 10 | V&V records (Phase 1) | done |
+| 11 | Template 33 (150 kg bus), claims, golden file | next |
 | 12 | Documentation (Phase 1) | |
 | 13 | Library: conductivity, honeycomb, MLI, EOL optics where sourced | |
 | 14 | Temperature-dependent properties | |
@@ -112,9 +112,15 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   Reports › Exports row, `--tables` writes the plots. Tests:
   `tests/gui/test_thermal_pages.py`; GUI suite 1847 passed.
 
+- Step 10: `compliance/validation/thermal-vv.md`; `tests/test_thermal_vv.py`
+  (Basilisk's sensorThermal regression, 0.072 K at 1 s falling to 0.018 K
+  at 0.25 s; thin panel; faceted cylinder; step convergence 3.9-4.1-fold
+  per halving). Found: sensorThermal's radiation constant is 1.6 % high
+  (T-33, draft upstream issue).
+
 ## Next
 
-Step 10: V&V records.
+Step 11: template 33.
 
 ## Known issues
 
