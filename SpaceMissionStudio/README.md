@@ -1,7 +1,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-![Version 2.8.0](https://img.shields.io/badge/version-2.8.0-blue)
+![Version 2.9.0](https://img.shields.io/badge/version-2.9.0-blue)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -149,11 +149,13 @@ internet needed.
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.8.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.8.0),
-  [changelog](CHANGELOG.md)): a calmer window that is easier to read: a
-  menu bar with every command, a quieter Home and status bar, values as
-  tables and notes as lists, drop-down lists you can filter, and plots
-  that fill their area; what the tool computes is unchanged. 2.7.0 made
+- **Version:** 2.9.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.9.0),
+  [changelog](CHANGELOG.md)): spacecraft thermal analysis: a thermal
+  model built on the 3D model, solved on a run in hot, cold and nominal
+  cases, with sweeps, sensitivity and a thermal Monte Carlo; and NASA's
+  November 2026 solar-cycle prediction. 2.8.0 made the window calmer and
+  easier to read (a menu bar, a quieter Home and status bar, values as
+  tables and notes as lists). 2.7.0 made
   **Results › 3D View** a real 3D renderer (the textured Earth lit by the Sun, the stars, the Moon, each
   spacecraft's model with its fields of view and plumes, the ground
   stations, several camera views) and can show a run live while it
@@ -185,7 +187,7 @@ internet needed.
   relative-orbital-element formations, optical and landmark navigation,
   asteroid Eros, Mars's gravity field and albedo on the sun sensors; and
   1.0.0 was the first release of the renewed tool.
-- **Platforms:** 2.8.0 has the Linux `.deb`, the Windows setup program
+- **Platforms:** 2.9.0 has the Linux `.deb`, the Windows setup program
   and the wheel. Both installers carry their own Python, Basilisk and
   reference data; each was installed and run offline by the release
   workflow, the `.deb` also by hand in a container

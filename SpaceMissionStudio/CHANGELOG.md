@@ -8,7 +8,22 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.9.0 (2026-11-16)
+
+SpaceMissionStudio can now tell you how hot or cold your spacecraft gets.
+Give a spacecraft with a 3D model a thermal model, which it can generate
+from the parts, and after a run **Run › Thermal** solves it in NASA's
+hot, cold and nominal cases on the orbit, attitude and eclipses the run
+recorded. You see every node's temperature against its limits, the heat
+flows, how hard the heaters work and how much the radiators reject; on
+the same run you can sweep a parameter, rank parameters by their effect
+or run a thermal Monte Carlo. Two new templates, 33 and 34, show it.
+
+The bundled solar-cycle prediction moves to NASA MSFC's November 2026
+issue, so drag beyond CelesTrak's forecast is a little lower and
+lifetimes over a year a little longer. Basilisk itself is unchanged: the
+thermal analysis uses its public interface and runs after the
+simulation.
 
 ### Added
 
@@ -56,6 +71,44 @@ fixes bugs.
   (20.2 m at most) where it stayed within 13 m, with 36 burns instead of
   30. A study that set its own MSFC file under **MSFC prediction** is not
   affected.
+
+### Who should update
+
+- **Anyone sizing a spacecraft's thermal design:** this is the release
+  that adds it. Start from template 33 or 34, or tick **Thermal model**
+  on your spacecraft's 3D model page and press **Generate from the 3D
+  model**.
+- **Anyone running long drag studies:** lifetimes and decay beyond
+  CelesTrak's 45-day forecast use NASA's November 2026 prediction; after
+  a year, perigee ends up between 1 m and 0.3 km higher in most
+  templates, and 1.2 km higher in LEO station keeping.
+- **Compatibility:** the scenario format's version is still 4. 2.8.0
+  opens the files 2.9.0 saves, except those with a thermal model, which
+  it refuses by name ("unexpected field 'thermal'"). The templates give
+  2.8.0's results except where drag reaches past CelesTrak's forecast
+  (2026-12-29): lifetimes, and runs that start after it, which move by
+  millimetres.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.9.0_amd64.deb` replaces 2.8.0; on Windows, run
+  the 2.9.0 setup over 2.8.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The thermal model is for preliminary design:** one node per part, no
+  shading between parts, diffuse grey optics, no fluid loops, Earth and
+  Mars only. Optics are beginning of life, and the material library has
+  no conductivities; give them in the thermal model
+  ([Limitations](docs/reference/limitations.md#thermal-analysis)).
+- **The bundled CelesTrak space weather is 2.8.0's** (observations to
+  2026-11-14): CelesTrak refused the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**.
+- **The 3D View without a graphics card is slow,** as in 2.8.0: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.8.0 (2026-11-16)
 

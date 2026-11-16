@@ -1,9 +1,35 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 36, 2026-11-16. Remediation R14.
+Document: SMS-SRelD, issue 37, 2026-11-16. Remediation R14.
 
-**Status:** release **2.8.0**, published 2026-11-16 (00:35 UTC): a calmer interface that is easier to read, with what the tool
+**Status:** release **2.9.0**, prepared 2026-11-16, to be tagged with
+the tag workflow: spacecraft thermal analysis (#265, SRS-F-29), with
+NASA MSFC's November 2026 solar-cycle prediction (#264, K-33 closed) and
+the 2.8.0 publication recorded (#263). A spacecraft with a 3D model can
+carry a lumped-parameter thermal model (the optional `thermal` section;
+schema version still 4), generated from its parts and refined in the 3D
+model editor; after a run, **Run › Thermal** solves it on the run's
+orbit, attitude and eclipses in NASA's nominal, hot and cold cases
+(NASA/TM-2001-211221) or the user's, with Basilisk's `albedo` module run
+stand-alone through its public interface, and reports temperatures
+against limits, heat flows, heaters, radiators, limit events and checks,
+exported with provenance; sweeps, a one-at-a-time sensitivity and a
+seeded thermal Monte Carlo run on the same fluxes, the 3D model can be
+coloured by temperature, flexible solar arrays are nodes that turn with
+the recorded hinge angle, and specific heat and conductivity can follow
+tables. Templates 33 and 34 show it; the material library gained 26
+coatings from NASA RP-1121. The thermal record, the `thermal` command and
+a Monte Carlo summary of kind `thermal` are new interfaces (ICD). The
+golden outputs changed since 2.8.0 only through the MSFC prediction
+(lifetimes, and runs that start after CelesTrak's forecast, by
+millimetres) and the two new templates. 2.8.0 opens the files 2.9.0
+saves, except those with a thermal model, which it refuses by name. The
+bundled CelesTrak space weather is 2.8.0's (K-13: CelesTrak refused the
+connection). Basilisk is unchanged; nothing outside `SpaceMissionStudio/`
+changed but the front-page `README.md`'s SpaceMissionStudio part.
+
+**Previous release:** 2.8.0, published 2026-11-16 (00:35 UTC): a calmer interface that is easier to read, with what the tool
 computes unchanged. The menu bar (File, Edit, View, Go, Run, Tools,
 Help) built from the action registry, drop-down lists that open below
 their field and filter a long list, dialogs that grow to fit their
@@ -62,7 +88,7 @@ workflow).
   (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
   `1301daba...e6f6`.
 
-**Previous release:** 2.7.0, published 2026-11-11 (18:25 UTC): **Results › 3D View**
+Before it: 2.7.0, published 2026-11-11 (18:25 UTC): **Results › 3D View**
 as a renderer (#248, SRS-F-16) that can show a run live while it is
 computed (#249, SRS-F-16), the start on Home with no scenario open
 (#246, SRS-O-02), the external viewer support removed (#247; SRS-I-08,
@@ -138,7 +164,7 @@ removed viewer) and #252 (below); tagging and publishing were the user's
   (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
   `1301daba...e6f6`.
 
-Before it: 2.6.0, published 2026-11-10 (06:51 UTC): the run in 3D inside
+Earlier: 2.6.0, published 2026-11-10 (06:51 UTC): the run in 3D inside
 the app in place of the Vizard download (#239, SRS-F-16), network use
 enforced and offline mode (#235, SRS-S-05), the network audit (#236),
 and hash-checked installers with a bill of materials (#237, security
@@ -594,88 +620,72 @@ This SRelD describes release 2.7.0 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.8.0 release pull request (the changes of #253 to #261 and the release's records), to be tagged `spacemissionstudio-v2.8.0` by the user. Previous release: 2.7.0, commit `ae5525cb8` (`ae5525cb8528c887697af4affb8669fb0aca0cef`), tagged `spacemissionstudio-v2.7.0`. |
+| Baseline | `develop` after the 2.9.0 release pull request (the changes of #263 to #265 and the release's records), to be tagged `spacemissionstudio-v2.9.0` with the tag workflow. Previous release: 2.8.0, commit `db58ba6` (`db58ba665d6c97cb8ccd945e822cf72fe1731406`), tagged `spacemissionstudio-v2.8.0`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 44 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
-| Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.8.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.8.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.8.0_amd64.cdx.json`, `spacemissionstudio-2.8.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
+| Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.9.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.9.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.9.0_amd64.cdx.json`, `spacemissionstudio-2.9.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
 | Documentation | SUM and `USER_MANUAL.md`; the documents in `compliance/docs/` |
-| Basilisk framework | No Basilisk source, module or test changed. Since 2.7.0 nothing outside `SpaceMissionStudio/` changed but the repository's front-page `README.md` (this release's badge and version) and SpaceMissionStudio's two new workflows `.github/workflows/spacemissionstudio-release-check.yml` and `spacemissionstudio-tag-release.yml` (the release check and the tag, #255; `git diff --name-only ae5525cb8 develop`). The installers carry Basilisk 2.12.0 from PyPI, not this repository's framework, and add its support data next to the installed package, in the folder its own `dataFetcher` reads |
+| Basilisk framework | No Basilisk source, module or test changed. Since 2.8.0 nothing outside `SpaceMissionStudio/` changed but the repository's front-page `README.md`, in its SpaceMissionStudio part (this release's badge and version, the template count, one sentence on the thermal analysis; `git diff --name-only db58ba6 develop`). The thermal analysis uses Basilisk's `albedo` module through its public interface, stand-alone, with no change to Basilisk's behaviour; its regression against Basilisk's `sensorThermal` found that module's radiation constant 5.76051e-8 instead of the Stefan-Boltzmann constant 5.670374e-8, recorded with a draft upstream issue (`docs/developer/thermal-decisions.md` T-33), not filed and not fixed in Basilisk. The installers carry Basilisk 2.12.0 from PyPI, not this repository's framework, and add its support data next to the installed package, in the folder its own `dataFetcher` reads |
 
 ## 5 Status of the software configuration item
 
 ### 5.1 Evolution since previous version (G.2.1<5.1>)
 
-`CHANGELOG.md` 2.8.0 lists the changes since 2.7.0 (commit `ae5525cb8`);
+`CHANGELOG.md` 2.9.0 lists the changes since 2.8.0 (commit `db58ba6`);
 RD1 has the full story. In summary:
 
-- **The menu bar, readable lists and dialogs that fit** (#257;
-  `gui/menu_bar.py`, `gui/theme/combo.py`, `gui/theme/dialogs.py`,
-  `gui/theme/style.py`): every registered command is in one menu, with
-  the action the palette and the buttons use, so text, shortcut and
-  enabled state agree; File > Open Recent; Edit > Settings (`Ctrl+,`);
-  View > Menu Bar. Every combo box's list opens below its field, 12 rows
-  high, at least as wide as its longest entry, with a filter field from
-  12 entries. Every dialog's minimum height follows what its layout
-  needs at its width. `gui/value_sheet.py` (`ValueSheet`, `ValueTable`)
-  gives the 3D model editor's mass properties and the orbit-type switch a
-  value a row. The ITU-R P.676-13 file and the Eros files show "not
-  downloaded" instead of "missing" (`engine/reference_data.py`, status
-  labels only). The plot grid shrinks when plots are cleared
-  (`plot_page.filled_grid`), and the Results toolbar flows.
-- **Calm by default** (#259; `docs/DECISIONS.md`, "Calm by default"):
-  Home's cards show a title and kind, their details fold; the Inspector,
-  Calculation and Problems panels step aside on Home and come back when
-  it is left; the status bar shows what needs attention (View > Status
-  Bar: All Details for the rest); Results › Plots lists topic,
-  spacecraft, group and plot (`plot_categories.catalog_path`); the 3D
-  View says a note shared by several spacecraft once; the formation
-  dialog names each relative orbital element by its effect.
-- **Notes as lists, the remaining values as sheets** (#261;
-  `value_sheet.NoteList`): notes, warnings and findings one a row behind
-  an icon, folded after four, on the budget, design checks, lifetime,
-  model analyses, re-entry, Results and scenario pages and in the 3D
-  model editor; the budget's totals and inputs, the mass sum and launcher
-  verdict, momentum per axis, casualty figures, the spacecraft's model
-  summary, products of inertia and Settings' hosts as sheets. The title
-  and note labels of a sheet get their parent first: shown before the
-  layout took them, they were top-level windows for a moment and took
-  the main window's activation (found by `test_panels.py` in the full
-  suite before the merge; it never shipped).
-- **Release tooling** (#255): the "SpaceMissionStudio release check" and
-  "SpaceMissionStudio tag release" workflows and
-  `packaging/release_check.py` (`docs/developer/releasing.md`, section 6).
-- **Records and dependencies:** the compliance lists point to ECSS
-  clauses (#254); the 2.7.0 publication recorded (#253); private
-  vulnerability reporting on (#256); tornado 6.6.1 and two pillow
-  advisories accepted (#260, K-25); the bundled space weather refreshed
-  (K-13); the documentation's screenshots retaken with the menu bar and
-  the calm Home.
+- **Spacecraft thermal analysis** (#265, SRS-F-29; `spacemissionstudio/thermal/`,
+  `schema/thermal.py`, `gui/thermal_editor.py`, `gui/thermal_widget.py`;
+  design `docs/developer/thermal-design.md`, decisions T-01 to T-39,
+  verification `compliance/validation/thermal-vv.md`): the optional
+  `thermal` section of a spacecraft, generated from the 3D model (a node
+  per part, contact conductors from the meshes) and refined in the 3D
+  model editor; the fluxes on every face from the run (sunlight at the
+  run's distance and eclipse, Basilisk's `albedo` module run stand-alone,
+  planetary infrared by the plate-to-sphere view factor); an implicit
+  BDF2/Newton solver with a step check, an energy balance and an
+  orbit-periodic start; NASA/TM-2001-211221's nominal, hot and cold cases
+  with overrides by path; checks as findings, limit events on the
+  Timeline, **Run › Thermal**, exports with provenance, `api.thermal`,
+  `api.thermal_sweep`, `api.thermal_sensitivity`,
+  `api.thermal_monte_carlo` and the `thermal` command. Phase 2: specific
+  heat tables on the enthalpy and conductivity tables (T-35), sweeps, a
+  one-at-a-time sensitivity and a seeded thermal Monte Carlo in the Monte
+  Carlo view (T-36), the 3D model coloured by temperature, flexible solar
+  arrays as nodes that turn with the recorded hinge angle (T-37), 26
+  coatings from NASA RP-1121, three of them measured after ultraviolet
+  exposure (T-38). For a spacecraft with a thermal model the run also
+  records the central body's and the Sun's positions and the central
+  body's orientation (`ephemeris.<body>.position_N`, `.dcm_PN`).
+- **Templates 33 and 34** (`33_microsat_thermal.json`,
+  `34_microsat_flexible_thermal.json`): the 150 kg microsatellite with a
+  thermal model, and with flexible wings and a thermal Monte Carlo; their
+  claims are measured in `tests/test_template_claims.py`.
+- **NASA MSFC's November 2026 prediction** (#264, K-33 closed):
+  `nov2026f10-prd.txt` replaces October's; the golden outputs changed
+  where drag reaches past CelesTrak's forecast (`docs/changes.md`).
+- **Records:** the 2.8.0 publication (#263).
 
-**Unchanged:** what runs compute, every golden file and template, the
-schema version (4) and every field, the commands, options and exit
-statuses, and the files the tool writes for an existing scenario.
-**Changed in the interface:** none (ICD).
+**Unchanged:** the schema version (4), every existing field, command,
+option and exit status, and what runs compute up to CelesTrak's forecast.
+**Changed in the interface:** the `thermal` command, the spacecraft's
+optional `thermal` section, the thermal record (`kind:
+thermal_analysis`) and a Monte Carlo summary of kind `thermal` (ICD).
 
-**Tests:** 4872 passed and 1 skipped on Linux, Python 3.14, on the
-release's code (4826 passed at 2.7.0). The skipped test is the same as
-at 2.7.0 (the flight-software export's sources against Basilisk's commit
-`611665f74`, which this clone does not have). The added tests cover the
-menu bar (every command in one menu, Open Recent, hiding it, the window
-freed with it), the drop-down lists and their filter, dialogs that fit,
-the plot grid and toolbar, the calm Home and status bar, the plot list's
-levels, the value sheets and note lists, and no window shown while they
-are built; the changed tests, each logged in `docs/ui/TEST_CHANGES.md`,
-reach a widget another way or read a value from its sheet.
+**Tests:** 5075 passed on Linux, Python 3.14, on the release's code
+(4872 passed and 1 skipped at 2.8.0); branch coverage 85.5 %, statement
+coverage 94.2 %. The added tests cover the thermal section, geometry,
+environment, solver, cases, checks, analysis, verification, tables,
+studies, arrays and library, the thermal pages and templates 33 and 34;
+the golden outputs were re-baselined for the MSFC prediction (#264), and
+the Home filter test counts template 34 among the Monte Carlo templates.
 
 **Still open:** K-19 (about 0.4 s), K-22, K-23 (smaller), K-24, K-25,
-K-26, K-27, K-28, K-30, K-31, K-33 (2.7.0 and 2.8.0 open each other's
-files). Closed: none.
+K-26, K-27, K-28, K-30, K-31, K-34, K-35. Closed: K-33.
 
-**Changes users notice:** the menu bar; drop-down lists below their
-field with a filter; dialogs that show all their text; Home's cards with
-their title and kind, the panels aside on Home and a quieter status bar;
-the plot list in levels; values as tables and notes as lists on every
-page.
+**Changes users notice:** **Run › Thermal** and the thermal model on the
+3D model page; templates 33 and 34; drag beyond CelesTrak's forecast a
+little lower.
 
 ### 5.2 Known problems and limitations (G.2.1<5.2>)
 
@@ -695,7 +705,7 @@ page.
 | K-08 | Closed: the PNG/SVG export polled the page with overlapping asynchronous queries; a late timer tick read the cleared state (the CI tracebacks), and several answers could save the file twice. One query at a time now, late answers ignored (F-12) | – | `review_log.md` F-12 |
 | K-09 | Closed (2026-10-19): 1054 of the 2314 unit and integration test functions had no docstring. Every one now has a docstring stating what it checks, read from its body; no test code changed (each file's syntax tree without docstrings equals the one before) | – | `SUITP_test_cases.md`; HISTORY.md |
 | K-12 | The Windows setup program is built, installed silently and the installed tool run on a GitHub Windows runner (1.1.1: with an empty support-data cache, the GUI opened offscreen); the wizard has not been clicked through by hand and the GUI not opened on a real Windows machine, and an upgrade over an installed 1.1.0 has not been tried. The graceful SIL close (M15) has not run on Windows | Unknown for interactive use on Windows | `AUDIT.md` sections 5 and 6; `packaging/README.md` |
-| K-13 | Closed: the bundled CelesTrak space weather (observations to 2025-07-20) was refreshed for this release: observations to 2026-10-11, updated 2026-10-12. Refreshed again on 2026-10-19 for the next release: observations to 2026-10-18, CelesTrak's daily forecast to 2026-12-02, updated 2026-10-19 20:34 UTC. Refreshed for 1.3.0 on 2026-10-26: observations to 2026-10-24, daily forecast to 2026-12-07, updated 2026-10-25 23:32 UTC (CelesTrak revised its values from 2026-09-09 and the monthly forecast's 2027-01 and 2027-02). Results of drag runs dated after 2025-07-20 change, because observed solar activity replaces the earlier forecasts. Not refreshed for 2.0.0, 2.1.0, 2.1.1, 2.2.0, 2.3.0, 2.4.0, 2.5.0 nor 2.6.0: on 2026-11-03, twice on 2026-11-04, three times on 2026-11-05, on 2026-11-08 and on 2026-11-09 CelesTrak reset or refused every connection from the environment the release was prepared in, so 2.0.0 to 2.6.0 carry 1.3.0's file (observations to 2026-10-24, forecast to 2026-12-07). Refreshed for 2.7.0 on 2026-11-10: observations to 2026-11-09, daily forecast to 2026-12-24, updated 2026-11-10 21:33 UTC (CelesTrak revised its observed values from 2026-09-17 and NOAA the monthly forecast's 2027-01 to 2031-09, which no run uses while an MSFC prediction is there); drag on dates from 2026-09-17 to 2026-12-24 changes, no template does. Refreshed for 2.8.0 on 2026-11-15: observations to 2026-11-14, daily forecast to 2026-12-29, updated 2026-11-15 20:37 UTC (CelesTrak reset the first two connections from this environment and answered the third); drag on dates from 2026-11-10 to 2026-12-29 changes, no template does (the golden outputs pass unchanged). Users fetch the current one in the app (Home's reference-data card, **Settings > Reference data**) or with `spacemissionstudio spaceweather-download` | Drag on dates after 2026-11-14 uses CelesTrak's forecast until the file is fetched | `spacemissionstudio/data/spaceweather/README.md` |
+| K-13 | Closed: the bundled CelesTrak space weather (observations to 2025-07-20) was refreshed for this release: observations to 2026-10-11, updated 2026-10-12. Refreshed again on 2026-10-19 for the next release: observations to 2026-10-18, CelesTrak's daily forecast to 2026-12-02, updated 2026-10-19 20:34 UTC. Refreshed for 1.3.0 on 2026-10-26: observations to 2026-10-24, daily forecast to 2026-12-07, updated 2026-10-25 23:32 UTC (CelesTrak revised its values from 2026-09-09 and the monthly forecast's 2027-01 and 2027-02). Results of drag runs dated after 2025-07-20 change, because observed solar activity replaces the earlier forecasts. Not refreshed for 2.0.0, 2.1.0, 2.1.1, 2.2.0, 2.3.0, 2.4.0, 2.5.0 nor 2.6.0: on 2026-11-03, twice on 2026-11-04, three times on 2026-11-05, on 2026-11-08 and on 2026-11-09 CelesTrak reset or refused every connection from the environment the release was prepared in, so 2.0.0 to 2.6.0 carry 1.3.0's file (observations to 2026-10-24, forecast to 2026-12-07). Refreshed for 2.7.0 on 2026-11-10: observations to 2026-11-09, daily forecast to 2026-12-24, updated 2026-11-10 21:33 UTC (CelesTrak revised its observed values from 2026-09-17 and NOAA the monthly forecast's 2027-01 to 2031-09, which no run uses while an MSFC prediction is there); drag on dates from 2026-09-17 to 2026-12-24 changes, no template does. Refreshed for 2.8.0 on 2026-11-15: observations to 2026-11-14, daily forecast to 2026-12-29, updated 2026-11-15 20:37 UTC (CelesTrak reset the first two connections from this environment and answered the third); drag on dates from 2026-11-10 to 2026-12-29 changes, no template does (the golden outputs pass unchanged). Not refreshed for 2.9.0: on 2026-11-16 CelesTrak reset all three connections from this environment, so 2.9.0 carries 2.8.0's file. Users fetch the current one in the app (Home's reference-data card, **Settings > Reference data**) or with `spacemissionstudio spaceweather-download` | Drag on dates after 2026-11-14 uses CelesTrak's forecast until the file is fetched | `spacemissionstudio/data/spaceweather/README.md` |
 | K-14 | Addressed, under watch: platform test failures. On Windows, two tests fail intermittently in CI (PR #64, 2026-10-14; each passed on the same commit in another run). `test_the_altitude_trade_runs_its_altitudes_in_parallel_processes`: a worker hit a Basilisk error whose exception cannot be pickled, so its message is lost (cause not yet known; suspected: the cached space-weather file opened by one worker while another replaces it). `test_a_step_without_deadline_waits_while_earlier_steps_are_still_answered`: its fake flight software went over the 0.3 s step timeout on a loaded runner (a test margin). On macOS (PR #65, 2026-10-14), `test_forms_stay_at_a_readable_width` and `test_a_template_row_keeps_its_customize_button_close` fail their own precondition: Qt's `cocoa` platform fits the 2560 x 1440 test window to the runner's screen, so the page is 618 px wide and there is no wide screen to check (a test set-up problem, not the layout). Fixed on the ROE branch (PR #73, commit `f601576c1`, 2026-10-18): the test window is laid out with `WA_DontShowOnScreen`, which the screen does not constrain, and the fixture asserts its 2560 x 1440 size; macOS CI then passed both (3347 passed, 0 failed, 11 skipped, run 39165811899). On the release commit `f288e0c73` (run 38633749308) Windows passed (3224 passed, 16 skipped) and macOS failed these two (3229 passed, 2 failed, 11 skipped). By the user's decision 1.0.0 is a Linux release; Windows and macOS are fixed and released later. Windows pair addressed on 2026-10-18 (after PR #73): the SIL test's step timeout is 1 s against 30 ms answers (it was 0.3 s against 20 ms), and the altitude trade's lost message is a confirmed bug, now fixed: Basilisk's `BasiliskError` cannot be pickled (its module `_bskLogging` does not import by that name), so any Basilisk error in a worker arrived as a pickling error. Workers now send such an error as a `BudgetError` with its type, message and traceback. The suspected cause is removed too: a complete space-weather file is no longer replaced by a second worker's copy, which on Windows could meet the first worker opening it. The Basilisk error behind the 2026-10-14 failure was never seen, so its cause is not confirmed; if it recurs, its message now shows. macOS, 2026-10-19 (PR #75, run 39218996167): `test_the_keys_work_where_results_has_the_focus` timed out waiting for its window to become active (passed on the PR's previous commit). On macOS activation is per application, and the parallel test workers are separate processes whose windows can keep it from this one; the test now sets Qt's active window itself (`QApplication.setActiveWindow`), which is what the shortcut map checks. Not reproducible on Linux (offscreen activates every shown window); confirmed only by the next macOS CI runs. Windows, 2026-10-19 (PR #76, job 118026573080): `test_thousands_of_dropped_steps_never_block_the_link[tcp]` failed with "the flight software took no STEP for 10 s" at step 16172 of 20000; the other Windows job on the same commit and the one re-run passed. The fake flight software was waiting to read when the link closed, so the simulation side's send found the socket not writable for 10 s, or did not run for that long. Cause not confirmed: not reproduced on Linux in 60 runs under CPU overload. A related defect was confirmed and fixed: `SocketTransport.send` gave up as soon as its time had run out, before trying the socket again, so a stall of the simulation's own process counted as the flight software's silence. The send now counts its time from the last bytes the peer took and tries once more without waiting before it gives up (`test_a_stall_of_this_process_is_not_the_peers_silence`, which fails on the previous code). Whether this was the Windows failure is confirmed only if it does not recur. It recurred on 2026-10-21 (PR #90, job 119083739177, on the 1.1.1 release commit `9dca37d5f`): the same message at step 10907 of 20000, and again the fake flight software was waiting to read when the link closed. So the send's stall handling was not the cause, and the cause is still not known. Not a Basilisk thread holding Python's interpreter lock: a Basilisk run in a second thread let the other thread run at least every 0.03 s (measured on Linux). Only this test has shown it (20000 steps, every one dropped, over TCP on a Windows runner); it may also stop a Windows SIL session that drops thousands of steps, with "the flight software took no STEP for 10 s". Not reproduced since (PR #91, 2026-10-21): the test alone passed 240 times on `windows-latest` (four workers side by side, two processes keeping the CPU busy) and the whole suite passed seven times on Windows (six runs of the new workflow "SpaceMissionStudio SIL stress (Windows)" and the platforms job). On a stall the test now fails with the state of both ends of the link: frames sent and dropped, bytes received and not read, the socket buffer sizes, what the fake flight software last did, when, and its stack, and the last `select()` calls of the send. The next recurrence names its cause. It recurred three times on 2026-10-27 (runs 40526819275 and 40543074495, twice) and named it: every `select()` of the stalled send saw the socket readable and not writable, the fake flight software alive and reading its backlog (12462 frames sent, 4568 read). The send's 10 s limit counted only bytes the peer took, and Windows reopens a full receive window only once the reader has freed much of it, so a peer that was answering looked silent. Fixed in 2.0.0 (#128): bytes the peer sends count too (`SocketTransport.send`); `test_a_peer_that_keeps_answering_is_not_silent` fails without the fix | Windows: an altitude trade with several workers may have failed with an unexplained error; a recurrence now names the error. macOS: the wide-screen layout was not checked in CI until PR #73 | PR #64 and #65 comments |
 | K-15 | Fixed (2026-10-19): a run around, or with a third body, `mars` or `jupiter` passed validation and then failed. The bundled DE430 ephemeris has the Mars and Jupiter system barycentres, not the planets: a `mars` run stopped the whole process with `SPICE(SPKINSUFFDATA)` (the GUI runs in its own process, so the app closed), and Basilisk has no body named `jupiter`. The schema now offers `mars barycenter` and `jupiter barycenter` (Basilisk gives them the planet's mass and radius) and refuses the two old names with the one to use; a test flies every offered body | A scenario with `mars` or `jupiter` could not be run, and in the GUI closed the app; no result was ever produced with them | `tests/test_central_bodies.py`; HISTORY.md |
 | K-16 | Fixed (2026-10-19): a thermal sensor's heat balance used the solar flux at Earth's distance from the Sun on the epoch, whatever the central body. Basilisk's `sensorThermal` assumes 1366 W/m^2 at any distance, and the tool's correction of it took Earth's flux. The flux is now the one at the spacecraft's own distance from the Sun when the run starts (SPICE), for every central body | Thermal sensors around the Sun, Mercury or Venus ran too cold, and around Mars, Jupiter or Eros too hot: around Mars on 2030-01-01 they absorbed 1408 W/m^2 instead of 713 W/m^2. Runs around Earth or the Moon are unchanged | `tests/test_sensor_thermal_flux.py`; HISTORY.md |
@@ -718,7 +728,9 @@ page.
 
 | K-32 | Closed in 2.7.0 (#247): the tool no longer starts any external viewer, so none the user chooses runs from it. Before, limitation (2026-11-09): the Vizard AVS Lab publishes has Unity Analytics switched on (its project settings, Unity's analytics libraries, AVS Lab's Unity project ID and Unity's event addresses, read from the program on 2026-11-09; it was not run, so what it sends was not measured). 2.6.0 no longer downloads or looks for Vizard and ignores a copy an earlier version downloaded; a Vizard the user chooses in **Settings > Vizard** is still started, as a separate program outside the tool's network rules. A build of Vizard without analytics was prepared (`0h3xn4/vizard`, branch `sms/telemetry-free-build`) and parked: it needs a Unity licence, and **Results › 3D View** replaces the need | A user who starts AVS Lab's Vizard may send usage data to Unity | security analysis S-05; `CHANGELOG.md` 2.6.0, Removed |
 
-| K-33 | Limitation (2026-11-10): the bundled NASA MSFC solar-cycle prediction is the October 2026 issue (`oct2026f10-prd.txt`). The November 2026 issue (`nov2026f10-prd.txt`) was published before 2.7.0 was prepared; it moves the 2030 values a little (January 2030 at the 50th percentile: F10.7 74.1 sfu and Ap 11.3, were 74.2 and 11.5), so adopting it changes every template's drag and golden outputs, and is the owner's decision, not taken for the release. Still so for 2.8.0 (2026-11-15). Closed on `develop` 2026-11-16 by the owner's decision: the November 2026 issue is bundled for the next release; the lifetimes over a year move, and the runs starting after CelesTrak's forecast by millimetres (`docs/changes.md`) | Drag after CelesTrak's daily forecast uses the October 2026 prediction unless the study sets its own file (**MSFC prediction**, Scenario › Environment) | `spacemissionstudio/data/spaceweather/README.md`; `CHANGELOG.md` 2.7.0, Known limits |
+| K-33 | Closed in 2.9.0 (2026-11-16, #264). Limitation from 2026-11-10: the bundled NASA MSFC solar-cycle prediction is the October 2026 issue (`oct2026f10-prd.txt`). The November 2026 issue (`nov2026f10-prd.txt`) was published before 2.7.0 was prepared; it moves the 2030 values a little (January 2030 at the 50th percentile: F10.7 74.1 sfu and Ap 11.3, were 74.2 and 11.5), so adopting it changes every template's drag and golden outputs, and is the owner's decision, not taken for the release. Still so for 2.8.0 (2026-11-15). Closed by the owner's decision on 2026-11-16: 2.9.0 bundles the November 2026 issue; the lifetimes over a year move, and the runs starting after CelesTrak's forecast by millimetres (`docs/changes.md`) | 2.7.0 and 2.8.0: drag after CelesTrak's daily forecast uses the October 2026 prediction unless the study sets its own file (**MSFC prediction**, Scenario › Environment) | `spacemissionstudio/data/spaceweather/README.md`; `CHANGELOG.md` 2.7.0, Known limits |
+| K-34 | Limitation (2026-11-16): 2.8.0 does not open a scenario file saved by 2.9.0 that has a thermal model. It refuses unknown keys by name: "malformed scenario structure (spacecraft[0]: unexpected field 'thermal', not one this version knows)". Checked with 2.8.0's code (`db58ba6`) on the 34 templates as 2.9.0 saves them: the 32 without a thermal model open and validate with no message, templates 33 and 34 are refused | A team that shares files with a thermal model updates together | `CHANGELOG.md` 2.9.0, Who should update |
+| K-35 | Limitation (2026-11-16): the thermal model is for preliminary design: one isothermal node per part, no shading between parts or by the flexible arrays (the analysis names the faces another part can shade), diffuse grey optics, no fluid loops, phase-change materials or coolers, heater power not drawn from the battery, no electrical power taken out of the cells' sunlight, Earth and Mars only. The library has beginning-of-life optics (three coatings with UV-aged values) and no conductivities: NIST's property fits could not be reached from the build environment, and no other reachable source gave them (T-38). A flexible array's albedo is taken at its initial angle (T-37) | Faces that can be shaded are warmer than they would be; end-of-life optics and conductivities are the user's to give | `docs/reference/limitations.md`, "Thermal analysis"; `docs/developer/thermal-decisions.md` T-06, T-37, T-38 |
 
 **Waivers and deviations:** D-01 to D-13 (RD4). D-08 to D-13 are signed; D-01 to D-07
 are not (decision 14, H08).
@@ -743,8 +755,8 @@ are not (decision 14, H08).
   critical inclinations (E1).
 - **Fetch the current space weather before a drag study** (K-13): the
   bundled file's observations end on 2026-11-14, and its MSFC prediction
-  is October 2026's (K-33).
-- **Update a team together** (K-26, K-27, K-30, K-31).
+  is November 2026's.
+- **Update a team together** (K-26, K-27, K-30, K-31, K-34).
 - **Run script blocks only from scenarios you trust and have read**
   (SUM 9.9).
 - **Exchanging OEMs with GMAT R2026a:** use
