@@ -4011,7 +4011,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_the_continuous_law_reconfigures_for_more_delta_v` | Basilisk's meanOEFeedback reaches the same helix: over the last half day every ROE error is under 5 m. | - | integration |
 | `test_the_results_have_the_expected_series_and_events` | Every series engine.series_names promises is recorded, and the burns and the drift appear as events. | - | integration |
 | `test_the_differential_drag_estimate_is_the_decay_basilisk_flies` | The decay the controller estimates while holding (from half a day on, once four orbits are in) is within 8 % of the one a straight line through the left-alone follower's mean a*da gives over two days (about -3.5 m a day) | - | integration |
-| `test_compensating_differential_drag_keeps_the_hold_in_tolerance` | With the compensation the heavy follower's mean longitude stays inside its 20 m tolerance after the first half day (13 m measured), the e and i vectors as in the twin hold, the relative semi-major axis within three times | - | integration |
+| `test_compensating_differential_drag_keeps_the_hold_in_tolerance` | With the compensation the heavy follower's mean longitude stays within its 20 m tolerance after the first half day, give or take the dead band's overshoot (the controller burns once the error is past the tolerance: never | - | integration |
 | `test_twin_spacecraft_compensate_no_drag` | Template 05's sister satellites feel the same drag: the estimate stays under a tenth of a metre a day and nothing is compensated, so the hold flies as it did before the compensation existed. | - | integration |
 
 ### `tests/test_roe_schema.py`
