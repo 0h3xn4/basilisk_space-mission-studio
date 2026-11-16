@@ -511,7 +511,6 @@ class Scheduler:
         kind = self.section.activity_type(request.type)
         out = []
         if request.target:
-            weights = self.settings
             target = next(t for t in self.section.targets if t.name == request.target)
             for window in request.windows:
                 if window.spacecraft not in request.spacecraft or window.spacecraft not in self.states:
@@ -530,11 +529,7 @@ class Scheduler:
                                        + list(np.linspace(window.start_s, latest, count))),
                                    key=lambda s: abs(s - best))
                 for start in positions:
-                    middle = start + duration / 2.0
-                    quality = -weights.weight("off_nadir") * window.at(middle, "off_nadir_deg") / target.max_off_nadir_deg
-                    if window.gsd_m is not None:
-                        quality -= weights.weight("gsd") * window.at(middle, "gsd_m") / float(np.max(window.gsd_m))
-                    quality -= weights.weight("early") * (start - self.start_s) / (self.end_s - self.start_s)
+                    quality = self._quality(target, window, start, start + duration)
                     out.append(Candidate(window.spacecraft, start, start + duration, quality, window))
             out.sort(key=lambda c: (-c.quality, c.start_s, c.spacecraft))
             return out
@@ -799,6 +794,18 @@ class Scheduler:
         entry["needed"] = entry.get("needed", 0) + 1
 
     # -- improvement ---------------------------------------------------------------
+    def _quality(self, target, window, start: float, end: float) -> float:
+        """An acquisition's quality term (O-11), the same for ordering the
+        candidates and for the plan's score: off-nadir angle, ground sample
+        distance and earliness, each normalised and weighted."""
+        weights = self.settings
+        middle = 0.5 * (start + end)
+        quality = -weights.weight("off_nadir") * window.at(middle, "off_nadir_deg") / target.max_off_nadir_deg
+        if window.gsd_m is not None and weights.weight("gsd"):
+            quality -= weights.weight("gsd") * window.at(middle, "gsd_m") / float(np.max(window.gsd_m))
+        quality -= weights.weight("early") * (start - self.start_s) / (self.end_s - self.start_s)
+        return quality
+
     def score(self) -> tuple:
         """Lexicographic (O-11): acquisitions per priority (1 first), then the
         quality sum; or the weighted priority sum then quality."""
@@ -808,10 +815,12 @@ class Scheduler:
         quality = 0.0
         weights = self.settings
         for activity in placed:
-            off = activity.predicted.get("off_nadir_deg")
-            if off is not None and activity.target:
+            if activity.target:
                 target = next(t for t in self.section.targets if t.name == activity.target)
-                quality -= weights.weight("off_nadir") * off / target.max_off_nadir_deg
+                window = next((w for w in self.opportunities.windows_of(activity.target, activity.spacecraft)
+                               if w.start_s - 1e-6 <= activity.start_s <= w.end_s + 1e-6), None)
+                if window is not None:
+                    quality += self._quality(target, window, activity.start_s, activity.end_s)
         slew = sum(a.predicted.get("slew_s") or 0.0 for s in self.states.values() for a in s.activities)
         quality -= weights.weight("slew") * slew / (self.end_s - self.start_s)
         if weights.objective == "weighted":

@@ -14,6 +14,10 @@ shorter version of this list.
 
 **Absorptance (solar)** -- the share of sunlight a surface absorbs, from 0 to 1. White paint absorbs about 0.2, black paint about 0.96. With the [emissivity](#e) it sets how warm a sunlit surface gets ([Thermal analysis](user-manual/thermal.md)).
 
+**Acquisition** -- in an [operations plan](#o), an activity that images a target: the spacecraft points its instrument at the target and switches it on for a time.
+
+**Activity** -- one thing a spacecraft does in an [operations plan](#o), with a start, an end, a pointing mode and the devices it switches: an acquisition, a contact, a calibration, a maneuver ([Operations planning](user-manual/operations.md)).
+
 **AD10** -- ESA's guideline for delta-V and propellant budgets (document
 EOP-FM/2024-07-177). The **Budget** page follows its structure: margins,
 residual propellant, and solar activity at a high (95th) percentile for
@@ -22,6 +26,8 @@ operations.
 **ADCS** -- Attitude Determination and Control System: the sensors,
 actuators and software that work out which way a spacecraft points and
 turn it.
+
+**AEM** (Attitude Ephemeris Message) -- the [CCSDS](#c) file of a spacecraft's attitude over time, as quaternions. Run › Plan exports the planned attitude as AEM 2.0.
 
 **Albedo** -- the share of sunlight a planet reflects. Earth reflects
 about 30 %, Mars about 16 %. Sunlight reflected by the planet below
@@ -94,6 +100,8 @@ semi-major axis (roughly its average size), eccentricity (how stretched
 it is), inclination (its tilt to the equator), [RAAN](#r) and argument of
 periapsis (its orientation), and an anomaly (where the spacecraft starts
 along it).
+
+**Contact** -- the part of a station [pass](#p) a plan uses to send data down (or up). A station serves a limited number of spacecraft at once; when more want the same pass, it is *contested*.
 
 **Contact conductance** -- how well heat crosses a joint between two parts: an area times a coefficient in W/(m^2 K). A bare bolted aluminium joint is about 136 W/(m^2 K) (NASA GSFC); a filler raises it about twentyfold.
 
@@ -199,6 +207,8 @@ far and how high it is.
 chief): **R**adial (away from Earth), **T**ransverse (along the direction
 of travel) and **N**ormal (out of the orbit plane). Formation offsets are
 given in it.
+
+**Horizon** -- the span an [operations plan](#o) covers, from its start to its end (up to 104 days).
 
 ## I
 
@@ -335,6 +345,10 @@ time.
 
 **OLR (outgoing longwave radiation)** -- the infrared a planet radiates, in W/m^2 at the top of its atmosphere: about 211 to 246 W/m^2 on average for the Earth, depending on the latitudes an orbit crosses.
 
+**Operations plan** -- the [activities](#a) of one or more spacecraft over a [horizon](#h), placed by the scheduler so that the slews fit and the battery and memory stay within their limits. It is a planning product, not a command load ([Operations planning](user-manual/operations.md)).
+
+**Opportunity** -- a time an activity can happen: a target [window](#w) or a station [pass](#p).
+
 **Optical navigation** -- estimating where a spacecraft is from camera
 images: here, from where a planet's disk falls in the image (the
 direction) and how large it is (the range), combined over many images by
@@ -436,6 +450,8 @@ spacecraft's orbit relative to another's (D'Amico's quasi-nonsingular
 set): a relative semi-major axis (a drift), a relative mean longitude
 (the along-track offset) and the two [e/i vectors](#e). The app gives
 them in metres, times the chief's semi-major axis.
+
+**Replanning** -- planning again from a time: what started before it is kept as flown, and the rest of the horizon is planned again, for example after a lost pass.
 
 **Reproduction bundle** -- a folder (`run --bundle`, or Results › Plots ›
 **Export all...** › **Reproduction bundle...**) that holds a run's results,
@@ -544,6 +560,8 @@ over several orbit planes, given as total satellites / planes / phasing
 factor. **Generate Walker constellation** builds one; **Hold each
 plane's spacing** makes each plane's first satellite the chief and gives
 the others [phasing keeping](#p) that holds their slots.
+
+**Window (target)** -- a span when a target is within reach of the instrument (off-nadir angle, elevation) and lit as asked (the Sun's elevation): an [opportunity](#o) for an acquisition.
 
 ---
 

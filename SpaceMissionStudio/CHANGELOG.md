@@ -8,6 +8,56 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+SpaceMissionStudio can now plan a mission's operations. Give a scenario
+an `operations` section (targets, kinds of activity, station masks and
+limits) and **Run › Plan** schedules a horizon of days or weeks: which
+targets each spacecraft images and when, which passes it uses to send
+the data down, when it calibrates, all within its battery, its memory,
+its slews and the stations it shares. Every request the plan could not
+hold says why. Fly the plan in the simulation and check it, export what
+an operations team works with, and plan again when a pass is lost. Two
+new templates, 35 and 36, show it. Basilisk itself is unchanged: the
+plan is flown by two of SpaceMissionStudio's own modules inside the run.
+
+### Added
+
+- **Operations planning** (SRS-F-30). Targets as points or polygons
+  (also from CSV or GeoJSON), activity types, requests, station masks,
+  capacity and outages, each spacecraft's limits; geometry from a run, an
+  orbit-only propagation or an analytic model; a deterministic, seeded
+  scheduler with slews from the attitude controller, the battery and
+  memory checked sample by sample, contention between spacecraft, locked
+  activities and a reason for every request not placed.
+- **Run › Plan**: the plan as a Gantt chart (activities and slews,
+  eclipses, state of charge and memory per spacecraft; passes and
+  contacts per station), lock, move within a window, delete, the plan's
+  status at the time cursor, the requests not placed; the activities on
+  the Timeline ("Planned activities") and the problems in the Problems
+  panel.
+- **Fly and verify**: a plan executor switches pointing and devices at
+  the planned times inside the run, with contingency rules (safe mode on
+  low charge, dropping low-priority images on a full memory); the flight
+  is compared with the plan.
+- **Operations products** with provenance: passes (CSV, iCalendar),
+  activities (CSV, JSON), a time-tagged command schedule (JSON, CSV),
+  pointing predictions, CCSDS OEM and AEM 2.0, and a report.
+- **What-if events, replanning, robustness and comparison**: lose a pass
+  and replan from it, replan from any time with the scenario's what-if
+  events, a seeded robustness batch shown in the Monte Carlo view, two
+  plans side by side.
+- The command line's `plan` command (`opportunities`, `schedule`,
+  `verify`, `export`, `replan`, `robustness`, `compare`) and the API's
+  `plan_*` functions.
+- Templates 35 (a week of an Earth observation microsatellite) and 36
+  (three imagers sharing two stations).
+
+### Changed
+
+- The Timeline keeps the events each analysis adds apart, so a plan's
+  activities and a thermal analysis's limits are shown together.
+
 ## 2.9.0 (2026-11-16)
 
 SpaceMissionStudio can now tell you how hot or cold your spacecraft gets.

@@ -36,9 +36,9 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 14 | What-if and replanning | done |
 | 15 | Contingency rules | done |
 | 16 | Robustness batch and plan comparison | done |
-| 17 | Templates and claims | to do |
-| 18 | V&V records | to do |
-| 19 | Documentation, final checks, report | to do |
+| 17 | Templates and claims | done |
+| 18 | V&V records | done |
+| 19 | Documentation, final checks, report | done |
 
 ## Done
 
@@ -70,3 +70,24 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   the plan status at the time cursor; the plan's activities on the
   Timeline ("Planned activities"); unplaced requests and verification
   flags in Problems; the editor keeps the section (O-23, O-24).
+- Steps 17-19 (2026-11-16): templates 35 (a week of the 150 kg imager,
+  three stations, a daily contact budget) and 36 (three imagers sharing
+  two stations), with claims, goldens (with the plan), hashes, wizard
+  pages and README rows; flying template 35 led to O-25 (slew margin)
+  and O-26 (resource times, verification span); the V&V record; SRS-F-30
+  and its verification row; the User Manual, the how-tos (Plan a week of
+  operations, Fly and verify a plan, Export operations products, Replan
+  after a lost pass), the model page with the file formats,
+  capabilities, limitations, glossary, CHANGELOG, HISTORY, the root
+  README's mention.
+
+## Deviations from the design
+
+- Performance (design 2.7 aimed at "a week for three spacecraft, fifty
+  targets and three stations in a few seconds"): a week of one
+  spacecraft with twenty targets takes 9 s to schedule without the
+  improvement step and 31 s with 20 steps, after a speed-up of the
+  removal path; the geometry adds about 12 s per spacecraft-week.
+- The flown plan is checked on the Plan page and not shown as a run in
+  Results (O-24); the plan's dashboard is the status at the time cursor.
+
