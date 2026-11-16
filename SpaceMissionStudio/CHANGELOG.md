@@ -23,8 +23,11 @@ fixes bugs.
   higher in most of them and 1.2 km higher in LEO station keeping, and
   that template's satellite, with its own drag coefficient, re-enters
   2.0 days later (327.6 days instead of 325.6; see
-  [`docs/changes.md`](docs/changes.md)). A study that set its own MSFC
-  file under **MSFC prediction** is not affected.
+  [`docs/changes.md`](docs/changes.md)). A formation follower with three
+  times its chief's drag area now reaches its 20 m along-track tolerance
+  (20.2 m at most) where it stayed within 13 m, with 36 burns instead of
+  30. A study that set its own MSFC file under **MSFC prediction** is not
+  affected.
 
 ## 2.8.0 (2026-11-16)
 

@@ -33,6 +33,19 @@ more slowly. In the runs the change is millimetres of semi-major axis over
 the regression span, and the attitude and actuator series that respond
 to drag move by a few parts per million of their range.
 
+The formation test that flies template 05's follower with three times the
+chief's drag area for 3 days (`tests/test_roe_formation_run.py`) also
+changes. With the compensation of differential drag, its along-track
+error now reaches the 20 m tolerance three times after the first half
+day (largest 20.18 m, then the burn takes it back), where it peaked at
+13.0 m before; 36 burns and 0.0377 m/s instead of 30 and 0.0363 m/s.
+Without the compensation it reaches 26.8 m with 60 burns, as before. The
+dead band fires when the error crosses the tolerance, so a hold can always
+overshoot it by the drift until the burn; the test claimed 13 m it does
+not guarantee. It now allows 1 m of overshoot and still requires the
+uncompensated hold to exceed that. The User Manual's table
+(`docs/user-manual/roe-formation.md`) has the new numbers.
+
 | Month (50th percentile) | October 2026 issue | November 2026 issue |
 |---|---|---|
 | June 2027, F10.7 | 105.1 sfu | 104.3 sfu |
