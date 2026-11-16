@@ -65,6 +65,9 @@ BLINDING = "blinding"
 OBSTRUCTION = "obstruction"
 VISIBLE = "visible"
 MODEL_KINDS = (BLINDING, OBSTRUCTION, VISIBLE)
+# The thermal analysis's events (thermal.results): a node outside its limits, added when a case is solved.
+THERMAL_LIMIT = "thermal limit"
+THERMAL_KINDS = (THERMAL_LIMIT,)
 
 # The measured values an event can carry (Event.quantities): key -> (column
 # heading, unit, format). The Events table gives each its own column and the
@@ -75,8 +78,9 @@ QUANTITIES: dict[str, tuple[str, str, str]] = {
     "delta_v": ("Delta-V", "m/s", ".3f"),
     "data": ("Data", "Gbit", ".3f"),
     "magnitude": ("Brightest", "mag", ".1f"),
+    "temperature": ("Extreme temperature", "degC", ".1f"),
 }
-_CSV_UNITS = {"deg": "deg", "%": "percent", "m/s": "m_s", "Gbit": "gbit", "mag": "mag"}
+_CSV_UNITS = {"deg": "deg", "%": "percent", "m/s": "m_s", "Gbit": "gbit", "mag": "mag", "degC": "degc"}
 
 # The phasing controller's states (engine.orbit_maintenance.PhasingKeepingController).
 _PHASING_IDLE, _PHASING_BURN_OUT, _PHASING_DRIFT, _PHASING_BURN_RESTORE = range(4)

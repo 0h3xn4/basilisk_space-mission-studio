@@ -47,6 +47,7 @@ from .calculation_panel import Explanation
 from .chained_inputs_panel import ChainedInputsPanel
 from .scenario_explainer_widget import _clear_layout, _stat_tile
 from .theme import CONTENT_MAX_WIDTH_PX, PALETTE, set_role
+from .value_sheet import NoteList
 from .widgets import ComboBox, PreciseDoubleSpinBox
 
 _FROM_START = "Start of scenario"
@@ -299,9 +300,7 @@ class LifetimeWidget(QWidget):
         layout.addLayout(self.tiles_row)
         self.badges_row = QHBoxLayout()
         layout.addLayout(self.badges_row)
-        self.notes_label = QLabel("")
-        self.notes_label.setWordWrap(True)
-        set_role(self.notes_label, tone="secondary")
+        self.notes_label = NoteList("warning")
         layout.addWidget(self.notes_label)
         self.chart = AltitudeChart()
         layout.addWidget(self.chart, 1)
@@ -475,7 +474,7 @@ class LifetimeWidget(QWidget):
         self.export_button.setEnabled(False)
         _clear_layout(self.tiles_row)
         _clear_layout(self.badges_row)
-        self.notes_label.setText("")
+        self.notes_label.set_notes([])
         self.chart.clear()
 
     def _show(self, end_of_life) -> None:
@@ -518,7 +517,7 @@ class LifetimeWidget(QWidget):
             notes.append(f"Not enough propellant for {plan.target_perigee_km:g} km: the "
                          f"{plan.propellant_available_kg:.2f} kg left lowers the perigee to {plan.perigee_km:.0f} km.")
         notes.extend(result.warnings)
-        self.notes_label.setText("\n".join(notes))
+        self.notes_label.set_notes(notes)
         self.chart.set_data([t / (365.25 * 86400.0) for t in result.time_s], result.perigee_altitude_km,
                             result.apogee_altitude_km, lt.rule("reentry_altitude_km", scenario), horizon_years,
                             [years for years, _label, _key in lt.disposal_rules(scenario)])

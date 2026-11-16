@@ -101,9 +101,9 @@ day), holding a 200 m helix 500 m behind for 3 days:
 
 | | Compensated | Not compensated |
 |---|---|---|
-| Along-track error after half a day | at most 13 m | up to 27 m, over its 20 m tolerance |
-| Burns | 30 | 60 |
-| Delta-V | 0.036 m/s | 0.044 m/s |
+| Along-track error after half a day | at most 20.2 m: its 20 m tolerance, and the overshoot until the burn takes it back | up to 26.8 m |
+| Burns | 36 | 60 |
+| Delta-V | 0.038 m/s | 0.044 m/s |
 
 Twin spacecraft see a decay too small to compensate (under 0.1 m a day),
 and fly as without the setting. **Scenario > Overview** says when a

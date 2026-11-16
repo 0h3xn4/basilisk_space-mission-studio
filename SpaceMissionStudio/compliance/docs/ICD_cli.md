@@ -136,6 +136,25 @@ run the scenario and report its model analyses: disturbance torques, blinding, o
 | `--out` | write the record (one spacecraft) |
 | `--tables` | write each table as CSV, with its provenance |
 
+## `thermal`
+
+run the scenario and solve each spacecraft's thermal model (nominal, hot and cold, or its own cases); or --generate one from the 3D model
+
+| Argument | Help |
+|---|---|
+| `scenario` |  |
+| `--spacecraft` | spacecraft name (default: every one with a thermal model) |
+| `--case` | solve this case only (repeatable) |
+| `--no-sizing` | do not size the heaters (faster) |
+| `--out` | write the record (one spacecraft) |
+| `--tables` | write the tables and the temperature and heat-flow series as CSV and their plots as SVG, with provenance |
+| `--generate` | write the scenario with a thermal model generated from each 3D model; no run |
+| `--replace` | with --generate: replace an existing thermal model |
+| `--sweep` | solve the first --case (default nominal) at each value of a parameter (e.g. faces[radiator].absorptance=0.1,0.2,0.3); repeatable |
+| `--sensitivity` | one-at-a-time sensitivity of the first --case: each parameter (comma-separated paths; default: every face's optics, conductances, dissipation, heaters, sunlight and infrared) up and down by --relative |
+| `--relative` | the sensitivity's step, a fraction of each value (default 0.1) |
+| `--monte-carlo` | run the thermal model's monte_carlo section and save the batch in DIR (the Monte Carlo view opens it) |
+
 ## `reentry`
 
 a preliminary re-entry casualty estimate from the 3D model (DAS-like, simplified)

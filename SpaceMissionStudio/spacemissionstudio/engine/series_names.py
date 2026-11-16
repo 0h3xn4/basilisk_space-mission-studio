@@ -179,12 +179,17 @@ def _model_analyses_series(scenario: Scenario) -> list[str]:
 
     asking = [sc for sc in scenario.spacecraft if sc.model_analyses is not None
               and any(getattr(sc.model_analyses, name) for name in MODEL_RUN_ANALYSES)]
-    if not asking:
+    thermal = any(sc.thermal is not None for sc in scenario.spacecraft)
+    if not asking and not thermal:
         return []
     gravity = scenario.gravity
     tracked = {gravity.central_body, *gravity.third_body_perturbers}
     names = [f"ephemeris.{body}.position_N" for body in dict.fromkeys((gravity.central_body, "sun", "moon"))
              if body in tracked]
+    if thermal:  # the thermal analysis's central-body orientation (decision T-16)
+        names.append(f"ephemeris.{gravity.central_body}.dcm_PN")
+    if not asking:
+        return names
     stations = [gs.name for gs in scenario.ground_stations]
     sites = [site.name for sc in asking if sc.model_analyses.brightness for site in sc.model_analyses.observers]
     return names + [f"{name}.station.position_N" for name in dict.fromkeys(stations + sites)]

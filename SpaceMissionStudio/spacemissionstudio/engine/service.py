@@ -962,10 +962,15 @@ class SimulationService:
         # Model analyses after the run (analyses.run_analyses): the central body's, the Sun's and the
         # Moon's positions and the stations', recorded only when a spacecraft asks for one.
         self._analysis_recorders: dict = {}
-        if any(_runs_model_analyses(sc) for sc in scenario.spacecraft):
+        analyses = any(_runs_model_analyses(sc) for sc in scenario.spacecraft)
+        # The thermal analysis after the run (thermal/): the central body's and the Sun's
+        # positions, and the central body's orientation (decision T-16).
+        self._records_orientation = any(sc.thermal is not None for sc in scenario.spacecraft)
+        if analyses or self._records_orientation:
             sources = {f"ephemeris.{body}": self._planet_state_out_msgs[body]
                        for body in dict.fromkeys((gravity.central_body, "sun", "moon"))
                        if body in self._planet_state_out_msgs}
+        if analyses:
             sources.update({f"{gs}.station": location.currentGroundStateOutMsg
                             for gs, location in self._ground_locations.items()})
             self._observer_locations = {}  # the brightness's observer sites, placed as ground stations are
@@ -979,6 +984,7 @@ class SimulationService:
                         self.scSim, dyn_task_name, site, central_body.radEquator, central_body_state_out_msg,
                         sc_state_out_msgs=[], central_body=gravity.central_body)
                     sources[f"{site.name}.station"] = self._observer_locations[site.name].currentGroundStateOutMsg
+        if analyses or self._records_orientation:
             for key, msg in sources.items():
                 self._analysis_recorders[key] = self._record(msg)
                 self.scSim.AddModelToTask(dyn_task_name, self._analysis_recorders[key])
@@ -2760,6 +2766,10 @@ class SimulationService:
             times = recorder.times() * macros.NANO2SEC
             data = recorder.PositionVector if key.startswith("ephemeris.") else recorder.r_LN_N
             result.add(TimeSeries(f"{key}.position_N", times, ("x", "y", "z"), data, units="m"))
+            if getattr(self, "_records_orientation", False) and key == f"ephemeris.{self.scenario.gravity.central_body}":
+                dcm = np.asarray(recorder.J20002Pfix, dtype=float).reshape(len(times), 9)  # [-] row-major [PN]
+                result.add(TimeSeries(f"{key}.dcm_PN", times, tuple(f"c{i}{j}" for i in range(3) for j in range(3)),
+                                      dcm, units="-"))
         if any(_runs_model_analyses(sc) for sc in self.scenario.spacecraft):
             from ..analyses import run_analyses
 

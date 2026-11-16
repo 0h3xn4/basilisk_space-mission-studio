@@ -116,22 +116,52 @@ def _item_traces(items, highlight: str | None, slant_m: float) -> list:
     return traces
 
 
-def model_figure(derived, selected: str | None = None, items=(), highlight: str | None = None) -> go.Figure:
+TEMPERATURE_SCALE = "RdBu_r"  # cold blue to hot red (a diverging scale readable with colour-vision deficiency)
+_NO_TEMPERATURE_COLOR = "rgb(160,160,160)"  # a part in no thermal node
+
+
+def temperature_color(value_c: float, low_c: float, high_c: float) -> str:
+    """The colour of ``value_c`` on :data:`TEMPERATURE_SCALE` over
+    ``[low_c, high_c]``."""
+    from plotly.colors import sample_colorscale
+
+    fraction = 0.5 if high_c <= low_c else min(max((value_c - low_c) / (high_c - low_c), 0.0), 1.0)
+    return sample_colorscale(TEMPERATURE_SCALE, [fraction])[0]
+
+
+def model_figure(derived, selected: str | None = None, items=(), highlight: str | None = None,
+                 temperatures: dict | None = None) -> go.Figure:
     """The figure for a :class:`~spacemissionstudio.model3d.model.DerivedModel`:
     one ``Mesh3d`` per visible part (named after it), the body axes at B and
     the center of mass. With a part ``selected``, the others are faded.
     ``items`` (``model3d.equipment.MountedItem``) adds the mounted
-    equipment, the one named ``highlight`` drawn stronger."""
+    equipment, the one named ``highlight`` drawn stronger. ``temperatures``
+    (``{part: degC}``, thermal Phase 2) colours each part by its
+    temperature on :data:`TEMPERATURE_SCALE`, with a colour bar; a part
+    without one is grey."""
     traces = []
+    low = min(temperatures.values()) if temperatures else 0.0
+    high = max(temperatures.values()) if temperatures else 0.0
     for part in derived.parts:
         if part.mesh is None or not part.visible or len(part.mesh.triangles) == 0:
             continue
         v, t = part.mesh.vertices, part.mesh.triangles
         opacity = 1.0 if selected in (None, part.name) else _OTHER_PARTS_OPACITY
+        color, hover = _rgb(part.color), part.name
+        if temperatures is not None:
+            value = temperatures.get(part.name)
+            color = _NO_TEMPERATURE_COLOR if value is None else temperature_color(value, low, high)
+            hover = part.name if value is None else f"{part.name}: {value:.1f} °C"
         traces.append(go.Mesh3d(x=v[:, 0], y=v[:, 1], z=v[:, 2], i=t[:, 0], j=t[:, 1], k=t[:, 2],
-                                name=part.name, color=_rgb(part.color), opacity=opacity, flatshading=True,
-                                hovertemplate=f"{part.name}<extra></extra>",
+                                name=part.name, color=color, opacity=opacity, flatshading=True,
+                                hovertemplate=f"{hover}<extra></extra>",
                                 lighting={"ambient": 0.45, "diffuse": 0.8, "specular": 0.1}))
+    if temperatures:
+        traces.append(go.Scatter3d(x=[0.0], y=[0.0], z=[0.0], mode="markers", hoverinfo="skip", name="temperature",
+                                   marker={"size": 0.1, "opacity": 0.0, "color": [low], "cmin": low,
+                                           "cmax": high if high > low else low + 1.0,
+                                           "colorscale": TEMPERATURE_SCALE, "showscale": True,
+                                           "colorbar": {"title": {"text": "°C"}, "thickness": 14}}))
     box = derived.bounds()
     size = float(np.max(box[1] - box[0])) if box is not None else 1.0  # [m]
     length = 0.6 * max(size, 0.1)  # [m] of the drawn axes
@@ -179,6 +209,7 @@ class ModelViewWidget(QWidget):
         self._selected: str | None = None
         self._items: list = []
         self._highlight: str | None = None
+        self._temperatures: dict | None = None
         on_change(self._on_theme_changed)
 
     @staticmethod
@@ -197,11 +228,14 @@ class ModelViewWidget(QWidget):
             self.web_view.page().runJavaScript(self._pending)
             self._pending = None
 
-    def show_model(self, derived, selected: str | None = None, items=(), highlight: str | None = None) -> None:
+    def show_model(self, derived, selected: str | None = None, items=(), highlight: str | None = None,
+                   temperatures: dict | None = None) -> None:
         """Draw ``derived`` (a DerivedModel), fading all but ``selected``,
-        with the mounted ``items`` (``highlight`` the selected one)."""
+        with the mounted ``items`` (``highlight`` the selected one), or
+        coloured by ``temperatures`` (``{part: degC}``)."""
         self._derived, self._selected, self._items, self._highlight = derived, selected, list(items), highlight
-        self.figure = model_figure(derived, selected, self._items, highlight)
+        self._temperatures = temperatures
+        self.figure = model_figure(derived, selected, self._items, highlight, temperatures)
         script = f"window.smsShow({self.figure.to_json()});"
         if self._ready:
             self.web_view.page().runJavaScript(script)
@@ -215,4 +249,4 @@ class ModelViewWidget(QWidget):
                 f"document.body.style.background = '{TOKENS['bg.surface']}';"
                 f"document.getElementById('{_DIV_ID}').style.background = '{TOKENS['bg.surface']}';")
         if self._derived is not None:
-            self.show_model(self._derived, self._selected, self._items, self._highlight)
+            self.show_model(self._derived, self._selected, self._items, self._highlight, self._temperatures)

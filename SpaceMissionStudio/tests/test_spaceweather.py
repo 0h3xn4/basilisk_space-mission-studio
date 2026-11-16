@@ -59,15 +59,15 @@ def _real_excerpt_csv(path, first, last):
 def test_the_shipped_record_parses_as_published():
     """Spot checks against the raw lines of data/spaceweather/SW-All.txt."""
     data = sw.load_celestrak(sw.BUNDLED_DATA_PATH)
-    assert data.updated == "2026 Nov 10 21:33:19 UTC"
+    assert data.updated == "2026 Nov 15 20:37:19 UTC"
     assert (data.first_date, data.last_date) == (date(1957, 10, 1), date(2041, 10, 31))
     first = data.days[date(1957, 10, 1)]
     assert first.ap == (32, 27, 15, 7, 22, 9, 32, 22) and first.ap_avg == 21
     assert (first.f107_obs, first.f107_center81) == (269.3, 266.6)
-    last_observed = data.days[date(2026, 11, 9)]
-    assert last_observed.kind == "observed" and last_observed.ap_avg == 11
-    assert last_observed.f107_obs == 128.8  # [sfu]
-    assert data.days[date(2026, 11, 10)].kind == "daily_forecast"
+    last_observed = data.days[date(2026, 11, 14)]
+    assert last_observed.kind == "observed" and last_observed.ap_avg == 3
+    assert last_observed.f107_obs == 123.6  # [sfu]
+    assert data.days[date(2026, 11, 15)].kind == "daily_forecast"
     month = data.days[date(2030, 1, 17)]
     assert month.kind == "monthly_forecast" and month.f107_obs == 76.6  # [sfu] NOAA's January 2030 value
     assert month.ap_avg == pytest.approx(data.long_term_ap)
@@ -79,7 +79,7 @@ def test_the_last_observed_day_is_found_once():
     """CelestrakData.last_observed is the last observed day, kept on the
     data: the checks while a scenario is edited ask on every edit."""
     data = sw.load_celestrak(sw.BUNDLED_DATA_PATH)
-    assert data.last_observed == max(d for d, r in data.days.items() if r.kind == "observed") == date(2026, 11, 9)
+    assert data.last_observed == max(d for d, r in data.days.items() if r.kind == "observed") == date(2026, 11, 14)
     assert "last_observed" in vars(data)
 
 
@@ -97,12 +97,12 @@ def test_a_past_run_gets_the_observed_days_unchanged(tmp_path):
 
 @pytest.mark.requirement("E-ST-10-04C 6.2.3b", "E-ST-10-04C 7.2.1.2e")
 def test_a_future_run_uses_msfcs_prediction_at_the_chosen_percentile(tmp_path):
-    """January 2030 from MSFC's October 2026 table: 74.2 sfu / Ap 11.5 at
-    the 50th percentile, 78.7 / 16.2 at the 95th (AD10: operations)."""
-    for percentile, f107, ap in ((50.0, 74.2, 11.5), (95.0, 78.7, 16.2)):  # [%], [sfu], [-]
+    """January 2030 from MSFC's November 2026 table: 74.1 sfu / Ap 11.3 at
+    the 50th percentile, 78.7 / 15.9 at the 95th (AD10: operations)."""
+    for percentile, f107, ap in ((50.0, 74.1, 11.3), (95.0, 78.7, 15.9)):  # [%], [sfu], [-]
         resolved = sw.resolve("bundled", datetime(2030, 1, 1), datetime(2030, 2, 1), cache_dir=tmp_path,
                               forecast_percentile=percentile)
-        assert resolved.warnings == [f"space weather uses MSFC's prediction (oct2026f10-prd.txt), "
+        assert resolved.warnings == [f"space weather uses MSFC's prediction (nov2026f10-prd.txt), "
                                      f"{percentile:g}th percentile F10.7 and Ap"]
         row = next(r for r in csv.DictReader(open(resolved.path)) if r["DATE"] == "2030-01-15")
         assert (float(row["F10.7_OBS"]), float(row["F10.7_OBS_CENTER81"]), float(row["AP_AVG"])) == (f107, f107, ap)
@@ -116,7 +116,7 @@ def test_noaa_fills_only_the_months_before_msfc_starts(tmp_path):
     MSFC table is cut to start in June 2027 (its own rows, unchanged)."""
     lines = sw.MSFC_BUNDLED_PATH.read_text(encoding="utf-8").splitlines(keepends=True)
     first_row = next(i for i, line in enumerate(lines) if line.split()[:1] == ["2027.4170"])
-    header_end = next(i for i, line in enumerate(lines) if line.split()[:1] == ["2026.2503"])
+    header_end = next(i for i, line in enumerate(lines) if line.split()[:1] == ["2026.3337"])
     later_msfc = tmp_path / "msfc_from_2027_06.txt"
     later_msfc.write_text("".join(lines[:header_end] + lines[first_row:]), encoding="utf-8")
     resolved = sw.resolve("bundled", datetime(2027, 1, 20), datetime(2027, 8, 1), cache_dir=tmp_path,
@@ -125,18 +125,18 @@ def test_noaa_fills_only_the_months_before_msfc_starts(tmp_path):
                for w in resolved.warnings)
     rows = {r["DATE"]: r for r in csv.DictReader(open(resolved.path))}
     assert float(rows["2027-02-15"]["F10.7_OBS"]) == sw.load_celestrak(_SHIPPED).days[date(2027, 2, 15)].f107_obs
-    assert float(rows["2027-06-15"]["F10.7_OBS"]) == 105.1  # [sfu] MSFC, June 2027, 50th
+    assert float(rows["2027-06-15"]["F10.7_OBS"]) == 104.3  # [sfu] MSFC, June 2027, 50th
 
 
 def test_msfc_parses_as_published_and_repeats_its_last_132_months():
     """AD10 Sec. 5.9: past the prediction's end, its last 132 months repeat."""
     msfc = sw.load_msfc(sw.MSFC_BUNDLED_PATH)
-    assert (msfc.first_month, msfc.last_month, len(msfc.months)) == (date(2026, 4, 1), date(2041, 10, 1), 187)
-    assert msfc.months[date(2026, 4, 1)] == ((137.7, 133.9, 131.3), (13.9, 13.1, 12.1))
+    assert (msfc.first_month, msfc.last_month, len(msfc.months)) == (date(2026, 5, 1), date(2041, 10, 1), 186)
+    assert msfc.months[date(2026, 5, 1)] == ((133.5, 130.4, 127.3), (13.9, 12.8, 12.0))
     assert msfc.values(date(2041, 10, 1), 50.0) == (70.0, 8.9, False)
     assert msfc.values(date(2041, 11, 1), 50.0) == (*msfc.values(date(2030, 11, 1), 50.0)[:2], True)
     assert msfc.values(date(2052, 10, 1), 95.0) == (*msfc.values(date(2041, 10, 1), 95.0)[:2], True)
-    assert msfc.values(date(2026, 3, 1), 50.0) is None
+    assert msfc.values(date(2026, 4, 1), 50.0) is None
 
 
 def test_runs_past_2041_continue_on_the_repeated_cycle(tmp_path):
@@ -175,7 +175,7 @@ def test_a_celestrak_csv_with_forecast_rows_reads_like_the_text_file(tmp_path):
     path = _real_excerpt_csv(tmp_path / "SW-excerpt.csv", date(2026, 6, 1), date(2027, 6, 30))
     from_csv = sw.load_celestrak(path)
     shipped = sw.load_celestrak(sw.BUNDLED_DATA_PATH)
-    for day, kind in ((date(2026, 6, 10), "observed"), (date(2026, 11, 12), "daily_forecast"),
+    for day, kind in ((date(2026, 6, 10), "observed"), (date(2026, 11, 20), "daily_forecast"),
                       (date(2027, 3, 20), "monthly_forecast")):
         assert from_csv.days[day].kind == shipped.days[day].kind == kind
         assert from_csv.days[day].f107_obs == shipped.days[day].f107_obs

@@ -32,6 +32,7 @@ from PySide6.QtWidgets import QFileDialog, QGroupBox, QHBoxLayout, QLabel, QPush
 from . import export_log
 from .data_table import DataTable, Row
 from .theme import set_role
+from .value_sheet import NoteList, ValueSheet, ValueTable
 from .widgets import ComboBox
 
 _TABLES = (("disturbance_torques", "Disturbance torques"), ("blinding", "Sensor blinding"),
@@ -69,11 +70,16 @@ class ModelAnalysesWidget(QWidget):
         self.save_button.clicked.connect(self._save_clicked)
         top.addWidget(self.save_button)
         layout.addLayout(top)
-        self.summary_label = QLabel("")
+        self.summary_label = set_role(QLabel(""), tone="secondary")
         self.summary_label.setWordWrap(True)
         layout.addWidget(self.summary_label)
-        self.findings_label = QLabel("")
-        self.findings_label.setWordWrap(True)
+        # The momentum the disturbances build up, per body axis (never a sentence of numbers).
+        self.momentum_table = ValueTable("Momentum [N·m·s]", ["", "x", "y", "z"], numeric=(1, 2, 3))
+        self.momentum_sheet = ValueSheet()
+        self.momentum_table.layout().addWidget(self.momentum_sheet)
+        self.momentum_table.setVisible(False)
+        layout.addWidget(self.momentum_table)
+        self.findings_label = NoteList("finding")
         layout.addWidget(self.findings_label)
         self.tables: dict = {}
         self.groups: dict = {}
@@ -83,8 +89,7 @@ class ModelAnalysesWidget(QWidget):
             QVBoxLayout(group).addWidget(table)
             layout.addWidget(group)
             self.tables[key], self.groups[key] = table, group
-        self.notes_label = set_role(QLabel(""), tone="secondary")
-        self.notes_label.setWordWrap(True)
+        self.notes_label = NoteList("note")
         layout.addWidget(self.notes_label)
         layout.addStretch(1)
 
@@ -114,8 +119,9 @@ class ModelAnalysesWidget(QWidget):
             self.summary_label.setText("Run a scenario whose spacecraft set model analyses to see them here.")
             for group in self.groups.values():
                 group.setVisible(False)
-            self.findings_label.setText("")
-            self.notes_label.setText("")
+            self.momentum_table.setVisible(False)
+            self.findings_label.set_notes([])
+            self.notes_label.set_notes([])
             return
         tables = self.report.tables()
         for key, table in self.tables.items():
@@ -130,18 +136,20 @@ class ModelAnalysesWidget(QWidget):
         if budget is not None:
             per_orbit = budget.required_momentum_n_m_s()
             span = "per orbit" if budget.momentum_per_orbit_n_m_s is not None else "over the run"
-            text = (f"Momentum {budget.momentum_max_n_m_s:.4g} N·m·s at most over the run; per body axis "
-                    f"{', '.join(f'{v:.4g}' for v in per_orbit)} N·m·s {span}.")
+            rows = [[f"Needed {span}"] + [f"{v:.4g}" for v in per_orbit]]
             if budget.wheel_capacity_n_m_s is not None:
-                text += " Wheels hold " + ", ".join(f"{v:.4g}" for v in budget.wheel_capacity_n_m_s) + " N·m·s."
-            self.summary_label.setText(text)
+                rows.append(["The wheels hold"] + [f"{v:.4g}" for v in budget.wheel_capacity_n_m_s])
+            self.momentum_table.set_rows(rows)
+            self.momentum_sheet.set_rows([("Largest over the run", f"{budget.momentum_max_n_m_s:.4g}", "N·m·s")])
+            self.momentum_table.setVisible(True)
+            self.summary_label.setText("From the disturbance torques of the run, in the body frame.")
         else:
+            self.momentum_table.setVisible(False)
             self.summary_label.setText("No disturbance torques recorded (model_analyses.disturbance_torques).")
         findings = self.report.findings()
-        self.findings_label.setText("\n".join(f"- {f}" for f in findings))
-        set_role(self.findings_label, tone="caution" if findings else None)
+        self.findings_label.set_notes(findings)
         notes = list(self.report.notes) + (list(budget.notes) if budget is not None else [])
-        self.notes_label.setText("\n".join(f"- {n}" for n in notes))
+        self.notes_label.set_notes(notes)
 
     def _save_clicked(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Save the model analyses to a folder")

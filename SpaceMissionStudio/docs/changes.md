@@ -17,6 +17,64 @@ case; and how it was checked.
 
 Newest first.
 
+## 2026-11-16: NASA MSFC's November 2026 prediction (SRelD K-33)
+
+**Drag beyond CelesTrak's daily forecast changes: lifetimes most, some
+runs slightly.** By the owner's decision of 2026-11-16, the bundled
+solar-cycle prediction is now NASA MSFC's November 2026 issue
+(`nov2026f10-prd.txt`) instead of October's. Drag uses it only past the
+end of CelesTrak's daily forecast (2026-12-29 in the bundled file). So it
+changes the lifetime over a year, which always reaches into 2027; the runs
+of the templates whose epoch is already past the forecast (they warn
+"space weather uses MSFC's prediction"); and the note naming the file in
+the warnings and in the budget's disposal notes. November's table is a
+little lower than October's in most months, so the orbits decay a little
+more slowly. In the runs the change is millimetres of semi-major axis over
+the regression span, and the attitude and actuator series that respond
+to drag move by a few parts per million of their range.
+
+The formation test that flies template 05's follower with three times the
+chief's drag area for 3 days (`tests/test_roe_formation_run.py`) also
+changes. With the compensation of differential drag, its along-track
+error now reaches the 20 m tolerance three times after the first half
+day (largest 20.18 m, then the burn takes it back), where it peaked at
+13.0 m before; 36 burns and 0.0377 m/s instead of 30 and 0.0363 m/s.
+Without the compensation it reaches 26.8 m with 60 burns, as before. The
+dead band fires when the error crosses the tolerance, so a hold can always
+overshoot it by the drift until the burn; the test claimed 13 m it does
+not guarantee. It now allows 1 m of overshoot and still requires the
+uncompensated hold to exceed that. The User Manual's table
+(`docs/user-manual/roe-formation.md`) has the new numbers.
+
+| Month (50th percentile) | October 2026 issue | November 2026 issue |
+|---|---|---|
+| June 2027, F10.7 | 105.1 sfu | 104.3 sfu |
+| January 2030, F10.7 / Ap | 74.2 sfu / 11.5 | 74.1 sfu / 11.3 |
+| January 2030, 95th percentile, F10.7 / Ap | 78.7 sfu / 16.2 | 78.7 sfu / 15.9 |
+
+| Template, spacecraft, drag coefficient | Output | Before | After |
+|---|---|---|---|
+| 18 LEO station keeping, leo-sat-1, its own | lifetime | 28131146.0 s (325.6 days) | 28307905.3 s (327.6 days) |
+| 18 LEO station keeping, leo-sat-1, its own | last perigee | 116.107 km | 118.985 km |
+| 18 LEO station keeping, leo-sat-1, Cd 2.2 | perigee after a year | 318.559 km | 319.760 km |
+| 25 Monte Carlo orbit and drag, sat-1, its own | perigee after a year | 359.586 km | 359.864 km |
+| 21 disturbance torques, rods-off, its own | perigee after a year | 415.803 km | 416.030 km |
+| 08 mission sequence orbit raise, sat-1, its own | perigee after a year | 378.528 km | 378.598 km |
+| 22 starter first LEO satellite, my-sat, Cd 2.2 | perigee after a year | 536.408 km | 536.416 km |
+| 04 Walker constellation, leo-01-01, Cd 2.2 | perigee after a year | 688.558 km | 688.559 km |
+| 05 formation flying phasing, chief-1 | run: mean semi-major axis change | -0.376 m | -0.373 m |
+| 22 starter first LEO satellite, my-sat | run: mean semi-major axis change | 4.756 m | 4.763 m |
+| 29 ROE formation helix, chief-1 | run: mean semi-major axis change | -1.443 m | -1.435 m |
+
+Sixteen templates' lifetimes move (03, 04, 05, 07, 08, 18, 21 to 29 and
+32; template 03 only in a note's file name); the runs of 05, 08, 18, 21,
+22 and 23 to 29 and 32 move as above. The other 16 templates compute no
+lifetime (no drag) and their runs do not reach the prediction. Checked:
+the regression baseline of the 16 templates was rewritten and every
+difference beyond the comparison's tolerance was read (the lifetimes, the
+runs above, the file name); `tests/test_spaceweather.py` reads the new
+values from the bundled file.
+
 ## 2026-11-03: `reproduce` compares a vector's components against the vector (Phase 10)
 
 **No computed number changes; one verdict of `reproduce` does.** The

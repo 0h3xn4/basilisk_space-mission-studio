@@ -2073,3 +2073,65 @@ station line of sight, reduced quality, theme change) and 6 in
 | `tests/gui/test_mission_view.py::test_without_a_run_the_view_says_what_to_do` | the play button and slider disabled | also the new Show button | One more control |
 | `tests/gui/test_mission_view.py::test_the_run_is_drawn_in_the_app_s_own_page` (page path) | the page's local path compared as a string | compared as a `Path` | On Windows Qt gives the path with `/`, `str(PAGE)` has `\\`: the same file; found by the Windows CI job |
 | `tests/gui/test_theme.py::test_every_icon_the_app_uses_is_bundled_with_its_licence` | the toolbar and step icons and the style sheet's glyphs | also every icon the GUI code names with `icon("...")` | Stricter: the Vizard removal deleted `sliders-horizontal.svg`, which the 3D View's Show button still used, and no test noticed (the button had no icon); the icon is restored |
+
+## A menu bar again (2026-11-12)
+
+The window has a menu bar again (`gui/menu_bar.py`), from the action
+registry; the owner asked for one. One test asserted its absence. New:
+`tests/gui/test_menu_bar.py` (14 tests: the menus, every command in one
+menu, the items' state, Edit > Settings, hiding the menu bar, Open
+Recent, the drop-down lists, optional reference files). No test was
+skipped or removed.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/gui/test_shell_reachability.py::test_the_menu_bar_is_gone_and_every_command_is_on_the_window` | renamed `test_the_menu_bar_holds_the_commands_and_every_command_is_on_the_window`; the window had no menu bar, or an empty one | the menu bar holds File, Edit, View, Go, Run, Tools, Help; no toolbar, and every command's action is on the window, as before | The menu bar is back by the owner's request; the shortcuts must still work with it hidden, so the window check stays |
+| `tests/gui/test_workspace.py::test_the_view_analyses_and_tools_commands` | the View commands' labels, in order | the same, with "Menu Bar" before "Reset Layout" | A new View command, View > Menu Bar |
+| `tests/gui/test_design_rules.py::test_the_shortcut_table_matches_the_registry` | unchanged | unchanged; `docs/DESIGN.md`'s table gained Edit > Settings... (`Ctrl+,`) | A new command with a shortcut |
+
+## The orbit-type switch as tables (2026-11-12)
+
+`OrbitSwitchDialog` and `ask_orbit_switch` take the orbits (`OrbitIC`)
+instead of their one-line descriptions, and show each as a table of
+values. Two tests changed how they hand the orbits over; every assertion
+is kept. New: `test_the_question_shows_each_orbit_as_a_table_of_values`
+and `tests/gui/test_readable_values.py` (4 tests).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/gui/test_orbit_switch.py` (the `answer` fixture) | recorded the strings it was asked with | records `describe_orbit` of the orbits it is asked with, the same strings | The question now receives the orbits |
+| `tests/gui/test_orbit_switch.py::test_switching_to_a_tle_says_why_it_is_not_converted` | the converted orbit was `""` | it is `None` | No conversion is no orbit, not an empty text |
+| `tests/gui/test_orbit_switch.py::test_the_question_offers_convert_only_when_there_is_a_conversion` | the dialog made with strings ("a ...", "r ...") | made with an orbit of classical elements and the converted Cartesian state | The dialog's arguments are orbits |
+
+## Calm by default (2026-11-12)
+
+Home puts the Inspector, Calculation and Problems panels aside, card
+buttons show on the card picked or pointed at, a card's description
+folds, and the status bar shows only what needs attention. Tests that
+assumed the panels on Home or every status entry shown now leave Home, or
+turn on View > Status Bar: All Details, before they look; every check is
+kept. New tests are in `tests/gui/test_calm_home.py`.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_panels.py::test_a_new_window_on_a_small_screen_starts_without_the_inspector` | checked the Inspector on Home | checks it in the Scenario area | Home puts the panels aside |
+| `test_panels.py::test_ctrl_i_shows_and_hides_the_inspector` | started on Home | starts in the Scenario area | the same |
+| `test_panels.py::test_a_keyboard_only_walk_of_the_shell` | the Problems table and every status entry in Home's Tab order | All Details on; the Problems table not in Home's Tab order | the same; the status entries are shown with All Details |
+| `test_load_scenario_widget.py::test_left_pane_content_fits_a_default_window_without_horizontal_scrolling` | the Inspector shown on Home | not shown on Home; the page still fits 1280 px | the same |
+| `test_shell_reachability.py` rows "Status bar items" and "Run › Check Reference Data" | the entry shown | shown with All Details | entries that need no attention are shown with All Details |
+| `test_home.py::test_a_selected_card_is_marked_and_the_details_follow` | "What to look at" in the description text | a folded part titled "What to look at" | the details fold the headed parts |
+| `test_workspace.py::test_the_view_analyses_and_tools_commands` | the View commands | the same with "Status Bar: All Details" | a new View command |
+
+## Notes as lists, the remaining values as sheets (2026-11-15)
+
+Notes, warnings and findings became a `NoteList`, whose `text()` gives
+the same lines as before, so the tests reading them are unchanged. Three
+sentences of numbers became sheets; the tests that read the sentence now
+read the value from the sheet, and every check is kept. New tests are in
+`tests/gui/test_readable_values.py`.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_budget_widget.py::test_the_budget_tab_shows_the_table` | `totals_label` starts with "Total: " | `totals_sheet` has a delta-V and a propellant value | the totals are a sheet |
+| `test_design_checks_page.py::test_the_page_shows_each_check_and_its_findings` | "launch 300.00 kg" in `mass_label` | `mass_sheet`'s "= Launch mass" is "300.00" | the mass sum is a sheet under its table |
+| `test_model_analyses_pages.py::test_the_model_analyses_tab_shows_a_runs_analyses` | "Momentum" in `summary_label` | `momentum_table` is shown, its first row "Needed ..." with x, y, z | the momentum per axis is a table |

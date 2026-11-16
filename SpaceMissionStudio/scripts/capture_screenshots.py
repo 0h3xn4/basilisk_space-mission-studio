@@ -234,6 +234,9 @@ def capture_json_page(window, out: Path, spin) -> None:
     print(f"wrote {out / 'json_page.png'}")
     edit.undo()
     editor.json_view.flush()
+    # The misspelt key, a new error, opened the Problems panel (G8); the
+    # shots after this one show the template as it is, without it.
+    window.problems_dock.hide()
     spin(1.0)  # [s]
 
 

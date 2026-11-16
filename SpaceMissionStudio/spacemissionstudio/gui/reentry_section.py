@@ -30,6 +30,7 @@ from PySide6.QtWidgets import QCheckBox, QFileDialog, QGroupBox, QHBoxLayout, QL
 from . import export_log
 from .data_table import DataTable, Row
 from .theme import set_role
+from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, NumberField
 
 PRELIMINARY = ("Preliminary estimate (DAS-like, simplified): not a substitute for DAS, DRAMA or SESAM. "
@@ -89,11 +90,12 @@ class ReentrySection(QGroupBox):
         self.table = DataTable("Estimate breaks the 3D model's parts up at the break-up altitude and follows each "
                                "to the ground.")
         layout.addWidget(self.table)
-        self.result_label = set_role(QLabel(""), role="strong")
+        self.result_label = set_role(QLabel(""), role="strong")  # the verdict, in words
         self.result_label.setWordWrap(True)
         layout.addWidget(self.result_label)
-        self.notes_label = set_role(QLabel(""), tone="secondary")
-        self.notes_label.setWordWrap(True)
+        self.result_sheet = ValueSheet()  # the numbers behind it, a value per row
+        layout.addWidget(self.result_sheet)
+        self.notes_label = NoteList("note")
         layout.addWidget(self.notes_label)
         self._update_enabled()
 
@@ -120,6 +122,7 @@ class ReentrySection(QGroupBox):
             return
         density = self.density_field.value() if self.density_check.isChecked() else None
         self.result_label.setText(f"Estimating {name}...")
+        self.result_sheet.set_rows([])
         self._worker = _Worker(self._scenario, sc, self._base_dir, density, self)
         self._worker.finished_ok.connect(self._show)
         self._worker.failed.connect(lambda message: self.result_label.setText(f"Could not estimate: {message}"))
@@ -147,17 +150,19 @@ class ReentrySection(QGroupBox):
         self.table.set_table(("Part", "Material", "Mass [kg]", "Fate (eps = 1)", "Casualty area [m²]",
                               "Demise-prone [m²]"), rows, numeric=(2, 4, 5), stretch=3)
         self.table.fit_rows()
-        text = (f"Casualty area {estimate.casualty_area_m2:.3f} m² (survival-prone bound; demise-prone "
-                f"{estimate.casualty_area_demise_prone_m2:.3f} m²).")
+        rows = [("Casualty area, survival-prone bound", f"{estimate.casualty_area_m2:.3f}", "m²"),
+                ("Casualty area, demise-prone", f"{estimate.casualty_area_demise_prone_m2:.3f}", "m²")]
         if estimate.risk is not None:
             verdict = "within" if estimate.compliant else "over"
-            text += (f" Casualty risk {estimate.risk:.3g} at {estimate.population_density_per_km2:g} people/km², "
-                     f"{verdict} the limit {estimate.risk_limit:g} (NASA-STD-8719.14B).")
+            rows += [("Population density", f"{estimate.population_density_per_km2:g}", "people/km²"),
+                     ("Casualty risk", f"{estimate.risk:.3g}", ""), ("Limit", f"{estimate.risk_limit:g}", "")]
+            text = f"Casualty risk {verdict} the limit (NASA-STD-8719.14B)."
         else:
-            text += " Give a population density for the risk."
+            text = "Give a population density for the casualty risk."
+        self.result_sheet.set_rows(rows)
         self.result_label.setText(text)
         set_role(self.result_label, role="strong", tone="critical" if estimate.compliant is False else None)
-        self.notes_label.setText("\n".join(f"- {n}" for n in estimate.notes))
+        self.notes_label.set_notes(estimate.notes)
         self.save_button.setEnabled(True)
 
     def _save_clicked(self) -> None:

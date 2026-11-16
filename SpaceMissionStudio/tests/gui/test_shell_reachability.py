@@ -88,6 +88,16 @@ def _shown(window, widget, area):
     assert widget.isVisibleTo(window)
 
 
+def _status(window, widget):
+    """A status-bar entry: shown with all details (View > Status Bar: All
+    Details); only what needs attention shows without them."""
+    window.status_details_action.setChecked(True)
+    try:
+        assert widget.isVisibleTo(window)
+    finally:
+        window.status_details_action.setChecked(False)
+
+
 def _tree(window, path):
     """The Scenario area's tree node ``path`` (a page with sections shows
     its first)."""
@@ -150,7 +160,7 @@ _ROWS = {
     "Run › Live plot": lambda w: (_command(w, "run.live_plot"),
                                   _shown(w, w.run_page.live_plot_check, "run")),
     "Run › Check Reference Data": lambda w: (_command(w, "run.check_data"),
-                                             _shown(w, w.status_items.data_button, w.shell.current_area())),
+                                             _status(w, w.status_items.data_button)),
     "Run › Open Monte Carlo Results…": lambda w: (_command(w, "run.open_monte_carlo"), _shown(
         w, w.shell.page("run").buttons[w.open_monte_carlo_results_action], "run")),
     # M5b: the folder is a field of Run > Run in Monte Carlo mode, remembered per scenario.
@@ -191,7 +201,7 @@ _ROWS = {
         _top_bar_says(w, "from template 23")),
     "Run progress strip": lambda w: _in_the_status_bar(w, w.run_progress),
     "Stale-results banner": lambda w: _is_above_the_areas(w, w.stale_results_banner),
-    "Status bar items": lambda w: _shown(w, w.status_items.basilisk_label, w.shell.current_area()),
+    "Status bar items": lambda w: _status(w, w.status_items.basilisk_label),
     # M4 removes it with the editor's rebuild; the Problems panel already lists the same problems.
     "Validation strip under the editor": lambda w: _shown(w, w.scenario_editor.validation_label, "scenario"),
     "**Scenario tab** › Templates": lambda w: _shown(w, w.load_scenario_widget, "home"),
@@ -356,11 +366,13 @@ def test_every_row_is_reachable_in_the_shell(window, row):
     _ROWS[row](window)
 
 
-def test_the_menu_bar_is_gone_and_every_command_is_on_the_window(window):
-    """No menu bar and no toolbar: every command's action is the window's
-    own (so its shortcut works in every area), the views' own Time Cursor
-    moves aside, which work while Results has the focus."""
-    assert window.menuWidget() is None or not window.menuWidget().actions()
+def test_the_menu_bar_holds_the_commands_and_every_command_is_on_the_window(window):
+    """The menu bar's menus, and no toolbar: every command's action is the
+    window's own (so its shortcut works in every area, the menu bar hidden
+    too), the views' own Time Cursor moves aside, which work while Results
+    has the focus."""
+    assert [action.text().replace("&", "") for action in window.menuBar().actions()] == [
+        "File", "Edit", "View", "Go", "Run", "Tools", "Help"]
     _no_toolbars(window)
     for command in window.commands:
         if command.category == "Time Cursor":

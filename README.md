@@ -5,7 +5,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-[![Version 2.7.0](https://img.shields.io/badge/version-2.7.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.7.0)
+[![Version 2.9.0](https://img.shields.io/badge/version-2.9.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.9.0)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -22,9 +22,11 @@ Basilisk itself is unchanged: its README follows below, under
 SpaceMissionStudio lets you design a satellite mission in forms, run it,
 and read the results, without writing code. Every number comes from
 Basilisk; SpaceMissionStudio adds the windows, scenario files, plots,
-checks and analysis around it. Start from one of 32 template missions, or
+checks and analysis around it. Start from one of 34 template missions, or
 build your own, then look at orbits, ground passes, eclipses, pointing,
-battery, link margin, lifetime and propellant.
+battery, link margin, lifetime and propellant. A spacecraft with a 3D
+model can also carry a thermal model, solved on the run in hot, cold and
+nominal cases, with sweeps, sensitivity and a thermal Monte Carlo.
 
 > **AI authorship.** SpaceMissionStudio was written by Claude
 > (Anthropic's AI model) through Claude Code: its code, tests and
@@ -144,14 +146,18 @@ Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capab
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.7.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.7.0),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): **Results › 3D View** is
-  a real 3D renderer (the textured Earth lit by the Sun, the stars, the
+- **Version:** 2.9.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.9.0),
+  [changelog](SpaceMissionStudio/CHANGELOG.md)): spacecraft thermal
+  analysis: a thermal model built on the 3D model, solved on a run in
+  hot, cold and nominal cases, with sweeps, sensitivity and a thermal
+  Monte Carlo; and NASA's November 2026 solar-cycle prediction. 2.8.0
+  made the window calmer and easier to read (a menu bar, a quieter Home
+  and status bar, values as tables and notes as lists). 2.7.0 made **Results › 3D View** a real 3D renderer (the textured Earth lit by the Sun, the stars, the
   Moon, each spacecraft's model with its fields of view and plumes, the
   ground stations, several camera views) and can show a run live while
-  it computes, paced to real time if you like; the app starts on Home
-  with nothing open; the external viewer support is removed; and the
-  licence is the EUPL-1.2. 2.6.0 played a run back in 3D inside the app,
+  it computes, paced to real time if you like, started the app on Home
+  with nothing open, removed the external viewer support and moved the
+  licence to the EUPL-1.2. 2.6.0 played a run back in 3D inside the app,
   enforced and logged every network use, with an audit anyone can run,
   and made the installers hash-checked with a bill of materials. 2.5.0 made the scenario's JSON page a code editor and
   placed IDM-CIC thrusters on the 3D model from their plume cones;

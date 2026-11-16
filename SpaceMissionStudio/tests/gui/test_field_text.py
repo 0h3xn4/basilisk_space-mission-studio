@@ -92,8 +92,9 @@ def test_a_spacecraft_message_uses_the_spacecraft_form_labels(qtbot):
 
 def test_every_numeric_spacecraft_field_has_a_title(qtbot):
     """Each number of a spacecraft and of its sections (but the orbit, whose
-    fields are tested above, and the 3D model, edited in its own dialog)
-    has a widget with a label: a new field without one would show its code."""
+    fields are tested above, the 3D model, edited in its own dialog, and
+    the thermal model, edited as tables with a heading per column) has a
+    widget with a label: a new field without one would show its code."""
     from spacemissionstudio.gui.spacecraft_editor import SpacecraftEditorDialog
     from spacemissionstudio.schema import scenario
 
@@ -108,7 +109,7 @@ def test_every_numeric_spacecraft_field_has_a_title(qtbot):
     missing = []
     for field in dataclasses.fields(scenario.SpacecraftConfig):
         annotation = inner(hints[field.name])
-        if field.name in ("orbit", "model"):
+        if field.name in ("orbit", "model", "thermal"):
             continue
         if dataclasses.is_dataclass(annotation):
             section_hints = typing.get_type_hints(annotation, vars(scenario))

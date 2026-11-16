@@ -188,8 +188,9 @@ from .flow_layout import FlowLayout
 from .plot_catalog import ACCESS_TIMELINE, PlotCatalog
 from .readout_panel import ReadoutPanel, value_at
 from .feedback import report
-from .theme import SERIES_COLORS, SIZE, TOKENS, WEB_FONT_STACK, on_change, set_role
+from .theme import SERIES_COLORS, SIZE, SPACE, TOKENS, WEB_FONT_STACK, on_change, set_role
 from .theme import plotly_template as pt
+from .value_sheet import NoteList
 from .widgets import ComboBox, make_window, show_window
 
 # Categorical series colours: the theme's categorical palette (theme/
@@ -567,7 +568,23 @@ class ResultsWidget(QWidget):
 
         layout = QVBoxLayout(self)
 
-        top_row = QHBoxLayout()
+        # One toolbar of groups that flow: on one line when the pane is wide
+        # enough, wrapping a whole group onto the next line when it is not.
+        # Three fixed rows left most of a wide window's width empty (the
+        # owner, 2026-11-12); one fixed row made the window too wide at
+        # 1280 px (docs/ux-audit.md U-03).
+        self.toolbar = QWidget()
+        toolbar_flow = FlowLayout(self.toolbar, spacing=SPACE["md"])
+
+        def group() -> QHBoxLayout:
+            holder = QWidget()
+            row = QHBoxLayout(holder)
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(SPACE["xs"])
+            toolbar_flow.addWidget(holder)
+            return row
+
+        top_row = group()
         top_row.addWidget(QLabel("Layout:"))
         self.layout_combo = ComboBox()
         for name in plot_page.LAYOUTS:
@@ -588,6 +605,7 @@ class ResultsWidget(QWidget):
         self.x_axis_combo.setAccessibleName("X-axis")
         self.x_axis_combo.currentIndexChanged.connect(self._redraw)
         top_row.addWidget(self.x_axis_combo)
+        top_row = group()
         self.events_label = QLabel("Events:")
         top_row.addWidget(self.events_label)
         self._event_buttons: dict = {}
@@ -600,8 +618,8 @@ class ResultsWidget(QWidget):
             button.toggled.connect(lambda on, k=kind: self._on_event_kind_toggled(k, on))
             top_row.addWidget(button)
             self._event_buttons[kind] = button
-        top_row.addStretch(1)
-        layout.addLayout(top_row)
+        self.compare_group = QWidget()  # placed in the toolbar below, with the comparison
+        layout.addWidget(self.toolbar)
 
         # One-click shortcuts to the series the scenario's own description
         # points at ("What to look at"), so nobody has to find
@@ -626,7 +644,7 @@ class ResultsWidget(QWidget):
         # are separate rows: one shared row squeezed the series box to a few
         # characters in the Results pane (a real regression, from a
         # screenshot).
-        button_row = QHBoxLayout()
+        button_row = group()
         self.export_button = QPushButton("Export CSV...")
         self.export_button.setToolTip("Export every series in this result as CSV files (SI units)")
         self.export_button.clicked.connect(self._on_export)
@@ -685,7 +703,6 @@ class ResultsWidget(QWidget):
         button_row.addWidget(self.export_cancel_button)
         self._export_worker: _ExportWorker | None = None
         self._export_ends: tuple = ()  # (on_done, on_failed, folder) of the export running
-        button_row.addStretch(1)
         # Run comparison (UX/UI guidelines): the same series from an earlier
         # run of this session, dashed, and the inputs that differ.
         self._runs: list = []  # gui.run_history.RunRecord, oldest first
@@ -702,16 +719,15 @@ class ResultsWidget(QWidget):
         self.diff_button = QPushButton("Input differences...")
         self.diff_button.setToolTip("Lists every scenario input that differs between the two runs.")
         self.diff_button.clicked.connect(self.show_input_differences)
-        layout.addLayout(button_row)
-        # On a row of its own, shown only once there is an earlier run: on
-        # the export row it made the pane, and so the window, too wide for
-        # 1280 px (docs/ux-audit.md U-03).
-        compare_row = QHBoxLayout()
+        # A group of its own, shown only once there is an earlier run; it
+        # wraps when the pane is narrow (docs/ux-audit.md U-03).
+        compare_row = QHBoxLayout(self.compare_group)
+        compare_row.setContentsMargins(0, 0, 0, 0)
+        compare_row.setSpacing(SPACE["xs"])
         for widget in (self.compare_label, self.compare_combo, self.diff_button):
-            widget.setVisible(False)
             compare_row.addWidget(widget)
-        compare_row.addStretch(1)
-        layout.addLayout(compare_row)
+        self.compare_group.setVisible(False)
+        toolbar_flow.addWidget(self.compare_group)
 
         # One line, always visible once a result exists, naming exactly what
         # produced it; blank for a hand-built result without provenance.
@@ -727,17 +743,12 @@ class ResultsWidget(QWidget):
 
         # The conservation/drift diagnostic (engine.results.
         # conservation_drift_warnings); hidden when there are none.
-        self.warnings_label = QLabel("")
-        self.warnings_label.setWordWrap(True)
-        set_role(self.warnings_label, role="small", tone="caution")
-        self.warnings_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.warnings_label = NoteList("warning")  # one row per warning, behind its icon
         self.warnings_label.setVisible(False)
         self.warnings_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.warnings_label)
         # Event kinds left off a plot because there were too many bands.
-        self.events_note = QLabel("")
-        self.events_note.setWordWrap(True)
-        set_role(self.events_note, role="small", tone="secondary")
+        self.events_note = NoteList("note")
         self.events_note.setVisible(False)
         self.events_note.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.events_note)
@@ -1037,6 +1048,11 @@ class ResultsWidget(QWidget):
             self._shown.remove(name)
             if self._focused >= index:
                 self._focused = max(self._focused - 1, 0)
+            if self._shown and plot_page.capacity(self._layout) > len(self._shown):
+                # Fewer plots: the grid fits them again, so the space is used (the owner, 2026-11-12).
+                self._layout = plot_page.best_layout(len(self._shown), self.web_view.width(),
+                                                     self.web_view.height())
+                self._set_layout_combo(self._layout)
         self._save_layout()
         self._redraw()
 
@@ -1046,9 +1062,9 @@ class ResultsWidget(QWidget):
         warnings = self._result.warnings if self._result is not None else []
         if not warnings:
             self.warnings_label.setVisible(False)
-            self.warnings_label.setText("")
+            self.warnings_label.set_notes([])
             return
-        self.warnings_label.setText("\n".join(f"⚠ {w}" for w in warnings))
+        self.warnings_label.set_notes(warnings)
         self.warnings_label.setToolTip(warnings_tooltip(warnings))
         self.warnings_label.setVisible(True)
 
@@ -1383,7 +1399,7 @@ class ResultsWidget(QWidget):
         self.figures = [fig for _name, fig in built if fig is not None]
         self._x_is_epoch = self._x_mode() == "epoch" and any(name != ACCESS_TIMELINE for name in self._shown)
         self._focused = min(self._focused, max(len(self.figures) - 1, 0))
-        self.events_note.setText("\n".join(self._band_notes))
+        self.events_note.set_notes(self._band_notes)
         self.events_note.setVisible(bool(self._band_notes))
 
     def _build_access_timeline_figure(self) -> go.Figure | None:
@@ -1549,8 +1565,10 @@ class ResultsWidget(QWidget):
         index = self.compare_combo.findData(chosen) if chosen is not None else 0
         self.compare_combo.setCurrentIndex(max(index, 0))
         self.compare_combo.blockSignals(False)
+        comparable = bool(others) and current is not None
+        self.compare_group.setVisible(comparable)
         for widget in (self.compare_label, self.compare_combo, self.diff_button):
-            widget.setVisible(bool(others) and current is not None)
+            widget.setVisible(comparable)
         self._update_provenance_label()
         if chosen is not None or self.compare_combo.currentData() is not None:
             self._redraw()  # the comparison drawn changed; with none before or after, the plots are as they were (M5a)

@@ -155,6 +155,12 @@ what has been verified where.
   check above and stops on any failure; otherwise it tags exactly the
   commit the check passed and starts the release workflow for the tag
   (a tag pushed with a workflow's token starts no workflow by itself).
+  With **publish** ticked, the release workflow publishes the release
+  once every file is built, installed, checked against its checksum and
+  attached; any failure leaves it a draft (or creates none). Without it,
+  the release stays a draft for a person to check and publish. The owner
+  asked for publishing to be automatic from 2.8.0 on (2026-11-15), and
+  the assistant starts the workflow with it when asked to publish.
   If a tag ruleset (Settings > Rules > Rulesets) restricts creating
   tags, GitHub Actions needs to be on its bypass list. Or tag by hand:
 - Tag the release commit (`develop` after the release pull request is
@@ -422,6 +428,49 @@ files from 09:31 until the tag was deleted. Two lessons: tag only once, the comm
 the release pull request's last CI ran on; and since advisories appear
 daily, run the pip-audit step locally just before tagging, so a new
 advisory is handled before the tag rather than after.
+
+2.8.0 was prepared on 2026-11-15 by this checklist: the menu bar,
+readable lists, values as sheets and dialogs that fit (#257), calm by
+default and the plot list in levels (#259), notes as lists and the
+remaining values as sheets (#261), with the release check and tag
+workflows (#255), the ECSS clause references (#254), the 2.7.0
+publication record (#253), private vulnerability reporting (#256),
+tornado 6.6.1 and two pillow advisories accepted (#260), and the
+documentation's screenshots retaken; a minor release because it adds
+features. No golden file, template, scenario field, command or exit
+status changed; 2.7.0 opens the files 2.8.0 saves (checked with 2.7.0's
+code on the 32 templates as 2.8.0 saves them). The space weather was
+refreshed (observations to 2026-11-14); CelesTrak reset the first two
+connections and answered the third. NASA MSFC's November 2026
+prediction is still not adopted (SRelD K-33). The CHANGELOG's heading
+carries 2026-11-16, the day of the tag, not the day it was prepared: the
+release check wants the tag's day, and the release pull request's CI and
+then `develop`'s take about two hours, past midnight UTC.
+It was published on 2026-11-16 at 00:35 UTC, the first release tagged and
+published from the Actions tab with **publish** on (SRelD issue 36): the
+tag workflow ([run 43778375893](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778375893)) passed the
+release check on `db58ba6`, #262's merge, and tagged it at 00:07; the
+release workflow ([run 43778461245](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778461245)) built,
+installed and checked every file, attached the eleven and published the
+release 29 minutes later. It was never a public release without files.
+
+2.9.0 was prepared on 2026-11-16 by this checklist: the spacecraft
+thermal analysis with templates 33 and 34 (#265), NASA MSFC's November
+2026 prediction (#264) and the 2.8.0 publication record (#263); a minor
+release because it adds a feature and an optional scenario field
+(`thermal`, schema version still 4). 2.8.0 opens the files 2.9.0 saves
+except those with a thermal model, which it refuses by name (checked
+with 2.8.0's code on the 34 templates as 2.9.0 saves them: 32 open with
+no message, 33 and 34 refused). The space weather was not refreshed:
+CelesTrak reset all three connections, so 2.9.0 carries 2.8.0's file
+(observations to 2026-11-14).
+It was published on 2026-11-16 at 19:03 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 38): the tag workflow
+([run 43930553885](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930553885)) passed the release
+check on `8646823`, #266's merge, and tagged it at 18:37; the release
+workflow ([run 43930715195](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930715195)) built, installed
+and checked every file, attached the eleven and published the release 26
+minutes later. It was never a public release without files.
 
 ---
 

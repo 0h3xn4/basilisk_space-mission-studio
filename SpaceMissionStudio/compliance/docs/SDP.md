@@ -61,10 +61,15 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.7.0, the 3D View as a
+signed (decision 11). The current release is 2.9.0, spacecraft
+thermal analysis on the 3D model with NASA's November 2026 solar-cycle
+prediction (published 2026-11-16); before it 2.8.0, a calmer window
+that is easier to read (a menu bar, a quieter Home and status bar,
+values as tables and notes as lists), with what the tool computes
+unchanged (published 2026-11-16), 2.7.0, the 3D View as a
 renderer that can show a run live, a start on Home with nothing open,
 the external viewer support removed and the EUPL-1.2 (published
-2026-11-11); before it 2.6.0, the run in 3D inside the app, network use
+2026-11-11), 2.6.0, the run in 3D inside the app, network use
 enforced and audited, and hash-checked installers with a bill of
 materials (published 2026-11-10), 2.5.0, the JSON page as a code editor
 and IDM-CIC thrusters on the 3D model (published 2026-11-08), 2.4.0, device axes from the IDM-CIC model's
@@ -157,7 +162,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.7.0, and the code is at 2.7.0.
+  release is 2.9.0, and the code is at 2.9.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;

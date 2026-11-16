@@ -92,7 +92,9 @@ def test_the_areas_and_what_they_hold(window):
         "Ground stations",
         "Ground stations > berlin-gs", "Mission sequence", "Monte Carlo", "Assumptions"]  # Assumptions: Phase 3d
     assert window.shell.page("scenario").header.isAncestorOf(window.scenario_editor.mode_toggle)  # Form · JSON
-    assert _tab_texts(window.run_views) == ["Run", "End of Life", "Budget", "Design Checks", "History", "Log"]  # History: M5a; Run: M5b; Design Checks: model analyses
+    # History: M5a; Run: M5b; Design Checks: model analyses; Thermal: SRS-F-29
+    assert _tab_texts(window.run_views) == ["Run", "End of Life", "Budget", "Design Checks", "Thermal", "History",
+                                            "Log"]
     assert _tab_texts(window.results_views) == ["Overview", "Plots", "3D View", "Dashboard", "Output", "Compare"]  # Overview: M6a; 3D View: SRS-F-16
     assert window.shell.page("timeline").content is window.event_timeline_widget
     assert window.shell.page("reports").content is window.reports_views  # M8: Exports, then Flight Software
@@ -244,8 +246,8 @@ def test_the_view_analyses_and_tools_commands(window):
     Analyses and Tools commands open their pages; Tools > Reference Data
     opens the dialog."""
     view = [command.label for command in window.commands if command.category == "View"]
-    assert view == ["Inspector", "Explain", "Calculation", "Problems", "Reset Layout", "Navigation: Icons Only",
-                    "Theme: System", "Theme: Light", "Theme: Dark"]
+    assert view == ["Inspector", "Explain", "Calculation", "Problems", "Menu Bar", "Status Bar: All Details",
+                    "Reset Layout", "Navigation: Icons Only", "Theme: System", "Theme: Light", "Theme: Dark"]
 
     def trigger(category, label):
         next(c for c in window.commands if c.category == category and c.label == label).action.trigger()

@@ -117,8 +117,8 @@
       ]
     },
     {
-      "name": "NASA MSFC solar-cycle prediction oct2026f10-prd.txt",
-      "version": "2026-10",
+      "name": "NASA MSFC solar-cycle prediction nov2026f10-prd.txt",
+      "version": "2026-11",
       "licence": "LicenseRef-NASA-public-work",
       "copyright": "NASA Marshall Space Flight Center",
       "holder": "NASA",
@@ -128,7 +128,7 @@
       "redistribution_status": "open",
       "text_source": "docs/legal/DATA_TERMS.md",
       "match": [
-        "*spacemissionstudio/data/spaceweather/oct2026f10-prd.txt"
+        "*spacemissionstudio/data/spaceweather/nov2026f10-prd.txt"
       ]
     },
     {

@@ -17655,3 +17655,322 @@ The owner confirmed that private vulnerability reporting is switched on
 for the repository, so the "Report a vulnerability" link in `SECURITY.md`
 works. `docs/legal/RISK_REGISTER.md` marks R8's last open item done and
 crosses it off the owner's to-do list.
+
+## A menu bar, readable drop-down lists, optional reference files (2026-11-12)
+
+The owner, showing other programs' menu bars: "I am missing something like
+this in the tool". The UI overhaul's M2a (2026-10-21) had removed the menu
+bar for the navigation rail, the top bar and the command palette. It is
+back, beside them: `gui/menu_bar.py` lays out File, Edit, View, Go, Run,
+Tools and Help as lists of registry command ids, so each item is the
+command's own action (text, shortcut, enabled state shared with the
+buttons and the palette). File > Open Recent reads the recent list Home
+shows, on each opening, skipping files that have gone; a file's path is
+its action's data and one bound method of the window opens it (a lambda
+holding the window on a child's signal keeps it alive past close, the
+cause of an earlier exit segfault). Edit > Settings... (`Ctrl+,`) is new.
+View > Menu Bar hides the bar and the layout keeps the choice; Reset
+Layout shows it again. `tests/gui/test_menu_bar.py` checks every
+registered command is in exactly one menu, so a new command needs a
+place.
+
+Then: "the drop down menus are very cramped and tight and unintuitive to
+use, particularly if there are many entries". Measured: a combo box's
+list drew 24 px rows with Qt's menu-like delegate (the style sheet's row
+rules did not reach it), had no hover mark, and a 60-entry list opened
+over its field as tall as the screen, scrolling with two small arrows.
+`gui/theme/combo.py` fixes all 93 combo boxes in one place: `AppStyle`
+(Fusion underneath, set by `apply_theme`) prepares each combo box as Qt
+polishes it, with `QStyledItemDelegate` (32 px rows, padding, hover and
+selected marks from `qss.py`), 12 visible rows, the list below the field
+(`combobox-popup: 0`) with a scroll bar, as wide as its longest entry;
+from 12 entries a "Type to filter" field narrows the list as one types,
+the first match current, the arrows and Enter acting on the list. Menu
+rows grew from 28 to 32 px.
+
+And, showing the Reference data window's "R-REC-P.676-13-Part1.txt
+missing" in red: "why does this not work". It works: the ITU's server
+returned the 44 kB file (checked 2026-11-12), but the installers may not
+carry it (the ITU allows its reproduction only with permission), so it
+is fetched on request, as the Eros files are. Red "missing" and "3 of 19
+need attention" in the status bar on every new install said otherwise.
+`reference_data.NOT_DOWNLOADED` now marks an optional file not yet
+fetched, in grey, with a note saying what needs it and that Download...
+gets it, and `needs_attention` leaves it out of the counts. The
+reference-data guide said "the installers fetch it" for the ITU file;
+corrected.
+
+The owner then sent the orbit-type switch, two screenshots ("more ugly,
+broken examples to be fixed"): each paragraph cut after its first line
+and the buttons clipped. Offscreen it laid out whole; on the owner's
+desktop the window manager gave it another width, and Qt does not size a
+window by its wrapped labels' height for width. `gui/theme/dialogs.py`
+fixes it for every dialog: on show and on each width change, the
+dialog's minimum height becomes what its layout needs at that width.
+`AppStyle` moved to `gui/theme/style.py`, preparing combo boxes and
+dialogs as Qt polishes them.
+
+"Raw text is visually always like noise. make the information clear and
+understandable. that applies to everything in the tool," with the 3D
+model editor's mass summary as the example (mass, centre of mass, six
+inertia terms and three principal axes as lines of numbers).
+`gui/value_sheet.py` adds `ValueSheet` (name, value right-aligned in
+tabular figures, unit; a title and a note) and `ValueTable` (a matrix or
+a few rows). The mass summary became a sheet, the inertia a 3 x 3
+matrix and the principal axes a table with each axis's moment, direction
+and nearest body axis (`model3d.principal_axes`); the surface summary a
+sheet of facets, total area and the area seen from each axis. The
+orbit-type switch shows the orbit now, after converting and on the new
+page side by side, one value a row, and says why when nothing converts.
+A design rule in `CLAUDE.md` and `docs/DESIGN.md`: never a sentence of
+numbers. The rest of the app follows, screen by screen.
+
+The owner, on Results › Plots: after ticking plots and clearing some, a
+1 x 2 grid kept its empty half; "I want the layout to change accordingly,
+such that the full space is always used". Clearing a tick now picks
+`plot_page.best_layout` for the plots left when the grid has room to
+spare, and the page draws `plot_page.filled_grid`: no empty column or row,
+and the last plot spanning a spare cell (three plots in 2 x 2: the third
+takes the bottom row). Checked in the page: 3, 2, 1 plots fill 1253 x 493
+px each time, and 1 plot in a chosen 2 x 3 fills it too. Then the three
+rows above the plots ("too much unused empty space"): one toolbar of
+groups in a `FlowLayout`, one row at 1920 px, two at 1280 px (the single
+fixed row of before made the window too wide there, U-03).
+
+**A segfault when `tests/gui/test_help.py` ran alone** (as CI's docs job
+runs it), in 3 of 4 runs: the window was not freed when closed and
+dropped, so a later garbage collection, in the reference data reader's
+thread, tore it down. Two references held it: File > Open Recent's
+`triggered` connected to the window's bound method, and the recursive
+helper that built the menus, a closure cycle holding that method.
+`gui/menu_bar.py` now connects a weak method and fills the menus with a
+module function; `test_the_window_is_freed_as_soon_as_it_is_dropped`
+checks the window is freed by reference count with the collector off.
+`test_help.py` alone: 5 of 5 runs pass.
+
+## Calm by default (2026-11-12)
+
+The owner, with a screenshot of Home (32 cards with their orbits and
+descriptions, the whole description beside them, the Calculation and
+Problems panels open, a full status bar): "this is too much noise. A
+user easily could get overwhelmed by the amount of information that is
+dumped on them." Home now shows Home: a card is its title and kind, its
+Open and Customize appear on the card picked or pointed at (their room
+kept, so nothing moves), and the details give the summary with "What to
+look at" and "Try changing" folded (`value_sheet.FoldSection`). The
+Inspector, Calculation and Problems panels step aside on Home and come
+back as they were when another area is shown; the saved layout keeps
+them as they are outside Home. The status bar shows the problem count
+and only what needs attention; View > Status Bar: All Details shows the
+rest. Then two more screenshots: the 3D View's note repeating "no
+attitude in this run; drawn aligned with the inertial axes" for fourteen
+spacecraft, now one line with their number and the names in the
+tooltip; and the formation dialog's "a·δex [m]" rows ("the units make no
+sense here"): each element is named by what it does, its symbol after
+it, in three groups, with a line saying why they are distances.
+
+"This also is very noisy and unclear. maybe restructure in more dropdown
+levels", read as the Results plot catalog: 44 lines under seven topics,
+each "smallsat-1: Mean (first-order J2) Semi-Major Axis" and so on (the
+spacecraft repeated because the Sun's, Moon's and Earth's positions
+counted as a second "spacecraft"), and eleven code names under Other
+(`smallsat-1.disturbance.aero_torque`). `plot_categories.catalog_path`
+places each entry: topic, spacecraft (only when the run has several),
+group of related plots, plot by what is left of its title; disturbances
+go to Attitude and shading to Power with readable names, the Sun, Moon
+and planets under their own group. A group named as its topic, or of one
+plot, is no level. Groups open when one of their plots is shown, and a
+search opens what holds its matches.
+
+## Notes as lists, the remaining values as sheets (2026-11-15)
+
+The rest of the owner's "raw text is visually always like noise ... that
+applies to everything in the tool". A scan of every label the GUI fills
+found two patterns left. The first was blocks of dash-led notes: the
+budget, the altitude trade and launch sweep, the design checks, the
+lifetime warnings, the model analyses, the re-entry estimate, the
+Results warnings and the scenario plausibility line, and the 3D model
+editor's problems. The second was sentences of numbers: "Total: 41.27
+m/s, 9.842 kg", "Dry mass 180.0 kg, Isp 220 s, efficiency 0.950; 4
+iteration(s)", "Basic dry ... + growth ... = launch ... kg", the
+launcher verdict, the momentum per axis, the casualty areas and risk,
+the spacecraft's 3D model summary, the products of inertia and the
+Settings host list.
+
+`value_sheet.NoteList` puts each note on its own row behind an icon
+(info, caution triangle, finding circle), the text wrapped beside it and
+kept in the body colour. After four, the rest wait behind "Show n more".
+Its `text()` gives the same lines as before, so the tests and copying
+that read them are unchanged. The sentences became `ValueSheet`s and
+`ValueTable`s. The mass sum and the launcher verdict moved under their
+own tables; they had sat below every group. A text value in a sheet
+keeps the body font, and numbers keep tabular figures.
+
+One snag: under a fixed vertical policy Qt takes a widget's height from
+`sizeHint()`, and the list's layout guessed a 185 px width: four lines
+for a one-line warning. At 1280 x 720 the Results page then lost its fit
+(`test_the_window_fits_1280_by_720_with_provenance_and_warning_lines`).
+The list now answers for the width it has, and asks its layout again
+when that width changes.
+
+A second snag, from the full suite: three keyboard tests in
+`test_panels.py` failed after `test_a_project_layout_outlives_the_window`
+and passed alone. The new window was visible but never became active,
+so Ctrl+1 did nothing. `ValueSheet` and `ValueTable` showed their title
+and note labels before the layout took them, so each titled sheet was a
+top-level window for a moment. The "Totals" and "Hosts" sheets, built
+with the main window, took its activation. The labels now get their
+parent first; `test_a_titled_sheet_opens_no_window_of_its_own` watches
+for any window shown while sheets and note lists are built, and fails
+with the old order.
+
+## Release 2.8.0 published (2026-11-16)
+
+#262 was merged once CI was green, at 22:37 UTC on 2026-11-15, and CI
+passed on `develop`'s merge commit `db58ba6` by 23:16. The CHANGELOG
+is dated 2026-11-16, so the assistant waited for midnight UTC and, as
+the owner asked, started the tag workflow at 00:06 with version 2.8.0,
+ref `develop` and **publish** on. The release check passed and the
+workflow tagged `db58ba6` at 00:07
+([run 43778375893](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778375893)). The release workflow
+it started ([run 43778461245](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778461245)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+00:35:50, so it was never public without its files. The digests of the
+`.deb` and the setup program equal the checksums in its notes. SRelD
+issue 36, the SDP, H05 and `releasing.md` record the tag, the runs and
+the files' digests.
+
+## Release 2.8.0 prepared (2026-11-15)
+
+A minor release: it adds features, all in the interface. Contents since
+2.7.0: the 2.7.0 publication record (#253), the compliance lists
+pointing to ECSS clauses (#254), the release check and tag workflows
+(#255), private vulnerability reporting (#256), the menu bar, readable
+lists, values as sheets and dialogs that fit (#257), calm by default
+and the plot list in levels (#259), tornado 6.6.1 and two pillow
+advisories accepted (#260), notes as lists and the remaining values as
+sheets (#261), and the documentation's screenshots retaken.
+
+Prepared by `docs/developer/releasing.md`: version 2.8.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script; the
+CHANGELOG's Unreleased entries under 2.8.0 with an introduction, Who
+should update and Known limits; SRelD issue 35 (2.8.0 prepared, 2.7.0
+previous, K-13 refreshed, K-25 with the two new pillow advisories, K-33
+still open); the SDP, SRS, ICD, CSD, SUM and both READMEs name 2.8.0.
+The space weather was refreshed first: CelesTrak's file of 2026-11-15,
+on the third try (CelesTrak reset the first two connections). NASA
+MSFC's November 2026 prediction is still not adopted (K-33, the owner's
+decision: it changes every template's drag).
+
+Compatibility checked with 2.7.0's own code (the tagged commit
+`ae5525cb8`, extracted with `git archive`): the 32 templates, saved by
+this code, open and validate in 2.7.0 with no message. No golden file,
+template, schema field, command or exit status changed since 2.7.0.
+
+## NASA MSFC's November 2026 prediction (2026-11-16)
+
+The owner decided to adopt NASA MSFC's November 2026 solar-cycle
+prediction, held back for 2.7.0 and 2.8.0 because it moves the golden
+outputs (SRelD K-33). The file was downloaded from NASA's site
+(`wp-content/uploads/2026/11/nov2026f10-prd.txt`); the October issue
+downloaded the same way matches the bundled copy once line endings and
+the trailing spaces of the percentile header are normalised, and the
+November file was normalised the same way. It starts in May 2026 (October's
+started in April) and ends in October 2041 like October's. December's issue
+is not out yet (the URL answers 404).
+
+`MSFC_BUNDLED_PATH`, the Reference data entry, the package data, the
+licence inventory and the notices name the new file. The regression
+baseline found 16 templates whose lifetime over a year changes, since
+drag reaches MSFC's table after CelesTrak's daily forecast ends on
+2026-12-29. A first rewrite kept only the lifetime fingerprints and the note
+naming the file. That was wrong: the templates whose
+epoch is already past CelesTrak's daily forecast use the prediction in
+the run too, and the next comparison showed their runs moving (by
+millimetres of semi-major axis). The 16 fingerprints were then rewritten
+whole, and every difference beyond the comparison's tolerance was listed
+and read with the comparison itself (`golden_capture.compare` against the
+previous files): lifetimes, those runs and the file's name, nothing else.
+The largest change is template 18's satellite with its
+own drag coefficient: it re-enters after 327.6 days instead of 325.6
+(`docs/changes.md`). `test_spaceweather.py` checks the November values
+(January 2030: 74.1 sfu and Ap 11.3 at the 50th percentile, 78.7 and
+15.9 at the 95th; June 2027: 104.3 sfu).
+
+## Spacecraft thermal analysis (2026-11-16)
+
+The owner asked for a multi-node thermal analysis of a spacecraft,
+built autonomously in two phases on `feature/thermal-analysis`, under
+one absolute rule: nothing of Basilisk changes, in the repository or at
+run time. Phase 1 built the `thermal` section of a spacecraft from its
+3D model (a node per part, contact conductors from the meshes), the
+fluxes on every face from the run (sunlight, Basilisk's `albedo` module
+run stand-alone, planetary infrared by the plate-to-sphere view factor),
+an implicit second-order solver with a step check, an energy balance
+and an orbit-periodic start, NASA's hot, cold and nominal cases, the
+checks, **Run › Thermal**, the exports, the API, the CLI and template
+33. Phase 2 added specific-heat and conductivity tables, sweeps, a
+one-at-a-time sensitivity and a seeded thermal Monte Carlo in the Monte
+Carlo view, the 3D model coloured by temperature, flexible solar arrays
+as nodes that turn with the recorded hinge angle, 26 coatings from NASA
+RP-1121 and template 34. Every choice is in
+`docs/developer/thermal-decisions.md` (T-01 to T-39), the verification
+in `compliance/validation/thermal-vv.md`: Basilisk's `sensorThermal`
+within 0.072 K at a 1 s step (its own first-order error; it uses
+5.76051e-8 for the Stefan-Boltzmann constant, a draft upstream issue in
+T-33, not filed), analytic cases to 1e-12 K, Monte Carlo reruns
+bitwise identical. NIST's property site could not be reached from the
+build environment, so the library has no conductivities (T-38). The
+full suite's first run on the finished branch found template 34
+sampling its 0.8 Hz wings every 30 s, which the scenario explainer
+flags as aliasing; it records every 0.5 s step now. Merged as #265.
+
+## Release 2.9.0 prepared (2026-11-16)
+
+A minor release: it adds a feature and a scenario field. Contents since
+2.8.0: the 2.8.0 publication record (#263), NASA MSFC's November 2026
+prediction (#264, SRelD K-33 closed) and the spacecraft thermal analysis
+with templates 33 and 34 (#265, SRS-F-29).
+
+Prepared by `docs/developer/releasing.md`: version 2.9.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script; the
+CHANGELOG's Unreleased entries under 2.9.0 with an introduction, Who
+should update and Known limits; SRelD issue 37; the SDP, SRS, ICD, CSD,
+SUM and both READMEs name 2.9.0. The space weather was not refreshed:
+CelesTrak reset all three connections on 2026-11-16, so 2.9.0 carries
+2.8.0's file (observations to 2026-11-14, updated 2026-11-15; K-13).
+
+Compatibility checked with 2.8.0's own code (the tagged commit
+`db58ba6`, extracted with `git archive`): of the 34 templates as this
+code saves them, the 32 without a thermal model open and validate in
+2.8.0 with no message; 2.8.0 refuses templates 33 and 34 by name
+("unexpected field 'thermal', not one this version knows"). The schema
+version stays 4. The golden outputs changed since 2.8.0 only through the
+MSFC prediction (#264) and the two new templates.
+
+The release pull request's first CI run failed one check:
+`test_golden_outputs` on template 27, whose wheel speeds moved by 1.04e-6
+of their scale (the bound is 1e-6). The push run of the same commit and
+#265's runs passed; the wheels are driven through the flexible arrays'
+barely damped hinge mode, which amplifies last-bit differences between
+runners. `tests/golden_capture.py` gives that one series, by name, its own
+tolerance of 1e-5 (`AMPLIFIED_SERIES`), about ten times the measured
+difference, as its other floors are set; no other series or template is
+loosened, and a test holds that.
+
+## Release 2.9.0 published (2026-11-16)
+
+#266 was merged once CI was green, at 17:46 UTC, and CI passed on
+`develop`'s merge commit `8646823` by 18:16. As the owner asked, the
+assistant started the tag workflow at 18:36 with version 2.9.0, ref
+`develop` and **publish** on. The release check passed and the workflow
+tagged `8646823` at 18:37
+([run 43930553885](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930553885)). The release workflow
+it started ([run 43930715195](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930715195)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+19:03:35, so it was never public without its files. The digests of the
+`.deb` and the setup program equal the checksums in its notes. SRelD
+issue 38, the SDP, H05 and `releasing.md` record the tag, the runs and
+the files' digests.

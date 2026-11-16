@@ -71,6 +71,8 @@ from typing import Any
 
 from ..engine.findings import Finding
 from .epochs import parse_epoch_utc
+from . import thermal as thermal_schema
+from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence
 
@@ -2306,6 +2308,9 @@ class SpacecraftConfig:
     # The run analyses built on the model and the mounted equipment
     # (ModelAnalysesConfig); None, as every scenario before them: none.
     model_analyses: ModelAnalysesConfig | None = None
+    # The thermal model built on the 3D model (schema.thermal.ThermalConfig;
+    # docs/developer/thermal-design.md); None, as every scenario before it.
+    thermal: ThermalConfig | None = None  # the thermal model on the 3D model (schema/thermal.py, SRS-F-29)
 
     def mounted_definitions(self) -> list:
         """``(where, mount)`` for every sensor, actuator and RF antenna with
@@ -2379,6 +2384,9 @@ class SpacecraftConfig:
         if self.model is not None:
             self.model.validate(self.name)
         self._validate_mounts()
+        if self.thermal is not None:
+            _require(isinstance(self.thermal, ThermalConfig), f"{self.name}: thermal must be an object")
+            self.thermal.validate(self.name, thermal_schema.context_for(self))
         _require(len(self.sigma_bn_init) == 3, f"{self.name}: sigma_bn_init must have 3 elements")
         _require(len(self.omega_bn_b_init_rad_s) == 3, f"{self.name}: omega_bn_b_init_rad_s must have 3 elements")
         # drag_coeff/drag_area_m2/srp_coeff/srp_area_m2 feed straight into
@@ -3917,6 +3925,13 @@ class Scenario:
             self._validate_small_body()
         _require(not self.gravity.albedo or sun_tracked,
                   "gravity.albedo needs 'sun' in gravity.third_body_perturbers: the reflected light is the Sun's")
+        thermal = [sc.name for sc in self.spacecraft if sc.thermal is not None]
+        if thermal:
+            _require(self.gravity.central_body in thermal_schema.THERMAL_CENTRAL_BODIES,
+                      f"{thermal[0]}: thermal needs Earth or Mars as gravity.central_body (it models their albedo and "
+                      f"infrared, decision T-17), not {self.gravity.central_body!r}")
+            _require(sun_tracked, f"{thermal[0]}: thermal needs 'sun' in gravity.third_body_perturbers: "
+                                  "sunlight heats the spacecraft")
         self.space_weather.validate()
         self.sim_settings.validate()
         self.monte_carlo.validate()
@@ -4083,6 +4098,9 @@ class Scenario:
                 analyses["observers"] = _records(ObserverSiteConfig, analyses.pop("observers", []),
                                                  f"{where}.model_analyses.observers")
                 sc["model_analyses"] = _record(ModelAnalysesConfig, analyses, f"{where}.model_analyses")
+            if sc.get("thermal") is not None:
+                sc["thermal"] = thermal_schema.from_dict(sc["thermal"], f"{where}.thermal", _record, _records,
+                                                         _fields_of)
             if sc.get("data_handling") is not None:
                 handling = _fields_of(sc["data_handling"], f"{where}.data_handling")
                 handling["instruments"] = _records(InstrumentConfig, handling.pop("instruments", []),
@@ -4184,6 +4202,10 @@ def _drop_unset_model_analyses(sc: dict) -> None:
             rf_link["antenna_mount"] = _compact(rf_link["antenna_mount"])
     if sc.get("model_analyses") is None:
         sc.pop("model_analyses", None)
+    if sc.get("thermal") is None:
+        sc.pop("thermal", None)
+    else:
+        sc["thermal"] = thermal_schema.compact(sc["thermal"])
     model = sc.get("model")
     if model is None:
         return
@@ -4309,7 +4331,8 @@ def _check_types(obj, path: str, errors: list[str]) -> None:
     compares it with something."""
     hints = _TYPE_HINTS.get(type(obj))
     if hints is None:
-        hints = _TYPE_HINTS[type(obj)] = typing.get_type_hints(type(obj), globals())
+        hints = _TYPE_HINTS[type(obj)] = typing.get_type_hints(
+            type(obj), vars(sys.modules[type(obj).__module__]) | globals())
     for f in dataclasses.fields(obj):
         value, where = getattr(obj, f.name), f"{path}.{f.name}" if path else f.name
         problem = _type_problem(value, hints.get(f.name, typing.Any))

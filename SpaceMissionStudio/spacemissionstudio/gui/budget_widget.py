@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -50,7 +50,8 @@ from ..schema.scenario import SUPPORTED_DISPOSALS, PropellantBudgetConfig
 from .calculation_panel import Explanation
 from .chained_inputs_panel import ChainedInputsPanel
 from .data_table import DataTable, Row
-from .theme import set_role
+from .theme import SPACE, set_role
+from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, PreciseDoubleSpinBox
 
 _DISPOSAL_LABELS = {
@@ -351,19 +352,22 @@ class BudgetWidget(QWidget):
         self.table.setMinimumHeight(260)  # [px] a phase's rows stay readable when the result tables open below
         layout.addWidget(self.table, 1)
         totals_row = QHBoxLayout()
-        self.totals_label = QLabel("")
-        set_role(self.totals_label, role="strong")
-        totals_row.addWidget(self.totals_label, 1)
+        totals_row.setSpacing(SPACE["xl"])
+        # The totals and what they came from, a value per row (never a sentence of numbers).
+        self.totals_sheet = ValueSheet("Totals")
+        self.inputs_sheet = ValueSheet("Computed with")
+        for sheet in (self.totals_sheet, self.inputs_sheet):
+            sheet.setVisible(False)
+            totals_row.addWidget(sheet, 0, Qt.AlignmentFlag.AlignTop)
+        totals_row.addStretch(1)
         self.calculation_button = QPushButton("Show calculation")
         self.calculation_button.setToolTip("How the selected row's delta-V and propellant were computed (or, with no "
                                            "row selected, the total): the equations, each input and its source")
         self.calculation_button.setEnabled(False)
         self.calculation_button.clicked.connect(self.show_calculation)
-        totals_row.addWidget(self.calculation_button)
+        totals_row.addWidget(self.calculation_button, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(totals_row)
-        self.notes_label = QLabel("")
-        self.notes_label.setWordWrap(True)
-        set_role(self.notes_label, tone="secondary")
+        self.notes_label = NoteList("note")
         layout.addWidget(self.notes_label)
 
         self._trade = None
@@ -372,9 +376,7 @@ class BudgetWidget(QWidget):
         self.trade_table = self._picker_table()
         self.trade_table.row_chosen.connect(self._trade_row_picked)
         trade_layout.addWidget(self.trade_table)
-        self.trade_notes_label = QLabel("")
-        self.trade_notes_label.setWordWrap(True)
-        set_role(self.trade_notes_label, tone="secondary")
+        self.trade_notes_label = NoteList("note")
         trade_layout.addWidget(self.trade_notes_label)
         self.trade_group.setVisible(False)
         layout.addWidget(self.trade_group)
@@ -385,9 +387,7 @@ class BudgetWidget(QWidget):
         self.sweep_table = self._picker_table()
         self.sweep_table.row_chosen.connect(self._sweep_row_picked)
         sweep_layout.addWidget(self.sweep_table)
-        self.sweep_notes_label = QLabel("")
-        self.sweep_notes_label.setWordWrap(True)
-        set_role(self.sweep_notes_label, tone="secondary")
+        self.sweep_notes_label = NoteList("note")
         sweep_layout.addWidget(self.sweep_notes_label)
         self.sweep_group.setVisible(False)
         layout.addWidget(self.sweep_group)
@@ -545,7 +545,7 @@ class BudgetWidget(QWidget):
                          f"{worst.delta_v_of('End of life', ''):.1f}", f"{worst.budget.total_propellant_kg:.2f}",
                          fits))
         self._fill(self.trade_table, _TRADE_COLUMNS, rows, trade.altitudes.index(best) if best is not None else None)
-        self.trade_notes_label.setText("\n".join(f"- {n}" for n in trade.notes))
+        self.trade_notes_label.set_notes(trade.notes)
         self.trade_group.setVisible(True)
         self.trade_table.view.clearSelection()
         self.trade_table.view.selectRow(trade.altitudes.index(best) if best is not None else len(trade.altitudes) - 1)
@@ -554,7 +554,7 @@ class BudgetWidget(QWidget):
         if self._trade is not None:
             case = self._trade.altitudes[row]
             self._show_sweep(case.sweep)
-            self.status_label.setText(f"{case.altitude_km:g} km, " + self.status_label.text())
+            self.status_label.setText(f"{case.altitude_km:g} km, " + self.status_label.text())  # whose budget it is
 
     def _show_sweep(self, sweep) -> None:
         self._sweep = sweep
@@ -564,7 +564,7 @@ class BudgetWidget(QWidget):
                  f"{case.budget.total_delta_v_m_s:.1f}", f"{case.budget.total_propellant_kg:.2f}")
                 for case in sweep.cases]
         self._fill(self.sweep_table, _SWEEP_COLUMNS, rows, sweep.cases.index(worst))
-        self.sweep_notes_label.setText("\n".join(f"- {n}" for n in sweep.notes))
+        self.sweep_notes_label.set_notes(sweep.notes)
         self.sweep_group.setVisible(True)
         self.sweep_table.view.clearSelection()  # so re-selecting the same row still shows this sweep's budget
         self.sweep_table.view.selectRow(sweep.cases.index(worst))  # shows the worst case's budget
@@ -575,8 +575,7 @@ class BudgetWidget(QWidget):
             self._show(case.budget)
             from ..engine.propellant_budget import years_late
 
-            self.status_label.setText(f"Launch {case.launch_utc:%Y-%m-%d} ({years_late(case.delay_years)}): "
-                                      + self.status_label.text())
+            self.status_label.setText(f"Launch {case.launch_utc:%Y-%m-%d} ({years_late(case.delay_years)})")
 
     def _show(self, budget) -> None:
         self._budget = budget
@@ -586,10 +585,16 @@ class BudgetWidget(QWidget):
             cells = (entry.phase, entry.contributor, dv, f"{entry.propellant_kg:.3f}", entry.margin, entry.source)
             rows.append(Row(cells, tooltips=dict(enumerate(cells))))
         self.table.set_table(_COLUMNS, rows, numeric=(2, 3), stretch=1)
-        self.status_label.setText(f"Dry mass {budget.dry_mass_kg:.1f} kg, Isp {budget.isp_s:g} s, "
-                                  f"efficiency {budget.efficiency:.3f}; {budget.iterations} iteration(s)")
-        self.totals_label.setText(f"Total: {budget.total_delta_v_m_s:.2f} m/s, {budget.total_propellant_kg:.3f} kg")
-        self.notes_label.setText("\n".join(f"- {n}" for n in budget.notes))
+        self.status_label.setText("")
+        self.totals_sheet.set_rows([("Delta-V", f"{budget.total_delta_v_m_s:.2f}", "m/s"),
+                                    ("Propellant", f"{budget.total_propellant_kg:.3f}", "kg")])
+        self.inputs_sheet.set_rows([("Dry mass", f"{budget.dry_mass_kg:.1f}", "kg"),
+                                    ("Specific impulse", f"{budget.isp_s:g}", "s"),
+                                    ("Efficiency", f"{budget.efficiency:.3f}", ""),
+                                    ("Iterations", f"{budget.iterations}", "")])
+        for sheet in (self.totals_sheet, self.inputs_sheet):
+            sheet.setVisible(True)
+        self.notes_label.set_notes(budget.notes)
         self.copy_button.setEnabled(True)
         self.calculation_button.setEnabled(True)
 

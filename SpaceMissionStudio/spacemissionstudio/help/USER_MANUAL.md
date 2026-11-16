@@ -250,7 +250,7 @@ A few things to notice right away:
     use allowed or refused: [Network use and offline mode](docs/reference/network.md)),
     **Change history** (**Author**: the name each save records in the
     scenario's change history, the command line's too; empty: your user
-    name), **Layout** (the rail as icons only, the **Inspector** and **Problems** panels, **Reset Layout**),
+    name), **Layout** (the menu bar, the rail as icons only, the **Inspector** and **Problems** panels, **Reset Layout**),
     **Keyboard** (every shortcut) and **About** (the version and the
     licence; **Third-Party Licences...** shows the EUPL-1.2 text and the
     licences of everything the package contains).
@@ -266,9 +266,35 @@ A few things to notice right away:
   number replaces the number only; the unit stays. An optional group
   (Station keeping, Power budget, Monte Carlo, ...) shows only its title
   while it is off; tick it to see and set its fields.
+* The **menu bar** at the top holds every command, by menu:
+  * **File**: New Scenario, Open..., **Open Recent** (the same recent
+    scenarios as Home), Save, Save As..., Change History..., Export Orbits
+    as CCSDS... and Quit.
+  * **Edit**: Undo, Redo and **Settings...** (`Ctrl+,`).
+  * **View**: the Inspector, Calculation and Problems panels, Explain, the
+    menu bar itself, the rail as icons only, the theme, Reset Layout and
+    the command palette.
+  * **Go**: the six areas (`Ctrl+1` to `Ctrl+6`) and the **Time Cursor**
+    moves of Results.
+  * **Run**: Run, Cancel Run, the run mode, Live plot, End of Life,
+    Budget, Design Checks and Open Monte Carlo Results....
+  * **Tools**: 3D Model..., Flight Software, Check a CCSDS File...,
+    Reference Data... and Check Reference Data.
+  * **Help**: this manual, Keyboard Shortcuts, Third-Party Licences... and
+    About.
+
+  A menu item shows its shortcut and is greyed out when its command is.
+  **View > Menu Bar** hides the menu bar (the window remembers it); every
+  shortcut and the command palette still work, and **Settings > Layout**
+  or the palette ("menu bar") shows it again.
 * Every command is also in the **command palette**: press `Ctrl+K`, or
   click the search field in the top bar, and type part of its name
-  ("save as", "budget", or a spacecraft's name). There is no menu bar.
+  ("save as", "budget", or a spacecraft's name).
+* **Drop-down lists** open below their field, at most 12 rows high with a
+  scroll bar. A list of 12 entries or more has a **Type to filter** field
+  at its top: just type while it is open and only the entries containing
+  what you typed stay; the first is selected, the arrow keys move, `Enter`
+  picks, `Esc` closes.
 * The **Inspector** panel on the right (`Ctrl+I`): the field you are in,
   its value, the range it accepts and its help (a button or tab shows
   nothing there). On a screen narrower than 1600 pixels a new window
@@ -373,7 +399,7 @@ its Scenario page ("Building your own scenario, step by step", below).
 
 ## 4. Your first simulation, in five minutes
 
-1. **Pick a template.** Home shows all 32 built-in example missions as
+1. **Pick a template.** Home shows all 34 built-in example missions as
    cards, numbered roughly from simplest to most advanced -- "01 -
    Two-body circular orbit" is the simplest possible case (one
    satellite, one orbit, nothing else going on) and a good first choice.
@@ -975,6 +1001,34 @@ Every number comes with its method and source
 results come with their sampling error. Template 32 shows them all. On
 the command line: `check-design`, `model-analyses` and `reentry`.
 
+### Thermal analysis
+
+A spacecraft with a 3D model can carry a thermal model (the spacecraft
+editor's **3D model** page, group **Thermal model**): a node per part,
+generated from the model with its masses, materials and contacts, then
+the optics of every face, MLI, radiators, conductors, heat pipes, the
+heat each unit dissipates, thermostatic heaters and each node's limits.
+After a run, **Run › Thermal** solves it in a nominal, a hot and a cold
+case (NASA/TM-2001-211221), or the cases you define, from the run's
+orbit, attitude and eclipses: sunlight, the planet's albedo (Basilisk's
+`albedo` module) and its infrared on every face.
+
+It shows each node's temperatures with their limits, the heat flows, the
+heaters' duty and sized power, the heat the radiators reject, and limit
+violations on the Timeline; the checks (including faces that other parts
+can shade, which the model does not account for) are in the Problems
+panel. Everything exports with its provenance.
+
+On the same run, without running Basilisk again, you can sweep any
+parameter, rank the parameters by their effect (a one-at-a-time
+sensitivity), and run a seeded thermal Monte Carlo that opens in the
+Monte Carlo view. The 3D model can be coloured by temperature. Flexible
+solar arrays are nodes whose faces turn with their hinge, and a node's
+specific heat or a conductor's conductivity can follow a table of
+temperature. Templates 33 and 34 show it; see
+[Thermal analysis](docs/user-manual/thermal.md) and the method in
+`docs/models/thermal.md`. On the command line: `thermal`.
+
 ### Flexible solar arrays
 
 **Flexible solar arrays** (the spacecraft's **Orbit / mass** page) lists
@@ -1213,20 +1267,30 @@ configuration. Type in its filter to find a value (`sha256`, `rng`,
 `J2000`); **Copy as JSON** copies the record as `provenance.json` holds
 it.
 
-* **The catalog** lists every plot by group (Orbit, Attitude, Power,
-  Link, Data, Thermal, Propellant, Sensors, Monte Carlo), by its title
-  (e.g. "Inertial Position (ECI)"; the spacecraft is named when the run
-  has several). **Search plots** filters it by title, code name or
-  group; Enter shows the first match. Hover an entry to see its code
+* **The catalog** lists every plot in levels: the topic (Orbit,
+  Attitude, Power, Link, Data, Thermal, Propellant, Sensors, Monte
+  Carlo), then the spacecraft when the run has several, then a group of
+  related plots (Osculating elements, Mean elements (first-order J2),
+  Station keeping, Disturbances, Array shading, Sun, Moon and planets),
+  then the plot, named by what its parents leave ("RAAN" under Mean
+  elements). Each level shows how many plots it holds; a group opens with
+  a click, and opens by itself when one of its plots is shown. **Search
+  plots** filters by title, code name or level and opens the levels that
+  hold a match; Enter shows the first match. Hover an entry to see its code
   name (e.g. `sat-1.position_N`), which is also its CSV file name.
   Click a name to show that plot in the selected cell; tick it to add it
   to the grid, clear the tick to take it out. With ground stations the
   Link group also has **Ground Station Access Timeline**: every
   station's passes over every spacecraft in one chart.
 * **Layout** -- how many plots the grid shows, from 1 x 1 to 3 x 2 (six
-  at most). Ticking more plots than fit picks a bigger layout by itself.
-  The layout and the plots shown are kept for each scenario and come
-  back after the next run.
+  at most). Ticking more plots than fit picks a bigger layout by itself,
+  and clearing a tick makes the grid smaller again, so the plots always
+  fill the area: one plot takes all of it, two share it, and three in a
+  2 x 2 grid let the third span the bottom row. The layout and the plots
+  shown are kept for each scenario and come back after the next run.
+* **The toolbar** above the plots (Layout, X-axis, Events, the exports,
+  Compare with) is one row on a wide window and wraps onto a second only
+  when the pane is narrow.
 * **Click a plot** to select it (a blue frame): **Save PNG...** and
   **Save SVG...** save the selected plot. A click also sets the time
   cursor. Zooming or panning one plot does the same to the others: their
@@ -1842,7 +1906,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-two built-in templates teaches, in
+  describes what each of the thirty-four built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

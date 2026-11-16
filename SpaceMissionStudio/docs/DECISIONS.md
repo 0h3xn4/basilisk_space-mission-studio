@@ -3183,3 +3183,105 @@ what is open. Not legal advice.
   are not in the repository); the CCSDS list (its terms are unread, D5);
   the wording in earlier commits (removing it rewrites history, the
   owner's call).
+
+## A menu bar again, and readable drop-down lists (2026-11-12)
+
+- **Decision:** the window has a menu bar (File, Edit, View, Go, Run,
+  Tools, Help) built from the action registry (`gui/menu_bar.py`), beside
+  the rail, the top bar and the command palette. **Why:** the owner asked
+  for one ("I am missing something like this"); M2a removed it
+  (2026-10-21) for the palette, which stays. Built from the registry, a
+  menu item cannot disagree with its shortcut or buttons, and a test
+  keeps every command in exactly one menu.
+- **Decision:** View > Menu Bar can hide it, kept with the window's
+  layout; Reset Layout shows it. **Why:** the shell without it was a
+  deliberate design; those who liked it keep it at no cost.
+- **Decision:** Edit > Settings... (`Ctrl+,`) is a new command. **Why:**
+  the place people look for settings in a menu bar, and the common key.
+- **Decision:** every combo box's list opens below the field
+  (`combobox-popup: 0`), 12 rows high with a scroll bar, rows drawn by
+  `QStyledItemDelegate` so the style sheet's row height, padding and
+  hover apply, and a "Type to filter" field from 12 entries
+  (`gui/theme/combo.py`, applied by the application style `AppStyle` as
+  Qt polishes each combo box). **Why:** the owner found the lists
+  "cramped and unintuitive, particularly with many entries"; measured,
+  a 60-entry list covered the screen over its field with 24 px rows and
+  arrow scrolling. One place fixes all 93 combo boxes, with no change to
+  their values or signals; an editable combo box with a completer was
+  not chosen, as it would let any text be typed.
+- **Decision:** an optional reference file fetched only on request (the
+  Eros files, ITU-R P.676-13) is "not downloaded" when absent, not
+  "missing", and does not count as needing attention. **Why:** every new
+  install showed three red "missing" files and "3 need attention" for
+  data nothing used.
+
+## Values as tables, and dialogs that fit their text (2026-11-12)
+
+- **Decision:** several values of one thing are shown as a
+  `ValueSheet` (name, value right-aligned in tabular figures, unit) or a
+  `ValueTable`, never as a sentence of numbers; a design rule in
+  `CLAUDE.md` and `docs/DESIGN.md`. **Why:** the owner: "raw text is
+  visually always like noise. make the information clear and
+  understandable. that applies to everything in the tool." First the 3D
+  model editor's mass and surface summaries and the orbit-type switch;
+  the rest by an audit of every screen, screen by screen.
+- **Decision:** the command line keeps its plain lines
+  (`model3d.principal_summary`); the editor's summary gives the same
+  text for copying. **Why:** a terminal has no table widget, and scripts
+  read those lines.
+- **Decision:** every `QDialog` gets a minimum height equal to what its
+  layout needs at its current width, on show and on each width change
+  (`gui/theme/dialogs.py`, from `AppStyle.polish`). **Why:** Qt does not
+  size a top-level window by its wrapped labels' height for width; the
+  orbit-type switch showed one line of each paragraph and clipped
+  buttons on the owner's desktop. One place fixes every dialog.
+
+## Calm by default (2026-11-12)
+
+- **Decision:** Home shows Home: cards with title and kind (the orbit
+  and description in the details of the card picked, folded past the
+  summary), card buttons on the card picked or pointed at, the side
+  panels put aside and restored on leaving. **Why:** the owner: "a user
+  easily could get overwhelmed by the amount of information that is
+  dumped on them", with a screenshot of Home with every panel open.
+- **Decision:** the status bar shows the problem count and only the
+  entries that need attention; View > Status Bar: All Details, kept with
+  the layout, shows them all. **Why:** the same; versions, frames and an
+  "all OK" are reference, not news.
+- **Decision:** repeated per-spacecraft notes are grouped, the names in
+  the tooltip; the relative orbital elements are named by their effect.
+  **Why:** the owner's screenshots: one note fourteen times; "the units
+  make no sense here".
+
+## Notes as lists, the remaining values as sheets (2026-11-15)
+
+- **Decision:** notes, warnings and findings are a `NoteList`: one row
+  each behind a Lucide icon (info, triangle, circle), the text wrapped
+  beside it; past four, "Show n more". The text keeps the body colour,
+  and the icon carries the status. **Why:** the owner: raw text "is
+  visually always like noise"; the dash-led blocks on the budget, design
+  checks, lifetime, model analyses and re-entry pages, and the "⚠" lines
+  in Results and the scenario editor, were the remaining raw text.
+- **Decision:** the sentences of numbers left are sheets: the budget's
+  totals and inputs, the mass sum and launcher verdict (under their
+  tables, not under every group), momentum per axis, casualty areas and
+  risk, the spacecraft's model summary, products of inertia, and
+  Settings' hosts. A text value in a sheet ("Fairing A") keeps the body
+  font; numbers keep tabular figures. **Why:** the same, and CLAUDE.md
+  design rule 4.
+- **Decision:** a widget a component shows or hides is given its parent
+  when it is made, never after. **Why:** a title label shown before its
+  layout took it was a window for a moment and took the main window's
+  activation (its shortcuts went dead in `test_panels.py`).
+
+## Publishing a release automatically (2026-11-15)
+
+- **Decision:** the tag workflow and the release workflow take a
+  `publish` input (default off). With it, the release workflow
+  publishes the release as its last step, only after every file was
+  built, installed and run, checked against its checksum and attached,
+  and only if as many files are attached as were built. **Why:** the
+  owner, preparing 2.8.0: "Afterwards I want you to automatically
+  publish." The draft-first default stays for a run started without
+  it, and a push of a tag by hand (2.6.0 and 2.7.0 were public without
+  files when published early, `releasing.md`).

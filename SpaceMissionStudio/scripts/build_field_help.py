@@ -44,7 +44,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from spacemissionstudio.schema import command, scenario  # noqa: E402
+from spacemissionstudio.schema import command, scenario, thermal  # noqa: E402
 
 OUTPUT = ROOT / "spacemissionstudio" / "schema" / "field_help.json"
 _FIELD = re.compile(r"^    ([a-z_][a-z0-9_]*)\s*:\s*[^=#]+(?:=[^#]*)?(?:#\s*(.*))?$")
@@ -101,8 +101,8 @@ def _docstring_args(cls) -> dict[str, str]:
 
 def build() -> dict:
     """``{record class name: {field: comment}}``, sorted."""
-    records = {name: cls for name, cls in vars(scenario).items()
-               if inspect.isclass(cls) and dataclasses.is_dataclass(cls) and cls.__module__ == scenario.__name__}
+    records = {name: cls for module in (scenario, thermal) for name, cls in vars(module).items()
+               if inspect.isclass(cls) and dataclasses.is_dataclass(cls) and cls.__module__ == module.__name__}
     found = {name: dict(sorted(_help(cls).items())) for name, cls in sorted(records.items())}
     found["Command"] = dict(sorted(_docstring_args(command.Command).items()))
     return dict(sorted(found.items()))

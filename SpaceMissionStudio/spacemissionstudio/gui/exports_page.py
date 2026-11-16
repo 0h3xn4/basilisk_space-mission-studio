@@ -76,6 +76,10 @@ EXPORTS = (
     Export("model_analyses", "Model analyses", "JSON, a CSV a table", "Results › Model Analyses › Save...",
            "Folder chosen", "In the record; <file>.provenance.json", "In model_analyses.json (with the run's own "
            "record), and <file>.provenance.json beside each table"),
+    Export("thermal", "Thermal analysis", "JSON, CSV tables and series, SVG and PNG plots",
+           "Run › Thermal › Save...", "Folder chosen", "In the record; <file>.provenance.json",
+           "In thermal.json (with the run's own record), and <file>.provenance.json beside each table, series "
+           "and plot"),
     Export("reentry_json", "Re-entry estimate", "JSON", "Run › End of Life › Re-entry casualty › Save...",
            "reentry.json", "In the file", "In the file: the rules in effect, each part's fate and the scenario's "
            "SHA-256"),

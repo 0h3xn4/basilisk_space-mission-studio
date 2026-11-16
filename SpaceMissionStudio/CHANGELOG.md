@@ -8,10 +8,144 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.9.0 (2026-11-16)
+
+SpaceMissionStudio can now tell you how hot or cold your spacecraft gets.
+Give a spacecraft with a 3D model a thermal model, which it can generate
+from the parts, and after a run **Run › Thermal** solves it in NASA's
+hot, cold and nominal cases on the orbit, attitude and eclipses the run
+recorded. You see every node's temperature against its limits, the heat
+flows, how hard the heaters work and how much the radiators reject; on
+the same run you can sweep a parameter, rank parameters by their effect
+or run a thermal Monte Carlo. Two new templates, 33 and 34, show it.
+
+The bundled solar-cycle prediction moves to NASA MSFC's November 2026
+issue, so drag beyond CelesTrak's forecast is a little lower and
+lifetimes over a year a little longer. Basilisk itself is unchanged: the
+thermal analysis uses its public interface and runs after the
+simulation.
 
 ### Added
 
+- **Spacecraft thermal analysis.** A spacecraft with a 3D model can now
+  carry a lumped-parameter thermal model, generated from its parts (a
+  node per part, with its mass, material and contacts) and then refined:
+  optics per face from a sourced coating library, MLI, radiators,
+  conductors, heat pipes, radiative links, dissipation that can follow
+  the power budget, thermostatic heaters and limits. After a run,
+  **Run › Thermal** solves it in NASA's nominal, hot and cold cases
+  (NASA/TM-2001-211221) or your own, on the orbit, attitude and eclipses
+  the run recorded, with Basilisk's albedo module for the planet's
+  reflected light. The solver is implicit and second order, starts from
+  an orbit-periodic state, checks its own step and closes its energy
+  balance. You get each node's temperatures against its limits, the
+  heat flows, heater duty and sized power, radiator heat, limit events
+  on the Timeline, and exports with provenance. On the same run you can
+  sweep a parameter, rank parameters by a one-at-a-time sensitivity, or
+  run a seeded thermal Monte Carlo that opens in the Monte Carlo view;
+  the 3D model can be coloured by temperature; flexible solar arrays
+  become nodes whose faces turn with their hinge; and specific heat and
+  conductivity can follow tables of temperature. Templates 33 and 34
+  show it, and [`docs/user-manual/thermal.md`](docs/user-manual/thermal.md)
+  explains it. Basilisk itself is unchanged: the analysis uses its
+  public API and runs after the simulation.
+- **26 more coatings in the material library**, from the same NASA
+  report the library already cites (Henninger, RP-1121), including three
+  measured again after ultraviolet exposure.
+
+### Changed
+
+- **NASA MSFC's November 2026 solar-cycle prediction replaces October's.**
+  Drag beyond CelesTrak's 45-day forecast now comes from
+  `nov2026f10-prd.txt`, which starts in May 2026 and runs to October 2041
+  like its predecessor. Its values are a little lower (January 2030 at the
+  50th percentile: F10.7 74.1 sfu and Ap 11.3, were 74.2 and 11.5), so
+  orbits decay a little more slowly. Runs that start after CelesTrak's
+  forecast ends (2026-12-29) move by millimetres of semi-major axis; the
+  lifetimes move more: after a year, perigee ends up 1 m to 0.3 km
+  higher in most of them and 1.2 km higher in LEO station keeping, and
+  that template's satellite, with its own drag coefficient, re-enters
+  2.0 days later (327.6 days instead of 325.6; see
+  [`docs/changes.md`](docs/changes.md)). A formation follower with three
+  times its chief's drag area now reaches its 20 m along-track tolerance
+  (20.2 m at most) where it stayed within 13 m, with 36 burns instead of
+  30. A study that set its own MSFC file under **MSFC prediction** is not
+  affected.
+
+### Who should update
+
+- **Anyone sizing a spacecraft's thermal design:** this is the release
+  that adds it. Start from template 33 or 34, or tick **Thermal model**
+  on your spacecraft's 3D model page and press **Generate from the 3D
+  model**.
+- **Anyone running long drag studies:** lifetimes and decay beyond
+  CelesTrak's 45-day forecast use NASA's November 2026 prediction; after
+  a year, perigee ends up between 1 m and 0.3 km higher in most
+  templates, and 1.2 km higher in LEO station keeping.
+- **Compatibility:** the scenario format's version is still 4. 2.8.0
+  opens the files 2.9.0 saves, except those with a thermal model, which
+  it refuses by name ("unexpected field 'thermal'"). The templates give
+  2.8.0's results except where drag reaches past CelesTrak's forecast
+  (2026-12-29): lifetimes, and runs that start after it, which move by
+  millimetres.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.9.0_amd64.deb` replaces 2.8.0; on Windows, run
+  the 2.9.0 setup over 2.8.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The thermal model is for preliminary design:** one node per part, no
+  shading between parts, diffuse grey optics, no fluid loops, Earth and
+  Mars only. Optics are beginning of life, and the material library has
+  no conductivities; give them in the thermal model
+  ([Limitations](docs/reference/limitations.md#thermal-analysis)).
+- **The bundled CelesTrak space weather is 2.8.0's** (observations to
+  2026-11-14): CelesTrak refused the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**.
+- **The 3D View without a graphics card is slow,** as in 2.8.0: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
+
+## 2.8.0 (2026-11-16)
+
+SpaceMissionStudio becomes calmer and easier to read. The window has a
+menu bar (File, Edit, View, Go, Run, Tools, Help) with every command and
+its shortcut. Home shows a template's title and kind, its details fold,
+and the side panels and most of the status bar step aside until they
+have something to say. Everywhere, values that were a sentence of
+numbers are tables, one value a row with its unit, and notes and
+warnings are lists, one a row behind an icon. Drop-down lists open below
+their field, scroll and can be filtered; dialogs never cut off their
+text; plots fill their area when some are cleared; and the plot list is
+grouped in levels.
+
+Nothing the tool computes changes: every template gives the same results
+as in 2.7.0, and the scenario format is unchanged. The bundled space
+weather is refreshed, and tornado moves to 6.6.1 for a security
+advisory.
+
+### Added
+
+- **A menu bar: File, Edit, View, Go, Run, Tools, Help.** Every command
+  is in a menu, with its shortcut, greyed out when it cannot run. File >
+  Open Recent lists the recent scenarios, and Edit > Settings...
+  (`Ctrl+,`) opens Settings. View > Menu Bar hides it for those who
+  prefer the rail and the command palette; the window remembers.
+- **Values as tables, not lines of text.** The 3D model editor's mass
+  properties are a sheet (mass, centre of mass), the inertia a 3 x 3
+  matrix and the principal axes a table with each axis's moment,
+  direction and nearest body axis; its surface summary is a sheet too.
+  Switching the orbit type shows the orbit now, after converting and on
+  the new page side by side, one value a row with its unit. The other
+  pages have the same (see Changed: notes, warnings and findings as
+  lists).
+- **Drop-down lists you can filter.** A list of 12 entries or more has a
+  "Type to filter" field: type while it is open and only the entries
+  containing the text stay; `Enter` picks the first, the arrows move.
 - **A release check before the tag.** Actions > "SpaceMissionStudio
   release check" checks the commit at `develop`'s head before it is
   tagged: CI passed on it, no vulnerability that is not accepted, the
@@ -21,7 +155,9 @@ fixes bugs.
 - **Tagging from the Actions tab.** Actions > "SpaceMissionStudio tag
   release" runs the same check, tags exactly the commit it passed and
   starts the release build, so no terminal is needed (and the assistant
-  can start it when asked). Publishing the draft stays a person's step.
+  can start it when asked). With **publish**, the release is published
+  once every file is built, checked and attached; without it, it stays a
+  draft for a person to publish.
 
 ### Changed
 
@@ -30,6 +166,105 @@ fixes bugs.
   lists in `compliance/requirements/` and the compliance matrix now point
   to each requirement (standard, clause, ID) instead of quoting it. No
   verdict changed; the app and its outputs are not affected.
+- **Roomier drop-down lists and menus.** Every drop-down list opens below
+  its field, at most 12 rows high with a scroll bar (a long list used to
+  fill the screen over the field and scroll with two small arrows), at
+  least as wide as its longest entry, with taller rows, a mark under the
+  pointer and the current entry highlighted. Menu rows are taller too.
+- **The plots always fill their area.** Clearing a plot's tick shrinks
+  the grid (two plots side by side, then one full size) instead of
+  leaving an empty cell, and a spare cell is taken by the last plot,
+  which spans the row. The toolbar above the plots is one row on a wide
+  window (it was three, mostly empty) and wraps only when the pane is
+  narrow.
+- **Calm by default.** Home's template cards show the title and kind;
+  Open and Customize appear on the card picked or pointed at, and the
+  details fold "What to look at" and "Try changing" under the summary.
+  The Inspector, Calculation and Problems panels step aside on Home and
+  come back when it is left. The status bar shows only what needs
+  attention (View > Status Bar: All Details shows every entry).
+- **The plot list in levels.** Results › Plots lists topic, then
+  spacecraft (when the run has several), then a group of related plots
+  (osculating elements, mean elements, station keeping, disturbances,
+  array shading, Sun, Moon and planets), then the plot by its short name;
+  groups fold. Disturbance torques and array shading, listed under Other
+  by their code names, are under Attitude and Power with readable names.
+- **Shorter notes in the 3D View.** A note shared by several spacecraft
+  ("no attitude in this run") is said once, with their number; the names
+  are in its tooltip.
+- **The formation dialog names its elements.** Each relative orbital
+  element is labelled by what it does (drift, along-track offset, ellipse,
+  cross-track), its symbol after it, in three groups, with a line saying
+  why they are in metres.
+- **Notes, warnings and findings as lists, values as tables, on every
+  page.** A note or warning gets its own row behind an icon, not a block
+  of dash-led lines; after four, the rest wait behind "Show n more".
+  Values that were a sentence are now a table, a value per row with its
+  unit:
+  - the budget's totals and what it was computed with;
+  - the design checks' mass sum (basic, growth, margin, propellant,
+    launch mass) and launcher verdict, each under its table;
+  - the momentum per body axis in the model analyses;
+  - the re-entry casualty areas and risk;
+  - the spacecraft's 3D model summary and products of inertia;
+  - the hosts in Settings, one per row under their purpose.
+
+  This applies to the Results warnings, the scenario plausibility
+  warnings, the lifetime notes and the 3D model editor's problems.
+- **Dialogs no longer cut off their text.** A dialog with wrapped text
+  could show only the first line of each paragraph and clip its buttons
+  (the orbit-type switch did); every dialog now grows to fit its text.
+- **Optional reference files say "not downloaded".** The ITU-R P.676-13
+  file and the Eros files, fetched only on request, showed as a red
+  "missing" and counted as "need attention" in the status bar on every
+  new install. They now show "not downloaded" in grey, with what they are
+  for and how to get them, and need no attention until used. The
+  reference-data guide no longer says the installers fetch the ITU file:
+  they may not carry it.
+- **The bundled space weather is current again.** CelesTrak's file,
+  downloaded on 2026-11-15: observations to 2026-11-14 and CelesTrak's
+  daily forecast to 2026-12-29 (they ended on 2026-11-09 and 2026-12-24
+  in 2.7.0). Drag on dates from 2026-11-10 to 2026-12-29 changes; runs
+  after that use NASA MSFC's prediction, as before, so no template's
+  results change.
+
+### Fixed
+
+- **tornado 6.6.1 and two pillow advisories:** three advisories
+  published on 2026-11-15 made CI's dependency audit fail.
+  - tornado's CVE-2026-126347, an open redirect left by 6.6's fix, is
+    fixed in 6.6.1; the pin is now 6.6.1.
+  - pillow's CVE-2026-128066 and CVE-2026-128067 are about reading and
+    writing TIFF files. pillow stays at 12.2.0, the highest the qualified
+    Basilisk allows, and both are accepted with that reason in
+    `packaging/audit-exceptions.txt`: nothing here reads or writes a TIFF
+    with pillow.
+
+### Who should update
+
+- **Everyone:** the window is calmer and its information easier to read;
+  nothing you computed before changes.
+- **Anyone who prefers menus:** every command is in the menu bar, with
+  its shortcut. View > Menu Bar hides it again.
+- **Compatibility:** results and the scenario format's version (4) are
+  as in 2.7.0, and 2.7.0 opens the files 2.8.0 saves.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.8.0_amd64.deb` replaces 2.7.0; on Windows, run
+  the 2.8.0 setup over 2.7.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The bundled NASA MSFC prediction is October 2026's**; NASA's
+  November issue is out, and can be set in **MSFC prediction** on the
+  Scenario area's **Environment** page
+  ([Limitations](docs/reference/limitations.md)).
+- **The 3D View without a graphics card is slow,** as in 2.7.0: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.7.0 (2026-11-11)
 

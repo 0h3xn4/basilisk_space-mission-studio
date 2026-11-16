@@ -47,7 +47,9 @@ from pathlib import Path
 API_VERSION = 1
 
 __all__ = ["API_VERSION", "template", "load", "validate", "assumptions", "run", "summary", "lifetime", "budget",
-           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "model_analyses", "reentry", "record", "write"]
+           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "model_analyses", "reentry",
+           "thermal", "thermal_model", "thermal_sweep", "thermal_sensitivity", "thermal_monte_carlo", "record",
+           "write"]
 
 
 def template(name: str) -> Path:
@@ -235,6 +237,85 @@ def model_analyses(scenario, result, spacecraft: str | None = None, base_dir=Non
     from .analyses import common, run_analyses
 
     return run_analyses.report(result, scenario, common.spacecraft(scenario, spacecraft), base_dir)
+
+
+def thermal(scenario, result, spacecraft: str | None = None, cases: list[str] | None = None, base_dir=None,
+            size_heaters: bool = True):
+    """The thermal analysis of a spacecraft with a ``thermal`` section,
+    after a run: ``thermal.analysis.ThermalAnalysis`` with one
+    ``CaseResult`` per case (temperatures, heat flows, the summary against
+    the limits, heaters with their sized power, radiators, limit events,
+    energy balance), solved on ``result``'s recorded states. ``cases``
+    picks cases by name (default: the section's, or nominal, hot and cold).
+    """
+    from .thermal import analysis
+
+    return analysis.analyse(scenario, result, _spacecraft(scenario, spacecraft), base_dir, cases,
+                            size_heaters=size_heaters)
+
+
+def thermal_model(scenario, spacecraft: str | None = None, base_dir=None):
+    """A starting thermal model built from a spacecraft's 3D model (one
+    node per part, contact conductors): ``thermal.generate.Generated``
+    with ``thermal`` (a ``ThermalConfig`` to set as ``spacecraft.thermal``)
+    and ``notes``."""
+    from .thermal import generate
+
+    sc = next(s for s in scenario.spacecraft if s.name == _spacecraft(scenario, spacecraft))
+    return generate.generate(sc, base_dir)
+
+
+def _thermal_case(scenario, result, spacecraft, case, base_dir):
+    from .thermal import analysis, cases as thermal_cases
+
+    prepared = analysis.prepare(scenario, result, _spacecraft(scenario, spacecraft), base_dir)
+    chosen = next((c for c in thermal_cases.cases_of(prepared.spacecraft.thermal) if c.name == case), None)
+    if chosen is None:
+        raise ValueError(f"no thermal case named {case!r}")
+    return prepared, chosen
+
+
+def thermal_sweep(scenario, result, path: str, values: list[float], spacecraft: str | None = None,
+                  case: str = "nominal", base_dir=None):
+    """A thermal case solved at each of ``values`` of the parameter
+    ``path`` (``faces[radiator].absorptance``...), on ``result``'s run:
+    a list of ``thermal.sweeps.SweepPoint`` (the value and every node's
+    summary). Nothing is rerun in Basilisk."""
+    from .thermal import sweeps
+
+    prepared, chosen = _thermal_case(scenario, result, spacecraft, case, base_dir)
+    return sweeps.sweep(prepared, chosen, path, list(values))
+
+
+def thermal_sensitivity(scenario, result, paths: list[str] | None = None, relative: float = 0.1,
+                        spacecraft: str | None = None, case: str = "nominal", base_dir=None):
+    """One-at-a-time sensitivity of a thermal case: each parameter of
+    ``paths`` (default: every face's optics, conductances, dissipation and
+    heater power, sunlight and infrared) moved up and down by ``relative``
+    of its value. Returns ``(rows, notes)``: ``thermal.sweeps.Sensitivity``
+    rows ranked by their largest effect, and the parameters left out."""
+    from .thermal import sweeps
+
+    prepared, chosen = _thermal_case(scenario, result, spacecraft, case, base_dir)
+    return sweeps.sensitivity(prepared, chosen, paths, relative)
+
+
+def thermal_monte_carlo(scenario, result, spacecraft: str | None = None, folder=None, base_dir=None):
+    """The thermal Monte Carlo the spacecraft's ``thermal.monte_carlo``
+    sets, on ``result``'s run: an ``engine.monte_carlo_results.MonteCarloBatch``
+    of kind ``thermal``; saved in ``folder`` when given, where the Monte
+    Carlo view opens it. The same seed gives the same draws."""
+    from .engine import monte_carlo_results
+    from .thermal import analysis, sweeps
+
+    prepared = analysis.prepare(scenario, result, _spacecraft(scenario, spacecraft), base_dir)
+    config = prepared.spacecraft.thermal.monte_carlo
+    if config is None:
+        raise ValueError(f"{prepared.spacecraft.name}'s thermal model has no monte_carlo section")
+    batch = sweeps.monte_carlo(prepared, config)
+    if folder is not None:
+        monte_carlo_results.save(batch, folder)
+    return batch
 
 
 def reentry(scenario, spacecraft: str | None = None, population_density_per_km2: float | None = None,

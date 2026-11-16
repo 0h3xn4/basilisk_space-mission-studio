@@ -41,6 +41,7 @@ from . import units
 from .widgets import ComboBox
 from .theme import (CONTENT_MAX_WIDTH_PX, SPACE, UI_SCALES, reduce_motion, set_reduce_motion, set_role,
                     set_ui_scale_setting, ui_scale_setting)
+from .value_sheet import ValueTable
 
 # (key, title, what it is for)
 _SECTIONS: tuple[tuple[str, str, str], ...] = (
@@ -183,9 +184,10 @@ class SettingsPage(QScrollArea):
         self.network_note = set_role(QLabel(""), tone="secondary")
         self.network_note.setWordWrap(True)
         self._layout.addWidget(self.network_note)
-        hosts = "\n".join(f"{p.label}: {', '.join(p.hosts)}" for p in network.PURPOSES.values())
-        self.network_hosts = set_role(QLabel(hosts), tone="secondary")
-        self.network_hosts.setWordWrap(True)
+        # Each host on its own row, under the purpose it is contacted for.
+        rows = [[purpose.label if index == 0 else "", host] for purpose in network.PURPOSES.values()
+                for index, host in enumerate(purpose.hosts)]
+        self.network_hosts = ValueTable("Hosts it may contact, by purpose", ["Purpose", "Host"], rows)
         self._layout.addWidget(self.network_hosts)
         row = QHBoxLayout()
         row.setSpacing(SPACE["sm"])
@@ -248,7 +250,8 @@ class SettingsPage(QScrollArea):
         self._row(("tools.reference_data",))
 
     def _build_layout(self) -> None:
-        self._row(("view.rail_icons", "view.inspector", "view.problems", "view.reset_layout"))
+        self._row(("view.menu_bar", "view.status_details", "view.rail_icons", "view.inspector", "view.problems",
+                   "view.reset_layout"))
 
     def _build_keyboard(self) -> None:
         self.shortcuts_table = QTableWidget(0, 3)

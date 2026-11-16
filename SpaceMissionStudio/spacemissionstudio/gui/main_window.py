@@ -68,6 +68,7 @@ from ..schema.scenario import Scenario, ScenarioValidationError, load_scenario
 from . import autosave
 from . import export_log
 from .actions import ActionRegistry
+from .menu_bar import build_menu_bar
 from .app_shell import NoScenarioState, RunProgressStrip, StatusBarItems, StatusChip, TopBar, source_of
 from .feedback import StaleResultsBanner, report, show_toast
 from .icons import toolbar_icon
@@ -90,6 +91,7 @@ from .design_checks_widget import DesignChecksWidget
 from .model_analyses_widget import ModelAnalysesWidget
 from .fsw_workbench_widget import FlightSoftwareWidget
 from .lifetime_widget import LifetimeWidget
+from .thermal_widget import ThermalWidget
 from .scenario_explainer_widget import ScenarioExplainerWidget
 from .settings_page import SettingsPage
 from .shell import AreaPage, AreaStack, Shell
@@ -287,6 +289,7 @@ class MainWindow(QMainWindow):
         self.lifetime_widget = LifetimeWidget()
         self.budget_widget = BudgetWidget()
         self.design_checks_widget = DesignChecksWidget()  # the 3D model's design checks (model analyses)
+        self.thermal_widget = ThermalWidget()  # the thermal analysis of the last run (SRS-F-29)
         self.flight_software_widget = FlightSoftwareWidget()
         self.flight_software_widget.exports_changed.connect(self.scenario_editor.set_fsw_exports)
         # Reports (M8): every export in one table, then the flight software.
@@ -321,6 +324,11 @@ class MainWindow(QMainWindow):
         design_scroll = QScrollArea()
         design_scroll.setWidgetResizable(True)
         design_scroll.setWidget(self.design_checks_widget)
+        self.thermal_scroll = QScrollArea()
+        self.thermal_scroll.setWidgetResizable(True)
+        self.thermal_scroll.setWidget(self.thermal_widget)
+        self.thermal_widget.events_changed.connect(self.event_timeline_widget.set_extra_events)
+        self.thermal_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
         self.scenario_editor.navigate_requested.connect(self._on_guide_navigate)
 
         # Results: the run's overview, the plots, the dashboard, the mission
@@ -386,6 +394,7 @@ class MainWindow(QMainWindow):
         self.run_views.addTab(lifetime_scroll, "End of Life")
         self.run_views.addTab(budget_scroll, "Budget")
         self.run_views.addTab(design_scroll, "Design Checks")
+        self.run_views.addTab(self.thermal_scroll, "Thermal")
         self.run_views.addTab(self.history_view, "History")
         self.run_views.addTab(self.log_widget, "Log")
         # No run is listed until a scenario is open; then its own (U-33, landing page).
@@ -463,6 +472,8 @@ class MainWindow(QMainWindow):
         self._hide_default_panels()
         self._default_layout = self.saveState(_LAYOUT_VERSION)
         self._restore_layout()
+        self._docks_away_for_home: list = []  # the panels Home put aside, shown again when it is left
+        self._quiet_home()
 
         # Run-in-progress feedback: the progress strip (self.run_progress)
         # and the status chip, both in the status bar. A run reports its phase
@@ -487,6 +498,7 @@ class MainWindow(QMainWindow):
         self.basilisk_version_label = self.status_items.basilisk_label
         for widget in (self.run_progress, self.run_chip, *self.status_items.widgets):
             self.statusBar().addPermanentWidget(widget)
+        self.status_items.set_details(self.status_details_action.isChecked())
         # A bound method, not a lambda: a lambda holding self on a child's
         # signal keeps the window alive until the interpreter exits, and its
         # web views are then torn down too late (exit segfault, as in #48).
@@ -562,8 +574,9 @@ class MainWindow(QMainWindow):
     def _build_actions(self) -> None:
         """Every command of the window, in one registry: the command
         palette, the area headers, the top bar, the shortcut list and the
-        tooltips all come from it. The window owns the actions, so their
-        shortcuts work in every area; there is no menu bar."""
+        tooltips all come from it, and so does the menu bar
+        (gui.menu_bar). The window owns the actions, so their shortcuts work
+        in every area, with the menu bar shown or hidden."""
         self.commands = registry = ActionRegistry(self)
         add = registry.add
 
@@ -605,6 +618,9 @@ class MainWindow(QMainWindow):
         self.redo_action = add("edit.redo", "&Redo", self.on_redo, category="Edit", area="global",
                                shortcut=QKeySequence.StandardKey.Redo, tip="Redo the scenario edit just undone.")
         self._update_undo_actions()
+        add("edit.settings", "Se&ttings...", self._go_settings, category="Edit", area="settings",
+            shortcut="Ctrl+,", keywords=("preferences", "options"),
+            tip="Appearance, reference data, network, layout and keyboard: the Settings area.")
 
         # One Run (docs/ux-audit.md U-18, decision 3): Run starts the run
         # mode picked beside it -- a single run, a Monte Carlo batch, or a
@@ -689,6 +705,8 @@ class MainWindow(QMainWindow):
                  "Delta-V and propellant budgets."),
                 ("analyses.design_checks", "Analyses", "&Design Checks", self.design_checks_widget, "run",
                  "The 3D model's fields of view, thrusters, mass budget and launcher envelope."),
+                ("analyses.thermal", "Analyses", "&Thermal", self.thermal_widget, "run",
+                 "Solve the spacecraft's thermal model on the last run: temperatures, heat flows, heaters."),
                 ("tools.flight_software", "Tools", "&Flight Software", self.flight_software_widget, "reports",
                  "Export the flight software, run SIL."),
                 ("tools.reference_data", "Tools", "&Reference Data...", self.data_panel_widget, "settings",
@@ -713,6 +731,16 @@ class MainWindow(QMainWindow):
             action=self.problems_dock.toggleViewAction(), shortcut="Ctrl+J",
             tip="Show or hide the Problems panel: what does not validate.").triggered.connect(
                 self._on_dock_toggled)
+        self.menu_bar_action = add(
+            "view.menu_bar", "&Menu Bar", self._on_menu_bar_toggled, category="View", area="global",
+            checkable=True, checked=True, keywords=("menus", "File Edit View"),
+            tip="Show or hide the menu bar (File, Edit, View, Go, Run, Tools, Help). Hidden, every command "
+                "keeps its shortcut and stays in the command palette (Ctrl+K).")
+        self.status_details_action = add(
+            "view.status_details", "Status Bar: All Details", self._on_status_details_toggled, category="View",
+            area="global", checkable=True, keywords=("Basilisk version", "frames", "Earth orientation"),
+            tip="Show every status-bar entry (the Basilisk version, reference data, Earth orientation, the "
+                "frames), or only those that need attention.")
         self.reset_layout_action = add("view.reset_layout", "&Reset Layout", self.reset_layout, category="View",
                                        area="settings", tip="Put the panels back where they start.")
         self.rail_collapse_action = add(
@@ -835,6 +863,8 @@ class MainWindow(QMainWindow):
         self.scenario_editor.mode_changed.connect(self._refresh_breadcrumbs)
         for tabs in (self.results_views, self.run_views):
             tabs.currentChanged.connect(self._refresh_breadcrumbs)
+        # The menu bar: the same commands, by menu (gui.menu_bar).
+        self.menus = build_menu_bar(self.menuBar(), self.commands, self._on_recent_menu)
         self.shell.show_area("home")  # a new user's first move is picking a template or a file
         self._refresh_breadcrumbs()
         self._on_run_mode_changed()  # the Run area's mode button has its text too
@@ -853,6 +883,30 @@ class MainWindow(QMainWindow):
 
     def _go_home(self) -> None:
         self.shell.show_area("home")
+
+    def _go_settings(self) -> None:
+        self.shell.show_area("settings")
+
+    def _on_menu_bar_toggled(self, shown: bool) -> None:
+        self.menuBar().setVisible(shown)
+
+    def _on_status_details_toggled(self, shown: bool) -> None:
+        if hasattr(self, "status_items"):
+            self.status_items.set_details(shown)
+
+    def _on_recent_menu(self, action) -> None:
+        """File > Open Recent: a file picked (its path is the action's
+        data), with the same unsaved-changes question as Open."""
+        path = action.data()
+        if not path:
+            return  # Clear the List, or the empty list's note
+        path = Path(path)
+        if not path.is_file():
+            report(self, f"{path} is missing: it was moved or deleted.", kind="warning")
+            return
+        if not self._confirm_discard_unsaved():
+            return
+        self.open_path(path)
 
     @property
     def scenario_open(self) -> bool:
@@ -909,6 +963,24 @@ class MainWindow(QMainWindow):
     def _on_area_changed(self, _area_id: str) -> None:
         self._apply_stale_banner()
         self._refresh_breadcrumbs()
+        self._quiet_home()
+
+    def _quiet_home(self) -> None:
+        """Home shows Home only (the owner, 2026-11-12: too much at once): the
+        Inspector, Calculation and Problems panels step aside there, and come
+        back as they were when another area is shown. A panel asked for on
+        Home (View > Problems) shows."""
+        if not hasattr(self, "_docks_away_for_home"):
+            return  # still being built
+        if self.shell.current_area() == "home":
+            for dock in self._docks():
+                if dock.isVisibleTo(self) and dock not in self._docks_away_for_home:
+                    self._docks_away_for_home.append(dock)
+                    dock.hide()
+        elif self._docks_away_for_home:
+            docks, self._docks_away_for_home = self._docks_away_for_home, []
+            for dock in docks:
+                dock.show()
 
     def _on_rail_icons_toggled(self, checked: bool) -> None:
         self.shell.rail.set_collapsed(checked)
@@ -1121,7 +1193,7 @@ class MainWindow(QMainWindow):
         views = {"events_csv": self.event_timeline_widget, "output_csv": self.mission_output_widget,
                  "monte_carlo_csv": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
                  "design_checks": self.design_checks_widget, "reentry_json": self.lifetime_widget,
-                 "model_analyses": self.model_analyses_scroll,
+                 "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_scroll,
                  "fsw_project": self.flight_software_widget, "sil_report": self.flight_software_widget}
         self.show_view(views.get(key, self.results_widget))  # the plot exports: Results › Plots
 
@@ -1286,8 +1358,15 @@ class MainWindow(QMainWindow):
 
     def _write_layout(self, settings, group: str) -> None:
         settings.beginGroup(group)
+        away = getattr(self, "_docks_away_for_home", [])
+        for dock in away:  # kept as they are outside Home, not as Home shows them
+            dock.show()
         settings.setValue("state", self.saveState(_LAYOUT_VERSION))
+        for dock in away:
+            dock.hide()
         settings.setValue("rail_collapsed", self.shell.rail.collapsed)
+        settings.setValue("menu_bar", self.menu_bar_action.isChecked())
+        settings.setValue("status_details", self.status_details_action.isChecked())
         for name, splitter in self._layout_splitters().items():
             settings.setValue(f"splitter_{name}", splitter.saveState())
         if group.startswith("project-"):
@@ -1303,6 +1382,8 @@ class MainWindow(QMainWindow):
                 return False
             self.restoreState(state, _LAYOUT_VERSION)
             self.rail_collapse_action.setChecked(settings.value("rail_collapsed", False, type=bool))
+            self.menu_bar_action.setChecked(settings.value("menu_bar", True, type=bool))
+            self.status_details_action.setChecked(settings.value("status_details", False, type=bool))
             for name, splitter in self._layout_splitters().items():
                 saved = settings.value(f"splitter_{name}")
                 if saved is not None:
@@ -1359,6 +1440,7 @@ class MainWindow(QMainWindow):
             dock.show()
         self._hide_default_panels()
         self.rail_collapse_action.setChecked(False)
+        self.menu_bar_action.setChecked(True)
 
     def _hide_default_panels(self) -> None:
         """The panels a new window starts without (G8): Problems, which a
@@ -1554,6 +1636,11 @@ class MainWindow(QMainWindow):
                 self.results_views.addTab(self.model_analyses_scroll, "Model Analyses")
         elif index >= 0:
             self.results_views.removeTab(index)
+
+    def _show_thermal_monte_carlo(self, folder: str) -> None:
+        """A thermal Monte Carlo saved from Run › Thermal: shown in the Monte Carlo view."""
+        if self.monte_carlo_results_widget.load_folder(folder):
+            self._show_monte_carlo_tab()
 
     def _show_monte_carlo_tab(self) -> None:
         self._set_monte_carlo_tab(True)
@@ -2468,6 +2555,7 @@ class MainWindow(QMainWindow):
             self.lifetime_widget.set_last_run(self._last_run_scenario, result)
             self.budget_widget.set_last_run(self._last_run_scenario, result)
             self._set_model_analyses_tab(self._last_run_scenario, result)
+            self.thermal_widget.set_run(self._last_run_scenario, result, self._scenario_dir())
 
         def shown() -> None:
             if stay_in_3d:
@@ -2764,6 +2852,7 @@ class MainWindow(QMainWindow):
             self.lifetime_widget.wait_for_worker()  # a few seconds at most; its thread must not be destroyed mid-run
             self.budget_widget.wait_for_worker()
             self.design_checks_widget.wait_for_worker()
+            self.thermal_widget.wait_for_worker()
             self.flight_software_widget.wait_for_worker()
             self.data_panel_widget.wait_for_reader()  # the start-up read of the reference data files
             self.results_widget.wait_for_export()  # an export's files are finished, not cut off

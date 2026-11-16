@@ -96,10 +96,20 @@ class MonteCarloBatch:
     drawn: list[dict[str, float]] = field(default_factory=list)
     epoch_utc: str = ""  # the scenario's epoch, so plots can show dates
     spread_statistic: str = "population"  # the model of SPREAD_CHOICE the batch was run with
+    # A thermal Monte Carlo (thermal.sweeps.monte_carlo, decision T-36): no orbits, but each node's
+    # temperature [degC] per run, shape (runs, samples), in the case named.
+    kind: str = "orbit"  # "orbit" or "thermal"
+    temperatures_c: dict = field(default_factory=dict)
+    case: str = ""
 
     @property
     def spacecraft(self) -> list[str]:
         return list(self.positions)
+
+    @property
+    def items(self) -> list[str]:
+        """What the batch is shown by: its spacecraft, or a thermal batch's nodes."""
+        return list(self.temperatures_c) if self.kind == "thermal" else self.spacecraft
 
 
 def _require(condition: bool, message: str) -> None:
@@ -115,6 +125,8 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
     for index, name in enumerate(batch.spacecraft):
         arrays[f"r_{index}"] = np.asarray(batch.positions[name], dtype=float)
         arrays[f"v_{index}"] = np.asarray(batch.velocities[name], dtype=float)
+    for index, name in enumerate(batch.temperatures_c):
+        arrays[f"t_{index}"] = np.asarray(batch.temperatures_c[name], dtype=float)
     np.savez_compressed(folder / SUMMARY_NPZ, **arrays)
     meta = {
         "format": SUMMARY_FORMAT,
@@ -127,6 +139,8 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         "drawn": batch.drawn,
         "spread_statistic": batch.spread_statistic,
     }
+    if batch.kind != "orbit":
+        meta.update(kind=batch.kind, nodes=list(batch.temperatures_c), case=batch.case)
     path = folder / SUMMARY_JSON
     path.write_text(json.dumps(meta, indent=1), encoding="utf-8")
     return path
@@ -213,6 +227,16 @@ def load(folder: str | Path) -> MonteCarloBatch:
         _require(r is not None and v is not None and r.shape == shape and v.shape == shape,
                  f"{SUMMARY_NPZ}: the arrays for {name!r} do not match {len(runs)} runs of {time_s.shape[0]} samples")
         positions[name], velocities[name] = r, v
+    kind = meta.get("kind", "orbit")
+    _require(kind in ("orbit", "thermal"), f"{SUMMARY_JSON}: unknown kind {kind!r}")
+    temperatures = {}
+    for index, name in enumerate(meta.get("nodes", []) if kind == "thermal" else []):
+        values = arrays.get(f"t_{index}")
+        _require(values is not None and values.shape == (len(runs), time_s.shape[0]),
+                 f"{SUMMARY_NPZ}: the temperatures of {name!r} do not match {len(runs)} runs of "
+                 f"{time_s.shape[0]} samples")
+        temperatures[str(name)] = values
+    _require(kind == "orbit" or temperatures, f"{SUMMARY_JSON}: a thermal batch without nodes")
     drawn = meta.get("drawn") or [{} for _ in runs]
     _require(len(drawn) == len(runs), f"{SUMMARY_JSON}: {len(drawn)} drawn-value rows for {len(runs)} runs")
     statistic = meta.get("spread_statistic", "population")  # a summary written before the choice: population
@@ -220,7 +244,7 @@ def load(folder: str | Path) -> MonteCarloBatch:
     return MonteCarloBatch(str(meta.get("scenario_name", "")), str(meta.get("central_body", "earth")), time_s,
                            runs, [int(run) for run in meta.get("failed", [])], positions, velocities,
                            [{str(k): float(v) for k, v in row.items()} for row in drawn],
-                           str(meta.get("epoch_utc", "")), statistic)
+                           str(meta.get("epoch_utc", "")), statistic, kind, temperatures, str(meta.get("case", "")))
 
 
 def stride_for(samples: int) -> int:
@@ -283,6 +307,17 @@ def to_result_set(batch: MonteCarloBatch) -> ResultSet:
     result = ResultSet(scenario_name=f"{batch.scenario_name} (Monte Carlo)")
     shown = min(len(batch.runs), MAX_PLOTTED_RUNS)
     columns = [f"run_{run}" for run in batch.runs[:shown]]
+    if batch.kind == "thermal":  # each node: every run's temperature, and the runs' mean and spread
+        for name, values in batch.temperatures_c.items():
+            result.add(TimeSeries(f"thermal_monte_carlo.{name}.temperature", batch.time_s, columns,
+                                  values[:shown].T, "degC"))
+            sigma = spread(values, batch.spread_statistic)
+            mean = values.mean(axis=0)
+            result.add(TimeSeries(f"thermal_monte_carlo.{name}.spread", batch.time_s,
+                                  ["mean", "mean - 3 sigma", "mean + 3 sigma", "coldest run", "hottest run"],
+                                  np.column_stack([mean, mean - 3 * sigma, mean + 3 * sigma, values.min(axis=0),
+                                                   values.max(axis=0)]), "degC"))
+        return result
     radius_m = _equatorial_radius_m(batch.central_body)
     for name in batch.spacecraft:
         r, v = batch.positions[name], batch.velocities[name]
@@ -308,6 +343,27 @@ class SpreadSummary:
     altitude_max_m: float
 
 
+@dataclass(frozen=True)
+class NodeSpread:
+    """A thermal batch's node over the runs [degC]: the coldest and
+    hottest any run reached, and the 1-sigma of the runs' minima and
+    maxima (by the batch's statistic)."""
+
+    coldest_c: float
+    hottest_c: float
+    sigma_min_k: float
+    sigma_max_k: float
+
+
+def node_spread(batch: MonteCarloBatch, node: str) -> NodeSpread:
+    values = batch.temperatures_c[node]
+    lows, highs = values.min(axis=1), values.max(axis=1)
+    ddof = SPREAD_DDOF[batch.spread_statistic]
+    sigma_min = float(lows.std(ddof=ddof)) if len(lows) > 1 else 0.0
+    sigma_max = float(highs.std(ddof=ddof)) if len(highs) > 1 else 0.0
+    return NodeSpread(float(lows.min()), float(highs.max()), sigma_min, sigma_max)
+
+
 def final_spread(batch: MonteCarloBatch, spacecraft: str) -> SpreadSummary:
     rel = offsets(batch.positions[spacecraft], batch.velocities[spacecraft])[:, -1, :]
     sigma = spread(rel, batch.spread_statistic)
@@ -320,10 +376,18 @@ def run_table(batch: MonteCarloBatch, spacecraft: str | None = None):
     """(column labels, rows): per run its index, every drawn value, and
     where it ended against the batch mean [km] (for ``spacecraft``, by
     default the first)."""
-    spacecraft = spacecraft or batch.spacecraft[0]
     drawn_labels: list[str] = []
     for row in batch.drawn:
         drawn_labels += [label for label in row if label not in drawn_labels]
+    if batch.kind == "thermal":  # ``spacecraft`` names a node
+        node = spacecraft or batch.items[0]
+        values = batch.temperatures_c[node]
+        rows = [[float(run)] + [(batch.drawn[k] if k < len(batch.drawn) else {}).get(label, float("nan"))
+                                for label in drawn_labels]
+                + [float(values[k].min()), float(values[k].max()), float(values[k].mean())]
+                for k, run in enumerate(batch.runs)]
+        return ["Run"] + drawn_labels + [f"{node} min [degC]", f"{node} max [degC]", f"{node} mean [degC]"], rows
+    spacecraft = spacecraft or batch.spacecraft[0]
     final = offsets(batch.positions[spacecraft], batch.velocities[spacecraft])[:, -1, :] / 1e3  # [km]
     outcome_labels = [f"{spacecraft} final {c.replace('_', '-')} offset [km]" for c in OFFSET_COMPONENTS]
     rows = []
@@ -344,6 +408,12 @@ def summary_lines(batch: MonteCarloBatch) -> list[str]:
     """A few lines for the CLI and the log."""
     days = float(batch.time_s[-1]) / 86400.0 if batch.time_s.size else 0.0
     lines = [f"{len(batch.runs)} run(s) summarized over {days:.3g} day(s); failed: {batch.failed or 'none'}"]
+    if batch.kind == "thermal":
+        for name in batch.items:
+            s = node_spread(batch, name)
+            lines.append(f"{name}: {s.coldest_c:.1f} to {s.hottest_c:.1f} degC over the runs; 1-sigma of the "
+                         f"minimum {s.sigma_min_k:.2f} K, of the maximum {s.sigma_max_k:.2f} K")
+        return lines
     for name in batch.spacecraft:
         s = final_spread(batch, name)
         lines.append(f"{name}: 1-sigma at the end -- along-track {format_km(s.along_track_m)}, "
