@@ -206,3 +206,27 @@ Conductance Under a Real Electronics Box", TFAWS 2019, NTRS
 **Alternatives:** an unsourced handbook range. **Why:** a measured value
 for the kind of joint this size class has, cited; it is deliberately the
 conservative (dry) case.
+
+## T-27 Hot and cold presets: the guideline's combined pairs at 90 minutes, orbit-averaged (2026-11-16)
+
+**Chosen:** hot and cold take NASA/TM-2001-211221's "combined" albedo and
+OLR pair (the extreme of their sum) for 90-minute averaging, by the
+orbit's inclination band, with the solar constant 1414 or 1322 W/m^2;
+nominal takes 1367 W/m^2, the CERES map and the band's mean OLR. The
+guideline's albedo is at a solar zenith angle of 0; Table 4.2.1-1's
+orbit-average correction for the run's mean |beta| is added. Albedo in
+the hot and cold cases is a constant coefficient (Basilisk's average
+model) at that value. **Alternatives:** the "maximum albedo" or "maximum
+OLR" columns (extreme for one kind of surface, not for a whole
+spacecraft); shorter averaging (the time constant of a solar cell, not of
+a 100 kg spacecraft's units). **Why:** 90 minutes is the order of the
+thermal time constants of this size class's units and of an orbit; the
+combined pair is the guideline's choice when both albedo and OLR heat
+the hardware. The user overrides any value per case.
+
+## T-28 Mars presets keep the planet's own environment (2026-11-16)
+
+**Chosen:** for Mars, the hot and cold presets do not change the
+environment (TES map, infrared from radiative balance); their notes say
+so. **Why:** no sourced engineering extremes for Mars are in hand; the
+Sun distance of the run already gives Mars's large seasonal variation.

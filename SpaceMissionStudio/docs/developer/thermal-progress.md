@@ -25,8 +25,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | done |
 | 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | done |
 | 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | done |
-| 5 | Cases, presets, overrides | next |
-| 6 | Checks and the shadowing warning | |
+| 5 | Cases, presets, overrides | done |
+| 6 | Checks and the shadowing warning | next |
 | 7 | Results, series, events, record, CSV | |
 | 8 | `api.thermal`, CLI `thermal` | |
 | 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | |
@@ -83,9 +83,14 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   pipe, MLI, energy balance, periodic start against a cold transient,
   sizing against E T^4, step check).
 
+- Step 5: `thermal/cases.py` (presets from the NASA guideline by band
+  with the beta correction, T-27, T-28; overrides by path on a copy with
+  type checks; the section's environment over the preset);
+  `tests/test_thermal_cases.py`.
+
 ## Next
 
-Step 5.
+Step 6.
 
 ## Known issues
 
