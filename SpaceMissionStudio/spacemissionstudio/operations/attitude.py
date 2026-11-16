@@ -68,35 +68,48 @@ def inertial_dcm(sigma_rn) -> np.ndarray:
 
 def _rotation(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """The smallest rotation (3, 3) taking unit vector ``a`` onto ``b``
-    (both in the same frame): ``R a = b``."""
-    axis = np.cross(a, b)
-    s = float(np.linalg.norm(axis))
-    c = float(np.clip(np.dot(a, b), -1.0, 1.0))
+    (both in the same frame): ``R a = b``. Plain floats: it runs for every
+    sample of every pointed activity, where NumPy's per-call cost on a
+    3-vector was most of the scheduler's time."""
+    a0, a1, a2 = float(a[0]), float(a[1]), float(a[2])
+    b0, b1, b2 = float(b[0]), float(b[1]), float(b[2])
+    x, y, z = a1 * b2 - a2 * b1, a2 * b0 - a0 * b2, a0 * b1 - a1 * b0  # a x b
+    s = math.sqrt(x * x + y * y + z * z)
+    c = min(1.0, max(-1.0, a0 * b0 + a1 * b1 + a2 * b2))
     if s < 1e-12:
         if c > 0.0:
             return np.eye(3)
-        other = np.array([1.0, 0.0, 0.0]) if abs(a[0]) < 0.9 else np.array([0.0, 1.0, 0.0])
+        other = np.array([1.0, 0.0, 0.0]) if abs(a0) < 0.9 else np.array([0.0, 1.0, 0.0])
         axis = unit(np.cross(a, other))
         return 2.0 * np.outer(axis, axis) - np.eye(3)  # 180 deg about a perpendicular axis
-    k = axis / s
-    skew = np.array([[0.0, -k[2], k[1]], [k[2], 0.0, -k[0]], [-k[1], k[0], 0.0]])
-    return np.eye(3) + s * skew + (1.0 - c) * skew @ skew
+    k0, k1, k2 = x / s, y / s, z / s
+    skew = np.array([[0.0, -k2, k1], [k2, 0.0, -k0], [-k1, k0, 0.0]])
+    return np.eye(3) + s * skew + (1.0 - c) * (skew @ skew)
+
+
+def _unit3(v) -> tuple[float, float, float]:
+    x, y, z = float(v[0]), float(v[1]), float(v[2])
+    norm = math.sqrt(x * x + y * y + z * z)
+    return x / norm, y / norm, z / norm
 
 
 def point_axis(dcm_bn: np.ndarray, axis_b, direction_n) -> np.ndarray:
     """``[BN]`` after the smallest rotation that puts body ``axis_b`` on
     inertial ``direction_n``, starting from ``dcm_bn``."""
-    axis_n = unit(dcm_bn.T @ unit(np.asarray(axis_b, dtype=float)))
-    rotation = _rotation(axis_n, unit(np.asarray(direction_n, dtype=float)))
+    axis_n = np.array(_unit3(dcm_bn.T @ np.array(_unit3(axis_b))))
+    rotation = _rotation(axis_n, np.array(_unit3(direction_n)))
     return orthonormal(dcm_bn @ rotation.T)
 
 
 def orthonormal(dcm: np.ndarray) -> np.ndarray:
     """``dcm`` with its rows made orthonormal again (Gram-Schmidt), so
     chained rotations do not drift."""
-    x = unit(dcm[0])
-    y = unit(dcm[1] - np.dot(dcm[1], x) * x)
-    return np.stack([x, y, np.cross(x, y)])
+    x0, x1, x2 = _unit3(dcm[0])
+    r0, r1, r2 = float(dcm[1, 0]), float(dcm[1, 1]), float(dcm[1, 2])
+    d = r0 * x0 + r1 * x1 + r2 * x2
+    y0, y1, y2 = _unit3((r0 - d * x0, r1 - d * x1, r2 - d * x2))
+    return np.array([[x0, x1, x2], [y0, y1, y2],
+                     [x1 * y2 - x2 * y1, x2 * y0 - x0 * y2, x0 * y1 - x1 * y0]])
 
 
 def angle_deg(dcm_a: np.ndarray, dcm_b: np.ndarray) -> float:

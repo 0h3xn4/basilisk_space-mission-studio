@@ -54,6 +54,13 @@ rates and the prime meridian) and ERFA's `epv00` for the Sun.
 for target windows. `predict_passes` is left as it is (its outputs are
 only a pre-run summary).
 
+**Revised (2026-11-16):** the analytic source uses ERFA's IAU 2006/2000A
+celestial-to-terrestrial matrix (`c2t06a`, with the polar motion and
+UT1 - UTC of the IERS files when they cover the horizon, else zero) in
+place of IAU_EARTH. Against a run on the ITRF93 kernels the station
+geometry agrees to about 13 m on the ground; IAU_EARTH was 0.094 deg (about
+10 km) off.
+
 ## O-05 Times in the plan: UTC strings outside, simulation seconds inside (2026-11-16)
 
 **Chosen:** UTC ISO 8601 with `Z` and milliseconds in files and
@@ -189,8 +196,7 @@ and the coverage fraction converges with the cell size (checked).
 
 **Chosen:** the robustness batch perturbs the plan's inputs and
 re-evaluates (and optionally replans) with the planner's own models,
-seeded, as a `MonteCarloBatch(kind="operations")`; one draw can be
-flown on request. **Alternatives:** Basilisk Monte Carlo per draw (a
+seeded, as a `MonteCarloBatch(kind="operations")`. **Alternatives:** Basilisk Monte Carlo per draw (a
 full run each). **Why:** the brief's quantities (lost passes, link,
 pointing time, initial battery) are planner inputs; the thermal batch
 set the pattern.
@@ -217,3 +223,45 @@ direction is taken as from `REF_FRAME_A` (EME2000) to `REF_FRAME_B`
 (`SC_BODY_1`), the convention of version 1's `ATTITUDE_DIR = A2B`,
 and is stated in each file's `COMMENT`. To confirm against the Blue
 Book (section 4 of CCSDS 504.0-B-2) when it can be read.
+
+## O-21 A uniform sample grid; a contact gives way to a request down to its minimum (2026-11-16)
+
+**Chosen:** the geometry is sampled on a uniform grid from the horizon's
+start (the last sample at or before its end). A contact takes its whole
+pass, but a request that collides with exactly one unlocked contact may
+shorten it from its start or its end, never below the contact type's
+`min_duration_s`; the change is undone if anything else breaks.
+**Alternatives:** `linspace` over the horizon (a step that is not the one
+asked for); contacts that never give way. **Why:** every profile and the
+flown run share the step; an acquisition at the edge of a pass is worth
+more than the pass's last minute.
+
+## O-22 Replanning keeps what started before T (2026-11-16)
+
+**Chosen:** a replan from T keeps, with their ids, the activities that
+start more than 1 ms before T (UTC text is rounded to the millisecond),
+counts what they satisfied as done, places nothing new before T and fills
+the rest; the battery and memory follow from the kept activities.
+**Why:** the rolling-horizon practice; a contact that starts at T (the
+pass lost) must not count as flown because of rounding.
+
+## O-23 Plan edits in the GUI go through the scenario's locks (2026-11-16)
+
+**Chosen:** Run › Plan's Lock, Unlock and a move write the scenario's
+`operations.locked` (so they are saved, undone and seen by the CLI);
+a move locks the activity at its new time, held within its window or
+pass, and plans the rest again. Delete takes an activity out of the plan
+shown and re-checks the others in time order, ids kept (the plan is a
+product; the scenario holds no deletions). **Alternatives:** edits held
+only in the GUI. **Why:** one source of truth for what the user fixed.
+
+## O-24 The flown plan is checked on the Plan page, not shown as a run (2026-11-16)
+
+**Chosen:** Fly and verify runs the simulation with the plan executor on
+a background thread (in 20 chunks, so Stop works) and shows the
+verification and the flown mode and pointing error at the time cursor on
+the Plan page; the plan status at the cursor (activity now and next,
+mode, state of charge, memory, activities done) is the plan's dashboard.
+**Alternatives:** feed the flown run to Results like a normal run.
+**Why:** a run from Run is reproducible from the scenario alone; a flown
+plan also needs the plan file, so it is kept apart from the run history.

@@ -138,3 +138,15 @@ def test_flight_scenario_turns_planned_maneuvers_into_a_sequence(flown):
     assert kinds == [("propagate", "2030-01-01T09:30:00.000Z"), ("maneuver", [0.0, 0.1, 0.0]),
                      ("propagate", planning.plan.end_utc)]
     assert flown_scenario.sim_settings.duration_days == pytest.approx(2.0 / 24.0, abs=1e-6)
+
+
+def test_a_flight_can_be_stopped(flown):
+    """With should_cancel the flight runs in chunks and stops after the
+    first one that finds it set (Run › Plan's Stop)."""
+    from spacemissionstudio.engine.service import SimulationCancelled
+
+    scenario, planning, _result = flown
+    asked = []
+    with pytest.raises(SimulationCancelled):
+        analysis.fly(scenario, planning.plan, should_cancel=lambda: asked.append(1) or True)
+    assert asked == [1]

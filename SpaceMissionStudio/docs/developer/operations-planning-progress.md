@@ -20,22 +20,22 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | # | Step | State |
 |---|---|---|
 | 0 | Investigation, design, decision log, progress file | done |
-| 1 | Schema `operations` section; recording for it | to do |
-| 2 | Time base and geometry (run, propagation, analytic) | to do |
-| 3 | Targets and opportunities (windows, coverage, passes, eclipses, maneuvers) | to do |
-| 4 | Attitude per mode, slew time | to do |
-| 5 | Resources: energy and memory | to do |
-| 6 | Plan model and file | to do |
-| 7 | Scheduler | to do |
-| 8 | Analysis entry point, API, CLI | to do |
-| 9 | GUI: Run › Plan, Gantt, edits, Problems, Timeline | to do |
-| 10 | Executor `SysModel`, device switching, maneuvers | to do |
-| 11 | Verification plan vs simulation | to do |
-| 12 | Dashboard | to do |
-| 13 | Exports (CSV, ICS, JSON, command schedule, pointing, AEM, OEM, report) | to do |
-| 14 | What-if and replanning | to do |
-| 15 | Contingency rules | to do |
-| 16 | Robustness batch and plan comparison | to do |
+| 1 | Schema `operations` section; recording for it | done |
+| 2 | Time base and geometry (run, propagation, analytic) | done |
+| 3 | Targets and opportunities (windows, coverage, passes, eclipses, maneuvers) | done |
+| 4 | Attitude per mode, slew time | done |
+| 5 | Resources: energy and memory | done |
+| 6 | Plan model and file | done |
+| 7 | Scheduler | done |
+| 8 | Analysis entry point, API, CLI | done |
+| 9 | GUI: Run › Plan, Gantt, edits, Problems, Timeline | done |
+| 10 | Executor `SysModel`, device switching, maneuvers | done |
+| 11 | Verification plan vs simulation | done |
+| 12 | Dashboard | done |
+| 13 | Exports (CSV, ICS, JSON, command schedule, pointing, AEM, OEM, report) | done |
+| 14 | What-if and replanning | done |
+| 15 | Contingency rules | done |
+| 16 | Robustness batch and plan comparison | done |
 | 17 | Templates and claims | to do |
 | 18 | V&V records | to do |
 | 19 | Documentation, final checks, report | to do |
@@ -46,3 +46,27 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   orbit-only propagation timed (22 s for three spacecraft over a week at
   30 s); AEM 2.0 structure from the CCSDS XML schema (the Blue Book site
   is refused by the network policy, O-20).
+- Steps 1-8 (2026-11-16): the `operations` section (validation,
+  references and renames, field help); time base; geometry from a run,
+  an orbit-only propagation or the analytic model (ERFA `c2t06a`, O-04);
+  targets (points, CSV, GeoJSON polygons); windows, passes with masks and
+  link margins, eclipses; attitude per mode and the slew model; energy
+  and memory profiles; the plan model and file; the scheduler (requests,
+  locks, contention, reasons, seeded improvement); `operations.analysis`,
+  the API (`plan_*`) and `spacemissionstudio plan`. Scheduling a day takes
+  0.3-0.5 s.
+- Steps 10-13 (2026-11-16): the plan executor (`PlanWriter`,
+  `PlanArbitrator`; app-owned `SysModel`s), device switching through
+  `DeviceCmdMsg`/`DeviceStatusMsg`, planned maneuvers as a generated
+  Mission Sequence; verification plan vs flight; ten export products.
+  On a two-hour plan the flown off-nadir angle is within 0.23 deg of the
+  plan and the state of charge within 1.25 points.
+- Steps 14-16 (2026-11-16): what-if events, replanning from a time
+  (O-22), contingency rules in the executor, the robustness batch (a
+  `MonteCarloBatch` of kind `operations`), plan comparison.
+- Step 9 and the dashboard (Step 12) (2026-11-16): Run › Plan with the
+  Gantt chart (drag within the window), Lock, Unlock, Delete, Lose this
+  pass, Replan, Compare, Robustness, Export, Fly and verify (Stop works),
+  the plan status at the time cursor; the plan's activities on the
+  Timeline ("Planned activities"); unplaced requests and verification
+  flags in Problems; the editor keeps the section (O-23, O-24).

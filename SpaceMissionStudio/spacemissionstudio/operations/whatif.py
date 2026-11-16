@@ -40,6 +40,7 @@ from . import analysis
 from .plan import Plan
 
 _MATCH_S = 1.0  # [s] a time given in UTC text (rounded to the millisecond) still names its pass
+_TEXT_S = 1.0e-3  # [s] UTC text is rounded to the millisecond: a start within it of T starts at T
 
 
 class WhatIf:
@@ -103,10 +104,10 @@ def replan(scenario, plan: Plan, from_utc: str, events=None, result=None, planni
 
     base = TimeBase(scenario.epoch_utc)
     t0 = base.to_sim(from_utc)
-    kept = [a for a in plan.activities if a.start_s < t0]
+    kept = [a for a in plan.activities if a.start_s < t0 - _TEXT_S]
     changed = copy.deepcopy(scenario)
     section = changed.operations
-    section.locked = [item for item in section.locked if base.to_sim(item.start_utc) >= t0]
+    section.locked = [item for item in section.locked if base.to_sim(item.start_utc) >= t0 - _TEXT_S]
     done = Counter()
     for activity in kept:
         section.locked.append(LockedActivityConfig(activity.id, activity.spacecraft, activity.type, activity.start_utc,

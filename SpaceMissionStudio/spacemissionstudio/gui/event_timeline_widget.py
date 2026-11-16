@@ -65,6 +65,7 @@ from .time_cursor import TimeCursor, describe
 KIND_SLOTS: dict[str, int] = {kind: index for index, kind in enumerate(event_model.KINDS)}
 MODEL_ANALYSES_BOX = "model analyses"  # one box for every kind of event_model.MODEL_KINDS
 THERMAL_BOX = "thermal"  # one box for every kind of event_model.THERMAL_KINDS
+PLAN_BOX = "plan"  # one box for every kind of event_model.PLAN_KINDS
 
 
 def kind_colour(kind: str) -> str:
@@ -525,6 +526,14 @@ class EventTimelineWidget(QWidget):
         box.setVisible(False)
         controls.addWidget(box)
         self.kind_boxes[THERMAL_BOX] = box
+        # The operations plan's activities (Run › Plan), shown once a plan is made or opened.
+        box = QCheckBox("Planned activities")
+        box.setChecked(True)
+        box.setToolTip("The activities of the operations plan (Run › Plan): acquisitions, contacts, calibrations")
+        box.toggled.connect(self._apply_filter)
+        box.setVisible(False)
+        controls.addWidget(box)
+        self.kind_boxes[PLAN_BOX] = box
         controls.addStretch(1)
         self.fit_button = QPushButton("Fit")
         self.fit_button.setToolTip("Show the whole run (0). The wheel or +/- zooms the timeline; Shift+wheel, the "
@@ -603,13 +612,15 @@ class EventTimelineWidget(QWidget):
     def set_result(self, result: ResultSet | None, epoch_utc: str | None = None) -> None:
         self._result, self._epoch_utc = result, epoch_utc
         self._run_events = event_model.extract_events(result)
-        self._extra_events = []
+        self._extra_events, self._extra_sources = [], {}
         self._show_events()
 
-    def set_extra_events(self, events: list) -> None:
+    def set_extra_events(self, events: list, source: str = "thermal") -> None:
         """Events an analysis after the run adds (Run › Thermal's limit
-        violations); replaces the ones it added before."""
-        self._extra_events = list(events)
+        violations, Run › Plan's activities); replaces the ones ``source``
+        added before, keeps the other sources'."""
+        self._extra_sources[source] = list(events)
+        self._extra_events = [event for found in self._extra_sources.values() for event in found]
         self._show_events()
 
     def _show_events(self) -> None:
@@ -619,9 +630,11 @@ class EventTimelineWidget(QWidget):
         self._texts = [_event_text(event) for event in self.events]
         missing = event_model.missing_kinds(result) if result is not None else {}
         counts = {kind: sum(e.kind == kind for e in self.events)
-                  for kind in event_model.KINDS + event_model.MODEL_KINDS + event_model.THERMAL_KINDS}
+                  for kind in event_model.KINDS + event_model.MODEL_KINDS + event_model.THERMAL_KINDS
+                  + event_model.PLAN_KINDS}
         self.kind_boxes[MODEL_ANALYSES_BOX].setVisible(any(counts[kind] for kind in event_model.MODEL_KINDS))
         self.kind_boxes[THERMAL_BOX].setVisible(any(counts[kind] for kind in event_model.THERMAL_KINDS))
+        self.kind_boxes[PLAN_BOX].setVisible(any(counts[kind] for kind in event_model.PLAN_KINDS))
         if result is None:
             self.summary_label.setText("Run a scenario to see its passes, eclipses, burns and mode changes.")
         else:
@@ -652,6 +665,8 @@ class EventTimelineWidget(QWidget):
             shown |= set(event_model.MODEL_KINDS)
         if THERMAL_BOX in shown:
             shown |= set(event_model.THERMAL_KINDS)
+        if PLAN_BOX in shown:
+            shown |= set(event_model.PLAN_KINDS)
         station = self.station_combo.currentText()
         words = self.search.text().lower().split()
         any_station = station in ("", _ALL_STATIONS)

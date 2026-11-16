@@ -68,6 +68,9 @@ MODEL_KINDS = (BLINDING, OBSTRUCTION, VISIBLE)
 # The thermal analysis's events (thermal.results): a node outside its limits, added when a case is solved.
 THERMAL_LIMIT = "thermal limit"
 THERMAL_KINDS = (THERMAL_LIMIT,)
+# The operations plan's activities (Run › Plan), added when a plan is made or opened.
+PLANNED = "planned activity"
+PLAN_KINDS = (PLANNED,)
 
 # The measured values an event can carry (Event.quantities): key -> (column
 # heading, unit, format). The Events table gives each its own column and the

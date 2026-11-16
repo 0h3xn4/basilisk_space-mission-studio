@@ -84,11 +84,13 @@ def _perturbed(planning, plan: Plan, draw: Draw):
     return scenario, scheduler
 
 
-def check_plan(planning, plan: Plan, draw: Draw) -> Plan:
+def check_plan(planning, plan: Plan, draw: Draw, keep_ids: bool = False) -> Plan:
     """Re-check ``plan`` under the draw's conditions: each activity in time
-    order is kept if it still fits."""
+    order is kept if it still fits. ``keep_ids``: the activities kept keep
+    their ids and locks (an edit of the plan), else they are numbered anew."""
     scenario, scheduler = _perturbed(planning, plan, draw)
     reasons = Counter()
+    kept = {}
     for activity in sorted(plan.activities, key=lambda a: (a.start_s, a.spacecraft)):
         item = None
         if activity.kind == "contact":
@@ -115,8 +117,18 @@ def check_plan(planning, plan: Plan, draw: Draw) -> Plan:
         scheduler._fill_prediction(trial, Candidate(activity.spacecraft, trial.start_s, trial.end_s, 0.0, window,
                                                     activity.station, item), pieces)
         scheduler._commit(state, trial, pieces)
+        kept[id(trial)] = activity
     draw.reasons = dict(reasons)
-    return scheduler.plan()
+    result = scheduler.plan()
+    if keep_ids:
+        for activity in result.activities:
+            original = kept.get(id(activity))
+            if original is not None:
+                activity.id, activity.locked = original.id, original.locked
+                activity.predicted.update({k: v for k, v in original.predicted.items() if k not in activity.predicted})
+        result.unscheduled = list(plan.unscheduled)
+        result.provenance = dict(plan.provenance, edited=True)
+    return result
 
 
 def _outcome(draw: Draw, result: Plan, every: slice) -> None:

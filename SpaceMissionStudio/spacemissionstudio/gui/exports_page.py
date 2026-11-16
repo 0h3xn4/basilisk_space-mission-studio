@@ -80,6 +80,14 @@ EXPORTS = (
            "Run › Thermal › Save...", "Folder chosen", "In the record; <file>.provenance.json",
            "In thermal.json (with the run's own record), and <file>.provenance.json beside each table, series "
            "and plot"),
+    Export("plan", "Operations plan", "JSON (spacemissionstudio-plan)", "Run › Plan › Save plan...", "plan.json",
+           "In the file", "In the file: the tool version, the scenario's SHA-256, the geometry, seed and settings"),
+    Export("operations", "Operations products", "CSV, iCalendar, JSON, CCSDS OEM and AEM, Markdown",
+           "Run › Plan › Export...", "Folder chosen", "In each file; <file>.provenance.json",
+           "In each file's header or COMMENT lines where its format has room, else <file>.provenance.json beside it; "
+           "the plan's SHA-256 in each"),
+    Export("operations_robustness", "Plan robustness batch", "Monte Carlo archive", "Run › Plan › Save batch...",
+           "Folder chosen", "archive.provenance.json", "archive.provenance.json: the seed and the draw settings"),
     Export("reentry_json", "Re-entry estimate", "JSON", "Run › End of Life › Re-entry casualty › Save...",
            "reentry.json", "In the file", "In the file: the rules in effect, each part's fate and the scenario's "
            "SHA-256"),

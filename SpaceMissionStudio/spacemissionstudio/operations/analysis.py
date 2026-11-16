@@ -20,6 +20,7 @@ opportunities and the scheduler, with the plan's provenance."""
 
 from __future__ import annotations
 
+import copy
 import time
 from dataclasses import dataclass
 from datetime import datetime, UTC
@@ -28,6 +29,9 @@ from . import attitude, geometry as geometry_model, opportunities as opportunity
 from .plan import Plan
 from .scheduler import Scheduler
 from .timebase import TimeBase, format_utc
+
+
+_FLIGHT_CHUNKS = 20  # a cancellable flight checks between this many chunks (each extracts the results so far)
 
 
 class PlanningError(Exception):
@@ -108,12 +112,21 @@ def plan(scenario, result=None) -> Planning:
     return planning
 
 
+def without(planning: Planning, plan: Plan, activity_id: str) -> Plan:
+    """``plan`` without one activity (Run › Plan's Delete): the others are
+    checked again in time order with the planner's constraints and keep
+    their ids; the resources are evaluated again."""
+    from .robustness import Draw, check_plan
+
+    edited = copy.copy(plan)
+    edited.activities = [a for a in plan.activities if a.id != activity_id]
+    return check_plan(planning, edited, Draw(0, [], 0.0, 1.0, None), keep_ids=True)
+
+
 def flight_scenario(scenario, plan: Plan):
     """The scenario as the plan is flown: run from its epoch to the plan's
     end; planned maneuvers as a generated Mission Sequence (propagate to
     each one's time, burn; decision O-16) when the scenario has none."""
-    import copy
-
     from ..schema.command import Command, runs_sequence
 
     flown = copy.deepcopy(scenario)
@@ -152,4 +165,8 @@ def fly(scenario, plan: Plan, should_cancel=None):
 
         result, _summary = MissionEngine(flown, service=service, should_cancel=should_cancel).run()
         return result
-    return service.run(should_cancel=should_cancel) if should_cancel is not None else service.run()
+    if should_cancel is None:
+        return service.run()
+    # in chunks, checking should_cancel after each (SimulationCancelled when it says so)
+    chunk_s = flown.sim_settings.duration_days * 86400.0 / _FLIGHT_CHUNKS  # [s]
+    return service.run_live(lambda _partial, _fraction: None, live_step_s=chunk_s, should_cancel=should_cancel)

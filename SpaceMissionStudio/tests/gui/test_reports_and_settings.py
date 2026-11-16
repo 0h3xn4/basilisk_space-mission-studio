@@ -63,13 +63,14 @@ def test_every_export_is_listed_never_written_at_first(qtbot):
     page = ExportsPage()
     qtbot.addWidget(page)
     table = page.table
-    assert table.row_count() == len(EXPORTS) == 19
+    assert table.row_count() == len(EXPORTS) == 22
     assert [table.header_text(c) for c in range(table.column_count())] == [
         "Export", "Last written\n[UTC]", "Format", "Made in", "Default destination", "Provenance"]
     names = {table.cell(r, 0) for r in range(table.row_count())}
     assert names == {"Plot data", "Plot image", "Every shown plot", "Reproduction bundle", "Events", "Mission output",
                      "Monte Carlo runs", "Lifetime estimate", "Budget", "Design checks", "Model analyses",
-                     "Re-entry estimate", "Thermal analysis", "Flight software", "SIL report",
+                     "Re-entry estimate", "Thermal analysis", "Operations plan", "Operations products",
+                     "Plan robustness batch", "Flight software", "SIL report",
                      "Starting orbits", "Ephemeris", "3D model"}
     assert all(table.cell(r, 1) == "never" for r in range(table.row_count()))
     assert all(table.cell(r, c) for r in range(table.row_count()) for c in range(6))

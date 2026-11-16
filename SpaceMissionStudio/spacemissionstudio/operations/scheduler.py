@@ -151,11 +151,19 @@ class Scheduler:
         self._moon = None
 
     # -- state -------------------------------------------------------------
+    def _base_cosine(self, model: SpacecraftModel) -> np.ndarray:
+        """The panel cosine with no activity (the default attitude), once
+        per spacecraft model."""
+        cache = self.__dict__.setdefault("_base_cosines", {})
+        if id(model) not in cache:
+            cache[id(model)] = (model, model.panel_cosine([], []))
+        return cache[id(model)][1]
+
     def _fresh(self, model: SpacecraftModel) -> _State:
         state = _State(model)
         profile = model.evaluate([], [])
         n = len(self.t)
-        state.cosine = model.panel_cosine([], [])
+        state.cosine = self._base_cosine(model).copy()
         state.load = profile.load_w.copy()
         state.rate_in = np.zeros(n)
         state.rate_out = np.zeros(n)
@@ -324,7 +332,7 @@ class Scheduler:
             old = state.timeline[state.activities.index(following)]
             f0 = min(model.index(old["point_from_s"]), model.index(following_entry["point_from_s"]))
             f1 = model.index(following.occupied[1])
-            base = model.panel_cosine([], [])
+            base = self._base_cosine(model)
             cosine[k1 + 1:f0] = base[k1 + 1:f0]
             seg = model.panel_cosine([following], [following_entry])
             g0 = model.index(following_entry["point_from_s"])
@@ -854,8 +862,31 @@ class Scheduler:
             self.station_load[activity.station] = [x for x in self.station_load.get(activity.station, [])
                                                    if not (x[2] == activity.spacecraft
                                                            and abs(x[1] - activity.end_s) < _EPS)]
-        for other in keep:
-            self._commit(state, other, self._force(state, other))
+        self._rebuild(state, keep)
+
+    def _rebuild(self, state: _State, activities: list) -> None:
+        """The spacecraft's arrays under ``activities`` (sorted), in one pass:
+        the same as committing them one by one, without a pass over the
+        horizon for each (an improvement step of a week's plan took minutes)."""
+        model = state.model
+        timeline = model.timeline(activities)
+        state.activities, state.timeline = list(activities), list(timeline)
+        state.starts = [a.occupied[0] for a in activities]
+        state.cosine = model.panel_cosine(activities, timeline)
+        handling, rf = model.sc.data_handling, model.sc.rf_link
+        for activity in activities:
+            kind = self.section.activity_type(activity.type)
+            share = overlap(self.t, self.step, activity.start_s, activity.end_s)
+            state.load += share * kind.power_w
+            for name in kind.instruments:
+                instrument = model.instruments[name]
+                state.rate_in += share * instrument.data_rate_bps
+                state.load += share * instrument.power_w
+            if kind.transmitter and handling is not None and rf is not None:
+                state.load += share * handling.transmitter_power_w
+                state.rate_out += model.link_fraction(activity, activity.start_s, activity.end_s) * rf.data_rate_bps
+        state.energy = self._energy(model, state, state.cosine, state.load, 0, len(self.t))
+        state.memory, state.lost = self._memory(model, state.rate_in, state.rate_out, None, 0, None)
 
     # -- output ----------------------------------------------------------------------
     def plan(self) -> Plan:
