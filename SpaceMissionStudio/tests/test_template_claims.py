@@ -529,3 +529,44 @@ def test_32_the_run_records_the_disturbances_and_the_arrays_shading():
     power = result.series["smallsat-1.shading.power"]
     assert power.data[:, -2].max() == pytest.approx(1372.0, rel=0.02)
     assert any("0.59 %" in note or "0.6 %" in note for note in report.notes)
+
+
+@pytest.mark.slow
+def test_33_the_thermal_cases_keep_the_bus_warm_and_safe_mode_needs_the_heater():
+    """Template 33's thermal model on its run: every case orbit-periodic,
+    its energy balance closed to 1e-3 and changing by less than 0.5 K with
+    half the step; the MLI-covered bus at 11 to 14.6 degC in the nominal,
+    hot and cold cases (hot warmest, cold coldest) and the radiator
+    rejecting about 37 W; in the cold safe-mode case (avionics at 15 W)
+    the bus at about -22.5 degC, battery heater A on all the time and sized
+    at about 7.6 W, and the avionics below their -20 degC operating limit,
+    a Timeline event and a finding."""
+    from spacemissionstudio import api
+    from spacemissionstudio.engine.events import THERMAL_LIMIT
+
+    scenario = _template("33")
+    analysis = api.thermal(scenario, _run(scenario))
+    by = {c.name: c for c in analysis.cases}
+    assert list(by) == ["nominal", "hot", "cold", "cold safe mode"]
+    for case in analysis.cases:
+        solution = case.solution
+        assert solution.periodic.converged
+        assert abs(solution.energy_residual_j) < 1.0e-3 * solution.energy_throughput_j
+        assert solution.step_check_k < 0.5
+
+    def node(case, name):
+        return next(n for n in by[case].summary if n.name == name)
+
+    for case in ("nominal", "hot", "cold"):
+        assert 11.0 < node(case, "bus").min_c and node(case, "bus").max_c < 14.6
+        assert by[case].radiators[0].rejected_w == pytest.approx(37.0, abs=1.0)
+        assert all(h.duty == 0.0 for h in by[case].heaters)
+    assert node("hot", "bus").mean_c > node("nominal", "bus").mean_c > node("cold", "bus").mean_c
+    safe = by["cold safe mode"]
+    assert node("cold safe mode", "bus").mean_c == pytest.approx(-22.5, abs=1.0)
+    heater_a = next(h for h in safe.heaters if h.name == "battery heater A")
+    assert heater_a.duty == 1.0 and heater_a.sized_w == pytest.approx(7.6, abs=0.3)
+    assert node("cold safe mode", "avionics").min_c < -20.0 < node("cold safe mode", "avionics").min_c + 5.0
+    events = analysis.events()
+    assert events and all(e.kind == THERMAL_LIMIT and e.label == "avionics below operating" for e in events)
+    assert "thermal.limit" in {getattr(f, "rule_id", None) for f in analysis.findings()}

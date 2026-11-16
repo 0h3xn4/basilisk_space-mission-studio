@@ -310,3 +310,31 @@ Draft upstream issue (not filed):
 > `astroConstants.h`. Also worth a note in the module documentation: the
 > solar constant `S = 1366` W/m^2 is not scaled with the Sun distance, so
 > the module assumes 1 AU.
+
+## T-34 The orbit-periodic start: slow modes and thermostats (2026-11-16)
+
+**Found:** on template 33 (a 120 kg bus under MLI, time constant about
+1.5 days) repeating orbits from the steady state of the mean loads did
+not converge in 50 orbits: the change per orbit shrank by only about 4 %
+an orbit, and a change below the tolerance still left about 25 times as
+much to go. With the battery bolted to that bus its heater drove a cycle
+of many orbits (heat the bus, switch off, cool for hours): there is no
+orbit-periodic solution then. Anderson acceleration of the orbit map made
+it worse (the thermostats make the map discontinuous).
+**Chosen:** (1) Convergence is judged on the nodes no thermostat holds:
+their start state and their orbit-mean temperature; a thermostat node
+cycles at its own pace, bounded by its setpoints, and is left out (all
+nodes are judged when every node has a heater). (2) The residual is what
+is left to go, not the last change: the change divided by `1 - rho`,
+rho being how much the orbit means' change shrinks per orbit (from three
+orbits); at least three orbits are solved. (3) A slow mode is
+extrapolated: when rho is steady over four orbits (two estimates within
+5 %, 0.5 < rho < 0.999), the judged nodes move on by the remaining
+geometric sum of the orbit-mean drift (at most 50 K), halved each time
+the drift turns back after a jump; plain orbits carrying the BDF2 history
+then finish, so the converged orbit is the integration's own. **Design
+note for users:** a battery with heaters on a large structure should sit
+on isolators, as it usually does; template 33 shows it. **Alternatives:**
+Newton shooting with a finite-difference Jacobian (one orbit per node
+per iteration, and unreliable across thermostat switching); a longer run
+(days of orbits for every case and every heater-sizing trial).

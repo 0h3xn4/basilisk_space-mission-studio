@@ -31,8 +31,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 8 | `api.thermal`, CLI `thermal` | done |
 | 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | done |
 | 10 | V&V records (Phase 1) | done |
-| 11 | Template 33 (150 kg bus), claims, golden file | next |
-| 12 | Documentation (Phase 1) | |
+| 11 | Template 33 (150 kg bus), claims, golden file | done |
+| 12 | Documentation (Phase 1) | next |
 | 13 | Library: conductivity, honeycomb, MLI, EOL optics where sourced | |
 | 14 | Temperature-dependent properties | |
 | 15 | Sweeps and sensitivity | |
@@ -118,9 +118,15 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   per halving). Found: sensorThermal's radiation constant is 1.6 % high
   (T-33, draft upstream issue).
 
+- Step 11: template 33 (`33_microsat_thermal.json`, generator
+  `build_33_microsat_thermal`), description, wizard page, README row,
+  scenario hash, golden file (now with a `thermal` section:
+  `tests/golden_capture.py`), claims (`test_33_...`). The periodic start
+  learned slow modes and thermostats (T-34).
+
 ## Next
 
-Step 11: template 33.
+Step 12: documentation.
 
 ## Known issues
 

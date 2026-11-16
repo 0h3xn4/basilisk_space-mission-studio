@@ -326,15 +326,88 @@ def _periodic_start(network: Network, loads_: Loads, start_s: float, period_s: f
         t0 = steady_state(network, mean, loads_.emission_w_k4)
         on, before = None, None
     residual = float("inf")
+    # Nodes a thermostat holds cycle at their own pace, not the orbit's: they are bounded by the
+    # thermostat and left out of the residual and the drift (T-34), unless every node has one.
+    judged = np.ones(len(network.names), bool)
+    for heater in network.heaters:
+        judged[heater.node] = False
+    if not judged.any():
+        judged[:] = True
+    means = []  # each orbit's mean temperature, for the extrapolation (T-34)
+    jump = {"last": None, "damping": 1.0}
     for count in range(1, max_orbits + 1):
         run = integrate(network, loads_, orbit, t0, on, fixed_heaters, before)
         end = run.temperature_k[-1]
-        residual = float(np.max(np.abs(end - t0)))
-        t0, on = end, run.heater_on[-1]
-        before = (run.temperature_k[-2], float(orbit[-1] - orbit[-2]))
-        if residual < tolerance_k:
-            return t0, on, before, Periodic(count, residual, True, period_s)
+        mean = _orbit_mean(run)[judged]
+        change = float(max(np.max(np.abs(end - t0)[judged]),
+                           np.max(np.abs(mean - means[-1])) if means else float("inf")))
+        means.append(mean)
+        # What is left to go, not the last orbit's change: a slow mode contracting by rho per orbit
+        # still has change * rho / (1 - rho) ahead of it (T-34).
+        rho = _contraction(means)
+        residual = change / (1.0 - rho) if rho is not None else change
+        on = run.heater_on[-1]
+        if residual < tolerance_k and before is not None and (rho is not None or count >= max_orbits):
+            return end, on, (run.temperature_k[-2], float(orbit[-1] - orbit[-2])), \
+                Periodic(count, residual, True, period_s)
+        step = _extrapolated(means, jump) if warm is None else None
+        if step is not None:
+            t0, before = end.copy(), None
+            t0[judged] += step  # a jump: the next orbit restarts its BDF2 history
+            jump["last"] = step
+            means.clear()
+        else:  # a plain orbit, carrying the BDF2 history
+            t0 = end
+            before = (run.temperature_k[-2], float(orbit[-1] - orbit[-2]))
     return t0, on, before, Periodic(max_orbits, residual, False, period_s)
+
+
+def _orbit_mean(run: Integration) -> np.ndarray:
+    """Each node's time-averaged temperature over an orbit [K]."""
+    dt = np.diff(run.time_s)
+    mid = 0.5 * (run.temperature_k[1:] + run.temperature_k[:-1])
+    return (dt @ mid) / (run.time_s[-1] - run.time_s[0])
+
+
+def _contraction(means: list) -> float | None:
+    """The ratio by which the orbit means' change shrinks per orbit, from
+    the last three orbits (0 <= rho < 1), or None before three orbits or
+    when the means do not change."""
+    if len(means) < 3:
+        return None
+    d1, d2 = means[-2] - means[-3], means[-1] - means[-2]
+    if float(d1 @ d1) < 1.0e-24:
+        return 0.0
+    rho = float(d2 @ d1) / float(d1 @ d1)
+    return min(max(rho, 0.0), 0.999)
+
+
+def _extrapolated(means: list, jump: dict) -> np.ndarray | None:
+    """How far the start should move when one slow mode dominates
+    (T-34): with three orbits whose mean temperatures change by a steady
+    ratio rho per orbit (two estimates within 5 % of each other, 0.5 <
+    rho < 0.999), the remaining drift's geometric sum,
+    ``(m_k - m_k-1) rho / (1 - rho)``, at most 50 K; halved for good each
+    time the drift turns back after a jump (an overshoot, for instance
+    across a thermostat's switching). None otherwise. Fast nodes, whose
+    mean does not drift, do not move."""
+    if len(means) < 3:
+        return None
+    d1, d2 = means[-2] - means[-3], means[-1] - means[-2]
+    if jump["last"] is not None and len(means) == 3:
+        if float((means[-1] - means[-3]) @ jump["last"]) < 0.0:
+            jump["damping"] *= 0.5
+    if float(d1 @ d1) < 1.0e-18 or len(means) < 4:
+        return None
+    d0 = means[-3] - means[-4]
+    if float(d0 @ d0) < 1.0e-18:
+        return None
+    rho, rho_before = float(d2 @ d1) / float(d1 @ d1), float(d1 @ d0) / float(d0 @ d0)
+    if not 0.5 < rho < 0.999 or abs(rho - rho_before) > 0.05 * rho:
+        return None
+    step = d2 * rho / (1.0 - rho) * jump["damping"]
+    largest = float(np.max(np.abs(step)))
+    return step * (50.0 / largest) if largest > 50.0 else step
 
 
 def energy_balance(network: Network, loads_: Loads, run: Integration,

@@ -69,7 +69,7 @@ integration differs. A draft upstream issue is in decision T-33.
 | Two boxes face to face | Contact over the exact overlap (polygon clipping) | Equal |
 | A gap of a few millimetres | No contact | None |
 | Template 32's 300 kg spacecraft | A node per part, the battery internal; contact conductors bus-star tracker (0.15 x 0.25 m), bus-dish and bus-battery (0.4 x 0.4 m base) at the bare-joint coefficient 136.35 W/(m^2 K) (NASA GSFC TFAWS 2019, NTRS 20190030287) | As expected |
-| Template 33's 150 kg bus | See its claims in `tests/test_template_claims.py` | |
+| Template 33's 150 kg bus (`tests/test_template_claims.py`) | Generated: a node per part, the avionics mounted on the bus over 0.09 m^2; the radiator's and the battery's conductors replaced by their standoffs (0.5 W/K) and isolators (0.3 W/K). Four cases periodic in 3 orbits (safe mode about 32-42: the slow bus mode, extrapolated, T-34), balance 3.4e-4 of the throughput, step check 0.44-0.48 K | Bus 11.2-14.4 degC, hot above nominal above cold; radiator rejects 37 W; safe mode: bus -22.5 degC, heater A on all the time, sized 7.6 W, avionics below -20 degC |
 | Faces in no node, without optics; nodes without capacity or without a path to space; parts that can shade faces | Problems panel findings with their rule | Each found, nothing else on a complete model |
 
 ## Sources not reachable or not usable

@@ -563,4 +563,21 @@ What to look at:
 Try changing:
 - The star tracker's tilt to 0 deg (looking level): the array leaves its field of view.
 - The nozzle's plume half-angle to 10 deg: the plume clears the array.""",
+    "33": """\
+The 150 kg microsatellite as a 3D model with a thermal model: MLI on the bus, two arrays, a \
+radiator on the anti-Sun face, the battery with two heaters and the avionics inside. Run > Thermal \
+solves four cases: nominal, hot, cold, and cold in safe mode.
+
+What to look at:
+- The avionics dissipate the power budget's 60 W bus load; a heat pipe takes most of it to the \
+radiator.
+- Run > Thermal, Solve: the bus at 11 to 14 degC in the first three cases, and the radiator \
+rejecting about 37 W.
+- The cold safe-mode case: with the avionics down to 15 W the bus falls to about -22 degC and \
+heater A runs all the time (sized at about 7.6 W).
+- In that case the avionics leave their -20 degC limit: the Timeline and the Problems panel show it.
+
+Try changing:
+- Heater A's power, or its setpoints (Spacecraft > 3D model > Thermal model > Heaters).
+- The safe-mode case's avionics power (Cases): at 20 W they stay in range.""",
 }
