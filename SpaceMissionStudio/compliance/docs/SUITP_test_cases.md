@@ -4033,7 +4033,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_the_continuous_law_reconfigures_for_more_delta_v` | Basilisk's meanOEFeedback reaches the same helix: over the last half day every ROE error is under 5 m. | - | integration |
 | `test_the_results_have_the_expected_series_and_events` | Every series engine.series_names promises is recorded, and the burns and the drift appear as events. | - | integration |
 | `test_the_differential_drag_estimate_is_the_decay_basilisk_flies` | The decay the controller estimates while holding (from half a day on, once four orbits are in) is within 8 % of the one a straight line through the left-alone follower's mean a*da gives over two days (about -3.5 m a day) | - | integration |
-| `test_compensating_differential_drag_keeps_the_hold_in_tolerance` | With the compensation the heavy follower's mean longitude stays inside its 20 m tolerance after the first half day (13 m measured), the e and i vectors as in the twin hold, the relative semi-major axis within three times | - | integration |
+| `test_compensating_differential_drag_keeps_the_hold_in_tolerance` | With the compensation the heavy follower's mean longitude stays within its 20 m tolerance after the first half day, give or take the dead band's overshoot (the controller burns once the error is past the tolerance: never | - | integration |
 | `test_twin_spacecraft_compensate_no_drag` | Template 05's sister satellites feel the same drag: the estimate stays under a tenth of a metre a day and nothing is compensated, so the hold flies as it did before the compensation existed. | - | integration |
 
 ### `tests/test_roe_schema.py`
@@ -4670,7 +4670,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_the_shipped_record_parses_as_published` | Spot checks against the raw lines of data/spaceweather/SW-All.txt. | - | unit |
 | `test_the_last_observed_day_is_found_once` | CelestrakData.last_observed is the last observed day, kept on the data: the checks while a scenario is edited ask on every edit. | - | unit |
 | `test_a_past_run_gets_the_observed_days_unchanged` | The 2003 Halloween storms, as observed. | E-ST-10-04C 6.2.3b | unit |
-| `test_a_future_run_uses_msfcs_prediction_at_the_chosen_percentile` | January 2030 from MSFC's October 2026 table: 74.2 sfu / Ap 11.5 at the 50th percentile, 78.7 / 16.2 at the 95th (AD10: operations). | E-ST-10-04C 6.2.3b, E-ST-10-04C 7.2.1.2e | unit |
+| `test_a_future_run_uses_msfcs_prediction_at_the_chosen_percentile` | January 2030 from MSFC's November 2026 table: 74.1 sfu / Ap 11.3 at the 50th percentile, 78.7 / 15.9 at the 95th (AD10: operations). | E-ST-10-04C 6.2.3b, E-ST-10-04C 7.2.1.2e | unit |
 | `test_noaa_fills_only_the_months_before_msfc_starts` | Between the end of CelesTrak's 45-day forecast and the first month of MSFC's table, NOAA's monthly F10.7 (with the observed-mean Ap) is all the real data there is. | - | unit |
 | `test_msfc_parses_as_published_and_repeats_its_last_132_months` | AD10 Sec. | - | unit |
 | `test_runs_past_2041_continue_on_the_repeated_cycle` | A run past October 2041 resolves, warning that MSFC's last 132 months repeat (ESA AD10 Sec. | - | unit |

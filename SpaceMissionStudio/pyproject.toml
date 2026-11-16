@@ -95,7 +95,7 @@ spacemissionstudio = ["scenarios/*.json", "scenarios/templates/*.json", "scenari
                       "gui/assets/fonts/*/*.ttf", "gui/assets/fonts/*/OFL.txt",
                       "gui/assets/mission_view/*.html", "gui/assets/mission_view/*.js",
                       "gui/assets/mission_view/*.jpg", "gui/assets/mission_view/*.txt",
-                      "data/spaceweather/SW-All.txt", "data/spaceweather/oct2026f10-prd.txt",
+                      "data/spaceweather/SW-All.txt", "data/spaceweather/nov2026f10-prd.txt",
                       "data/spaceweather/README.md", "help/USER_MANUAL.md", "help/docs/images/*.png",
                       "fsw_export/basilisk_fsw_sources.zip", "fsw_export/basilisk_fsw_sources.json",
                       "fsw_export/templates/*", "config/defaults.yaml", "schema/field_help.json"]

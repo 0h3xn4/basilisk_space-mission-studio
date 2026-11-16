@@ -162,7 +162,7 @@ def _space_weather_files(today: date) -> list[ReferenceFile]:
             note + (f"; observed data end {observed}" if stale else "")))
     msfc = spaceweather.MSFC_BUNDLED_PATH
     files.append(ReferenceFile("solar-activity prediction", msfc.name, "ok" if msfc.exists() else "missing",
-                               "bundled with SpaceMissionStudio (NASA MSFC, October 2026)", str(msfc),
+                               "bundled with SpaceMissionStudio (NASA MSFC, November 2026)", str(msfc),
                                msfc.stat().st_size if msfc.exists() else None, _sha256(msfc), _mtime_utc(msfc),
                                note="95th, 50th and 5th percentiles (ESA AD10 Sec. 5.9)"))
     return files

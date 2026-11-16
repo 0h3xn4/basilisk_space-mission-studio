@@ -28,7 +28,7 @@ downloaded) or ``"local_file"`` (the user's own CelesTrak file). The file
 holds observed daily Kp/Ap and F10.7 since 1957, CelesTrak's 45-day
 forecast, and NOAA's monthly F10.7 forecast. Past the observations and
 the 45-day forecast, solar activity comes from NASA MSFC's prediction
-(``data/spaceweather/oct2026f10-prd.txt``, or the study's own file):
+(``data/spaceweather/nov2026f10-prd.txt``, or the study's own file):
 monthly 13-month-smoothed F10.7 and Ap at the 95th/50th/5th percentiles,
 as ESA's AD10 guideline (EOP-FM/2024-07-177, Sec. 5.9) prescribes, with
 its last 132 months repeated past its end. Only months MSFC does not
@@ -139,7 +139,7 @@ BUNDLED_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "spaceweat
 # NASA MSFC's solar-cycle prediction (13-month smoothed F10.7 and Ap at the
 # 95th/50th/5th percentiles), the source ESA's AD10 guideline
 # (EOP-FM/2024-07-177 v3.0, Sec. 5.9) prescribes for future solar activity.
-MSFC_BUNDLED_PATH = BUNDLED_DATA_PATH.parent / "oct2026f10-prd.txt"
+MSFC_BUNDLED_PATH = BUNDLED_DATA_PATH.parent / "nov2026f10-prd.txt"
 MSFC_PERCENTILES = (95.0, 50.0, 5.0)  # [%] the columns MSFC publishes, in file order
 _MSFC_MIN_MONTHS = 132  # [month] one solar cycle: a shorter table is not an MSFC prediction
 _PAD_DAYS = 10  # [day] around a run: MSIS reads the previous days' Ap and F10.7

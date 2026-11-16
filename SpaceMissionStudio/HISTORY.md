@@ -17867,3 +17867,33 @@ Compatibility checked with 2.7.0's own code (the tagged commit
 `ae5525cb8`, extracted with `git archive`): the 32 templates, saved by
 this code, open and validate in 2.7.0 with no message. No golden file,
 template, schema field, command or exit status changed since 2.7.0.
+
+## NASA MSFC's November 2026 prediction (2026-11-16)
+
+The owner decided to adopt NASA MSFC's November 2026 solar-cycle
+prediction, held back for 2.7.0 and 2.8.0 because it moves the golden
+outputs (SRelD K-33). The file was downloaded from NASA's site
+(`wp-content/uploads/2026/11/nov2026f10-prd.txt`); the October issue
+downloaded the same way matches the bundled copy once line endings and
+the trailing spaces of the percentile header are normalised, and the
+November file was normalised the same way. It starts in May 2026 (October's
+started in April) and ends in October 2041 like October's. December's issue
+is not out yet (the URL answers 404).
+
+`MSFC_BUNDLED_PATH`, the Reference data entry, the package data, the
+licence inventory and the notices name the new file. The regression
+baseline found 16 templates whose lifetime over a year changes, since
+drag reaches MSFC's table after CelesTrak's daily forecast ends on
+2026-12-29. A first rewrite kept only the lifetime fingerprints and the note
+naming the file. That was wrong: the templates whose
+epoch is already past CelesTrak's daily forecast use the prediction in
+the run too, and the next comparison showed their runs moving (by
+millimetres of semi-major axis). The 16 fingerprints were then rewritten
+whole, and every difference beyond the comparison's tolerance was listed
+and read with the comparison itself (`golden_capture.compare` against the
+previous files): lifetimes, those runs and the file's name, nothing else.
+The largest change is template 18's satellite with its
+own drag coefficient: it re-enters after 327.6 days instead of 325.6
+(`docs/changes.md`). `test_spaceweather.py` checks the November values
+(January 2030: 74.1 sfu and Ap 11.3 at the 50th percentile, 78.7 and
+15.9 at the 95th; June 2027: 104.3 sfu).
