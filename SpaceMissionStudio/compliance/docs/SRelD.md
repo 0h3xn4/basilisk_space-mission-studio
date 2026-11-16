@@ -1,10 +1,9 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 35, 2026-11-15. Remediation R14.
+Document: SMS-SRelD, issue 36, 2026-11-16. Remediation R14.
 
-**Status:** release **2.8.0**, prepared 2026-11-15, to be tagged by the
-user: a calmer interface that is easier to read, with what the tool
+**Status:** release **2.8.0**, published 2026-11-16 (00:35 UTC): a calmer interface that is easier to read, with what the tool
 computes unchanged. The menu bar (File, Edit, View, Go, Run, Tools,
 Help) built from the action registry, drop-down lists that open below
 their field and filter a long list, dialogs that grow to fit their
@@ -25,8 +24,43 @@ retaken. No golden file, template, scenario field, command or exit
 status changed (schema version 4): every template's outputs are as in
 2.7.0, and 2.7.0 opens the files 2.8.0 saves. The bundled CelesTrak
 space weather was refreshed (observations to 2026-11-14; K-13); NASA
-MSFC's November 2026 prediction is still not adopted (K-33). Tagging and
-publishing are the user's.
+MSFC's November 2026 prediction is still not adopted (K-33). The release
+pull request (#262) was merged once CI was green; at the owner's request
+the assistant tagged and published it with the tag workflow, the first
+release made that way (the environment cannot push tags, but can start a
+workflow).
+- CI ("SpaceMissionStudio") passed on `develop`'s head `db58ba6` at
+  23:16 UTC on 2026-11-15. The tag workflow
+  ([run 43778375893](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778375893)), started at 00:06 UTC
+  on 2026-11-16 with publish on, ran the release check on that commit
+  (CI passed on it, the CHANGELOG dated 2026-11-16, nothing under
+  Unreleased, the tag new, pip-audit with no advisory not accepted) and
+  passed.
+- Tagged `spacemissionstudio-v2.8.0` (annotated, not signed, D-13) on
+  commit `db58ba6` (`db58ba665d6c97cb8ccd945e822cf72fe1731406`), the
+  merge of #262 into `develop`, by the tag workflow (github-actions) at
+  00:07:05 UTC. GitHub release "SpaceMissionStudio 2.8.0", published by
+  the release workflow at 00:35:50 UTC, after it had counted its eleven
+  files attached, with the notes written from the CHANGELOG
+  (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.8.0>); it was never public
+  without its files.
+- Its eleven files were built, installed, checked and attached by the
+  release workflow
+  ([run 43778461245](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778461245)) at 00:35. GitHub's
+  SHA-256 digests: `.deb` (`spacemissionstudio_2.8.0_amd64.deb`,
+  439 911 352 bytes) `b96388d8...d44f`, setup program
+  (`spacemissionstudio-2.8.0-setup.exe`, 385 849 282 bytes)
+  `0ee31cf9...5e5c`, wheel (8 633 311 bytes) `1c85b074...0f55`, sdist
+  (8 888 369 bytes) `e23e0b0a...bea7`, the `.deb`'s bill of materials
+  (`spacemissionstudio_2.8.0_amd64.cdx.json`, 35 354 bytes)
+  `36393ff6...631a`, the setup program's
+  (`spacemissionstudio-2.8.0-setup.cdx.json`, 36 454 bytes)
+  `b281d693...f687`, `SHA256SUMS-linux` `d0666fcd...4735`,
+  `SHA256SUMS-windows` `65b35670...a0b1`, and the LGPL sources, the same
+  as 2.7.0's: `qt-everywhere-src-6.11.2.tar.xz` (1 019 661 552 bytes)
+  `6dcfbca2...6f33`, `pyside-setup-everywhere-src-6.11.2.tar.xz`
+  (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
+  `1301daba...e6f6`.
 
 **Previous release:** 2.7.0, published 2026-11-11 (18:25 UTC): **Results › 3D View**
 as a renderer (#248, SRS-F-16) that can show a run live while it is

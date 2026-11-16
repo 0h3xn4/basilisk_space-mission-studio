@@ -64,7 +64,7 @@ the user's requests. Releases are made when the user decides, tagged, not
 signed (decision 11). The current release is 2.8.0, a calmer window
 that is easier to read (a menu bar, a quieter Home and status bar,
 values as tables and notes as lists), with what the tool computes
-unchanged (prepared 2026-11-15); before it 2.7.0, the 3D View as a
+unchanged (published 2026-11-16); before it 2.7.0, the 3D View as a
 renderer that can show a run live, a start on Home with nothing open,
 the external viewer support removed and the EUPL-1.2 (published
 2026-11-11), 2.6.0, the run in 3D inside the app, network use

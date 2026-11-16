@@ -17824,6 +17824,23 @@ parent first; `test_a_titled_sheet_opens_no_window_of_its_own` watches
 for any window shown while sheets and note lists are built, and fails
 with the old order.
 
+## Release 2.8.0 published (2026-11-16)
+
+#262 was merged once CI was green, at 22:37 UTC on 2026-11-15, and CI
+passed on `develop`'s merge commit `db58ba6` by 23:16. The CHANGELOG
+is dated 2026-11-16, so the assistant waited for midnight UTC and, as
+the owner asked, started the tag workflow at 00:06 with version 2.8.0,
+ref `develop` and **publish** on. The release check passed and the
+workflow tagged `db58ba6` at 00:07
+([run 43778375893](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778375893)). The release workflow
+it started ([run 43778461245](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778461245)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+00:35:50, so it was never public without its files. The digests of the
+`.deb` and the setup program equal the checksums in its notes. SRelD
+issue 36, the SDP, H05 and `releasing.md` record the tag, the runs and
+the files' digests.
+
 ## Release 2.8.0 prepared (2026-11-15)
 
 A minor release: it adds features, all in the interface. Contents since
