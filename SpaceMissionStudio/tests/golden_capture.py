@@ -71,6 +71,12 @@ computer that wrote the baseline disagreed on 22 templates, Windows on all
   value under ``sensor.``) is therefore compared value by value only on the
   standard library that recorded it (``rng_library`` in the fingerprint);
   elsewhere only its sample count and its non-finite count are.
+- Template 27's reaction wheels are driven through two flexible arrays
+  whose hinge mode is barely damped (0.2 Hz, damping ratio 0.005), which
+  amplifies last-bit differences: its wheel speeds moved by 1.04e-6 of
+  their scale between two CI runs of the same commit on Linux (PR #266),
+  where every other output stays within 1e-6. They are held to
+  :data:`AMPLIFIED_SERIES` (about ten times that), and no other series is.
 - On another standard library (another platform: the baseline is written
   on Linux), every number is held to :data:`CROSS_LIBRARY_RELATIVE_TOLERANCE`
   only. A spacecraft whose attitude loop closes through noisy sensors
@@ -116,6 +122,9 @@ MONTE_CARLO_RUNS = 2  # runs of the Monte Carlo batch
 MONTE_CARLO_SPAN_DAYS = 0.05  # [day]
 SAMPLES = 11  # evenly spaced samples kept per column
 RELATIVE_TOLERANCE = 1e-6  # [-] of each quantity's own scale
+# Series that a lightly damped mode amplifies, by (template, series kind):
+# their own relative tolerance (module docstring), about ten times measured.
+AMPLIFIED_SERIES = {("27_flexible_solar_arrays.json", "rw_speeds"): 1e-5}  # [-] 1.04e-6 measured
 # On another C++ standard library (platform) than the one that recorded the
 # baseline (module docstring): 7.6e-4 measured, in a switching controller.
 CROSS_LIBRARY_RELATIVE_TOLERANCE = 1e-2  # [-]
@@ -397,6 +406,7 @@ class _Rule:
     wraps: bool = False  # an angle that wraps at 2*pi [rad] or 360 [deg]
     period: float = 2.0 * math.pi
     noise_only_shape: bool = False  # a sensor output recorded on another standard library
+    template: str = ""  # the fingerprint's template, for AMPLIFIED_SERIES
 
 
 def _unit_of_header(header: str) -> str:
@@ -409,8 +419,9 @@ def _series_rule(name: str, series: dict, column: str, other_library: bool, base
     kind = name.split(".", 1)[1] if "." in name else name
     units = series.get("units", "")
     floor = ANGLE_DERIVED_FLOORS.get(kind, ABSOLUTE_FLOORS.get(units, 0.0))
+    relative = max(base.relative, AMPLIFIED_SERIES.get((base.template, kind), 0.0))
     wraps = units in ("rad", "deg") and (column in WRAPPING_COLUMNS or kind in WRAPPING_SERIES)
-    return dataclasses.replace(base, floor=floor, wraps=wraps, period=360.0 if units == "deg" else 2.0 * math.pi,
+    return dataclasses.replace(base, relative=relative, floor=floor, wraps=wraps, period=360.0 if units == "deg" else 2.0 * math.pi,
                                noise_only_shape=other_library and ".sensor." in f".{kind}")
 
 
@@ -419,7 +430,8 @@ def compare(golden, actual, path: str = "", rule: _Rule | None = None) -> list[s
     beyond what two computers can disagree on (module docstring)."""
     if rule is None and isinstance(golden, dict) and "template" in golden:
         other_library = golden.get("rng_library", "libstdc++") != rng_library()
-        base = _Rule(relative=CROSS_LIBRARY_RELATIVE_TOLERANCE if other_library else RELATIVE_TOLERANCE)
+        base = _Rule(relative=CROSS_LIBRARY_RELATIVE_TOLERANCE if other_library else RELATIVE_TOLERANCE,
+                     template=str(golden.get("template", "")))
         problems = []
         for key in sorted(set(golden) | set(actual)):
             if key == "rng_library":

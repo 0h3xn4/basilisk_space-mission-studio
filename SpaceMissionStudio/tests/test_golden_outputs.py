@@ -120,3 +120,18 @@ def test_on_another_library_numbers_are_held_to_one_percent():
     assert _changed(golden, "sat.rw_speeds", [-2.0, 1.002, 2.0]) == []
     assert _changed(golden, "sat.rw_speeds", [-2.0, 1.1, 2.0])
     assert _changed(golden, "sat.rw_speeds", [-2.0, 2.0])
+
+
+def test_only_the_named_amplified_series_gets_a_wider_tolerance():
+    """Template 27's wheel speeds may move by 1e-5 of their scale (its
+    barely damped hinge mode amplifies last bits: 1.04e-6 measured between
+    two CI runs); 1e-4 is still caught there, and the same 2e-6 change is
+    caught in another template's wheels and in template 27's other series."""
+    golden = _fingerprint({"flex-sat.rw_speeds": _series("rad/s", "wheel_0", [-2.0, 0.5, 2.0]),
+                           "flex-sat.body_rate_omega_BN_B": _series("rad/s", "x", [-2.0, 0.5, 2.0])})
+    golden["template"] = "27_flexible_solar_arrays.json"
+    assert _changed(golden, "flex-sat.rw_speeds", [-2.0, 0.5 + 4e-6, 2.0]) == []
+    assert _changed(golden, "flex-sat.rw_speeds", [-2.0, 0.5 + 2e-4, 2.0])
+    assert _changed(golden, "flex-sat.body_rate_omega_BN_B", [-2.0, 0.5 + 4e-6, 2.0])
+    golden["template"] = "07_attitude_pointing_with_adcs_hardware.json"
+    assert _changed(golden, "flex-sat.rw_speeds", [-2.0, 0.5 + 4e-6, 2.0])

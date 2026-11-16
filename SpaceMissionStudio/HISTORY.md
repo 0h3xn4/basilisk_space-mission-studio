@@ -17948,3 +17948,13 @@ code saves them, the 32 without a thermal model open and validate in
 ("unexpected field 'thermal', not one this version knows"). The schema
 version stays 4. The golden outputs changed since 2.8.0 only through the
 MSFC prediction (#264) and the two new templates.
+
+The release pull request's first CI run failed one check:
+`test_golden_outputs` on template 27, whose wheel speeds moved by 1.04e-6
+of their scale (the bound is 1e-6). The push run of the same commit and
+#265's runs passed; the wheels are driven through the flexible arrays'
+barely damped hinge mode, which amplifies last-bit differences between
+runners. `tests/golden_capture.py` gives that one series, by name, its own
+tolerance of 1e-5 (`AMPLIFIED_SERIES`), about ten times the measured
+difference, as its other floors are set; no other series or template is
+loosened, and a test holds that.
