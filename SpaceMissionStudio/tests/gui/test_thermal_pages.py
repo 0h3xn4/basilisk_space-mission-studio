@@ -203,6 +203,15 @@ def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path, monkeypatch):
     assert export_log.last("thermal")[1].endswith("out")
     png = widget.save_plot(tmp_path / "plot.png", "png")
     assert png.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    # The 3D model in its node temperatures: the hottest by default, then a chosen time.
+    assert widget.model_view is not None
+    hot = widget.part_temperatures()
+    battery = next(c for c in widget.analysis.cases if c.name == widget.case_combo.currentText())
+    assert hot["battery"] == pytest.approx(battery.temperature_c("battery").max())
+    widget.colour_combo.setCurrentText("At a time")
+    widget.time_slider.setValue(3)
+    assert widget.part_temperatures()["battery"] == pytest.approx(battery.temperature_c("battery")[3])
+    assert widget.time_label.text().endswith(" h") and widget.time_slider.isEnabled()
     # Studies on the case shown: a sweep, a sensitivity (one parameter), a Monte Carlo into the Monte Carlo view.
     widget.case_combo.setCurrentText("cold")
     widget.sweep_path.setText("faces[battery].emissivity")
@@ -240,3 +249,24 @@ def test_the_spacecraft_editor_keeps_the_thermal_model(qtbot):
     qtbot.addWidget(dialog)
     assert dialog.to_dataclass().thermal == sc.thermal
     assert dialog.field_widget("thermal.heaters[0].power_w") is dialog.thermal_group.tables["heaters"]
+
+
+def test_the_model_figure_colours_parts_by_their_temperature():
+    """Each part in its temperature's colour on the scale (the coldest at
+    one end, the hottest at the other), a part without one grey, and a
+    colour bar over the range; without temperatures, the parts' own
+    colours."""
+    from spacemissionstudio.gui.model_view_widget import model_figure, temperature_color
+    from spacemissionstudio.model3d import model as model3d
+
+    sc = load_scenario(_TEMPLATE).spacecraft[0]
+    derived = model3d.derive(sc.model, _TEMPLATE.parent)
+    figure = model_figure(derived, temperatures={"bus": -10.0, "array +y": 80.0, "array -y": 35.0})
+    meshes = {trace.name: trace for trace in figure.data if trace.type == "mesh3d"}
+    assert meshes["bus"].color == temperature_color(-10.0, -10.0, 80.0)
+    assert meshes["array +y"].color == temperature_color(80.0, -10.0, 80.0) != meshes["bus"].color
+    assert meshes["dish"].color == "rgb(160,160,160)"
+    bar = next(trace for trace in figure.data if trace.name == "temperature")
+    assert bar.marker.showscale and (bar.marker.cmin, bar.marker.cmax) == (-10.0, 80.0)
+    plain = {trace.name: trace for trace in model_figure(derived).data if trace.type == "mesh3d"}
+    assert plain["bus"].color != meshes["bus"].color

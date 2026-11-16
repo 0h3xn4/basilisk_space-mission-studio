@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QByteArray, QRectF, QThread, Signal
+from PySide6.QtCore import QByteArray, QRectF, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtSvgWidgets import QSvgWidget
@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QSlider,
     QVBoxLayout,
     QWidget,
 )
@@ -201,6 +202,7 @@ class ThermalWidget(QWidget):
         plot_layout.addWidget(self.flow_plot)
         layout.addWidget(self.plot_group)
         self.temperature_svg = self.flow_svg = ""
+        self._build_model_view(layout)
 
         self.tables: dict[str, tuple[QGroupBox, DataTable]] = {}
         for key, title in (("flows", "Orbit-average heat flows [W] (positive in)"), ("heaters", "Heaters"),
@@ -216,6 +218,61 @@ class ThermalWidget(QWidget):
         layout.addStretch(1)
         self._study_worker: _StudyWorker | None = None
         self._clear()
+
+    _COLOUR_MODES = ("Hottest over the run", "Coldest over the run", "Mean over the run", "At a time")
+
+    def _build_model_view(self, layout) -> None:
+        """The 3D model coloured by temperature (thermal Phase 2): each part
+        in its node's colour, for the case shown. The web view is made when
+        an analysis is first shown."""
+        self.model_group = QGroupBox("Temperatures on the 3D model")
+        model_layout = QVBoxLayout(self.model_group)
+        row = QHBoxLayout()
+        self.colour_combo = ComboBox()
+        self.colour_combo.addItems(self._COLOUR_MODES)
+        self.colour_combo.currentTextChanged.connect(lambda _text: self._show_model_colours())
+        row.addWidget(self.colour_combo)
+        self.time_slider = QSlider(Qt.Orientation.Horizontal)
+        self.time_slider.setToolTip("The time shown, with 'At a time'")
+        self.time_slider.valueChanged.connect(lambda _value: self._show_model_colours())
+        row.addWidget(self.time_slider, 1)
+        self.time_label = set_role(QLabel(""), tone="secondary")
+        row.addWidget(self.time_label)
+        model_layout.addLayout(row)
+        self.model_view = None  # gui.model_view_widget.ModelViewWidget, made when first needed
+        layout.addWidget(self.model_group)
+
+    def part_temperatures(self) -> dict:
+        """``{part: degC}`` for the case shown, by the colour mode: each part
+        takes its node's temperature."""
+        case = self._case()
+        if case is None:
+            return {}
+        mode = self.colour_combo.currentText()
+        index = min(self.time_slider.value(), len(case.time_s) - 1)
+        values = {}
+        for node in self.analysis.prepared.spacecraft.thermal.nodes:
+            series = case.temperature_c(node.name)
+            value = {self._COLOUR_MODES[0]: series.max(), self._COLOUR_MODES[1]: series.min(),
+                     self._COLOUR_MODES[2]: series.mean()}.get(mode, series[index])
+            values.update({part: float(value) for part in node.parts})
+        return values
+
+    def _show_model_colours(self) -> None:
+        case = self._case()
+        if case is None or not self.model_group.isVisibleTo(self):
+            return
+        at_time = self.colour_combo.currentText() == self._COLOUR_MODES[3]
+        self.time_slider.setEnabled(at_time)
+        index = min(self.time_slider.value(), len(case.time_s) - 1)
+        self.time_label.setText(f"{case.time_s[index] / 3600.0:.2f} h" if at_time else "")
+        if self.model_view is None:
+            from .model_view_widget import ModelViewWidget
+
+            self.model_view = ModelViewWidget()
+            self.model_view.setMinimumHeight(_PLOT_HEIGHT_PX)
+            self.model_group.layout().addWidget(self.model_view)
+        self.model_view.show_model(self.analysis.prepared.geometry.derived, temperatures=self.part_temperatures())
 
     def _build_studies(self, layout) -> None:
         """Sweeps, sensitivity and the thermal Monte Carlo of the case shown
@@ -277,7 +334,7 @@ class ThermalWidget(QWidget):
         self.status_label.setText("Press Solve to solve the thermal cases on this run." if ready else
                                   "Run a scenario whose spacecraft has a thermal model (Spacecraft › 3D model › "
                                   "Thermal model) to solve it here.")
-        for widget in (self.summary_group, self.plot_group, self.studies_group,
+        for widget in (self.summary_group, self.plot_group, self.studies_group, self.model_group,
                        *(group for group, _table in self.tables.values())):
             widget.setVisible(False)
         self.findings_list.set_notes([])
@@ -441,6 +498,7 @@ class ThermalWidget(QWidget):
         self.case_combo.blockSignals(False)
         self.plot_group.setVisible(bool(cases))
         self.studies_group.setVisible(bool(cases))
+        self.model_group.setVisible(bool(cases))
         self.study_table.setVisible(False)
         self.study_label.setText("")
         from ..thermal import sweeps
@@ -468,6 +526,9 @@ class ThermalWidget(QWidget):
         self.node_combo.addItems([_ALL_NODES, *case.network.names])
         self.node_combo.setCurrentIndex(max(self.node_combo.findText(current), 0))
         self.node_combo.blockSignals(False)
+        self.time_slider.blockSignals(True)
+        self.time_slider.setRange(0, len(case.time_s) - 1)
+        self.time_slider.blockSignals(False)
         tables = records.tables(self.analysis)
         for key, name in (("flows", "thermal_heat_flows"), ("heaters", "thermal_heaters"),
                           ("radiators", "thermal_radiators")):
@@ -477,6 +538,7 @@ class ThermalWidget(QWidget):
             if rows:
                 self._fill(table, [{k: v for k, v in r.items() if k != "case"} for r in rows])
         self._show_plots()
+        self._show_model_colours()
 
     def _show_plots(self) -> None:
         from ..thermal import plots
