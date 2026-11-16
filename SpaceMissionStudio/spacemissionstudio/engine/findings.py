@@ -228,6 +228,36 @@ RULES: dict[str, Rule] = {rule.rule_id: rule for rule in (
     Rule("analyses.note", "A model analysis says what it could not compute, and why.",
          "Its results leave that part out.", "Give what the note names (a field, a tracked body), or accept it.",
          override=_RESULT),
+    Rule("thermal.shading", "The thermal model assumes no part shades another; faces another part can shade "
+         "are listed.", "A deployed array or antenna that shades the bus changes its sunlight; the thermal "
+         "model counts the full sunlight on every face, so those faces run warmer than they would.",
+         "Read their temperatures as upper bounds in sunlight, or check them with a tool that ray-traces.",
+         override="It cannot be silenced: self-shadowing is out of the model's scope (decision T-06)."),
+    Rule("thermal.unassigned_face", "Every outer face of the 3D model belongs to a thermal node.",
+         "A face in no node neither absorbs nor radiates: the spacecraft would lose a radiator or gain a "
+         "blanket that is not there.", "Add its part to a node, or name a node for the face in the thermal "
+         "model's faces."),
+    Rule("thermal.missing_optics", "Every face of a thermal node has an absorptance and an emissivity.",
+         "Without them the face's sunlight and emission are unknown; the solve refuses.",
+         "Give the face a coating or values in the thermal model's faces, or a material with optics in the "
+         "3D model.", override=_REFUSED),
+    Rule("thermal.no_capacitance", "Every thermal node has a heat capacity.",
+         "A node without mass or capacitance has no temperature of its own.",
+         "Give the node capacitance_j_k, or a mass, or parts with mass.", override=_REFUSED),
+    Rule("thermal.no_path_to_space", "Every thermal node can reject heat to space: through conductors, heat "
+         "pipes or radiative links to a node with faces that radiate.",
+         "A node that cannot reject heat warms without end under any dissipation.",
+         "Connect it with a conductor or a radiative link, or give it outer faces."),
+    Rule("thermal.not_converged", "The orbit-periodic start converges within the tolerance.",
+         "Otherwise the result still depends on the starting temperature.",
+         "Raise solver.max_orbits, or start from 'steady'.", override=_RESULT),
+    Rule("thermal.step", "The solution changes by less than 0.5 K when the time step is halved.",
+         "A larger change means the step is too long for the network's fastest node.",
+         "Halve solver.time_step_s.", override=_RESULT),
+    Rule("thermal.limit", "Each node stays within its operating and survival limits.",
+         "A unit outside its operating range may not work, and outside its survival range may be damaged.",
+         "Change the coatings, radiator area, conductors or heaters, and solve the case again.",
+         override=_RESULT),
     Rule("tle.unreadable", "A TLE orbit must propagate with SGP4.", "The spacecraft has no initial state.",
          "Correct the two TLE lines."),
     Rule("tle.age", "A TLE far from the scenario epoch is flagged.",

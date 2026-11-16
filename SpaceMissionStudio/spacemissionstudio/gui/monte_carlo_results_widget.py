@@ -144,9 +144,11 @@ class MonteCarloResultsWidget(QWidget):
         self.spacecraft_combo.blockSignals(True)
         self.spacecraft_combo.clear()
         if has_batch:
-            self.spacecraft_combo.addItems(batch.spacecraft)
+            self.spacecraft_combo.addItems(batch.items)
         self.spacecraft_combo.blockSignals(False)
-        several = has_batch and len(batch.spacecraft) > 1
+        several = has_batch and len(batch.items) > 1
+        if has_batch:
+            self.spacecraft_label.setText("Node:" if batch.kind == "thermal" else "Spacecraft:")
         self.spacecraft_label.setVisible(several)
         self.spacecraft_combo.setVisible(several)
         if not has_batch:
@@ -163,9 +165,14 @@ class MonteCarloResultsWidget(QWidget):
         note = f" Plots show the first {shown} runs; the spread uses all." if shown < len(batch.runs) else ""
         source = f"saved in {self.folder.name}" if self.folder else "from this session"
         statistic = mcr.spread_model(batch)
-        self.hint_label.setText(f"{days:.3g} days per run, {source}. Spreads are 1-sigma offsets from the mean of "
-                                f"all runs ({statistic.title.lower()}): along the orbit, radially and across "
-                                f"it.{note}")
+        if batch.kind == "thermal":
+            self.hint_label.setText(f"A thermal Monte Carlo on one run ({days:.3g} days), case {batch.case}, "
+                                    f"{source}: every run's temperatures, and the 1-sigma of each node's minimum and "
+                                    f"maximum over the runs ({statistic.title.lower()}).{note}")
+        else:
+            self.hint_label.setText(f"{days:.3g} days per run, {source}. Spreads are 1-sigma offsets from the mean "
+                                    f"of all runs ({statistic.title.lower()}): along the orbit, radially and "
+                                    f"across it.{note}")
         self.hint_label.setToolTip("\n".join(([str(self.folder)] if self.folder else []) + [
             f"{statistic.title}: {statistic.method}",
             f"Chosen by {mcr.SPREAD_CHOICE} on the Assumptions page, as the batch was run."]))
@@ -186,9 +193,24 @@ class MonteCarloResultsWidget(QWidget):
         batch = self.batch
         if batch is None or not batch.runs:
             return
-        spacecraft = self.spacecraft_combo.currentText() or batch.spacecraft[0]
-        spread = mcr.final_spread(batch, spacecraft)
+        spacecraft = self.spacecraft_combo.currentText() or batch.items[0]
         requested = len(batch.runs) + len(batch.failed)
+        if batch.kind == "thermal":  # a node (decision T-36)
+            spread = mcr.node_spread(batch, spacecraft)
+            self._set_tiles([
+                ("Runs", f"{len(batch.runs)} of {requested}"),
+                ("Failed", ", ".join(str(run) for run in batch.failed) if batch.failed else "none"),
+                ("Coldest", f"{spread.coldest_c:.1f} °C"),
+                ("Hottest", f"{spread.hottest_c:.1f} °C"),
+                ("Minimum, 1-sigma", f"{spread.sigma_min_k:.2f} K"),
+                ("Maximum, 1-sigma", f"{spread.sigma_max_k:.2f} K"),
+            ])
+            self.plots.set_featured_series([f"thermal_monte_carlo.{spacecraft}.{field}"
+                                            for field in ("spread", "temperature")])
+            self.plots.show_series(f"thermal_monte_carlo.{spacecraft}.spread")
+            self._fill_table(spacecraft)
+            return
+        spread = mcr.final_spread(batch, spacecraft)
         self._set_tiles([
             ("Runs", f"{len(batch.runs)} of {requested}"),
             ("Failed", ", ".join(str(run) for run in batch.failed) if batch.failed else "none"),

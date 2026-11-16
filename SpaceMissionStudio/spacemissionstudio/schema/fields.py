@@ -49,11 +49,21 @@ from types import NoneType, UnionType
 
 from . import command as _command
 from . import scenario as _scenario
+from . import thermal as _thermal
 
 HELP_FILE = Path(__file__).with_name("field_help.json")
 
 #: The record class of a list field's items, by (record class, field).
 LIST_ITEMS = {
+    ("ThermalConfig", "nodes"): "ThermalNodeConfig",
+    ("ThermalConfig", "faces"): "ThermalFaceConfig",
+    ("ThermalConfig", "conductors"): "ThermalConductorConfig",
+    ("ThermalConfig", "heat_pipes"): "ThermalHeatPipeConfig",
+    ("ThermalConfig", "radiative_links"): "ThermalRadiativeLinkConfig",
+    ("ThermalConfig", "dissipations"): "ThermalDissipationConfig",
+    ("ThermalConfig", "heaters"): "ThermalHeaterConfig",
+    ("ThermalConfig", "cases"): "ThermalCaseConfig",
+    ("ThermalMonteCarloConfig", "dispersions"): "ThermalDispersionConfig",
     ("Scenario", "spacecraft"): "SpacecraftConfig",
     ("Scenario", "ground_stations"): "GroundStationConfig",
     ("Scenario", "fsw_exports"): "FswExportRecord",
@@ -107,6 +117,11 @@ CHOICES = {
     ("ImportRecord", "target"): "IMPORT_TARGETS",
     ("ImportRecord", "format"): "IMPORT_FORMATS",
     ("Command", "kind"): "SUPPORTED_COMMAND_KINDS",
+    ("ThermalConductorConfig", "kind"): "CONDUCTOR_KINDS",
+    ("ThermalSolverConfig", "start"): "START_MODES",
+    ("ThermalEnvironmentConfig", "albedo_model"): "ALBEDO_MODELS",
+    ("ThermalCaseConfig", "preset"): "CASE_PRESETS",
+    ("ThermalDispersionConfig", "distribution"): "DISTRIBUTIONS",
 }
 #: What kind of name a field refers to: "spacecraft", "ground_station", "part" or "material".
 REFERENCES = {
@@ -119,19 +134,23 @@ REFERENCES = {
     ("FacePropertyConfig", "part"): "part",
     ("FacePropertyConfig", "material"): "material",
     ("ModelPartConfig", "material"): "material",
+    ("ThermalFaceConfig", "part"): "part",
+    ("ThermalFaceConfig", "coating"): "material",
+    ("ThermalNodeConfig", "material"): "material",
+    ("ThermalConductorConfig", "material"): "material",
 }
 
 
 def record(name: str) -> type | None:
     """The record class ``name`` of ``schema/scenario.py`` (or
     ``schema/command.py``'s ``Command``), or None."""
-    cls = getattr(_scenario, name, None) or getattr(_command, name, None)
+    cls = getattr(_scenario, name, None) or getattr(_command, name, None) or getattr(_thermal, name, None)
     return cls if isinstance(cls, type) and dataclasses.is_dataclass(cls) else None
 
 
 def constant(name: str):
     """The constant ``name`` of ``schema/scenario.py`` or ``schema/command.py``."""
-    return getattr(_scenario, name, None) or getattr(_command, name, ())
+    return getattr(_scenario, name, None) or getattr(_command, name, None) or getattr(_thermal, name, ())
 
 
 @cache

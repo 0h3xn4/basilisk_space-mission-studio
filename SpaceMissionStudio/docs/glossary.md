@@ -12,6 +12,8 @@ shorter version of this list.
 
 ## A
 
+**Absorptance (solar)** -- the share of sunlight a surface absorbs, from 0 to 1. White paint absorbs about 0.2, black paint about 0.96. With the [emissivity](#e) it sets how warm a sunlit surface gets ([Thermal analysis](user-manual/thermal.md)).
+
 **AD10** -- ESA's guideline for delta-V and propellant budgets (document
 EOP-FM/2024-07-177). The **Budget** page follows its structure: margins,
 residual propellant, and solar activity at a high (95th) percentile for
@@ -46,6 +48,8 @@ ground station or a planet.
 **Basilisk** -- the open-source spacecraft simulation framework from the
 AVS Lab at the University of Colorado Boulder. It computes every number in
 SpaceMissionStudio. This repository is a fork of it.
+
+**Beta angle** -- the angle between the Sun's direction and an orbit's plane. At a high beta a low orbit sees little or no eclipse and runs hot; at a low beta the eclipse is longest and it runs cold. The run's orbit and epoch fix it.
 
 **Body frame** -- the axes fixed to the spacecraft, in which the
 positions of its parts, sensors, thrusters and facets are given; its
@@ -91,6 +95,8 @@ it is), inclination (its tilt to the equator), [RAAN](#r) and argument of
 periapsis (its orientation), and an anomaly (where the spacecraft starts
 along it).
 
+**Contact conductance** -- how well heat crosses a joint between two parts: an area times a coefficient in W/(m^2 K). A bare bolted aluminium joint is about 136 W/(m^2 K) (NASA GSFC); a filler raises it about twentyfold.
+
 **CSS (coarse sun sensor)** -- a small, simple light sensor. Several of
 them, facing different ways, give a rough direction to the Sun.
 
@@ -119,6 +125,8 @@ spacecraft. It slowly lowers the orbit until the spacecraft re-enters.
 standards European space projects follow. The `compliance/` folder records
 how SpaceMissionStudio measures up to four of them (and one CCSDS standard).
 
+**Effective emittance (e*)** -- one number for how well a multi-layer insulation blanket lets heat through by radiation, typically 0.01 to 0.05. See [MLI](#m).
+
 **EME2000** -- an inertial reference frame (axes fixed relative to distant
 stars) defined by Earth's equator and equinox on 1 January 2000. The
 inertial frame of CCSDS files SpaceMissionStudio writes.
@@ -128,6 +136,8 @@ formation's [relative orbital elements](#r). The eccentricity vector sets
 the follower's radial motion around the chief, the inclination vector its
 cross-track motion. Parallel vectors make the formation
 [passively safe](#p).
+
+**Emissivity (infrared)** -- how well a surface radiates heat away compared with a perfect black body, from 0 to 1. It also sets how much of the planet's infrared the surface absorbs.
 
 **Epoch** -- the calendar date and time a simulation starts at, in
 [UTC](#u), for example `2030-01-01T00:00:00`. Sun and Moon positions,
@@ -180,6 +190,10 @@ computes when each spacecraft can see each station (a **pass**) and how
 far and how high it is.
 
 ## H
+
+**Heat pipe** -- a sealed tube whose working fluid carries heat from a hot end to a cold one with very little temperature difference, while it is within its operating range. Frozen or dried out it barely conducts.
+
+**Heater (thermostatic)** -- an electric heater a thermostat switches on below one temperature and off above a higher one. Its duty is the share of time it is on; its sized power the least constant power that holds its node warm enough.
 
 **Hill frame (R/T/N)** -- axes that move with a reference spacecraft (the
 chief): **R**adial (away from Earth), **T**ransverse (along the direction
@@ -277,6 +291,8 @@ propagate (fly) until something happens, burn, compute a Lambert
 transfer, report a value, branch with `if`/`while`, or run a script
 block. Like GMAT's or FreeFlyer's mission sequence.
 
+**MLI (multi-layer insulation)** -- a blanket of many thin reflective layers that insulates a spacecraft's surface. The thermal model describes it by its outer layer's optics and its [effective emittance](#e).
+
 **Model analyses** -- what a run computes on the spacecraft's 3D model:
 disturbance torques, sensor blinding, antenna obstruction, array
 shading, atomic-oxygen exposure and brightness (**Results › Model
@@ -317,10 +333,14 @@ Mean-Elements Message) gives mean elements, such as a [TLE](#t); an
 **OEM** (Orbit Ephemeris Message) lists positions and velocities over
 time.
 
+**OLR (outgoing longwave radiation)** -- the infrared a planet radiates, in W/m^2 at the top of its atmosphere: about 211 to 246 W/m^2 on average for the Earth, depending on the latitudes an orbit crosses.
+
 **Optical navigation** -- estimating where a spacecraft is from camera
 images: here, from where a planet's disk falls in the image (the
 direction) and how large it is (the range), combined over many images by
 a [Kalman filter](#k).
+
+**Orbit-periodic** -- a state that repeats itself every orbit. The thermal model starts its cases from the orbit-periodic state, so the result does not depend on a guessed starting temperature.
 
 **Orbital lifetime** -- how long [drag](#d) takes to bring an orbit down
 to re-entry (here: the perigee reaching 120 km). Disposal rules cap it
@@ -394,6 +414,8 @@ all.
 **RAAN (right ascension of the ascending node)** -- the direction, in
 space, where the orbit crosses the equator going north. It sets which way
 the orbit plane faces.
+
+**Radiator** -- a surface that rejects a spacecraft's heat to space, usually facing away from the Sun, with a low [absorptance](#a) and a high [emissivity](#e) (white paint, silvered Teflon).
 
 **Random seed** -- the number (`sim_settings.seed`, default 0) from which
 each sensor noise model's own random sequence is derived, so the same
@@ -478,6 +500,8 @@ TAI with leap seconds and stays within 0.9 s of UT1.
 app, each showing one idea or a complete mission. See the
 [template catalog](../spacemissionstudio/scenarios/templates/README.md).
 
+**Thermal node** -- a part of the spacecraft, or several, taken as one temperature with one heat capacity in the [thermal model](user-manual/thermal.md); conductors, heat pipes and radiation connect the nodes.
+
 **Third-body perturbation** -- the small extra pull of a body other than
 the one being orbited, such as the Sun or Moon on a satellite of Earth.
 
@@ -506,6 +530,8 @@ SpaceMissionStudio computed or suggested (**computed**, with what computed
 it), one you edited afterwards (**edited**) or one you replace on purpose
 (**overridden**, with the reason, which is required). Runs and records list
 them. See [Computed and overridden values](models/value-marks.md).
+
+**View factor** -- the share of the radiation leaving one surface that reaches another. The thermal model uses the closed-form view factor from a flat plate to a sphere for the planet's infrared.
 
 **Visual magnitude** -- how bright an object looks to the eye on a scale where smaller is brighter: the Sun is -26.7, the brightest stars about 0, the faintest seen in a dark sky about 6.
 

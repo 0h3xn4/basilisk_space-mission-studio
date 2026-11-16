@@ -31,7 +31,10 @@ and records:
 - for spacecraft with drag, the lifetime over :data:`LIFETIME_YEARS`, with
   the CLI's default Cd (2.2) and with the spacecraft's own;
 - for every spacecraft, the propellant budget after the run, or its refusal;
-- for a Monte Carlo template, a batch of :data:`MONTE_CARLO_RUNS` runs.
+- for a Monte Carlo template, a batch of :data:`MONTE_CARLO_RUNS` runs;
+- for spacecraft with a thermal model, its analysis on the run: every
+  case's node temperatures, heaters (with their sized power), radiators and
+  orbit-average heat flows (``thermal.records.tables``).
 
 :func:`compare` reports every difference beyond what two computers can
 disagree on (see "How numbers are compared" below).
@@ -368,7 +371,20 @@ def _capture(path: Path) -> dict:
         fingerprint["budget_with_isp"] = _budgets(run, result, BUDGET_WITH_ISP[path.stem])
     if scenario.monte_carlo.enabled:
         fingerprint["monte_carlo"] = _monte_carlo(scenario)
+    if any(sc.thermal is not None for sc in run.spacecraft):
+        fingerprint["thermal"] = _thermal(run, result, path.parent)
     return fingerprint
+
+
+def _thermal(scenario, result, base_dir) -> dict:
+    from spacemissionstudio.thermal import analysis, records
+
+    out = {}
+    for sc in scenario.spacecraft:
+        if sc.thermal is not None:
+            done = analysis.analyse(scenario, result, sc.name, base_dir, step_check=False)
+            out[sc.name] = _plain(records.tables(done))
+    return out
 
 
 @dataclasses.dataclass(frozen=True)

@@ -7,6 +7,15 @@ materials (`model.materials`), each with the source of its values.
 
 Generated from the code: `config/materials.py` is the reference.
 
+For the thermal model (thermal decision T-38): a coating whose key ends in
+`_uv_<n>esh` is the same coating as Henninger measured it after `n`
+equivalent Sun hours of ultraviolet, the report's own aged value. The
+library has no end-of-life optics for a mission's duration, no thermal
+conductivities and no honeycomb-panel properties: no source this project
+could read gives them. Give them in the thermal model (a case's optics
+override, a conductor's conductivity, a node's capacitance) or as a
+model material with its own source.
+
 | Key | Description | Density [kg/m^3] | Melting [K] | Heat of fusion [J/kg] | Specific heat [J/(kg K)] | Absorptance [-] | Emittance [-] | AO erosion yield [cm^3/atom] |
 |---|---|---|---|---|---|---|---|---|
 | `aluminium_6061_t6` | Aluminium 6061-T6 | 2707 [1] | 867 [1] | 386116 [1] | 896 [1] |  |  |  |
@@ -40,6 +49,32 @@ Generated from the code: `config/materials.py` is the reference.
 | `teflon_ptfe` | Teflon PTFE |  |  |  |  |  |  | 1.42e-25 [14] |
 | `silicone_dc93_500` | Silicone DC 93-500 |  |  |  |  |  |  | 3.81e-27 [16] |
 | `solar_cell_triple_junction` | Triple-junction solar cell, AR-coated coverglass |  |  |  |  | 0.895 [17] | 0.89 [17] |  |
+| `black_anodise` | Black anodise |  |  |  |  | 0.88 [7] | 0.88 [7] |  |
+| `black_velvet_3m` | 3M Black Velvet paint |  |  |  |  | 0.97 [7] | 0.91 [7] |  |
+| `black_velvet_martin` | Martin Black Velvet paint |  |  |  |  | 0.91 [7] | 0.94 [7] |  |
+| `white_paint_a276` | White paint Hughson A-276 |  |  |  |  | 0.26 [6] | 0.88 [6] |  |
+| `white_paint_a276_uv_1036esh` | White paint A-276 after 1036 ESH of UV |  |  |  |  | 0.44 [6] | 0.88 [6] |  |
+| `white_paint_z202` | White paint Hughson Z-202 |  |  |  |  | 0.25 [6] | 0.87 [6] |  |
+| `white_paint_z202_uv_1000esh` | White paint Z-202 after 1000 ESH of UV |  |  |  |  | 0.4 [6] | 0.87 [6] |  |
+| `white_paint_zinc_orthotitanate` | White paint, zinc orthotitanate with potassium silicate |  |  |  |  | 0.13 [6] | 0.92 [6] |  |
+| `anodised_aluminium_sulphuric` | Sulphuric-anodised aluminium (thickness critical) |  |  |  |  | 0.42 [18] | 0.87 [18] |  |
+| `anodised_aluminium_chromic` | Chromic-anodised aluminium (thickness critical) |  |  |  |  | 0.44 [18] | 0.56 [18] |  |
+| `machined_stainless_steel` | Machined stainless steel surface |  |  |  |  | 0.47 [8] | 0.14 [8] |  |
+| `electroless_nickel` | Electroless nickel |  |  |  |  | 0.39 [8] | 0.07 [8] |  |
+| `vapour_deposited_gold` | Vapour-deposited gold, on glass |  |  |  |  | 0.19 [9] | 0.02 [9] |  |
+| `vapour_deposited_silver` | Vapour-deposited silver, on glass |  |  |  |  | 0.04 [9] | 0.02 [9] |  |
+| `second_surface_mirror_silver` | Second-surface mirror, silver backing (Helios) |  |  |  |  | 0.07 [19] | 0.79 [19] |  |
+| `silvered_teflon_2mil` | Silver-backed Teflon, 2 mil |  |  |  |  | 0.08 [10] | 0.68 [10] |  |
+| `silvered_teflon_10mil` | Silver-backed Teflon, 10 mil |  |  |  |  | 0.09 [10] | 0.88 [10] |  |
+| `aluminised_teflon_2mil` | Aluminium-backed Teflon, 2 mil |  |  |  |  | 0.08 [10] | 0.66 [10] |  |
+| `aluminised_teflon_10mil` | Aluminium-backed Teflon, 10 mil |  |  |  |  | 0.13 [10] | 0.87 [10] |  |
+| `kapton_aluminised_2mil` | Kapton, aluminium backing, 2 mil |  |  |  |  | 0.41 [10] | 0.75 [10] |  |
+| `kapton_aluminised_5mil` | Kapton, aluminium backing, 5 mil |  |  |  |  | 0.46 [10] | 0.86 [10] |  |
+| `kapton_al_siox_1mil` | Kapton 1 mil, aluminium with silicon oxide overcoating |  |  |  |  | 0.11 [10] | 0.33 [10] |  |
+| `kapton_al_siox_1mil_uv_2400esh` | Kapton 1 mil, aluminium with silicon oxide overcoating, after 2400 ESH of UV |  |  |  |  | 0.22 [10] | 0.33 [10] |  |
+| `mylar_aluminised_5mil` | Mylar, aluminium backing, 5 mil |  |  |  |  | 0.19 [10] | 0.77 [10] |  |
+| `aluminium_foil_tape_3m_425` | 3M 425 aluminium foil tape |  |  |  |  | 0.2 [10] | 0.03 [10] |  |
+| `black_tape_3m_235` | 3M 235 black tape |  |  |  |  | 0.95 [10] | 0.9 [10] |  |
 
 ## Sources
 
@@ -60,5 +95,7 @@ Generated from the code: `config/materials.py` is the reference.
 15. de Groh & Banks, Atomic Oxygen Erosion Data From the MISSE 2-8 Missions, NASA/TM-2019-219982, 2019, Table 3 (MISSE 7)
 16. de Groh & Banks, Atomic Oxygen Erosion Data From the MISSE 2-8 Missions, NASA/TM-2019-219982, 2019, Table 3 (MISSE 8)
 17. Russell & Jones, Development of a High Efficiency UVR/IRR Coverglass for Triple Junction Solar Cells, SPRAT XIX, 2007, Table 1 (AR-coated coverglass)
+18. Henninger, Solar Absorptance and Thermal Emittance of Some Common Spacecraft Thermal-Control Coatings, NASA RP-1121, 1984 (normal emittance at about 300 K; tolerance about 0.02), Anodized Aluminum Samples
+19. Henninger, Solar Absorptance and Thermal Emittance of Some Common Spacecraft Thermal-Control Coatings, NASA RP-1121, 1984 (normal emittance at about 300 K; tolerance about 0.02), Composite Coatings
 
 The atomic oxygen erosion yield is not a meaningful number for most metals, whose oxide shields them; silver is an exception (its oxide spalls). Banks, de Groh & Miller, NASA/TM-2004-213400; Banks, Miller & de Groh, NASA/TM-2004-213223.

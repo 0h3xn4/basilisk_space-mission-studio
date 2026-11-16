@@ -41,7 +41,7 @@ You should see `Wrote 20 result file(s) to out:` followed by the files.
 ## Which template?
 
 The [template catalog](../../spacemissionstudio/scenarios/templates/README.md)
-lists all 32 with what each one teaches and a suggested order. Start with
+lists all 33 with what each one teaches and a suggested order. Start with
 01 (the simplest orbit), then 22.
 
 **More detail:** User Manual section 4,

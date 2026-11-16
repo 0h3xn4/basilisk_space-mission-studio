@@ -10,6 +10,34 @@ fixes bugs.
 
 ## Unreleased
 
+### Added
+
+- **Spacecraft thermal analysis.** A spacecraft with a 3D model can now
+  carry a lumped-parameter thermal model, generated from its parts (a
+  node per part, with its mass, material and contacts) and then refined:
+  optics per face from a sourced coating library, MLI, radiators,
+  conductors, heat pipes, radiative links, dissipation that can follow
+  the power budget, thermostatic heaters and limits. After a run,
+  **Run › Thermal** solves it in NASA's nominal, hot and cold cases
+  (NASA/TM-2001-211221) or your own, on the orbit, attitude and eclipses
+  the run recorded, with Basilisk's albedo module for the planet's
+  reflected light. The solver is implicit and second order, starts from
+  an orbit-periodic state, checks its own step and closes its energy
+  balance. You get each node's temperatures against its limits, the
+  heat flows, heater duty and sized power, radiator heat, limit events
+  on the Timeline, and exports with provenance. On the same run you can
+  sweep a parameter, rank parameters by a one-at-a-time sensitivity, or
+  run a seeded thermal Monte Carlo that opens in the Monte Carlo view;
+  the 3D model can be coloured by temperature; flexible solar arrays
+  become nodes whose faces turn with their hinge; and specific heat and
+  conductivity can follow tables of temperature. Templates 33 and 34
+  show it, and [`docs/user-manual/thermal.md`](docs/user-manual/thermal.md)
+  explains it. Basilisk itself is unchanged: the analysis uses its
+  public API and runs after the simulation.
+- **26 more coatings in the material library**, from the same NASA
+  report the library already cites (Henninger, RP-1121), including three
+  measured again after ultraviolet exposure.
+
 ### Changed
 
 - **NASA MSFC's November 2026 solar-cycle prediction replaces October's.**

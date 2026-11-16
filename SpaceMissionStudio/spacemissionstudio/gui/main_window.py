@@ -91,6 +91,7 @@ from .design_checks_widget import DesignChecksWidget
 from .model_analyses_widget import ModelAnalysesWidget
 from .fsw_workbench_widget import FlightSoftwareWidget
 from .lifetime_widget import LifetimeWidget
+from .thermal_widget import ThermalWidget
 from .scenario_explainer_widget import ScenarioExplainerWidget
 from .settings_page import SettingsPage
 from .shell import AreaPage, AreaStack, Shell
@@ -288,6 +289,7 @@ class MainWindow(QMainWindow):
         self.lifetime_widget = LifetimeWidget()
         self.budget_widget = BudgetWidget()
         self.design_checks_widget = DesignChecksWidget()  # the 3D model's design checks (model analyses)
+        self.thermal_widget = ThermalWidget()  # the thermal analysis of the last run (SRS-F-29)
         self.flight_software_widget = FlightSoftwareWidget()
         self.flight_software_widget.exports_changed.connect(self.scenario_editor.set_fsw_exports)
         # Reports (M8): every export in one table, then the flight software.
@@ -322,6 +324,11 @@ class MainWindow(QMainWindow):
         design_scroll = QScrollArea()
         design_scroll.setWidgetResizable(True)
         design_scroll.setWidget(self.design_checks_widget)
+        self.thermal_scroll = QScrollArea()
+        self.thermal_scroll.setWidgetResizable(True)
+        self.thermal_scroll.setWidget(self.thermal_widget)
+        self.thermal_widget.events_changed.connect(self.event_timeline_widget.set_extra_events)
+        self.thermal_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
         self.scenario_editor.navigate_requested.connect(self._on_guide_navigate)
 
         # Results: the run's overview, the plots, the dashboard, the mission
@@ -387,6 +394,7 @@ class MainWindow(QMainWindow):
         self.run_views.addTab(lifetime_scroll, "End of Life")
         self.run_views.addTab(budget_scroll, "Budget")
         self.run_views.addTab(design_scroll, "Design Checks")
+        self.run_views.addTab(self.thermal_scroll, "Thermal")
         self.run_views.addTab(self.history_view, "History")
         self.run_views.addTab(self.log_widget, "Log")
         # No run is listed until a scenario is open; then its own (U-33, landing page).
@@ -697,6 +705,8 @@ class MainWindow(QMainWindow):
                  "Delta-V and propellant budgets."),
                 ("analyses.design_checks", "Analyses", "&Design Checks", self.design_checks_widget, "run",
                  "The 3D model's fields of view, thrusters, mass budget and launcher envelope."),
+                ("analyses.thermal", "Analyses", "&Thermal", self.thermal_widget, "run",
+                 "Solve the spacecraft's thermal model on the last run: temperatures, heat flows, heaters."),
                 ("tools.flight_software", "Tools", "&Flight Software", self.flight_software_widget, "reports",
                  "Export the flight software, run SIL."),
                 ("tools.reference_data", "Tools", "&Reference Data...", self.data_panel_widget, "settings",
@@ -1183,7 +1193,7 @@ class MainWindow(QMainWindow):
         views = {"events_csv": self.event_timeline_widget, "output_csv": self.mission_output_widget,
                  "monte_carlo_csv": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
                  "design_checks": self.design_checks_widget, "reentry_json": self.lifetime_widget,
-                 "model_analyses": self.model_analyses_scroll,
+                 "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_scroll,
                  "fsw_project": self.flight_software_widget, "sil_report": self.flight_software_widget}
         self.show_view(views.get(key, self.results_widget))  # the plot exports: Results › Plots
 
@@ -1626,6 +1636,11 @@ class MainWindow(QMainWindow):
                 self.results_views.addTab(self.model_analyses_scroll, "Model Analyses")
         elif index >= 0:
             self.results_views.removeTab(index)
+
+    def _show_thermal_monte_carlo(self, folder: str) -> None:
+        """A thermal Monte Carlo saved from Run › Thermal: shown in the Monte Carlo view."""
+        if self.monte_carlo_results_widget.load_folder(folder):
+            self._show_monte_carlo_tab()
 
     def _show_monte_carlo_tab(self) -> None:
         self._set_monte_carlo_tab(True)
@@ -2540,6 +2555,7 @@ class MainWindow(QMainWindow):
             self.lifetime_widget.set_last_run(self._last_run_scenario, result)
             self.budget_widget.set_last_run(self._last_run_scenario, result)
             self._set_model_analyses_tab(self._last_run_scenario, result)
+            self.thermal_widget.set_run(self._last_run_scenario, result, self._scenario_dir())
 
         def shown() -> None:
             if stay_in_3d:
@@ -2836,6 +2852,7 @@ class MainWindow(QMainWindow):
             self.lifetime_widget.wait_for_worker()  # a few seconds at most; its thread must not be destroyed mid-run
             self.budget_widget.wait_for_worker()
             self.design_checks_widget.wait_for_worker()
+            self.thermal_widget.wait_for_worker()
             self.flight_software_widget.wait_for_worker()
             self.data_panel_widget.wait_for_reader()  # the start-up read of the reference data files
             self.results_widget.wait_for_export()  # an export's files are finished, not cut off

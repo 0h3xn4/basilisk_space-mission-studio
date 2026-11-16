@@ -1716,6 +1716,209 @@ def build_32_smallsat_design_checks() -> Scenario:
     )
 
 
+def _microsat_150_model():
+    """Template 33's model: the 150 kg microsatellite bus (0.8 x 0.8 x
+    1.0 m, the Microsatellite (150 kg) preset's box) under MLI, two
+    deployed 0.5 m^2 arrays, a radiator on the anti-Sun face, and the
+    battery and the avionics inside."""
+    from spacemissionstudio.schema.scenario import ModelPartConfig, SpacecraftModelConfig
+
+    width, length, thickness = 0.7, 0.72, 0.025  # [m] each array, about 0.5 m^2
+    array_y = 0.4 + 0.1 + length / 2.0  # [m] 0.1 m from the bus
+    common = dict(drag_coeff=OPERATIONS_DRAG_COEFF)
+    arrays = [ModelPartConfig(name=f"array {side}", shape="panel",
+                              dimensions_m={"width": width, "length": length, "thickness": thickness},
+                              position_b_m=[0.0, sign * array_y, 0.0], color=[0.15, 0.2, 0.45], mass_kg=4.0,
+                              material="cfrp", subsystem="solar_array", **common)  # [kg]
+              for side, sign in (("+y", 1.0), ("-y", -1.0))]
+    return SpacecraftModelConfig(parts=[
+        ModelPartConfig(name="bus", shape="box", dimensions_m={"x": 0.8, "y": 0.8, "z": 1.0},  # [m]
+                        color=[0.8, 0.65, 0.2], mass_kg=120.0, material="aluminium_6061_t6",  # [kg]
+                        subsystem="structure", **common),
+        *arrays,
+        ModelPartConfig(name="radiator", shape="panel", dimensions_m={"width": 0.4, "length": 0.4, "thickness": 0.01},
+                        position_b_m=[0.0, 0.0, -0.505], color=[0.9, 0.9, 0.95], mass_kg=2.0,  # [m], [kg]
+                        material="aluminium_6061_t6", subsystem="thermal", **common),
+        ModelPartConfig(name="battery", shape="box", dimensions_m={"x": 0.25, "y": 0.2, "z": 0.15},  # [m]
+                        position_b_m=[0.2, 0.0, -0.3], color=[0.6, 0.2, 0.2], visible=False, mass_kg=8.0,
+                        in_surface_model=False, material="stainless_steel", subsystem="battery"),  # [kg]
+        ModelPartConfig(name="avionics", shape="box", dimensions_m={"x": 0.3, "y": 0.3, "z": 0.2},  # [m]
+                        position_b_m=[-0.15, 0.0, -0.25], color=[0.2, 0.5, 0.3], visible=False, mass_kg=10.0,
+                        in_surface_model=False, material="aluminium_6061_t6", subsystem="electronics"),  # [kg]
+    ])
+
+
+def _microsat_150_thermal(spacecraft):
+    """Template 33's thermal model: generated from the 3D model (a node
+    per part, the contact conductors), then the optics, the radiator's
+    standoffs, a heat pipe from the avionics to the radiator, the heat
+    dissipated, two battery heaters and each node's limits."""
+    from spacemissionstudio.schema.thermal import (ThermalCaseConfig, ThermalConductorConfig,
+                                                   ThermalDissipationConfig, ThermalFaceConfig, ThermalHeaterConfig,
+                                                   ThermalHeatPipeConfig)
+    from spacemissionstudio.thermal import generate
+
+    thermal = generate.generate(spacecraft).thermal
+    limits = {"bus": ([-30.0, 50.0], [-40.0, 60.0]), "array +y": ([-100.0, 110.0], None),
+              "array -y": ([-100.0, 110.0], None), "radiator": (None, None),
+              "battery": ([10.0, 30.0], [-5.0, 40.0]), "avionics": ([-20.0, 50.0], [-40.0, 70.0])}  # [degC]
+    for node in thermal.nodes:
+        node.operating_c, node.survival_c = limits[node.name]
+    thermal.faces = [
+        # MLI: an aluminised Kapton outer layer over a blanket of effective emittance 0.03
+        ThermalFaceConfig("bus", coating="mli_kapton_aluminised_1mil", mli_effective_emittance=0.03),
+        *[entry for side in ("+y", "-y") for entry in (
+            ThermalFaceConfig(f"array {side}", coating="black_paint_z306"),
+            ThermalFaceConfig(f"array {side}", "+z", coating="solar_cell_triple_junction"))],
+        ThermalFaceConfig("radiator", coating="silvered_teflon_5mil", radiator=True),
+    ]
+    # The radiator stands on low-conductance standoffs, and the battery on isolating washers: their own
+    # values, not bolted contacts.
+    thermal.conductors = [c for c in thermal.conductors if c.name not in ("bus--radiator", "bus--battery")]
+    thermal.conductors += [ThermalConductorConfig("radiator standoffs", "bus", "radiator", "value",
+                                                  conductance_w_k=0.5),  # [W/K]
+                           ThermalConductorConfig("battery isolators", "bus", "battery", "value",
+                                                  conductance_w_k=0.3)]  # [W/K]
+    thermal.heat_pipes = [ThermalHeatPipeConfig("avionics heat pipe", "avionics", "radiator", 8.0,  # [W/K]
+                                                [-40.0, 80.0], 0.01)]  # [degC], [W/K]
+    thermal.dissipations = [ThermalDissipationConfig("avionics", "avionics", source="bus"),
+                            ThermalDissipationConfig("battery", "battery", power_w=3.0)]  # [W]
+    thermal.heaters = [ThermalHeaterConfig("battery heater A", "battery", 8.0, 12.0, 15.0),  # [W], [degC]
+                       ThermalHeaterConfig("battery heater B", "battery", 8.0, 10.0, 12.0)]  # the backup, lower
+    thermal.solver.time_step_s = 10.0  # [s] the arrays' eclipse exit at the run's start needs it (step check)
+    # The three presets, and the cold one in safe mode: the avionics down to 15 W.
+    thermal.cases = [ThermalCaseConfig("nominal", "nominal"), ThermalCaseConfig("hot", "hot"),
+                     ThermalCaseConfig("cold", "cold"),
+                     ThermalCaseConfig("cold safe mode", "cold", {"dissipations[avionics].source": "",
+                                                                  "dissipations[avionics].power_w": 15.0})]  # [W]
+    return thermal
+
+
+def build_33_microsat_thermal() -> Scenario:
+    # The 150 kg microsatellite preset flown Sun-safe with a 3D model and a
+    # thermal model on it: nominal, hot and cold cases after the run
+    # (Run > Thermal).
+    from spacemissionstudio.engine.spacecraft_templates import SPACECRAFT_TEMPLATES
+    from spacemissionstudio.model3d import model as model3d
+
+    preset = next(t for t in SPACECRAFT_TEMPLATES if t.name == "Microsatellite (150 kg)")
+    spacecraft = preset.build()
+    spacecraft.name = "microsat-1"
+    spacecraft.orbit = _starter_orbit()
+    spacecraft.model = _microsat_150_model()
+    derived = model3d.derive(spacecraft.model)
+    if derived.errors:
+        raise ValueError(f"template 33's model: {derived.errors}")
+    model3d.apply(spacecraft, derived)
+    spacecraft.thermal = _microsat_150_thermal(spacecraft)
+    return Scenario(
+        name="33 - Microsatellite: thermal model",
+        description=DESCRIPTIONS["33"],
+        epoch_utc=_STARTER_EPOCH_UTC,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=0.15, dynamics_task_rate_s=1.0, integrator="rkf78",
+                                 record_interval_s=30.0),  # [day], [s], [s]
+        space_weather=_real_space_weather(),
+        spacecraft=[spacecraft],
+    )
+
+
+# Template 34's wings: template 33's arrays as flexible panels on hinges
+# (Basilisk's hingedRigidBodyStateEffector), each about 0.5 m^2.
+_MICROSAT_WING_SPAN_M = 0.72  # [m] hinge to tip
+_MICROSAT_WING_WIDTH_M = 0.7  # [m] along the hinge
+_MICROSAT_WING_MASS_KG = 4.0  # [kg]
+
+
+def _microsat_flex_thermal(spacecraft):
+    """Template 34's thermal model: template 33's, on a bus whose arrays are
+    flexible wings (a node each, T-37), a 10 mil silvered-Teflon radiator,
+    a conductance for each hinge, and a thermal Monte Carlo of the
+    radiator's absorptance, the heat pipe and the battery's isolators."""
+    from spacemissionstudio.schema.thermal import (ThermalCaseConfig, ThermalConductorConfig,
+                                                   ThermalDispersionConfig, ThermalDissipationConfig,
+                                                   ThermalFaceConfig, ThermalHeaterConfig, ThermalHeatPipeConfig,
+                                                   ThermalMonteCarloConfig)
+    from spacemissionstudio.thermal import generate
+
+    thermal = generate.generate(spacecraft).thermal
+    limits = {"bus": ([-30.0, 50.0], [-40.0, 60.0]), "radiator": (None, None),
+              "battery": ([10.0, 30.0], [-5.0, 40.0]), "avionics": ([-20.0, 50.0], [-40.0, 70.0]),
+              "solar array wing-1": ([-100.0, 110.0], None), "solar array wing-2": ([-100.0, 110.0], None)}  # [degC]
+    for node in thermal.nodes:
+        node.operating_c, node.survival_c = limits[node.name]
+    thermal.faces = [
+        ThermalFaceConfig("bus", coating="mli_kapton_aluminised_1mil", mli_effective_emittance=0.03),
+        *[f for f in thermal.faces if f.part.startswith("solar array ")],  # cells and black paint, generated
+        ThermalFaceConfig("radiator", coating="silvered_teflon_10mil", radiator=True),
+    ]
+    thermal.conductors = [c for c in thermal.conductors if c.name not in ("bus--radiator", "bus--battery")]
+    thermal.conductors += [ThermalConductorConfig("radiator standoffs", "bus", "radiator", "value",
+                                                  conductance_w_k=0.5),  # [W/K]
+                           ThermalConductorConfig("battery isolators", "bus", "battery", "value",
+                                                  conductance_w_k=0.3),  # [W/K]
+                           *[ThermalConductorConfig(f"wing-{n} hinge", "bus", f"solar array wing-{n}", "value",
+                                                    conductance_w_k=0.2) for n in (1, 2)]]  # [W/K] hinge, harness
+    thermal.heat_pipes = [ThermalHeatPipeConfig("avionics heat pipe", "avionics", "radiator", 8.0,  # [W/K]
+                                                [-40.0, 80.0], 0.01)]  # [degC], [W/K]
+    thermal.dissipations = [ThermalDissipationConfig("avionics", "avionics", source="bus"),
+                            ThermalDissipationConfig("battery", "battery", power_w=3.0)]  # [W]
+    thermal.heaters = [ThermalHeaterConfig("battery heater A", "battery", 8.0, 12.0, 15.0),  # [W], [degC]
+                       ThermalHeaterConfig("battery heater B", "battery", 8.0, 10.0, 12.0)]
+    thermal.solver.time_step_s = 5.0  # [s] the light wings at eclipse exit need it (step check)
+    thermal.cases = [ThermalCaseConfig("nominal", "nominal"), ThermalCaseConfig("hot", "hot"),
+                     ThermalCaseConfig("cold", "cold")]
+    # 20 runs of the hot case: the radiator's absorptance (its ageing unknown) +-25 % (1 sigma), the heat
+    # pipe's conductance +-20 % (uniform), the isolators' +-30 % (1 sigma).
+    thermal.monte_carlo = ThermalMonteCarloConfig(runs=20, seed=34, case="hot", dispersions=[
+        ThermalDispersionConfig("faces[radiator].absorptance", 0.25, relative=True),
+        ThermalDispersionConfig("heat_pipes[avionics heat pipe].conductance_w_k", 0.2, "uniform", relative=True),
+        ThermalDispersionConfig("conductors[battery isolators].conductance_w_k", 0.3, relative=True)])
+    return thermal
+
+
+def build_34_microsat_flexible_thermal() -> Scenario:
+    # Template 33's microsatellite with its arrays as flexible wings: each a
+    # thermal node whose faces turn with the hinge angle the run records;
+    # the Sun-safe turn that opens the run swings them. The thermal
+    # section carries a Monte Carlo for Run > Thermal's studies.
+    from spacemissionstudio.engine.spacecraft_templates import SPACECRAFT_TEMPLATES
+    from spacemissionstudio.model3d import model as model3d
+    from spacemissionstudio.schema.scenario import SpacecraftModelConfig
+
+    preset = next(t for t in SPACECRAFT_TEMPLATES if t.name == "Microsatellite (150 kg)")
+    spacecraft = preset.build()
+    spacecraft.name = "microsat-2"
+    spacecraft.orbit = _starter_orbit()
+    spacecraft.sigma_bn_init = [0.05, 0.1, 0.0]  # [-] MRP, tipped: the Sun-safe turn swings the wings
+    spacecraft.omega_bn_b_init_rad_s = [0.0, 0.0, 0.0]  # [rad/s]
+    base = _microsat_150_model()
+    spacecraft.model = SpacecraftModelConfig(parts=[p for p in base.parts if not p.name.startswith("array ")])
+    spacecraft.solar_arrays = [
+        SolarArrayConfig(name=f"wing-{number}", mass_kg=_MICROSAT_WING_MASS_KG, span_m=_MICROSAT_WING_SPAN_M,
+                         width_m=_MICROSAT_WING_WIDTH_M, hinge_position_b=[0.0, sign * 0.45, 0.0],  # [m] on a yoke
+                         deploy_direction_b=[0.0, sign, 0.0], normal_b=[0.0, 0.0, 1.0],  # cells on +z
+                         first_mode_hz=0.8, damping_ratio=0.01, generates_power=False)  # [Hz], [-]
+        for number, sign in ((1, 1.0), (2, -1.0))]
+    derived = model3d.derive(spacecraft.model)
+    if derived.errors:
+        raise ValueError(f"template 34's model: {derived.errors}")
+    model3d.apply(spacecraft, derived)
+    spacecraft.thermal = _microsat_flex_thermal(spacecraft)
+    return Scenario(
+        name="34 - Microsatellite: flexible arrays and thermal studies",
+        description=DESCRIPTIONS["34"],
+        epoch_utc=_STARTER_EPOCH_UTC,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        # Recorded every 0.5 s step: slower sampling would alias the wings' 0.8 Hz flexing.
+        sim_settings=SimSettings(duration_days=0.15, dynamics_task_rate_s=0.5, integrator="rkf78"),  # [day], [s]
+        space_weather=_real_space_weather(),
+        spacecraft=[spacecraft],
+    )
+
+
 def build_29_roe_formation_helix() -> Scenario:
     # An ROE formation (engine.roe, engine.roe_formation): two 150 kg
     # sister satellites, the follower placed 2 km behind the chief by
@@ -1850,6 +2053,8 @@ def main() -> None:
     _save(build_30_mars_optical_navigation(), "30_mars_optical_navigation.json")
     _save(build_31_eros_landmark_navigation(), "31_eros_landmark_navigation.json")
     _save(build_32_smallsat_design_checks(), "32_smallsat_design_checks.json")
+    _save(build_33_microsat_thermal(), "33_microsat_thermal.json")
+    _save(build_34_microsat_flexible_thermal(), "34_microsat_flexible_thermal.json")
 
 
 if __name__ == "__main__":
