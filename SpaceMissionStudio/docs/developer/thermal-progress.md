@@ -23,8 +23,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 0 | Investigation, design, decision log, progress file | done |
 | 1 | Schema `thermal` section, validation, references, recording | done |
 | 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | done |
-| 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | next |
-| 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | |
+| 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | done |
+| 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | next |
 | 5 | Cases, presets, overrides | |
 | 6 | Checks and the shadowing warning | |
 | 7 | Results, series, events, record, CSV | |
@@ -65,9 +65,18 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   per part, contact and mounting conductors);
   `tests/test_thermal_geometry.py`.
 
+- Step 3: `thermal/environment.py` (solar factor with distance and
+  eclipse, plate-to-sphere view factor checked against direct
+  integration, OLR defaults from the NASA guideline by inclination band,
+  Mars by radiative balance, period, inclination, beta; the albedo map
+  found offline or the mean used with a warning), `thermal/albedo.py`
+  (Basilisk's albedo module stand-alone, one instrument per distinct
+  normal); `tests/thermal_fixtures.py` (a synthetic run),
+  `tests/test_thermal_environment.py`.
+
 ## Next
 
-Step 3.
+Step 4.
 
 ## Known issues
 
