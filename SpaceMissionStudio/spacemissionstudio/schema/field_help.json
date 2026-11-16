@@ -393,7 +393,8 @@
   "propellant_budget": "see engine/propellant_budget.py",
   "roe_formation": "formation in relative orbital elements",
   "sensors": "list[SensorConfig]",
-  "solar_arrays": "SolarArrayConfig: flexible, hinged arrays"
+  "solar_arrays": "SolarArrayConfig: flexible, hinged arrays",
+  "thermal": "The thermal model built on the 3D model (schema.thermal.ThermalConfig; docs/developer/thermal-design.md); None, as every scenario before it."
  },
  "SpacecraftModelConfig": {
   "equipment": "list[MountedEquipmentConfig]",
@@ -414,6 +415,70 @@
   "propellant_kg": "[kg] initial propellant mass available for station-keeping",
   "target_altitude_km": "[km] altitude above the central body's equatorial radius to maintain",
   "thrust_n": "[N] reboost thruster thrust"
+ },
+ "ThermalCaseConfig": {},
+ "ThermalConductorConfig": {
+  "conductance_w_k": "[W/K]",
+  "conductivity_table": "[[degC, W/(m*K)], ...] Phase 2, for kind \"material\"",
+  "conductivity_w_m_k": "[W/(m*K)]",
+  "contact_area_m2": "[m^2]",
+  "contact_coefficient_w_m2_k": "[W/(m^2*K)]",
+  "length_m": "[m]",
+  "section_m2": "[m^2]"
+ },
+ "ThermalConfig": {
+  "cases": "list[ThermalCaseConfig]",
+  "conductors": "list[ThermalConductorConfig]",
+  "dissipations": "list[ThermalDissipationConfig]",
+  "faces": "list[ThermalFaceConfig]",
+  "heat_pipes": "list[ThermalHeatPipeConfig]",
+  "heaters": "list[ThermalHeaterConfig]",
+  "nodes": "list[ThermalNodeConfig]",
+  "radiative_links": "list[ThermalRadiativeLinkConfig]"
+ },
+ "ThermalDissipationConfig": {
+  "power_w": "[W]"
+ },
+ "ThermalEnvironmentConfig": {
+  "albedo": "[-] a constant albedo coefficient (the map's otherwise)",
+  "albedo_model": "\"map\" (Basilisk's CERES/TES data) or \"average\"",
+  "planet_ir_w_m2": "[W/m^2] outgoing longwave radiation at the top of the atmosphere",
+  "solar_flux_w_m2": "[W/m^2] at 1 AU"
+ },
+ "ThermalFaceConfig": {
+  "absorptance": "[-] solar",
+  "coating": "a library or model material giving absorptance and emissivity",
+  "emissivity": "[-] infrared, hemispherical",
+  "mli_effective_emittance": "[-] e* of an MLI blanket on the face (T-09)",
+  "node": "\"\" for the node owning the part"
+ },
+ "ThermalHeatPipeConfig": {
+  "conductance_w_k": "[W/K] while operating",
+  "off_conductance_w_k": "[W/K] frozen or dried out",
+  "operating_c": "[degC] [lowest, highest]"
+ },
+ "ThermalHeaterConfig": {
+  "off_c": "[degC]",
+  "on_c": "[degC]",
+  "power_w": "[W]"
+ },
+ "ThermalNodeConfig": {
+  "capacitance_j_k": "[J/K]",
+  "initial_c": "[degC] for start \"fixed\"",
+  "mass_kg": "[kg]",
+  "material": "a library or model material, for its specific heat",
+  "operating_c": "[degC] [lowest, highest]",
+  "parts": "names of the model's parts",
+  "specific_heat_j_kg_k": "[J/(kg*K)]",
+  "survival_c": "[degC] [lowest, highest]"
+ },
+ "ThermalRadiativeLinkConfig": {
+  "effective_area_m2": "[m^2] emittance times area, view factor included"
+ },
+ "ThermalSolverConfig": {
+  "initial_c": "[degC]",
+  "time_step_s": "[s]",
+  "tolerance_k": "[K]"
  },
  "ValueMark": {
   "reason": "why the scenario's value replaces it: required when overridden",

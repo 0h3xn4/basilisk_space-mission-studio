@@ -341,7 +341,29 @@ def _part_reference_sites(sc):
             sites.append((f"model.stowed {pose.part!r}", pose, "part"))
         for face in model.face_properties:
             sites.append((f"model.face_properties {face.part!r}: {face.face}", face, "part"))
+    if sc.thermal is not None:
+        for node in sc.thermal.nodes:
+            for k, part in enumerate(node.parts):
+                sites.append((f"thermal.nodes {node.name!r}.parts", _ListSlot(node.parts, k), "value"))
+        for entry in sc.thermal.faces:
+            sites.append((f"thermal.faces {entry.name!r}", entry, "part"))
     return sites
+
+
+class _ListSlot:
+    """One item of a list of names, read and set as ``.value`` (a node's
+    parts), so a rename updates it like a field."""
+
+    def __init__(self, items: list, index: int):
+        self._items, self._index = items, index
+
+    @property
+    def value(self):
+        return self._items[self._index]
+
+    @value.setter
+    def value(self, new):
+        self._items[self._index] = new
 
 
 def find_part_references(sc, part_name: str) -> list[Reference]:

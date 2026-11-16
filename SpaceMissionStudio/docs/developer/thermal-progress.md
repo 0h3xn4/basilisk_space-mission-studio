@@ -21,8 +21,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | # | Step | State |
 |---|---|---|
 | 0 | Investigation, design, decision log, progress file | done |
-| 1 | Schema `thermal` section, validation, references, recording | next |
-| 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | |
+| 1 | Schema `thermal` section, validation, references, recording | done |
+| 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | next |
 | 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | |
 | 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | |
 | 5 | Cases, presets, overrides | |
@@ -49,9 +49,17 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   (T-19); Basilisk's albedo module probed stand-alone (60 instruments,
   1.4 ms per step).
 
+- Step 1: `schema/thermal.py` (the section, its own version, validation
+  against the model, the materials and the power loads; `compact` for
+  saving), `SpacecraftConfig.thermal`, central body and Sun checks,
+  part renames into nodes and faces, field help and JSON editor tables;
+  the run records the central body's and the Sun's positions and the
+  central body's orientation (`ephemeris.<body>.dcm_PN`) for a thermal
+  spacecraft; `tests/test_thermal_schema.py`.
+
 ## Next
 
-Step 1.
+Step 2.
 
 ## Known issues
 
