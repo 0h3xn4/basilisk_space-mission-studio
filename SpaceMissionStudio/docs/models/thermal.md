@@ -110,8 +110,10 @@ degrees) (T-27):
 
 Mars keeps its own environment: its distance's sunlight, the TES map
 and an OLR from its radiative balance, stated as an estimate (T-28).
-The optics are beginning of life: the library has no sourced end-of-life
-values yet (T-24); a case can override any face's optics.
+The optics are beginning of life. The library has no sourced end-of-life
+values for a mission's duration; for three coatings it has the values
+Henninger measured after ultraviolet exposure (`..._uv_<n>esh`, T-38). A
+case can override any face's optics.
 
 Overrides set any parameter by its path in the thermal section, for
 example `faces[bus:+x].absorptance`, `nodes[battery].capacitance_j_k`,

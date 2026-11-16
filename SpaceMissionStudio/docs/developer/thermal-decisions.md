@@ -416,3 +416,32 @@ Basilisk. **Limits:** the arrays are not in the ray-cast scene, so they
 neither shade the bus nor are shaded (T-06 holds for them too); the
 electrical power the cells take out of the absorbed sunlight is not
 subtracted (as for every solar-cell face).
+
+## T-38 The library's Phase 2 additions, and what stays unsourced (2026-11-16)
+
+**Chosen:** 26 more coatings from the source the library already cites,
+Henninger, NASA RP-1121 (read from NASA's technical reports server, each
+with its table): black anodise and black velvet paints, white paints
+A-276, Z-202 and zinc orthotitanate, sulphuric and chromic anodising,
+machined stainless steel, electroless nickel, vapour-deposited gold and
+silver, a silver-backed second-surface mirror, silvered and aluminised
+Teflon of 2 and 10 mil, aluminised Kapton of 2 and 5 mil, Kapton with a
+silicon-oxide overcoating, aluminised Mylar and two tapes
+(`config/materials.py`, `docs/models/materials.md`). Where the report
+measured a coating again after ultraviolet exposure (A-276 after 1036
+equivalent Sun hours, Z-202 after 1000, the Kapton overcoating after
+2400), that aged value is its own entry (`..._uv_<n>esh`), named for
+exactly what was measured.
+
+**Not sourced, and left out:** end-of-life optics for a mission's
+duration (they depend on the orbit's atomic oxygen, radiation and
+contamination, and RP-1121's UV values are not that); thermal
+conductivities (NIST's cryogenic property fits were the intended source;
+this environment cannot reach that site, and no other reachable source
+gave them); honeycomb-panel properties. A conductor takes its
+conductance, a conductivity or a conductivity table in the thermal
+model, a case overrides a face's optics, and a model material carries
+its own values with its own source.
+**Why:** the brief asks for a sourced library and for anything without a
+source to be logged; a number without a source would break the rule the
+library has held since its start (model-analyses D-12).
