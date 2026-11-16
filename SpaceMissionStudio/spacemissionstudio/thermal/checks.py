@@ -73,7 +73,7 @@ def checks(sc, base_dir=None, geom=None) -> list[Finding]:
     thermal = sc.thermal
     if thermal is None or sc.model is None:
         return []
-    geom = geom if geom is not None else geometry_module.build(sc.model, base_dir)
+    geom = geom if geom is not None else geometry_module.build(sc.model, base_dir, arrays=sc.solar_arrays)
     where = f"{sc.name}: thermal"
     found: list[Finding] = []
     names = thermal.node_names()
@@ -81,6 +81,7 @@ def checks(sc, base_dir=None, geom=None) -> list[Finding]:
     entries = {e.name: e for e in thermal.faces}
     materials = list(sc.model.materials)
     parts = {p.name: p for p in sc.model.parts}
+    parts.update({p.name: p for p in geometry_module.array_parts(sc)})
     unassigned, missing = [], []
     radiating: set[str] = set()
     for facet in geom.facets:

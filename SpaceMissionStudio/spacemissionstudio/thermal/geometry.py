@@ -26,7 +26,12 @@
 - :func:`enclosures`: the part each internal part sits in;
 - :func:`shading_screen`: the faces another part can shade. The thermal
   model assumes no shading (decision T-06); this tells the user where that
-  assumption is wrong.
+  assumption is wrong;
+- flexible solar arrays (``SpacecraftConfig.solar_arrays``, decision
+  T-37): each a flat panel of its own, the pseudo-part
+  ``"solar array <name>"`` (:func:`array_part`) with a ``cells`` and a
+  ``back`` face; their normals turn about the hinge by the deflection the
+  run recorded (:func:`articulated_normals`).
 
 Numpy only.
 """
@@ -59,6 +64,7 @@ class ThermalFacet:
     area_m2: float  # [m^2]
     normal_b: np.ndarray  # [-]
     centroid_b: np.ndarray  # [m]
+    array: str = ""  # the flexible solar array the face belongs to, or ""
 
     @property
     def key(self) -> str:
@@ -73,6 +79,7 @@ class Geometry:
     derived: model3d.DerivedModel
     facets: list[ThermalFacet]
     surface_parts: set = field(default_factory=set)  # parts with faces in the surface model
+    arrays: dict = field(default_factory=dict)  # flexible array name -> its SolarArrayConfig
     _contacts: list | None = None
     _covered: dict = field(default_factory=dict)  # facet index -> [m^2] covered by a touching part
 
@@ -90,9 +97,57 @@ def _split(name: str, part_names: list[str]) -> tuple[str, str]:
     return best, name[len(best) + 2:]
 
 
-def build(model, base_dir=None, derived: model3d.DerivedModel | None = None) -> Geometry:
+ARRAY_PREFIX = "solar array "
+ARRAY_FACES = ("cells", "back")
+
+
+def array_part(name: str) -> str:
+    """The pseudo-part name of flexible solar array ``name``."""
+    return ARRAY_PREFIX + name
+
+
+def _unit(vector) -> np.ndarray:
+    v = np.asarray(vector, dtype=float)
+    return v / np.linalg.norm(v)
+
+
+def array_axes(array) -> tuple[np.ndarray, np.ndarray]:
+    """``(deploy direction e, cell normal n)`` of an undeflected array, unit
+    and exactly perpendicular, as ``engine.solar_arrays.dcm_hb`` takes them."""
+    e = _unit(array.deploy_direction_b)
+    n = _unit(array.normal_b)
+    n = n - e * float(e @ n)
+    return e, n / np.linalg.norm(n)
+
+
+def array_parts(spacecraft) -> list:
+    """A model part standing for each flexible solar array (a flat panel of
+    its span, width and mass), so that nodes, faces and masses treat it as
+    any other part."""
+    from ..schema.scenario import ModelPartConfig
+
+    return [ModelPartConfig(name=array_part(a.name), shape="panel", mass_kg=float(a.mass_kg),
+                            dimensions_m={"width": float(a.width_m), "length": float(a.span_m), "thickness": 0.0},
+                            counts_toward_mass=False)
+            for a in (getattr(spacecraft, "solar_arrays", None) or [])]
+
+
+def _array_facets(array) -> list[ThermalFacet]:
+    e, n = array_axes(array)
+    theta = np.radians(float(array.initial_deflection_deg))
+    tip = np.cos(theta) * e + np.sin(theta) * n
+    normal = np.cos(theta) * n - np.sin(theta) * e
+    centre = np.asarray(array.hinge_position_b, dtype=float) + 0.5 * float(array.span_m) * tip
+    area = float(array.span_m) * float(array.width_m)
+    part = array_part(array.name)
+    return [ThermalFacet(part, "cells", "cells", area, normal, centre, array.name),
+            ThermalFacet(part, "back", "back", area, -normal, centre, array.name)]
+
+
+def build(model, base_dir=None, derived: model3d.DerivedModel | None = None, arrays=()) -> Geometry:
     """The :class:`Geometry` of a :class:`SpacecraftModelConfig` as
-    deployed."""
+    deployed, with a panel for each of the flexible solar ``arrays``
+    (``SpacecraftConfig.solar_arrays``) at its initial deflection."""
     derived = derived if derived is not None else model3d.derive(model, base_dir=base_dir)
     names = [p.name for p in model.parts]
     facets = []
@@ -100,7 +155,28 @@ def build(model, base_dir=None, derived: model3d.DerivedModel | None = None) -> 
         part, face_name = _split(face.name, names)
         facets.append(ThermalFacet(part, face_name, face.group, float(face.area_m2),
                                    np.asarray(face.normal, dtype=float), np.asarray(face.centroid_m, dtype=float)))
-    return Geometry(derived, facets, {f.part for f in facets})
+    for array in arrays or ():
+        facets += _array_facets(array)
+    return Geometry(derived, facets, {f.part for f in facets}, {a.name: a for a in arrays or ()})
+
+
+def articulated_normals(facets: list[ThermalFacet], arrays: dict, deflection_rad: dict) -> np.ndarray:
+    """``(n, f, 3)`` normals of ``facets`` over time: the faces of the
+    flexible ``arrays`` (name -> SolarArrayConfig) turned about their hinge
+    by ``deflection_rad[name]`` ((n,) [rad], positive toward
+    the cell side), every other face fixed. The times are those of the
+    deflections, which must all have the same length."""
+    lengths = {len(v) for v in deflection_rad.values()}
+    count = lengths.pop() if lengths else 1
+    normals = np.repeat(np.array([f.normal_b for f in facets], dtype=float).reshape(-1, 3)[None], count, axis=0)
+    for index, facet in enumerate(facets):
+        if not facet.array or facet.array not in deflection_rad:
+            continue
+        e, n = array_axes(arrays[facet.array])
+        theta = np.asarray(deflection_rad[facet.array], dtype=float)[:, None]
+        cells = np.cos(theta) * n - np.sin(theta) * e
+        normals[:, index] = cells if facet.face == "cells" else -cells
+    return normals
 
 
 def facets(model, base_dir=None) -> list[ThermalFacet]:
@@ -293,6 +369,8 @@ def shading_screen(model, geometry: Geometry, directions: int = _SCREEN_DIRECTIO
     sky = raycast.shapes._fibonacci_directions(directions)
     found = []
     for facet in geometry.facets:
+        if facet.array:  # not in the ray-cast scene: the arrays shade nothing and nothing shades them (T-37)
+            continue
         worst, by = 0.0, set()
         for direction in sky:
             if float(facet.normal_b @ direction) <= 0.05:

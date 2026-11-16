@@ -40,6 +40,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from . import conductors, library
+from . import geometry as geometry_module
 
 ZERO_C_K = 273.15  # [K]
 
@@ -208,6 +209,7 @@ def build(spacecraft, thermal, geometry) -> Network:
     model = spacecraft.model
     materials = list(model.materials) if model is not None else []
     parts = {p.name: p for p in model.parts} if model is not None else {}
+    parts.update({p.name: p for p in geometry_module.array_parts(spacecraft)})
     names = [n.name for n in thermal.nodes]
     owner = {part: names.index(node.name) for node in thermal.nodes for part in node.parts}
     entries = {e.name: e for e in thermal.faces}

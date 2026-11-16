@@ -92,9 +92,9 @@ def prepare(scenario, result, sc_name: str, base_dir=None) -> Prepared:
                                    "its 3D model)")
     if sc.model is None:
         raise ThermalAnalysisError(f"{sc_name} has no 3D model: the thermal model is built on it")
-    geom = geometry.build(sc.model, base_dir)
+    geom = geometry.build(sc.model, base_dir, arrays=sc.solar_arrays)
     try:
-        env = environment.build(result, sc_name, scenario.gravity.central_body, geom.facets)
+        env = environment.build(result, sc_name, scenario.gravity.central_body, geom.facets, arrays=geom.arrays)
     except environment.ThermalEnvironmentError as exc:
         raise ThermalAnalysisError(str(exc)) from exc
     warnings = [f"{sc_name}: thermal: {w}" for w in env.warnings]

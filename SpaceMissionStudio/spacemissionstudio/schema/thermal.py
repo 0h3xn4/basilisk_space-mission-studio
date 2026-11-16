@@ -98,10 +98,12 @@ class ThermalNodeConfig:
     ``mass_kg`` (else its parts' mass) times ``specific_heat_j_kg_k``
     (else its ``material``'s, else its parts' material's, else
     aluminium's, T-05), or that mass times a ``specific_heat_table`` of
-    temperature (Phase 2: the solver then integrates the enthalpy)."""
+    temperature (Phase 2: the solver then integrates the enthalpy). A
+    flexible solar array is the part ``"solar array <name>"``, with the
+    faces ``cells`` and ``back`` (T-37)."""
 
     name: str
-    parts: list = field(default_factory=list)  # names of the model's parts
+    parts: list = field(default_factory=list)  # names of the model's parts ("solar array <name>" for a flexible one)
     capacitance_j_k: float | None = None  # [J/K]
     mass_kg: float | None = None  # [kg]
     specific_heat_j_kg_k: float | None = None  # [J/(kg*K)]
@@ -137,7 +139,8 @@ class ThermalFaceConfig:
     """A face of a part (``face`` "" for every face of the part, or a face
     group such as "sides"): its optics, the node it belongs to when not its
     part's node, MLI and the radiator flag. A thin panel's two sides are
-    its faces "+z" and "-z"."""
+    its faces "+z" and "-z"; a flexible solar array's are "cells" and
+    "back"."""
 
     part: str
     face: str = ""
@@ -561,6 +564,8 @@ def context_for(spacecraft) -> ThermalContext:
 
     model = spacecraft.model
     parts = {} if model is None else {part.name: shape_face_names(part) for part in model.parts}
+    for array in getattr(spacecraft, "solar_arrays", None) or []:  # flexible arrays: a panel each (T-37)
+        parts[f"solar array {array.name}"] = ("cells", "back")
     materials = set(MATERIALS) | ({m.name for m in model.materials} if model is not None else set())
     return ThermalContext(parts, materials, power_loads(spacecraft))
 

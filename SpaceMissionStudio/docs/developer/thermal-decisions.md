@@ -386,3 +386,33 @@ same mechanism as a case's (T-13); nothing is rerun in Basilisk
   shows exactly as before. **Alternatives:** dispersing thermal parameters
   in the scenario's Basilisk Monte Carlo (a full run per draw, for
   parameters the run does not depend on).
+
+## T-37 Flexible solar arrays as nodes that turn with the run (2026-11-16)
+
+**Chosen:** each flexible solar array (`SpacecraftConfig.solar_arrays`,
+Basilisk's `hingedRigidBodyStateEffector` in the run) is a part of the
+thermal geometry of its own, `"solar array <name>"`: a flat panel of
+`span_m x width_m` with a `cells` face (normal `normal_b`) and a `back`
+face, its mass the array's (`thermal/geometry.py`). The run records each
+array's hinge angle (`<sc>.solar_array.<name>.deflection`); the faces'
+normals turn about the hinge line by it, positive toward the cell side,
+as `engine.solar_arrays` sets Basilisk's hinge frame. Their direct
+sunlight and planetary infrared follow the turned normal at every
+recorded time. Their albedo is taken at the initial normal, because
+Basilisk's albedo module is run once per distinct fixed normal; at the
+deflections a flexible array reaches (a few degrees), the albedo's
+change is second order. A run without the record (an older run) keeps
+the initial deflection, with a warning. The generator gives each array a
+node, the cells triple-junction cells and the back black paint (library
+values, T-24), and leaves out a model part with `counts_toward_mass` off,
+which the 3D model uses to draw an array whose mass is the array's: the
+array would otherwise count twice. It joins the array to nothing: a
+hinge's conductance depends on the hinge and its harness, and no single
+sourced value fits, so the note asks the user for it.
+
+**Why:** the brief asks for articulating arrays as nodes; the run already
+records the angle, so the thermal model needs no new run and no change to
+Basilisk. **Limits:** the arrays are not in the ray-cast scene, so they
+neither shade the bus nor are shaded (T-06 holds for them too); the
+electrical power the cells take out of the absorbed sunlight is not
+subtracted (as for every solar-cell face).

@@ -42,6 +42,7 @@ import numpy as np
 from ..analyses.run_geometry import RunGeometry, nearest_sample, run_geometry
 from ..constants import ASTRONOMICAL_UNIT_M, SOLAR_FLUX_1AU_W_M2
 from . import albedo as albedo_module
+from . import geometry as geometry_module
 
 #: The OLR and albedo references are at the top of the atmosphere, 30 km
 #: above the surface (NASA/TM-2001-211221, Tables 4.2.3-1 to -3).
@@ -217,10 +218,27 @@ def albedo_map_path(central_body: str):
         return None
 
 
-def build(result, sc_name: str, central_body: str, facets, map_path=None) -> Environment:
+def _deflections(result, sc_name: str, facets, t: np.ndarray, warnings: list) -> dict:
+    """Each flexible array's recorded hinge deflection [rad] on ``t``."""
+    found = {}
+    for name in sorted({f.array for f in facets if f.array}):
+        series = result.series.get(f"{sc_name}.solar_array.{name}.deflection")
+        if series is None:
+            warnings.append(f"solar array {name}'s deflection was not recorded: its faces keep their initial "
+                            "deflection")
+            continue
+        found[name] = np.interp(t, np.asarray(series.time_s, float), np.asarray(series.data, float).reshape(-1))
+    return found
+
+
+def build(result, sc_name: str, central_body: str, facets, map_path=None, arrays: dict | None = None) -> Environment:
     """The :class:`Environment` of spacecraft ``sc_name`` in a finished
     run ``result`` (a ResultSet), on ``facets`` (``geometry.facets``).
     ``map_path`` is the central body's albedo data file (the map's).
+    ``arrays`` (name -> SolarArrayConfig) are the flexible solar arrays
+    whose faces turn with the deflection the run recorded (T-37): their
+    sunlight and infrared follow the turned normal, their albedo is taken
+    at the initial one.
     Raises :class:`ThermalEnvironmentError` when the run lacks what the
     fluxes need."""
     if central_body not in ("earth", "mars barycenter"):
@@ -256,13 +274,19 @@ def build(result, sc_name: str, central_body: str, facets, map_path=None) -> Env
         warnings.append(f"{central_body}'s orientation was not recorded: the albedo map is read as if the planet "
                         "did not turn; use a constant albedo coefficient")
     normals = np.array([f.normal_b for f in facets], dtype=float).reshape(-1, 3)
+    deflections = _deflections(result, sc_name, facets, t, warnings) if arrays else {}
+    turning = geometry_module.articulated_normals(facets, arrays, deflections) if deflections else None
     sun_b, sun_distance = geometry.unit_body(geometry.sun_n)
-    cosines = np.clip(sun_b @ normals.T, 0.0, None)
+    if turning is None:
+        cosines = np.clip(sun_b @ normals.T, 0.0, None)
+    else:
+        cosines = np.clip(np.einsum("ni,nfi->nf", sun_b, turning), 0.0, None)
     solar_factor = (ASTRONOMICAL_UNIT_M / sun_distance)[:, None] ** 2 * geometry.sunlight[:, None] * cosines
     nadir_b, centre_distance = geometry.unit_body(geometry.central_n)
     radius = geometry.central_radius_m + (EARTH_TOP_OF_ATMOSPHERE_M if central_body == "earth" else 0.0)
     h = np.maximum(centre_distance / radius, 1.0 + 1.0e-9)
-    view = plate_sphere_view_factor(nadir_b @ normals.T, h[:, None])
+    nadir_cos = nadir_b @ normals.T if turning is None else np.einsum("ni,nfi->nf", nadir_b, turning)
+    view = plate_sphere_view_factor(nadir_cos, h[:, None])
     attitude = result.series[f"{sc_name}.attitude_sigma_BN"]
     sigma = np.asarray(attitude.data, dtype=float)[nearest_sample(np.asarray(attitude.time_s, float), t)]
     rounded = np.round(normals, 6)
