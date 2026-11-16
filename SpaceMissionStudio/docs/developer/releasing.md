@@ -454,6 +454,17 @@ release workflow ([run 43778461245](https://github.com/0h3xn4/basilisk_space-mis
 installed and checked every file, attached the eleven and published the
 release 29 minutes later. It was never a public release without files.
 
+2.9.0 was prepared on 2026-11-16 by this checklist: the spacecraft
+thermal analysis with templates 33 and 34 (#265), NASA MSFC's November
+2026 prediction (#264) and the 2.8.0 publication record (#263); a minor
+release because it adds a feature and an optional scenario field
+(`thermal`, schema version still 4). 2.8.0 opens the files 2.9.0 saves
+except those with a thermal model, which it refuses by name (checked
+with 2.8.0's code on the 34 templates as 2.9.0 saves them: 32 open with
+no message, 33 and 34 refused). The space weather was not refreshed:
+CelesTrak reset all three connections, so 2.9.0 carries 2.8.0's file
+(observations to 2026-11-14).
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

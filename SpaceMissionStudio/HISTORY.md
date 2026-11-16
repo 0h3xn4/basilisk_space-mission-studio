@@ -17897,3 +17897,54 @@ own drag coefficient: it re-enters after 327.6 days instead of 325.6
 (`docs/changes.md`). `test_spaceweather.py` checks the November values
 (January 2030: 74.1 sfu and Ap 11.3 at the 50th percentile, 78.7 and
 15.9 at the 95th; June 2027: 104.3 sfu).
+
+## Spacecraft thermal analysis (2026-11-16)
+
+The owner asked for a multi-node thermal analysis of a spacecraft,
+built autonomously in two phases on `feature/thermal-analysis`, under
+one absolute rule: nothing of Basilisk changes, in the repository or at
+run time. Phase 1 built the `thermal` section of a spacecraft from its
+3D model (a node per part, contact conductors from the meshes), the
+fluxes on every face from the run (sunlight, Basilisk's `albedo` module
+run stand-alone, planetary infrared by the plate-to-sphere view factor),
+an implicit second-order solver with a step check, an energy balance
+and an orbit-periodic start, NASA's hot, cold and nominal cases, the
+checks, **Run › Thermal**, the exports, the API, the CLI and template
+33. Phase 2 added specific-heat and conductivity tables, sweeps, a
+one-at-a-time sensitivity and a seeded thermal Monte Carlo in the Monte
+Carlo view, the 3D model coloured by temperature, flexible solar arrays
+as nodes that turn with the recorded hinge angle, 26 coatings from NASA
+RP-1121 and template 34. Every choice is in
+`docs/developer/thermal-decisions.md` (T-01 to T-39), the verification
+in `compliance/validation/thermal-vv.md`: Basilisk's `sensorThermal`
+within 0.072 K at a 1 s step (its own first-order error; it uses
+5.76051e-8 for the Stefan-Boltzmann constant, a draft upstream issue in
+T-33, not filed), analytic cases to 1e-12 K, Monte Carlo reruns
+bitwise identical. NIST's property site could not be reached from the
+build environment, so the library has no conductivities (T-38). The
+full suite's first run on the finished branch found template 34
+sampling its 0.8 Hz wings every 30 s, which the scenario explainer
+flags as aliasing; it records every 0.5 s step now. Merged as #265.
+
+## Release 2.9.0 prepared (2026-11-16)
+
+A minor release: it adds a feature and a scenario field. Contents since
+2.8.0: the 2.8.0 publication record (#263), NASA MSFC's November 2026
+prediction (#264, SRelD K-33 closed) and the spacecraft thermal analysis
+with templates 33 and 34 (#265, SRS-F-29).
+
+Prepared by `docs/developer/releasing.md`: version 2.9.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script; the
+CHANGELOG's Unreleased entries under 2.9.0 with an introduction, Who
+should update and Known limits; SRelD issue 37; the SDP, SRS, ICD, CSD,
+SUM and both READMEs name 2.9.0. The space weather was not refreshed:
+CelesTrak reset all three connections on 2026-11-16, so 2.9.0 carries
+2.8.0's file (observations to 2026-11-14, updated 2026-11-15; K-13).
+
+Compatibility checked with 2.8.0's own code (the tagged commit
+`db58ba6`, extracted with `git archive`): of the 34 templates as this
+code saves them, the 32 without a thermal model open and validate in
+2.8.0 with no message; 2.8.0 refuses templates 33 and 34 by name
+("unexpected field 'thermal', not one this version knows"). The schema
+version stays 4. The golden outputs changed since 2.8.0 only through the
+MSFC prediction (#264) and the two new templates.

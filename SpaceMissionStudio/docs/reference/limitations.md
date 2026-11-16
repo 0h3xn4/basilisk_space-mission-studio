@@ -369,8 +369,8 @@ From the [changelog](../../CHANGELOG.md):
   study, fetch the current file: the **Fetch or update reference data?**
   card on Home, **Settings > Reference data**, or `spacemissionstudio
   spaceweather-download`. 2.7.0 carries a newer file (observations to
-  2026-11-09, forecast to 2026-12-24), and 2.8.0 a newer one again
-  (observations to 2026-11-14, forecast to 2026-12-29).
+  2026-11-09, forecast to 2026-12-24), and 2.8.0 and 2.9.0 a newer one
+  again (observations to 2026-11-14, forecast to 2026-12-29).
 * **Some actions hold the window for longer than the 50 ms the interface
   aims at:** changing the theme (about 0.4 s), the first visit to a
   spacecraft page and opening a template (SRelD K-19, K-23).
