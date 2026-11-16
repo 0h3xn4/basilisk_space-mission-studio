@@ -72,9 +72,48 @@ integration differs. A draft upstream issue is in decision T-33.
 | Template 33's 150 kg bus (`tests/test_template_claims.py`) | Generated: a node per part, the avionics mounted on the bus over 0.09 m^2; the radiator's and the battery's conductors replaced by their standoffs (0.5 W/K) and isolators (0.3 W/K). Four cases periodic in 3 orbits (safe mode about 32-42: the slow bus mode, extrapolated, T-34), balance 3.4e-4 of the throughput, step check 0.44-0.48 K | Bus 11.2-14.4 degC, hot above nominal above cold; radiator rejects 37 W; safe mode: bus -22.5 degC, heater A on all the time, sized 7.6 W, avionics below -20 degC |
 | Faces in no node, without optics; nodes without capacity or without a path to space; parts that can shade faces | Problems panel findings with their rule | Each found, nothing else on a complete model |
 
+## Phase 2: tables, studies and turning arrays
+
+Temperature-dependent properties (`tests/test_thermal_tables.py`, no
+Basilisk; T-35):
+
+| Case | Reference | Tolerance | Result |
+|---|---|---|---|
+| A panel and a unit over two orbits, the panel's specific heat and the strap's conductivity given as flat tables (880 J/(kg K), 160 W/(m K)) | The same model with the constants | 1 uK | 1.1e-12 K at most |
+| A node with `cp = a + b T` (2 kg, a = 400, b = 1.5), heated at 20 W for an hour with no losses | The analytic enthalpy `m (a T + b T^2 / 2)` solved for T: 61.344 degC | 1 mK | 7e-13 K; a constant cp at the start's value would end 1.53 K hotter |
+| A panel whose specific heat doubles between -50 and 50 degC, swinging 57 K per orbit | Heat stored (enthalpy change) = integral of the net heat in | 1e-3 of the throughput | 5.2e-11 of the throughput |
+| A table and a constant on the same node; a table of one row | Refused, naming the fields | | Refused |
+
+Studies on template 33's run (`tests/test_thermal_studies.py`; T-36):
+
+| Case | Reference | Tolerance | Result |
+|---|---|---|---|
+| A sweep of the radiator's absorptance, 0.05 / 0.2 / 0.35 | Each point against the case solved alone with that override | 1e-9 K on every node's extremes | Equal; the avionics warm as the absorptance rises |
+| The heat pipe's conductance +-20 % (8 W/K) | The central difference of the two single cases | 1e-9 K | Equal; per unit = change / (2 step) |
+| The default sensitivity over every parameter | Ranked by the largest change; the avionics' largest driver is the radiator (optics, heat pipe) or the planet's infrared; parameters with no number left out with a note | | As expected |
+| Thermal Monte Carlo, 6 runs from seed 7 | The same draws and the same temperatures twice; other draws from seed 8; every optic drawn within [0, 1] | Bitwise | Identical; different from seed 8 |
+| The batch saved and read back | Kind `thermal`, every node, the case; run table and plots as the Monte Carlo view shows them | Bitwise | Equal; the view lists the 6 runs with the node's tiles |
+| Template 34's Monte Carlo, 20 runs from seed 34 (`tests/test_template_claims.py`) | The same 20 runs again | Bitwise | Identical; the battery above 30 degC in 4 runs |
+
+Flexible arrays as nodes (`tests/test_thermal_arrays.py`, no Basilisk;
+T-37):
+
+| Case | Reference | Tolerance | Result |
+|---|---|---|---|
+| A 2 m x 1 m wing: its two faces | Area span x width each, normals +-n, centre half a span from the hinge; at 30 deg initial deflection the normal `cos 30 n - sin 30 e` | 1e-9 | Equal |
+| The normals at +90 deg | The tip along n and the cells facing -e, as Basilisk's hinge turns the panel (positive toward the cell side) | 1e-9 | Equal; the bus does not turn |
+| A recorded hinge angle swinging +-40 deg, inertial attitude, the Sun along +x | Sunlight on the cells `S cos(theta)` | 2e-4 relative (the Sun's parallax) | 9.9e-5 at most; the back unlit |
+| The same: the planetary infrared | The plate-to-sphere view factor at the turned normal | 1e-3 relative | Within |
+| A run without the record | The initial deflection, with a warning | | As expected |
+| A deflection of 35 deg held all along | The same wing built at 35 deg, no record: temperatures over two orbits | 1e-9 K | Within |
+| Template 34's run (`tests/test_template_claims.py`) | The hinge angles recorded and used (no warning); three cases periodic, balance 2e-4 of the throughput, step check 0.25-0.27 K at 5 s | 1e-3, 0.5 K | The hinges move by less than 0.01 deg; wings -46 to 88 degC, bus 14 to 18 degC, battery 24 to 28 degC |
+
 ## Sources not reachable or not usable
 
 - SATMO (arXiv 2512.07896): the network policy of the build environment
   refused the host, so its cases could not be reproduced (T-18).
 - The TU Delft thermal tool: its repository has no licence, so neither
   its code nor its cases are used (T-19).
+- NIST's cryogenic material property fits (trc.nist.gov): the network
+  refused the host, so the library has no conductivity or specific-heat
+  tables from them, and template 34 carries none (T-38, T-39).
