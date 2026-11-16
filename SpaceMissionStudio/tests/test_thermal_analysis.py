@@ -25,6 +25,7 @@ sized; the record and the CSV tables carry their provenance; the CLI
 generates a model and solves it."""
 
 import json
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -154,6 +155,13 @@ def test_the_record_and_tables_carry_provenance(solved, tmp_path):
     assert {"thermal_summary.csv", "thermal_heat_flows.csv", "thermal_nominal_temperature.csv"} <= names
     assert all(p.with_suffix(p.suffix + ".provenance.json").exists() or
                (p.parent / (p.name + ".provenance.json")).exists() for p in written)
+    plotted = records.write_plots(analysis, tmp_path / "plots", record)
+    assert len(plotted) == 3 * (1 + len(analysis.cases[0].network.names))
+    for path in plotted:
+        root = ET.fromstring(path.read_text(encoding="utf-8"))
+        assert root.tag.endswith("svg") and root.findall(".//{http://www.w3.org/2000/svg}polyline")
+        assert (path.parent / (path.name + ".provenance.json")).exists()
+    assert "battery operating" not in (tmp_path / "plots" / "thermal_cold_temperature.svg").read_text()
 
 
 def test_the_cli_generates_a_model_and_solves_a_case(tmp_path, capsys):

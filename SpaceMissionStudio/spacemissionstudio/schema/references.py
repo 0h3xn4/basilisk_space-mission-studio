@@ -341,11 +341,12 @@ def _part_reference_sites(sc):
             sites.append((f"model.stowed {pose.part!r}", pose, "part"))
         for face in model.face_properties:
             sites.append((f"model.face_properties {face.part!r}: {face.face}", face, "part"))
-    if sc.thermal is not None:
-        for node in sc.thermal.nodes:
+    thermal = getattr(sc, "thermal", None)  # the model editor passes a stand-in with the model only
+    if thermal is not None:
+        for node in thermal.nodes:
             for k, part in enumerate(node.parts):
                 sites.append((f"thermal.nodes {node.name!r}.parts", _ListSlot(node.parts, k), "value"))
-        for entry in sc.thermal.faces:
+        for entry in thermal.faces:
             sites.append((f"thermal.faces {entry.name!r}", entry, "part"))
     return sites
 

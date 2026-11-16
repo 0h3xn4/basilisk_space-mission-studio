@@ -935,6 +935,7 @@ def cmd_thermal(args: argparse.Namespace) -> int:
                 folder = args.tables / sc.name if len(chosen) > 1 else args.tables
                 try:
                     paths = records.write_tables(done, folder, record)
+                    paths += records.write_plots(done, folder, record)
                 except OSError as exc:
                     print(f"ERROR: could not write {folder}: {exc}", file=sys.stderr)
                     return 3
@@ -2200,7 +2201,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_thermal.add_argument("--no-sizing", action="store_true", help="do not size the heaters (faster)")
     p_thermal.add_argument("--out", type=Path, metavar="JSON", help="write the record (one spacecraft)")
     p_thermal.add_argument("--tables", type=Path, metavar="DIR",
-                           help="write the tables and the temperature and heat-flow series as CSV, with provenance")
+                           help="write the tables and the temperature and heat-flow series as CSV and their plots "
+                           "as SVG, with provenance")
     p_thermal.add_argument("--generate", type=Path, metavar="OUT_JSON",
                            help="write the scenario with a thermal model generated from each 3D model; no run")
     p_thermal.add_argument("--replace", action="store_true", help="with --generate: replace an existing thermal model")

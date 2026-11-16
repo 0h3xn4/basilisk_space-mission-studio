@@ -64,6 +64,7 @@ from .time_cursor import TimeCursor, describe
 # Fixed categorical order, one slot per kind (the Results tab's series colours).
 KIND_SLOTS: dict[str, int] = {kind: index for index, kind in enumerate(event_model.KINDS)}
 MODEL_ANALYSES_BOX = "model analyses"  # one box for every kind of event_model.MODEL_KINDS
+THERMAL_BOX = "thermal"  # one box for every kind of event_model.THERMAL_KINDS
 
 
 def kind_colour(kind: str) -> str:
@@ -227,6 +228,8 @@ class GanttView(QWidget):
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setMinimumHeight(_AXIS_HEIGHT + 2 * _ROW_HEIGHT)
+        self._run_events: list[event_model.Event] = []
+        self._extra_events: list[event_model.Event] = []
         self.events: list[event_model.Event] = []
         self.rows: list[str] = []
         self.lanes: list[_Lane] = []
@@ -514,6 +517,14 @@ class EventTimelineWidget(QWidget):
         box.setVisible(False)
         controls.addWidget(box)
         self.kind_boxes[MODEL_ANALYSES_BOX] = box
+        # A thermal analysis's limit violations (Run › Thermal), shown once one is solved.
+        box = QCheckBox("Thermal limits")
+        box.setChecked(True)
+        box.setToolTip("Spans a thermal node is outside its operating or survival range (Run › Thermal)")
+        box.toggled.connect(self._apply_filter)
+        box.setVisible(False)
+        controls.addWidget(box)
+        self.kind_boxes[THERMAL_BOX] = box
         controls.addStretch(1)
         self.fit_button = QPushButton("Fit")
         self.fit_button.setToolTip("Show the whole run (0). The wheel or +/- zooms the timeline; Shift+wheel, the "
@@ -591,12 +602,26 @@ class EventTimelineWidget(QWidget):
 
     def set_result(self, result: ResultSet | None, epoch_utc: str | None = None) -> None:
         self._result, self._epoch_utc = result, epoch_utc
-        self.events = event_model.extract_events(result)
+        self._run_events = event_model.extract_events(result)
+        self._extra_events = []
+        self._show_events()
+
+    def set_extra_events(self, events: list) -> None:
+        """Events an analysis after the run adds (Run › Thermal's limit
+        violations); replaces the ones it added before."""
+        self._extra_events = list(events)
+        self._show_events()
+
+    def _show_events(self) -> None:
+        result = self._result
+        self.events = sorted(self._run_events + self._extra_events,
+                             key=lambda e: (e.start_s, e.kind, e.spacecraft, e.label))
         self._texts = [_event_text(event) for event in self.events]
         missing = event_model.missing_kinds(result) if result is not None else {}
         counts = {kind: sum(e.kind == kind for e in self.events)
-                  for kind in event_model.KINDS + event_model.MODEL_KINDS}
+                  for kind in event_model.KINDS + event_model.MODEL_KINDS + event_model.THERMAL_KINDS}
         self.kind_boxes[MODEL_ANALYSES_BOX].setVisible(any(counts[kind] for kind in event_model.MODEL_KINDS))
+        self.kind_boxes[THERMAL_BOX].setVisible(any(counts[kind] for kind in event_model.THERMAL_KINDS))
         if result is None:
             self.summary_label.setText("Run a scenario to see its passes, eclipses, burns and mode changes.")
         else:
@@ -625,6 +650,8 @@ class EventTimelineWidget(QWidget):
         shown = {kind for kind, box in self.kind_boxes.items() if box.isChecked()}
         if MODEL_ANALYSES_BOX in shown:
             shown |= set(event_model.MODEL_KINDS)
+        if THERMAL_BOX in shown:
+            shown |= set(event_model.THERMAL_KINDS)
         station = self.station_combo.currentText()
         words = self.search.text().lower().split()
         any_station = station in ("", _ALL_STATIONS)

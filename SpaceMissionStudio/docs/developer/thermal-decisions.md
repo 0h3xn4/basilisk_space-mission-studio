@@ -250,3 +250,36 @@ falsi after bracketing, each trial's orbit-periodic start warm-started
 from the previous trial's orbit; stops within 0.1 W or 1 mK above the
 setpoint. **Why:** bisection with a cold start took 9.2 s per heater and
 case on template 32; this takes 2.7 s with the same result (846.4 W).
+
+## T-31 Plots as SVG written by the app (2026-11-16)
+
+**Chosen:** `thermal/plots.py` writes the temperature and heat-flow plots
+as plain SVG text. Run › Thermal shows that SVG (`QSvgWidget`), Save
+SVG writes it, and Save PNG renders it with Qt's SVG renderer, so the
+screen and both exports are the same picture; `spacemissionstudio thermal
+--tables` writes the SVGs too. Lines keep each stride's minimum and
+maximum when a series has more than 1,500 samples, so no peak is lost.
+**Why:** the Results plots are Plotly in a web view; their PNG and SVG
+export needs the page loaded and an asynchronous render, which a command
+line run and a test cannot rely on. matplotlib is not a dependency.
+**Alternatives:** Plotly figures in a web view (no export without the
+page); matplotlib (a new dependency for two plots).
+
+## T-32 The thermal editor as tables (2026-11-16)
+
+**Chosen:** the spacecraft editor's 3D model tab gets a checkable Thermal
+model group: one table per kind of record (nodes, faces, conductors,
+heat pipes, radiative links, dissipation, heaters, cases) and one-row
+tables for the environment and the solver, all from one `RecordTable`
+that reads each column by its kind (number, optional number, names,
+range, JSON). Floats are written as their shortest exact text, so an
+unchanged table gives back the section exactly. Generate from the 3D
+model replaces the nodes, faces and conductors and keeps the rest; the
+Conductance button computes the selected conductor. Run › Thermal is a
+Run tab (beside End of Life, Budget and Design Checks), solved on a
+background thread on demand, as End of Life is. **Why:** the section
+has eleven kinds of records with up to twelve fields; a form per record
+would be large for little gain, and the JSON view edits the same
+section. **Alternatives:** a form per record (more code, slower to fill
+for 20 nodes); JSON only (no help for the conductor calculator and
+generation).

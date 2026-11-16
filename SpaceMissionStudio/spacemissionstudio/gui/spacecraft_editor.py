@@ -1772,7 +1772,8 @@ class SpacecraftEditorDialog(QDialog):
     _ORBIT_ONLY_GROUPS = (("power_group", True, True), ("momentum_dumping_group", True, True),
                           ("magnetic_momentum_management_group", True, True), ("fuel_tank_group", True, True),
                           ("comms_pointing_group", True, False), ("solar_array_group", False, True),
-                          ("facet_group", False, True), ("model_analyses_group", True, True))
+                          ("facet_group", False, True), ("model_analyses_group", True, True),
+                          ("thermal_group", True, True))
 
     def _apply_orbit_only(self) -> None:
         """Turn off and hide the groups orbit_only has no use for, in the
@@ -1899,6 +1900,9 @@ class SpacecraftEditorDialog(QDialog):
             widget = self.model_analyses_group.field_widget(parts[1].split("[")[0])
             if widget is not None:
                 return widget
+        if top == "thermal":
+            widget = self.thermal_group.field_widget(parts[1]) if len(parts) >= 2 else None
+            return widget if widget is not None else self.thermal_group
         prefix = _SECTION_PREFIXES.get(top, "")
         names = [_FIELD_WIDGETS.get(path), _FIELD_WIDGETS.get(top) if len(parts) == 1 else None,
                  prefix + leaf, leaf, leaf + "_check", leaf + "_combo", prefix + leaf + "_combo",
@@ -2134,6 +2138,7 @@ class SpacecraftEditorDialog(QDialog):
             fuel_tank=self._fuel_tank_to_dataclass(),
             propellant_budget=self.budget_group.to_config(),
             model_analyses=None if self._orbit_only else self.model_analyses_group.to_config(),
+            thermal=None if self._orbit_only else self.thermal_group.to_config(),
             enable_drag=self.enable_drag_check.isChecked(),
             drag_coeff=self.drag_coeff.value(),
             drag_area_m2=self.drag_area_m2.value(),
@@ -2207,6 +2212,13 @@ class SpacecraftEditorDialog(QDialog):
         config = self._init_config
         self.model_analyses_group = ModelAnalysesGroup(config.model_analyses if config else None)
         layout.addWidget(self.model_analyses_group)
+        from .thermal_editor import ThermalGroup
+
+        self.thermal_group = ThermalGroup(config.thermal if config else None,
+                                          lambda: SimpleNamespace(name=self.name_edit.text().strip(),
+                                                                  model=self._model),
+                                          self._base_dir)
+        layout.addWidget(self.thermal_group)
         layout.addStretch(1)
         self._refresh_model_tab()
 

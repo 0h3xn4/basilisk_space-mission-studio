@@ -115,3 +115,32 @@ def write_tables(analysis, folder, record_: dict) -> list[Path]:
                                                        series=series.name, spacecraft=record_["spacecraft"]))
             written.append(path)
     return written
+
+
+def write_plots(analysis, folder, record_: dict, png=None) -> list[Path]:
+    """Every case's temperature plot and each node's heat-flow plot as SVG
+    in ``folder`` (``thermal_<case>_temperature.svg``,
+    ``thermal_<case>_<node>_heat_flow.svg``), each with its provenance
+    sidecar; ``png(svg_text, path)``, when given, also writes each as PNG
+    (the GUI renders them with Qt). Returns the paths."""
+    from . import plots
+
+    folder = Path(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    written = []
+    for case in analysis.cases:
+        pictures = [(f"thermal_{case.name}_temperature", plots.temperature_svg(case))]
+        pictures += [(f"thermal_{case.name}_{node}_heat_flow", plots.heat_flow_svg(case, node))
+                     for node in case.network.names]
+        for stem, svg in pictures:
+            stem = stem.replace(" ", "_").replace("/", "_")
+            paths = [folder / f"{stem}.svg"]
+            paths[0].write_text(svg, encoding="utf-8")
+            if png is not None:
+                paths.append(folder / f"{stem}.png")
+                png(svg, paths[1])
+            for path in paths:
+                output_provenance.write_sidecar(path, dict(_plain(record_["provenance"]), kind=record_["kind"],
+                                                           plot=stem, spacecraft=record_["spacecraft"]))
+            written += paths
+    return written

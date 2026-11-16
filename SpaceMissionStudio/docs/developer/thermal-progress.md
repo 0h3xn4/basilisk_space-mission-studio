@@ -29,8 +29,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 6 | Checks and the shadowing warning | done |
 | 7 | Results, series, events, record, CSV | done |
 | 8 | `api.thermal`, CLI `thermal` | done |
-| 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | next |
-| 10 | V&V records (Phase 1) | |
+| 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | done |
+| 10 | V&V records (Phase 1) | next |
 | 11 | Template 33 (150 kg bus), claims, golden file | |
 | 12 | Documentation (Phase 1) | |
 | 13 | Library: conductivity, honeycomb, MLI, EOL optics where sourced | |
@@ -103,9 +103,18 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   when a scenario file loads. Tests: `test_thermal_checks.py`,
   `test_thermal_analysis.py` (a real run).
 
+- Step 9: `gui/thermal_editor.py` (the 3D model tab's Thermal model group,
+  a table per kind of record, Generate, Conductance; T-32),
+  `gui/thermal_widget.py` (Run › Thermal: Solve on a thread, summary,
+  SVG plots shown and saved as SVG and PNG, flows, heaters, radiators,
+  findings, Save with provenance; T-31), `thermal/plots.py`, Timeline
+  events added after the run (Thermal limits box), Run menu entry,
+  Reports › Exports row, `--tables` writes the plots. Tests:
+  `tests/gui/test_thermal_pages.py`; GUI suite 1847 passed.
+
 ## Next
 
-Step 9: the GUI.
+Step 10: V&V records.
 
 ## Known issues
 
