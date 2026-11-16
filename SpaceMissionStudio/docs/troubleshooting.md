@@ -187,7 +187,7 @@ folder, is refused the same way, with its own reason.
 |---|---|
 | `INFO ... Logging to ~/.spacemissionstudio/logs/...log` | Every command says where its log file is |
 | `INFO matplotlib.font_manager: ... generated new fontManager` | The first run builds a font cache, once |
-| `WARNING: space weather uses MSFC's prediction (oct2026f10-prd.txt), 50th percentile F10.7 and Ap` | The run is past the end of the observed space-weather record, so drag uses NASA MSFC's prediction |
+| `WARNING: space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap` | The run is past the end of the observed space-weather record, so drag uses NASA MSFC's prediction |
 | `WARNING: past 2041-10 MSFC's last 132 months repeat (ESA AD10 Sec. 5.9)` | A long lifetime estimate runs past MSFC's prediction; its last solar cycle is repeated |
 | `N: Download is performed unsandboxed as root, as file '.../spacemissionstudio_<version>_amd64.deb' couldn't be accessed by user '_apt'` | apt's notice when the `.deb` is in a folder its `_apt` user cannot read, such as your home folder. The install still succeeds. To avoid the notice, copy the `.deb` to `/tmp` and install it from there |
 

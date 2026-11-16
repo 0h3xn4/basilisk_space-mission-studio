@@ -216,7 +216,7 @@ Wrote 20 result file(s) to out:
   my-sat.velocity_N: out/my-sat.velocity_N.csv
   provenance: out/provenance.json
   events (19): out/events.csv
-WARNING: space weather uses MSFC's prediction (oct2026f10-prd.txt), 50th percentile F10.7 and Ap
+WARNING: space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap
 ```
 
 The `WARNING` is normal: the mission is in 2030, after the observed

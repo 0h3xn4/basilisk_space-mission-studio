@@ -527,7 +527,7 @@ class PropagationSetupDialog(QDialog):
         self.msfc_file_edit = QLineEdit(space_weather.msfc_file_path or "")
         self.msfc_file_edit.setPlaceholderText("(MSFC prediction shipped with the app)")
         self.msfc_file_edit.setToolTip(
-            "Your own NASA MSFC prediction table (e.g. oct2026f10-prd.txt), to keep a study on the "
+            "Your own NASA MSFC prediction table (e.g. nov2026f10-prd.txt), to keep a study on the "
             "file it started with. Empty: the one shipped with the app."
         )
         self.msfc_browse_button = QPushButton("Browse...")
