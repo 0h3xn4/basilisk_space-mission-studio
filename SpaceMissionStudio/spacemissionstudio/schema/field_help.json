@@ -342,6 +342,7 @@
   "ground_stations": "list[GroundStationConfig]",
   "imports": "list[ImportRecord]",
   "mission_sequence": "list[Command]",
+  "operations": "The operations planner's inputs (schema.operations.OperationsConfig; docs/developer/operations-planning-design.md); None, as every scenario before it, and then not written.",
   "presets": "list[PresetRecord]",
   "simulation_mode": "Chosen up front (the GUI's scenario editor puts it at the top of the form, \"before starting with anything else\" per the feature request this responds to): \"full_attitude\" (the default, and everything this schema always supported) simulates attitude/sensors/actuators/FSW/ power normally. \"orbit_only\" is a beginner-friendly, deliberately STRICTER mode for pure orbit-propagation questions (delta-V budgets, orbit lifetime, station-keeping cadence, ...) where attitude doesn't matter and modeling it is only friction: no spacecraft may set fsw_mode/sensors/actuators/power in this mode (Scenario.validate() rejects it with a specific error naming the offending spacecraft and field, same \"don't let something look configured that isn't\" honesty as everywhere else in this schema) -- the spacecraft is simulated as a cannonball with SpacecraftConfig.drag_area_m2/srp_area_m2 as its average cross-section. station_keeping/phasing_keeping/ constant_thrust remain available in EITHER mode: none of them need attitude knowledge (their thrust directions are prograde or orbit-frame-relative, not a commanded body axis).",
   "spacecraft": "list[SpacecraftConfig], >= 1 required",

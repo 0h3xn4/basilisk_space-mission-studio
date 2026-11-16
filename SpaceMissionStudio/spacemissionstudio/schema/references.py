@@ -172,6 +172,10 @@ def find_spacecraft_references(scenario: Scenario, name: str) -> list[Reference]
             refs.append(Reference(path=f"fsw_exports[{i}].spacecraft", resource_kind="spacecraft", name=name))
     refs.extend(r for r in _command_references(scenario.mission_sequence, "mission_sequence")
                 if r.resource_kind == "spacecraft" and r.name == name)
+    from . import operations  # local, as schema.scenario below
+
+    refs.extend(Reference(path=path, resource_kind="spacecraft", name=name)
+                for path in operations.references(getattr(scenario, "operations", None), "spacecraft", name))
     return refs
 
 
@@ -193,6 +197,10 @@ def find_ground_station_references(scenario: Scenario, name: str) -> list[Refere
             ))
     refs.extend(r for r in _command_references(scenario.mission_sequence, "mission_sequence")
                 if r.resource_kind == "ground_station" and r.name == name)
+    from . import operations  # local, as schema.scenario below
+
+    refs.extend(Reference(path=path, resource_kind="ground_station", name=name)
+                for path in operations.references(getattr(scenario, "operations", None), "ground_station", name))
     return refs
 
 
@@ -239,6 +247,9 @@ def rename_spacecraft(scenario: Scenario, old_name: str, new_name: str) -> int:
         if record.spacecraft == old_name:
             record.spacecraft = new_name
             updated += 1
+    from . import operations
+
+    updated += operations.rename(getattr(scenario, "operations", None), "spacecraft", old_name, new_name)
 
     target.name = new_name
     return updated
@@ -266,6 +277,9 @@ def rename_ground_station(scenario: Scenario, old_name: str, new_name: str) -> i
     from .scenario import rename_in_value_marks  # local: this module imports schema.scenario for types only
 
     updated += rename_in_value_marks(scenario.value_marks, "ground_stations", old_name, new_name)
+    from . import operations
+
+    updated += operations.rename(getattr(scenario, "operations", None), "ground_station", old_name, new_name)
 
     target.name = new_name
     return updated

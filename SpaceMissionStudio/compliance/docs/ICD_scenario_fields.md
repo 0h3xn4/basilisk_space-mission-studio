@@ -26,6 +26,7 @@ Top-level scenario object (the JSON file's root).
 | `value_marks` | list | `[]` | list[ValueMark] |
 | `presets` | list | `[]` | list[PresetRecord] |
 | `imports` | list | `[]` | list[ImportRecord] |
+| `operations` | operations_schema.OperationsConfig / None | `None` |  |
 
 ## ActuatorConfig
 

@@ -71,6 +71,7 @@ from typing import Any
 
 from ..engine.findings import Finding
 from .epochs import parse_epoch_utc
+from . import operations as operations_schema
 from . import thermal as thermal_schema
 from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
@@ -3635,6 +3636,10 @@ class Scenario:
     # The values read from a file, with the file's SHA-256 (ImportRecord,
     # Phase 8c); written only when there is one, as value_marks.
     imports: list = field(default_factory=list)  # list[ImportRecord]
+    # The operations planner's inputs (schema.operations.OperationsConfig;
+    # docs/developer/operations-planning-design.md); None, as every
+    # scenario before it, and then not written.
+    operations: operations_schema.OperationsConfig | None = None
 
     def _validate_small_body(self) -> None:
         """Checks for a run around a small body (``SMALL_BODY_CENTRAL_BODIES``)."""
@@ -3967,6 +3972,9 @@ class Scenario:
         order_errors = report_before_propagate_errors(self.mission_sequence)
         _require(not order_errors, "; ".join(order_errors))
         self._validate_sequence_time()
+        if self.operations is not None:
+            _require(isinstance(self.operations, operations_schema.OperationsConfig), "operations must be an object")
+            self.operations.validate(self)
         # local import: schema.references only imports schema.scenario
         # under TYPE_CHECKING (never at runtime), so this has no real
         # import cycle to avoid -- kept local anyway, matching
@@ -4031,6 +4039,10 @@ class Scenario:
         for record in data.get("imports", []):  # an import record's details: written only when set
             if not record.get("details"):
                 record.pop("details", None)
+        if data["operations"] is None:  # the same
+            del data["operations"]
+        else:
+            data["operations"] = operations_schema.compact(data["operations"])
         for sc in data["spacecraft"]:  # a mass properties file's path: written only when recorded (Phase 8c)
             mass = (sc.get("model") or {}).get("mass_properties")
             if mass is not None and not mass.get("source_path"):
@@ -4125,6 +4137,9 @@ class Scenario:
         value_marks = _records(ValueMark, data.pop("value_marks", []), "value_marks")
         presets = _records(PresetRecord, data.pop("presets", []), "presets")
         imports = _records(ImportRecord, data.pop("imports", []), "imports")
+        if data.get("operations") is not None:
+            data["operations"] = operations_schema.from_dict(data["operations"], "operations", _record, _records,
+                                                             _fields_of)
 
         data.update(gravity=gravity, sim_settings=sim_settings, space_weather=space_weather,
                     ground_stations=ground_stations, spacecraft=spacecraft, monte_carlo=monte_carlo,

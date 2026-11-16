@@ -600,8 +600,12 @@ class SimulationService:
     """
 
     def __init__(self, scenario: Scenario, simulation_class: type | None = None,
-                 model_base_dir: str | None = None):
+                 model_base_dir: str | None = None, record_orientation: bool = False):
         self.scenario = scenario
+        # Record the central body's and the Sun's positions and the central
+        # body's orientation even when no thermal model or operations
+        # section asks (the operations planner's propagation, O-03/O-04).
+        self.record_orientation = record_orientation
         # The folder a 3D model's relative mesh paths are read from (the
         # app's or the command line's scenario folder); None: the scenario
         # file's own (see _model_base_dir).
@@ -965,7 +969,10 @@ class SimulationService:
         analyses = any(_runs_model_analyses(sc) for sc in scenario.spacecraft)
         # The thermal analysis after the run (thermal/): the central body's and the Sun's
         # positions, and the central body's orientation (decision T-16).
-        self._records_orientation = any(sc.thermal is not None for sc in scenario.spacecraft)
+        # The operations planner (operations/) takes the same from a run (decision O-04).
+        self._records_orientation = (any(sc.thermal is not None for sc in scenario.spacecraft)
+                                     or getattr(scenario, "operations", None) is not None
+                                     or self.record_orientation)
         if analyses or self._records_orientation:
             sources = {f"ephemeris.{body}": self._planet_state_out_msgs[body]
                        for body in dict.fromkeys((gravity.central_body, "sun", "moon"))
