@@ -383,4 +383,3 @@ class ThermalWidget(QWidget):
                                                    plot=path.stem, spacecraft=record["spacecraft"]))
         export_log.record("thermal", path)
         return path
-
