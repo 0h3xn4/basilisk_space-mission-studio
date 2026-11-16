@@ -1912,8 +1912,8 @@ def build_34_microsat_flexible_thermal() -> Scenario:
         epoch_utc=_STARTER_EPOCH_UTC,
         simulation_mode="full_attitude",
         gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
-        sim_settings=SimSettings(duration_days=0.15, dynamics_task_rate_s=0.5, integrator="rkf78",
-                                 record_interval_s=30.0),  # [day], [s], [s]
+        # Recorded every 0.5 s step: slower sampling would alias the wings' 0.8 Hz flexing.
+        sim_settings=SimSettings(duration_days=0.15, dynamics_task_rate_s=0.5, integrator="rkf78"),  # [day], [s]
         space_weather=_real_space_weather(),
         spacecraft=[spacecraft],
     )

@@ -4769,7 +4769,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_32_the_design_checks_find_the_array_in_the_tracker_s_view_and_the_plume` | Template 32's design checks: the +y array takes about 5.5 % of the star tracker's 20 deg view (looking 10 deg below the arrays' plane) and about 9.4 % of the station-keeping nozzle's 15 deg plume, both only deployed; the | - | integration |
 | `test_32_the_run_records_the_disturbances_and_the_arrays_shading` | One orbit: the gravity gradient dominates, at most 8.0e-5 N*m, under its analytical worst case 8.5e-5 N*m; about 0.2 N*m*s builds up about z in the orbit, far below the 12 N*m*s wheels; the arrays give up to about 1.37 k | - | integration |
 | `test_33_the_thermal_cases_keep_the_bus_warm_and_safe_mode_needs_the_heater` | Template 33's thermal model on its run: every case orbit-periodic, its energy balance closed to 1e-3 and changing by less than 0.5 K with half the step; the MLI-covered bus at 11 to 14.6 degC in the nominal, hot and cold | - | integration |
-| `test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery` | Template 34's flexible wings as thermal nodes: the run records each hinge angle (within 0.01 deg after the Sun-safe turn), the cases are orbit-periodic with their energy balance closed and a step check under 0.5 K, each  | - | integration |
+| `test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery` | Template 34's flexible wings as thermal nodes: the run records each hinge angle (0.012 deg at most, in the Sun-safe turn), the cases are orbit-periodic with their energy balance closed and a step check under 0.5 K, each  | - | integration |
 
 ### `tests/test_thermal_analysis.py`
 

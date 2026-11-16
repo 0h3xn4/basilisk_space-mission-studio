@@ -574,7 +574,7 @@ def test_33_the_thermal_cases_keep_the_bus_warm_and_safe_mode_needs_the_heater()
 
 def test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery():
     """Template 34's flexible wings as thermal nodes: the run records each
-    hinge angle (within 0.01 deg after the Sun-safe turn), the cases are
+    hinge angle (0.012 deg at most, in the Sun-safe turn), the cases are
     orbit-periodic with their energy balance closed and a step check under
     0.5 K, each wing swings between about -46 and 88 degC, the bus stays at
     13.5 to 18.5 degC and the battery at 24 to 28.5 degC; the hot case's
@@ -588,7 +588,7 @@ def test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery
     result = _run(scenario)
     for wing in ("wing-1", "wing-2"):
         deflection = np.degrees(np.asarray(result.series[f"microsat-2.solar_array.{wing}.deflection"].data))
-        assert 0.0 < np.abs(deflection).max() < 0.01
+        assert 0.005 < np.abs(deflection).max() < 0.02
     analysis = api.thermal(scenario, result)
     assert not analysis.prepared.warnings  # the deflections were recorded and used
     by = {c.name: {n.name: n for n in c.summary} for c in analysis.cases}

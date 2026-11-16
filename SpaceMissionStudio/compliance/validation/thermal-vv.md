@@ -106,7 +106,7 @@ T-37):
 | The same: the planetary infrared | The plate-to-sphere view factor at the turned normal | 1e-3 relative | Within |
 | A run without the record | The initial deflection, with a warning | | As expected |
 | A deflection of 35 deg held all along | The same wing built at 35 deg, no record: temperatures over two orbits | 1e-9 K | Within |
-| Template 34's run (`tests/test_template_claims.py`) | The hinge angles recorded and used (no warning); three cases periodic, balance 2e-4 of the throughput, step check 0.25-0.27 K at 5 s | 1e-3, 0.5 K | The hinges move by less than 0.01 deg; wings -46 to 88 degC, bus 14 to 18 degC, battery 24 to 28 degC |
+| Template 34's run (`tests/test_template_claims.py`) | The hinge angles recorded and used (no warning); three cases periodic, balance 2e-4 of the throughput, step check 0.28-0.30 K at 5 s, recorded every 0.5 s | 1e-3, 0.5 K | The hinges move by 0.012 deg at most; wings -46 to 88 degC, bus 14 to 18 degC, battery 24 to 28 degC |
 
 ## Sources not reachable or not usable
 

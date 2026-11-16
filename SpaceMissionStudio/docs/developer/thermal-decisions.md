@@ -460,7 +460,8 @@ measured in `tests/test_template_claims.py`. **Not in it:** a
 specific-heat or conductivity table, because no source this project
 could read gives one for its materials (T-38); the tables are verified on
 analytic cases instead (`tests/test_thermal_tables.py`). **What it
-shows:** the hinge angle the run records moves by less than 0.01 deg
-after the Sun-safe turn, so the turning faces change the fluxes by a
+shows:** the hinge angle the run records moves by 0.012 deg at most
+in the Sun-safe turn (recorded every 0.5 s step: sampling at 30 s would
+alias the 0.8 Hz mode, and the scenario explainer flags it), so the turning faces change the fluxes by a
 negligible amount; the machinery is exercised end to end, and the
 Monte Carlo finds the battery above its 30 degC limit in 4 of 20 runs.
