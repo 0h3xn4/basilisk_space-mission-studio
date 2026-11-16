@@ -464,6 +464,13 @@ with 2.8.0's code on the 34 templates as 2.9.0 saves them: 32 open with
 no message, 33 and 34 refused). The space weather was not refreshed:
 CelesTrak reset all three connections, so 2.9.0 carries 2.8.0's file
 (observations to 2026-11-14).
+It was published on 2026-11-16 at 19:03 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 38): the tag workflow
+([run 43930553885](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930553885)) passed the release
+check on `8646823`, #266's merge, and tagged it at 18:37; the release
+workflow ([run 43930715195](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930715195)) built, installed
+and checked every file, attached the eleven and published the release 26
+minutes later. It was never a public release without files.
 
 ---
 
