@@ -109,9 +109,30 @@ class Network:
     initial_k: np.ndarray  # (m,) [K] NaN where not given
     unassigned: list[str] = field(default_factory=list)  # "part:face" of facets in no node
     conductance_tables: dict = field(default_factory=dict)  # conductor index -> (ThermalConductorConfig, materials)
+    capacitance_tables: dict = field(default_factory=dict)  # node index -> (mass [kg], (k, 2) [[K, J/(kg*K)]])
 
     def index(self, name: str) -> int:
         return self.names.index(name)
+
+    def heat_capacity(self, temperatures_k: np.ndarray) -> np.ndarray:
+        """``C(T)`` [J/K] per node: the constant one, or mass times the
+        specific-heat table at the node's temperature (held beyond its
+        ends)."""
+        if not self.capacitance_tables:
+            return self.capacitance_j_k
+        out = self.capacitance_j_k.copy()
+        for i, (mass, rows) in self.capacitance_tables.items():
+            out[i] = mass * float(np.interp(temperatures_k[i], rows[:, 0], rows[:, 1]))
+        return out
+
+    def enthalpy(self, temperatures_k: np.ndarray) -> np.ndarray:
+        """``H(T)`` [J] per node, ``C T`` for a constant capacity and the
+        exact integral of mass times the piecewise-linear specific heat
+        from 0 K otherwise (an offset that cancels in every difference)."""
+        out = self.capacitance_j_k * temperatures_k
+        for i, (mass, rows) in self.capacitance_tables.items():
+            out[i] = mass * _integral(rows, float(temperatures_k[i]))
+        return out
 
     def conductance_matrix(self, temperatures_k: np.ndarray | None = None) -> np.ndarray:
         """``K`` (m, m): ``K @ T`` is the net conducted heat into each node
@@ -130,6 +151,21 @@ class Network:
             k[link.i, link.j] += g
             k[link.j, link.i] += g
         return k
+
+
+def _integral(rows: np.ndarray, upper: float) -> float:
+    """``integral from 0 to upper`` of the table (linear between rows,
+    constant beyond its ends)."""
+    x, y = rows[:, 0], rows[:, 1]
+    if upper <= x[0]:
+        return y[0] * upper
+    total = y[0] * x[0]
+    for k in range(len(x) - 1):
+        if upper <= x[k + 1]:
+            value = y[k] + (y[k + 1] - y[k]) * (upper - x[k]) / (x[k + 1] - x[k])
+            return total + 0.5 * (y[k] + value) * (upper - x[k])
+        total += 0.5 * (y[k] + y[k + 1]) * (x[k + 1] - x[k])
+    return total + y[-1] * (upper - x[-1])
 
 
 def _material_optics(name: str, materials) -> tuple[float | None, float | None]:
@@ -213,9 +249,20 @@ def build(spacecraft, thermal, geometry) -> Network:
         raise ThermalModelError(f"{spacecraft.name}: faces without absorptance and emissivity: {shown} -- give them "
                                 "a coating or values in the thermal model's faces, or a material in the 3D model")
 
-    capacitance, how = [], []
+    capacitance, how, cp_tables = [], [], {}
     default_cp = library.default_specific_heat()
     for node in thermal.nodes:
+        if node.specific_heat_table is not None:
+            mass = node.mass_kg if node.mass_kg is not None else sum(parts[p].mass_kg for p in node.parts
+                                                                      if p in parts)
+            if mass <= 0.0:
+                raise ThermalModelError(f"{spacecraft.name}: node {node.name!r} has a specific_heat_table and no mass")
+            rows = np.array(node.specific_heat_table, dtype=float)
+            rows[:, 0] += ZERO_C_K
+            cp_tables[len(capacitance)] = (float(mass), rows)
+            capacitance.append(float(mass * np.interp(ZERO_C_K + 20.0, rows[:, 0], rows[:, 1])))
+            how.append(f"{mass:.4g} kg x a specific-heat table ({len(rows)} rows; at 20 degC shown)")
+            continue
         if node.capacitance_j_k is not None:
             capacitance.append(float(node.capacitance_j_k))
             how.append("given")
@@ -266,4 +313,4 @@ def build(spacecraft, thermal, geometry) -> Network:
     initial = np.array([np.nan if n.initial_c is None else n.initial_c + ZERO_C_K for n in thermal.nodes])
     return Network(names, np.array(capacitance), how, facets, links, pipes, radiative, dissipation, dissipations,
                    heaters, [limits(n.operating_c) for n in thermal.nodes],
-                   [limits(n.survival_c) for n in thermal.nodes], initial, unassigned, tables)
+                   [limits(n.survival_c) for n in thermal.nodes], initial, unassigned, tables, cp_tables)

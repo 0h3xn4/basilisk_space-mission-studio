@@ -183,17 +183,24 @@ def _heater_power(network: Network, on: np.ndarray, fixed: dict | None) -> np.nd
 
 
 def _newton(network: Network, base: np.ndarray, guess: np.ndarray, source: np.ndarray, k_matrix: np.ndarray,
-            c_over_dt: np.ndarray, emission: np.ndarray, where: str) -> np.ndarray:
+            c_over_dt: np.ndarray, emission: np.ndarray, where: str, factor: float = 0.0,
+            enthalpy_base: np.ndarray | None = None) -> np.ndarray:
     """Solve ``c_over_dt (T - base) = source - E T^4 + K T + R(T)`` from
-    ``guess`` (with ``c_over_dt`` zero: the steady state)."""
+    ``guess`` (with ``c_over_dt`` zero: the steady state); with
+    ``enthalpy_base`` (a node with a specific-heat table), the storage term
+    is ``factor (H(T) - enthalpy_base)`` instead, ``dH/dT = C(T)``."""
     t = guess.copy()
     diagonal = np.diag_indices(len(t))
     links = bool(network.links)
     for _ in range(_NEWTON_ITERATIONS):
         t3 = t * t * t
-        residual = c_over_dt * (t - base) - (source - emission * t3 * t + k_matrix @ t)
+        if enthalpy_base is None:
+            storage, storage_jac = c_over_dt * (t - base), c_over_dt
+        else:
+            storage, storage_jac = factor * (network.enthalpy(t) - enthalpy_base), factor * network.heat_capacity(t)
+        residual = storage - (source - emission * t3 * t + k_matrix @ t)
         jac = -k_matrix
-        jac[diagonal] += c_over_dt + 4.0 * emission * t3
+        jac[diagonal] += storage_jac + 4.0 * emission * t3
         if links:
             rad, rad_jac = _radiation(network, t)
             residual -= rad
@@ -253,9 +260,19 @@ def integrate(network: Network, loads_: Loads, times: np.ndarray, start_k: np.nd
             a0 = (1.0 + 2.0 * w) / (1.0 + w)
             base = ((1.0 + w) * previous - w * w / (1.0 + w) * temperature[step - 2]) / a0
         guess = previous if step == 1 else np.maximum(2.0 * previous - temperature[step - 2], _FLOOR_K)
+        enthalpy_base = None
+        if network.capacitance_tables:  # BDF2 on the enthalpy: the same combination of earlier states
+            if step == 1 and before is not None:
+                enthalpy_base = ((1.0 + w) * network.enthalpy(previous)
+                                 - w * w / (1.0 + w) * network.enthalpy(before[0])) / a0
+            elif step == 1:
+                enthalpy_base = network.enthalpy(previous)
+            else:
+                enthalpy_base = ((1.0 + w) * network.enthalpy(previous)
+                                 - w * w / (1.0 + w) * network.enthalpy(temperature[step - 2])) / a0
         temperature[step] = _newton(network, base, guess, source, k_cond + k_pipes,
                                     a0 * network.capacitance_j_k / dt, loads_.emission_w_k4,
-                                    f"step to t = {times[step]:.0f} s")
+                                    f"step to t = {times[step]:.0f} s", a0 / dt, enthalpy_base)
         heater_history[step] = on
         pipe_history[step] = pipes_on
     return Integration(times, temperature, heater_history, pipe_history)
@@ -417,7 +434,7 @@ def energy_balance(network: Network, loads_: Loads, run: Integration,
     (absorbed, dissipated and heater heat less emission; internal
     exchanges cancel); throughput is all the heat that came in. Heater
     power is constant over each step, as the solver applies it."""
-    stored = float(network.capacitance_j_k @ (run.temperature_k[-1] - run.temperature_k[0]))
+    stored = float(np.sum(network.enthalpy(run.temperature_k[-1]) - network.enthalpy(run.temperature_k[0])))
     dt = np.diff(run.time_s)
     absorbed = loads_.at(run.time_s).sum(axis=1) + network.dissipation_w.sum()
     emitted = (loads_.emission_w_k4 * run.temperature_k ** 4).sum(axis=1)

@@ -97,7 +97,8 @@ class ThermalNodeConfig:
     node with none is internal. The capacity is ``capacitance_j_k``, or
     ``mass_kg`` (else its parts' mass) times ``specific_heat_j_kg_k``
     (else its ``material``'s, else its parts' material's, else
-    aluminium's, T-05)."""
+    aluminium's, T-05), or that mass times a ``specific_heat_table`` of
+    temperature (Phase 2: the solver then integrates the enthalpy)."""
 
     name: str
     parts: list = field(default_factory=list)  # names of the model's parts
@@ -105,12 +106,18 @@ class ThermalNodeConfig:
     mass_kg: float | None = None  # [kg]
     specific_heat_j_kg_k: float | None = None  # [J/(kg*K)]
     material: str = ""  # a library or model material, for its specific heat
+    specific_heat_table: list | None = None  # [[degC, J/(kg*K)], ...] temperature-dependent (Phase 2)
     operating_c: list | None = None  # [degC] [lowest, highest]
     survival_c: list | None = None  # [degC] [lowest, highest]
     initial_c: float | None = None  # [degC] for start "fixed"
 
     def validate(self, where: str) -> None:
         _name(self.name, where, "node")
+        if self.specific_heat_table is not None:
+            _table(self.specific_heat_table, f"{where}: node {self.name!r}", "specific_heat_table")
+            _require(self.capacitance_j_k is None and self.specific_heat_j_kg_k is None,
+                     f"{where}: node {self.name!r}: give specific_heat_table, or capacitance_j_k or "
+                     "specific_heat_j_kg_k, not both")
         where = f"{where}: node {self.name!r}"
         _require(isinstance(self.parts, list) and all(isinstance(p, str) and p for p in self.parts)
                  and len(set(self.parts)) == len(self.parts), f"{where}: parts must be a list of distinct part names")

@@ -57,7 +57,8 @@ from .widgets import TabWidget
 # "R?" a range "low, high" or blank, "R" a range, "J" JSON or blank.
 _NODE = (("name", "Name", "s"), ("parts", "Parts", "L"), ("capacitance_j_k", "Capacitance [J/K]", "f?"),
          ("mass_kg", "Mass [kg]", "f?"), ("specific_heat_j_kg_k", "Specific heat [J/(kg·K)]", "f?"),
-         ("material", "Material", "s"), ("operating_c", "Operating [°C]", "R?"),
+         ("material", "Material", "s"), ("specific_heat_table", "cp table [[°C, J/(kg·K)], ...]", "J"),
+         ("operating_c", "Operating [°C]", "R?"),
          ("survival_c", "Survival [°C]", "R?"), ("initial_c", "Initial [°C]", "f?"))
 _FACE = (("part", "Part", "s"), ("face", "Face", "s"), ("node", "Node", "s"), ("coating", "Coating", "s"),
          ("absorptance", "Absorptance", "f?"), ("emissivity", "Emissivity", "f?"),

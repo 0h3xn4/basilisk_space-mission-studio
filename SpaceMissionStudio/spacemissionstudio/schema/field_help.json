@@ -470,6 +470,7 @@
   "operating_c": "[degC] [lowest, highest]",
   "parts": "names of the model's parts",
   "specific_heat_j_kg_k": "[J/(kg*K)]",
+  "specific_heat_table": "[[degC, J/(kg*K)], ...] temperature-dependent (Phase 2)",
   "survival_c": "[degC] [lowest, highest]"
  },
  "ThermalRadiativeLinkConfig": {

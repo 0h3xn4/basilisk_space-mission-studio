@@ -338,3 +338,18 @@ on isolators, as it usually does; template 33 shows it. **Alternatives:**
 Newton shooting with a finite-difference Jacobian (one orbit per node
 per iteration, and unreliable across thermostat switching); a longer run
 (days of orbits for every case and every heater-sizing trial).
+
+## T-35 Temperature-dependent specific heat: BDF2 on the enthalpy (2026-11-16)
+
+**Chosen:** a node may give `specific_heat_table` ([[degC, J/(kg K)],
+...], linear between rows, held beyond its ends) with a mass instead of
+a constant. The solver then writes BDF2 on the node's enthalpy,
+`H(T) = m integral cp dT` (exact for the piecewise-linear table), with
+`dH/dT = C(T)` in Newton's Jacobian, so the heat stored is conserved and
+nothing is lagged; the energy balance compares enthalpy changes. A node
+without a table keeps `C T`, so a model without tables solves exactly as
+before. Conductivity tables (on `material` conductors) are evaluated at
+the mean of the two nodes at the start of each step, as before. **Why:**
+lagging `C` would leave a first-order error in the stored heat that the
+energy balance would show; the enthalpy form costs one table integral per
+node and Newton iteration.
