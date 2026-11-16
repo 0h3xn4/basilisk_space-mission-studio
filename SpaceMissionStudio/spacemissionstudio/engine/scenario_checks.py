@@ -179,6 +179,20 @@ def _earth_rotation_angle(epoch_utc: str, t):
                       + constants.IAU_EARTH_PRIME_MERIDIAN_RATE_DEG_DAY * (days_tdb + t / 86400.0))
 
 
+def orbit_elements(orbit, epoch_utc: str):
+    """``(a [m], e, i, raan, argp, mean anomaly [rad])`` of an orbit's
+    initial condition at ``epoch_utc``, or None when it is not a bound
+    Earth orbit; shared with the operations planner's analytic geometry
+    (decision O-03)."""
+    return _initial_elements(orbit, epoch_utc)
+
+
+def kepler_j2_positions(elements, t, with_j2: bool = True):
+    """Inertial positions [m] at times ``t`` [s] after the epoch, Kepler
+    with the J2 secular rates (:func:`predict_passes`'s propagator)."""
+    return _positions(elements, np.asarray(t, dtype=float), with_j2)
+
+
 def predict_passes(scenario, horizon_s: float | None = None) -> list[GroundPass] | None:
     """Passes above each station's minimum elevation, for every
     station/spacecraft pair, from t = 0 to ``horizon_s`` (default: the run,
