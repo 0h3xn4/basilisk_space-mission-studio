@@ -47,9 +47,11 @@ per mesh plane would not survive re-importing the mesh either.
 **Chosen:** "Generate from model" makes one node per part with mass;
 parts in the surface model are external (their faces, less
 `excluded_faces`), the others internal; a panel's two sides are two
-faces of one node. Equipment point masses are offered as internal nodes.
-The user merges, splits (moving faces to another node) and renames.
-**Why:** the brief.
+faces of one node. Parts with no mass and no outer faces are left out.
+The model's equipment point masses are not made nodes: they carry no
+geometry, and their mass is usually inside a part's already; the user
+adds a node for one when it matters. The user merges, splits (moving
+faces to another node) and renames. **Why:** the brief.
 
 ## T-05 Default specific heat (2026-11-16)
 
@@ -173,3 +175,27 @@ the presets would change templates 23 and 26 and their golden files.
 **Chosen:** new library fields (conductivity, end-of-life optics,
 honeycomb) are filled only where a source is in hand; others stay empty
 and the analysis says so. **Why:** the library's rule and the brief's.
+
+## T-25 Contacts from the meshes; internal parts mounted over their largest face (2026-11-16)
+
+**Chosen:** two parts touch where their outer triangles face each other
+(normals within about 1.8 deg of opposite) within 2 mm of one plane; the
+touching area is the exact overlap of those triangles (polygon clipping),
+and it is taken off both faces' radiating area. A part out of the surface
+model sits in the smallest surface part around its centre and is mounted
+over its largest flat face. **Alternatives:** contacts from bounding
+boxes (wrong for cylinders and rotated parts); asking the user for every
+mounting area. **Why:** exact for the model as drawn; an internal unit is
+usually bolted on its base, and the user can change the area.
+
+## T-26 Default contact coefficient: a measured bare bolted joint (2026-11-16)
+
+**Chosen:** 136 W/(m^2*K), from NASA GSFC's measurement of an 8 in x
+8 in electronics-box baseplate bolted dry (8 #8 bolts, 40 in-lb) to a
+cold plate in vacuum: 5.63 W/C (Steinfeld and Martins, "Interface
+Conductance Under a Real Electronics Box", TFAWS 2019, NTRS
+20190030287). The same test with 0.020 in of NuSil 2946 filler gave
+108.97 W/C (about 2640 W/(m^2*K)), offered as the filled-joint value.
+**Alternatives:** an unsourced handbook range. **Why:** a measured value
+for the kind of joint this size class has, cited; it is deliberately the
+conservative (dry) case.

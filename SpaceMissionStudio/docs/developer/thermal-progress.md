@@ -22,8 +22,8 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 |---|---|---|
 | 0 | Investigation, design, decision log, progress file | done |
 | 1 | Schema `thermal` section, validation, references, recording | done |
-| 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | next |
-| 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | |
+| 2 | Geometry: facets, contacts, shading screen; generation; conductor calculator | done |
+| 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | next |
 | 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | |
 | 5 | Cases, presets, overrides | |
 | 6 | Checks and the shadowing warning | |
@@ -57,9 +57,17 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   central body's orientation (`ephemeris.<body>.dcm_PN`) for a thermal
   spacecraft; `tests/test_thermal_schema.py`.
 
+- Step 2: `thermal/geometry.py` (facets from the derived model, contacts
+  with exact overlap and the covered area taken off each face,
+  enclosures, the shading screen by ray casting), `thermal/library.py`
+  (sourced optics, specific heat, the bare-joint coefficient T-26),
+  `thermal/conductors.py` (the calculator), `thermal/generate.py` (nodes
+  per part, contact and mounting conductors);
+  `tests/test_thermal_geometry.py`.
+
 ## Next
 
-Step 2.
+Step 3.
 
 ## Known issues
 
