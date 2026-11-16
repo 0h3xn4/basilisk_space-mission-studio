@@ -446,6 +446,13 @@ prediction is still not adopted (SRelD K-33). The CHANGELOG's heading
 carries 2026-11-16, the day of the tag, not the day it was prepared: the
 release check wants the tag's day, and the release pull request's CI and
 then `develop`'s take about two hours, past midnight UTC.
+It was published on 2026-11-16 at 00:35 UTC, the first release tagged and
+published from the Actions tab with **publish** on (SRelD issue 36): the
+tag workflow ([run 43778375893](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778375893)) passed the
+release check on `db58ba6`, #262's merge, and tagged it at 00:07; the
+release workflow ([run 43778461245](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43778461245)) built,
+installed and checked every file, attached the eleven and published the
+release 29 minutes later. It was never a public release without files.
 
 ---
 
