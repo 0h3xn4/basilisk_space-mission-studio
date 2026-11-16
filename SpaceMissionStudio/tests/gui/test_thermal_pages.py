@@ -34,8 +34,9 @@ from spacemissionstudio.gui import export_log
 from spacemissionstudio.gui.event_timeline_widget import THERMAL_BOX, EventTimelineWidget
 from spacemissionstudio.gui.thermal_editor import ThermalGroup
 from spacemissionstudio.schema import load_scenario
-from spacemissionstudio.schema.thermal import (ThermalCaseConfig, ThermalConductorConfig, ThermalDissipationConfig,
-                                               ThermalFaceConfig, ThermalHeaterConfig, ThermalHeatPipeConfig)
+from spacemissionstudio.schema.thermal import (ThermalCaseConfig, ThermalConductorConfig, ThermalDispersionConfig,
+                                               ThermalDissipationConfig, ThermalFaceConfig, ThermalHeaterConfig,
+                                               ThermalHeatPipeConfig, ThermalMonteCarloConfig)
 from spacemissionstudio.thermal import generate
 
 _TEMPLATE = Path(__file__).resolve().parents[2] / "spacemissionstudio" / "scenarios" / "templates" \
@@ -69,6 +70,9 @@ def test_the_group_round_trips_the_section_exactly(qtbot):
     thermal = _thermal(sc)
     thermal.solver.time_step_s = 20.0
     thermal.environment.albedo_model = "average"
+    thermal.monte_carlo = ThermalMonteCarloConfig(20, 3, "cold", [ThermalDispersionConfig(
+        "faces[array +y:-z].emissivity", 0.05, "uniform"), ThermalDispersionConfig("heaters[battery-heater].power_w",
+                                                                                    0.1, relative=True)])
     group = ThermalGroup(copy.deepcopy(thermal))
     qtbot.addWidget(group)
     assert group.to_config() == thermal
@@ -151,7 +155,7 @@ def test_the_timeline_shows_thermal_limit_events_added_after_the_run(qtbot):
 
 
 @pytest.mark.slow
-def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path):
+def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path, monkeypatch):
     """Template 32 run for 0.1 days with its thermal model: Solve (no
     sizing) fills the summary for nominal, hot and cold, the plots, the
     heaters and flows; the battery's limit events reach the Timeline; Save
@@ -199,6 +203,27 @@ def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path):
     assert export_log.last("thermal")[1].endswith("out")
     png = widget.save_plot(tmp_path / "plot.png", "png")
     assert png.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+    # Studies on the case shown: a sweep, a sensitivity (one parameter), a Monte Carlo into the Monte Carlo view.
+    widget.case_combo.setCurrentText("cold")
+    widget.sweep_path.setText("faces[battery].emissivity")
+    widget.sweep_values.setText("0.5, 0.9")
+    widget.run_sweep()
+    qtbot.waitUntil(lambda: widget._study_worker is None and not widget.study_table.isHidden(), timeout=120000)
+    assert widget.study_table.row_count() == 2 and widget.study_label.text().startswith("Sweep of faces[battery]")
+    monkeypatch.setattr("spacemissionstudio.thermal.sweeps.default_parameters",
+                        lambda thermal: ["dissipations[battery-loss].power_w"])
+    widget.run_sensitivity()
+    qtbot.waitUntil(lambda: widget._study_worker is None and "Sensitivity" in widget.study_label.text(),
+                    timeout=120000)
+    assert widget.study_table.row_count() == 1
+    assert not widget.monte_carlo_button.isEnabled()  # no monte_carlo section
+    sc.thermal.monte_carlo = ThermalMonteCarloConfig(3, 1, "nominal", [ThermalDispersionConfig(
+        "dissipations[battery-loss].power_w", 1.0)])
+    saved = []
+    widget.monte_carlo_saved.connect(saved.append)
+    widget.run_monte_carlo(tmp_path / "mc")
+    qtbot.waitUntil(lambda: widget._study_worker is None and bool(saved), timeout=120000)
+    assert saved == [str(tmp_path / "mc")] and (tmp_path / "mc" / "batch_results.json").exists()
     widget.set_run(None, None)
     assert timeline.events == [e for e in timeline.events if e.kind != THERMAL_LIMIT]
 

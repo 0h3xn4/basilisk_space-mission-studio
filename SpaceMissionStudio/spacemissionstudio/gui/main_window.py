@@ -328,6 +328,7 @@ class MainWindow(QMainWindow):
         self.thermal_scroll.setWidgetResizable(True)
         self.thermal_scroll.setWidget(self.thermal_widget)
         self.thermal_widget.events_changed.connect(self.event_timeline_widget.set_extra_events)
+        self.thermal_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
         self.scenario_editor.navigate_requested.connect(self._on_guide_navigate)
 
         # Results: the run's overview, the plots, the dashboard, the mission
@@ -1635,6 +1636,11 @@ class MainWindow(QMainWindow):
                 self.results_views.addTab(self.model_analyses_scroll, "Model Analyses")
         elif index >= 0:
             self.results_views.removeTab(index)
+
+    def _show_thermal_monte_carlo(self, folder: str) -> None:
+        """A thermal Monte Carlo saved from Run › Thermal: shown in the Monte Carlo view."""
+        if self.monte_carlo_results_widget.load_folder(folder):
+            self._show_monte_carlo_tab()
 
     def _show_monte_carlo_tab(self) -> None:
         self._set_monte_carlo_tab(True)

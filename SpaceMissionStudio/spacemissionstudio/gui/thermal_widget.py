@@ -35,10 +35,12 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QCheckBox,
+    QCompleter,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -111,10 +113,28 @@ class _ThermalWorker(QThread):
             self.failed.emit(f"thermal analysis failed: {exc}")
 
 
+class _StudyWorker(QThread):
+    """A sweep, a sensitivity or a Monte Carlo (thermal.sweeps) off the GUI thread."""
+
+    finished_ok = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, job, parent=None):
+        super().__init__(parent)
+        self._job = job
+
+    def run(self) -> None:
+        try:
+            self.finished_ok.emit(self._job())
+        except (Exception, SystemExit) as exc:  # noqa: BLE001 -- shown on the page, never a crashed thread
+            self.failed.emit(str(exc))
+
+
 class ThermalWidget(QWidget):
     """Run › Thermal."""
 
     events_changed = Signal(list)  # the thermal limit events of the analysis shown (engine.events.Event)
+    monte_carlo_saved = Signal(str)  # the folder a thermal Monte Carlo was saved in (the Monte Carlo view opens it)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -190,10 +210,52 @@ class ThermalWidget(QWidget):
             QVBoxLayout(group).addWidget(table)
             layout.addWidget(group)
             self.tables[key] = (group, table)
+        self._build_studies(layout)
         self.notes_list = NoteList("note")
         layout.addWidget(self.notes_list)
         layout.addStretch(1)
+        self._study_worker: _StudyWorker | None = None
         self._clear()
+
+    def _build_studies(self, layout) -> None:
+        """Sweeps, sensitivity and the thermal Monte Carlo of the case shown
+        (thermal.sweeps, T-36): solved on the same fluxes, no new run."""
+        self.studies_group = QGroupBox("Studies on the case shown")
+        studies = QVBoxLayout(self.studies_group)
+        row = QHBoxLayout()
+        row.addWidget(QLabel("Parameter"))
+        self.sweep_path = QLineEdit()
+        self.sweep_path.setPlaceholderText("faces[radiator].absorptance")
+        self.sweep_path.setToolTip("A parameter of the thermal model by its path, as in a case's overrides")
+        row.addWidget(self.sweep_path, 2)
+        row.addWidget(QLabel("Values"))
+        self.sweep_values = QLineEdit()
+        self.sweep_values.setPlaceholderText("0.1, 0.2, 0.3")
+        row.addWidget(self.sweep_values, 1)
+        self.sweep_button = QPushButton("Sweep")
+        self.sweep_button.setToolTip("Solve the case at each value")
+        self.sweep_button.clicked.connect(self.run_sweep)
+        row.addWidget(self.sweep_button)
+        studies.addLayout(row)
+        row = QHBoxLayout()
+        self.sensitivity_button = QPushButton("Sensitivity")
+        self.sensitivity_button.setToolTip("Move each optic, conductance, dissipation, heater power, the sunlight and "
+                                           "the infrared 10 % up and down, one at a time, and rank their effect")
+        self.sensitivity_button.clicked.connect(self.run_sensitivity)
+        row.addWidget(self.sensitivity_button)
+        self.monte_carlo_button = QPushButton("Monte Carlo...")
+        self.monte_carlo_button.setToolTip("Run the thermal model's Monte Carlo (its monte_carlo section) and show "
+                                           "it in the Monte Carlo view")
+        self.monte_carlo_button.clicked.connect(self._monte_carlo_clicked)
+        row.addWidget(self.monte_carlo_button)
+        row.addStretch(1)
+        studies.addLayout(row)
+        self.study_label = set_role(QLabel(""), tone="secondary")
+        self.study_label.setWordWrap(True)
+        studies.addWidget(self.study_label)
+        self.study_table = DataTable()
+        studies.addWidget(self.study_table)
+        layout.addWidget(self.studies_group)
 
     @staticmethod
     def has_thermal(scenario) -> bool:
@@ -215,7 +277,8 @@ class ThermalWidget(QWidget):
         self.status_label.setText("Press Solve to solve the thermal cases on this run." if ready else
                                   "Run a scenario whose spacecraft has a thermal model (Spacecraft › 3D model › "
                                   "Thermal model) to solve it here.")
-        for widget in (self.summary_group, self.plot_group, *(group for group, _table in self.tables.values())):
+        for widget in (self.summary_group, self.plot_group, self.studies_group,
+                       *(group for group, _table in self.tables.values())):
             widget.setVisible(False)
         self.findings_list.set_notes([])
         self.notes_list.set_notes([])
@@ -240,8 +303,108 @@ class ThermalWidget(QWidget):
         self._worker.start()
 
     def wait_for_worker(self, timeout_ms: int = 300000) -> None:
-        if self._worker is not None:
-            self._worker.wait(timeout_ms)
+        for worker in (self._worker, self._study_worker):
+            if worker is not None:
+                worker.wait(timeout_ms)
+
+    # -- studies --------------------------------------------------------------
+
+    def _study(self, text: str, job, done) -> None:
+        if self._study_worker is not None or self.analysis is None:
+            return
+        self.study_label.setText(text)
+        for button in (self.sweep_button, self.sensitivity_button, self.monte_carlo_button):
+            button.setEnabled(False)
+        self._study_worker = _StudyWorker(job, self)
+        self._study_worker.finished_ok.connect(done)
+        self._study_worker.failed.connect(lambda message: self.study_label.setText(message))
+        self._study_worker.finished.connect(self._study_done)
+        self._study_worker.start()
+
+    def _study_done(self) -> None:
+        self._study_worker = None
+        self.sweep_button.setEnabled(True)
+        self.sensitivity_button.setEnabled(True)
+        self.monte_carlo_button.setEnabled(self.analysis is not None
+                                           and self.analysis.prepared.spacecraft.thermal.monte_carlo is not None)
+
+    def _case_config(self):
+        from ..thermal import cases as thermal_cases
+
+        name = self.case_combo.currentText()
+        return next(c for c in thermal_cases.cases_of(self.analysis.prepared.spacecraft.thermal) if c.name == name)
+
+    def run_sweep(self) -> None:
+        from ..thermal import sweeps
+
+        path = self.sweep_path.text().strip()
+        try:
+            values = [float(v) for v in self.sweep_values.text().replace(";", ",").split(",") if v.strip()]
+        except ValueError:
+            self.study_label.setText("Values: numbers separated by commas.")
+            return
+        if not path or not values:
+            self.study_label.setText("Give a parameter and its values.")
+            return
+        prepared, case = self.analysis.prepared, self._case_config()
+        self._study(f"Sweeping {path}...", lambda: sweeps.sweep(prepared, case, path, values),
+                    lambda points: self._show_sweep(path, case.name, points))
+
+    def _show_sweep(self, path: str, case: str, points) -> None:
+        nodes = [n.name for n in points[0].summary]
+        rows = [{"value": p.value, **{f"{n.name} min_c": n.min_c for n in p.summary},
+                 **{f"{n.name} max_c": n.max_c for n in p.summary}} for p in points]
+        columns = ["value"] + [f"{n} {e}_c" for n in nodes for e in ("min", "max")]
+        self._fill(self.study_table, [{c: r[c] for c in columns} for r in rows])
+        self.study_table.setVisible(True)
+        self.study_label.setText(f"Sweep of {path} in the {case} case: each node's extremes at each value.")
+
+    def run_sensitivity(self) -> None:
+        from ..thermal import sweeps
+
+        prepared, case = self.analysis.prepared, self._case_config()
+        self._study("Varying each parameter up and down by 10 %...",
+                    lambda: sweeps.sensitivity(prepared, case), lambda found: self._show_sensitivity(case.name, found))
+
+    def _show_sensitivity(self, case: str, found) -> None:
+        rows, notes = found
+        table = []
+        for row in rows:
+            node = max(row.changes, key=lambda n: max(abs(v) for v in row.changes[n]))
+            d_min, d_max, d_mean = row.changes[node]
+            table.append({"parameter": row.path, "value": row.value, "step": row.step,
+                          "largest change_k": row.largest_k, "node": node, "min change_k": d_min,
+                          "max change_k": d_max, "mean change_k": d_mean})
+        self._fill(self.study_table, table)
+        self.study_table.setVisible(bool(table))
+        left_out = f" Left out: {'; '.join(notes)}." if notes else ""
+        self.study_label.setText(f"Sensitivity in the {case} case: each parameter 10 % up and down (optics kept "
+                                 f"within 0 to 1), the change between the two, largest first.{left_out}")
+
+    def _monte_carlo_clicked(self) -> None:
+        folder = QFileDialog.getExistingDirectory(self, "Save the thermal Monte Carlo to a folder")
+        if folder:
+            self.run_monte_carlo(Path(folder))
+
+    def run_monte_carlo(self, folder: Path) -> None:
+        from ..engine import monte_carlo_results
+        from ..thermal import sweeps
+
+        prepared = self.analysis.prepared
+        config = prepared.spacecraft.thermal.monte_carlo
+
+        def job():
+            batch = sweeps.monte_carlo(prepared, config)
+            monte_carlo_results.save(batch, folder)
+            return batch
+
+        self._study(f"Running {config.runs} thermal Monte Carlo runs...", job,
+                    lambda batch: self._monte_carlo_done(folder, batch))
+
+    def _monte_carlo_done(self, folder: Path, batch) -> None:
+        self.study_label.setText(f"Thermal Monte Carlo: {len(batch.runs)} runs saved in {folder}; the Monte Carlo "
+                                 "view shows them.")
+        self.monte_carlo_saved.emit(str(folder))
 
     def _worker_done(self) -> None:
         self._worker = None
@@ -277,6 +440,13 @@ class ThermalWidget(QWidget):
         self.case_combo.addItems([c.name for c in cases])
         self.case_combo.blockSignals(False)
         self.plot_group.setVisible(bool(cases))
+        self.studies_group.setVisible(bool(cases))
+        self.study_table.setVisible(False)
+        self.study_label.setText("")
+        from ..thermal import sweeps
+
+        self.sweep_path.setCompleter(QCompleter(sweeps.default_parameters(analysis.prepared.spacecraft.thermal), self))
+        self.monte_carlo_button.setEnabled(analysis.prepared.spacecraft.thermal.monte_carlo is not None)
         self.save_button.setEnabled(True)
         self._show_case()
         self.events_changed.emit(analysis.events())

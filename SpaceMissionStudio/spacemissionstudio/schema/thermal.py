@@ -370,6 +370,53 @@ class ThermalCaseConfig:
                  f"{where}: overrides must map parameter paths to values")
 
 
+DISTRIBUTIONS = ("normal", "uniform")
+
+
+@dataclass
+class ThermalDispersionConfig:
+    """One parameter a thermal Monte Carlo draws (Phase 2, T-36): its
+    ``path`` (as an override's), and ``sigma``, the 1-sigma of a normal
+    draw or the half-width of a uniform one, in the parameter's unit or,
+    ``relative``, as a fraction of its value."""
+
+    path: str
+    sigma: float
+    distribution: str = "normal"
+    relative: bool = False
+
+    def validate(self, where: str) -> None:
+        _require(isinstance(self.path, str) and self.path.strip(), f"{where}: a dispersion needs a path")
+        where = f"{where}: dispersion {self.path!r}"
+        _require(self.distribution in DISTRIBUTIONS, f"{where}: distribution must be one of {list(DISTRIBUTIONS)}")
+        _require(_number(self.sigma) and self.sigma > 0, f"{where}: sigma must be a number above 0")
+        _require(isinstance(self.relative, bool), f"{where}: relative must be true or false")
+
+
+@dataclass
+class ThermalMonteCarloConfig:
+    """A thermal Monte Carlo on one run (Phase 2, T-36): ``runs`` draws of
+    the ``dispersions``, from ``seed``, each solved in ``case``."""
+
+    runs: int = 50
+    seed: int = 1
+    case: str = "nominal"
+    dispersions: list = field(default_factory=list)  # list[ThermalDispersionConfig]
+
+    def validate(self, where: str) -> None:
+        where = f"{where}: monte_carlo"
+        _require(isinstance(self.runs, int) and not isinstance(self.runs, bool) and 2 <= self.runs <= 10000,
+                 f"{where}: runs must be an integer from 2 to 10000")
+        _require(isinstance(self.seed, int) and not isinstance(self.seed, bool) and 0 <= self.seed < 2 ** 32,
+                 f"{where}: seed must be an integer from 0 to 2^32 - 1")
+        _require(isinstance(self.case, str) and self.case, f"{where}: case must name a case or a preset")
+        _require(bool(self.dispersions), f"{where}: give at least one dispersion")
+        for item in self.dispersions:
+            item.validate(where)
+        paths = [item.path for item in self.dispersions]
+        _require(len(set(paths)) == len(paths), f"{where}: each path is dispersed once")
+
+
 @dataclass
 class ThermalConfig:
     """A spacecraft's thermal model (module docstring)."""
@@ -385,6 +432,7 @@ class ThermalConfig:
     environment: ThermalEnvironmentConfig = field(default_factory=ThermalEnvironmentConfig)
     solver: ThermalSolverConfig = field(default_factory=ThermalSolverConfig)
     cases: list = field(default_factory=list)  # list[ThermalCaseConfig]
+    monte_carlo: ThermalMonteCarloConfig | None = None  # Phase 2 (T-36)
 
     def node_names(self) -> list[str]:
         return [node.name for node in self.nodes]
@@ -403,6 +451,12 @@ class ThermalConfig:
             names = [item.name for item in items]
             duplicates = sorted({n for n in names if names.count(n) > 1})
             _require(not duplicates, f"{where}: {group} names must be unique ({', '.join(duplicates)} repeated)")
+        if self.monte_carlo is not None:
+            _require(isinstance(self.monte_carlo, ThermalMonteCarloConfig), f"{where}: monte_carlo must be an object")
+            self.monte_carlo.validate(where)
+            known = {case.name for case in self.cases} if self.cases else set(CASE_PRESETS) - {""}
+            _require(self.monte_carlo.case in known,
+                     f"{where}: monte_carlo: case {self.monte_carlo.case!r} is not one of {sorted(known)}")
         nodes = set(self.node_names())
         owner: dict[str, str] = {}
         for node in self.nodes:
@@ -525,6 +579,11 @@ def from_dict(data, where: str, record, records, fields_of) -> ThermalConfig:
         data[name] = records(cls, data.pop(name, []), f"{where}.{name}")
     for name, cls in (("environment", ThermalEnvironmentConfig), ("solver", ThermalSolverConfig)):
         data[name] = record(cls, data[name], f"{where}.{name}") if data.get(name) is not None else cls()
+    if data.get("monte_carlo") is not None:
+        section = fields_of(data["monte_carlo"], f"{where}.monte_carlo")
+        section["dispersions"] = records(ThermalDispersionConfig, section.pop("dispersions", []),
+                                         f"{where}.monte_carlo.dispersions")
+        data["monte_carlo"] = record(ThermalMonteCarloConfig, section, f"{where}.monte_carlo")
     return record(ThermalConfig, data, where)
 
 
@@ -542,4 +601,6 @@ def compact(section: dict) -> dict:
         changed = {k: v for k, v in section[name].items() if v is not None and v != defaults.get(k)}
         if changed:
             out[name] = changed
+    if section.get("monte_carlo") is not None:
+        out["monte_carlo"] = dict(section["monte_carlo"])
     return out

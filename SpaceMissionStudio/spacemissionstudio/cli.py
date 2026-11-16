@@ -928,6 +928,9 @@ def cmd_thermal(args: argparse.Namespace) -> int:
                       "(orbit average)")
         for finding in done.findings():
             print(f"FINDING: {finding}")
+        code = _thermal_studies(args, done, sc.name)
+        if code:
+            return code
         if args.tables is not None or args.out is not None:
             record = records.record(scenario, done, result)
             record["provenance"].update(file_record)
@@ -944,6 +947,59 @@ def cmd_thermal(args: argparse.Namespace) -> int:
                 code = _write_record(args, record, {})
                 if code:
                     return code
+    return 0
+
+
+def _thermal_studies(args: argparse.Namespace, done, sc_name: str) -> int:
+    """``thermal --sweep / --sensitivity / --monte-carlo`` on the prepared
+    fluxes of ``done`` (thermal.sweeps): nothing is rerun in Basilisk."""
+    if not (args.sweep or args.sensitivity is not None or args.monte_carlo is not None):
+        return 0
+    from .engine import monte_carlo_results
+    from .thermal import cases as thermal_cases
+    from .thermal import sweeps
+
+    prepared = done.prepared
+    case_name = (args.case or ["nominal"])[0]
+    case = next((c for c in thermal_cases.cases_of(prepared.spacecraft.thermal) if c.name == case_name), None)
+    if case is None:
+        print(f"ERROR: {sc_name}: no thermal case named {case_name!r}", file=sys.stderr)
+        return 1
+    try:
+        for item in args.sweep or []:
+            path, _sep, text = item.partition("=")
+            values = [float(v) for v in text.split(",") if v.strip()]
+            print(f"  sweep of {path} in case {case.name}:")
+            for point in sweeps.sweep(prepared, case, path, values):
+                extremes = ", ".join(f"{n.name} {n.min_c:.1f} to {n.max_c:.1f}" for n in point.summary)
+                print(f"    {point.value:g}: {extremes} degC")
+        if args.sensitivity is not None:
+            paths = [p for p in args.sensitivity.split(",") if p.strip()] or None
+            rows, notes = sweeps.sensitivity(prepared, case, paths, args.relative)
+            print(f"  sensitivity in case {case.name} (each parameter +-{args.relative:.0%}), largest first:")
+            for row in rows:
+                worst = max(row.changes, key=lambda n: max(abs(v) for v in row.changes[n]))
+                d_min, d_max, _d_mean = row.changes[worst]
+                print(f"    {row.path} = {row.value:g} +- {row.step:.3g}: up to {row.largest_k:.2f} K "
+                      f"({worst}: min {d_min:+.2f} K, max {d_max:+.2f} K)")
+            for note in notes:
+                print(f"    left out: {note}")
+        if args.monte_carlo is not None:
+            config = prepared.spacecraft.thermal.monte_carlo
+            if config is None:
+                print(f"ERROR: {sc_name}: the thermal model has no monte_carlo section", file=sys.stderr)
+                return 1
+            batch = sweeps.monte_carlo(prepared, config, progress=lambda text: None)
+            monte_carlo_results.save(batch, args.monte_carlo)
+            for line in monte_carlo_results.summary_lines(batch):
+                print(f"  {line}")
+            print(f"wrote the thermal Monte Carlo to {args.monte_carlo}")
+    except (sweeps.SweepError, ValueError) as exc:
+        print(f"ERROR: {sc_name}: {exc}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"ERROR: could not write {args.monte_carlo}: {exc}", file=sys.stderr)
+        return 3
     return 0
 
 
@@ -2206,6 +2262,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_thermal.add_argument("--generate", type=Path, metavar="OUT_JSON",
                            help="write the scenario with a thermal model generated from each 3D model; no run")
     p_thermal.add_argument("--replace", action="store_true", help="with --generate: replace an existing thermal model")
+    p_thermal.add_argument("--sweep", action="append", metavar="PATH=V1,V2,...",
+                           help="solve the first --case (default nominal) at each value of a parameter "
+                           "(e.g. faces[radiator].absorptance=0.1,0.2,0.3); repeatable")
+    p_thermal.add_argument("--sensitivity", nargs="?", const="", metavar="PATHS",
+                           help="one-at-a-time sensitivity of the first --case: each parameter (comma-separated "
+                           "paths; default: every face's optics, conductances, dissipation, heaters, sunlight and "
+                           "infrared) up and down by --relative")
+    p_thermal.add_argument("--relative", type=float, default=0.1, help="the sensitivity's step, a fraction of each "
+                           "value (default 0.1)")
+    p_thermal.add_argument("--monte-carlo", type=Path, metavar="DIR",
+                           help="run the thermal model's monte_carlo section and save the batch in DIR (the Monte "
+                           "Carlo view opens it)")
     p_thermal.set_defaults(func=cmd_thermal)
 
     p_reentry = subparsers.add_parser("reentry", help="a preliminary re-entry casualty estimate from the 3D model "

@@ -81,6 +81,9 @@ _HEATER = (("name", "Name", "s"), ("node", "Node", "s"), ("power_w", "Power [W]"
 _CASE = (("name", "Name", "s"), ("preset", "Preset", "s"), ("overrides", "Overrides (JSON)", "J"))
 _ENVIRONMENT = (("solar_flux_w_m2", "Solar flux at 1 AU [W/m²]", "f?"), ("albedo", "Albedo", "f?"),
                 ("planet_ir_w_m2", "Planet IR [W/m²]", "f?"), ("albedo_model", "Albedo model", "s"))
+_MONTE_CARLO = (("runs", "Runs", "i"), ("seed", "Seed", "i"), ("case", "Case", "s"))
+_DISPERSION = (("path", "Parameter path", "s"), ("sigma", "Sigma (normal) or half-width (uniform)", "f"),
+               ("distribution", "Distribution", "s"), ("relative", "Relative", "b"))
 _SOLVER = (("time_step_s", "Time step [s]", "f"), ("start", "Start", "s"), ("tolerance_k", "Periodic tolerance [K]", "f"),
            ("max_orbits", "Max orbits", "i"), ("initial_c", "Initial [°C]", "f?"))
 
@@ -269,6 +272,30 @@ class ThermalGroup(QGroupBox):
         settings_layout.addWidget(self.solver_table)
         settings_layout.addStretch(1)
         self.tabs.addTab(settings, "Environment and solver")
+        studies = QWidget()
+        studies_layout = QVBoxLayout(studies)
+        studies_layout.addWidget(_note("Thermal Monte Carlo (Run › Thermal › Monte Carlo...): the runs, the seed (the "
+                                       "same seed, the same draws), the case, and the parameters it draws by path. "
+                                       "No dispersion: no Monte Carlo."))
+        mc = c.monte_carlo or thermal_schema.ThermalMonteCarloConfig()
+        self.monte_carlo_table = RecordTable(thermal_schema.ThermalMonteCarloConfig, _MONTE_CARLO, [mc],
+                                             fixed_rows=True)
+        studies_layout.addWidget(self.monte_carlo_table)
+        self.dispersion_table = RecordTable(thermal_schema.ThermalDispersionConfig, _DISPERSION, mc.dispersions)
+        studies_layout.addWidget(self.dispersion_table)
+        row = QHBoxLayout()
+        add = QPushButton("Add")
+        add.clicked.connect(lambda: self.dispersion_table.add_record(
+            thermal_schema.ThermalDispersionConfig("", 0.1, "normal", True)))
+        remove = QPushButton("Remove")
+        remove.clicked.connect(lambda: self.dispersion_table.removeRow(self.dispersion_table.currentRow())
+                               if self.dispersion_table.currentRow() >= 0 else None)
+        row.addWidget(add)
+        row.addWidget(remove)
+        row.addStretch(1)
+        studies_layout.addLayout(row)
+        studies_layout.addStretch(1)
+        self.tabs.addTab(studies, "Monte Carlo")
         layout.addWidget(self.tabs)
         self.status_label = set_role(QLabel(""), tone="secondary")
         self.status_label.setWordWrap(True)
@@ -277,7 +304,8 @@ class ThermalGroup(QGroupBox):
     def field_widget(self, name: str) -> QWidget | None:
         """The table holding the field ``name`` ("nodes"), shown, or None."""
         key = name.split("[")[0].split(".")[0]
-        table = self.tables.get(key) or {"environment": self.environment_table, "solver": self.solver_table}.get(key)
+        table = self.tables.get(key) or {"environment": self.environment_table, "solver": self.solver_table,
+                                         "monte_carlo": self.dispersion_table}.get(key)
         if table is None:
             return None
         self.tabs.setCurrentWidget(table.parentWidget())
@@ -290,6 +318,9 @@ class ThermalGroup(QGroupBox):
             table.set_records(getattr(config, key))
         self.environment_table.set_records([config.environment])
         self.solver_table.set_records([config.solver])
+        mc = config.monte_carlo or thermal_schema.ThermalMonteCarloConfig()
+        self.monte_carlo_table.set_records([mc])
+        self.dispersion_table.set_records(mc.dispersions)
 
     def to_config(self) -> thermal_schema.ThermalConfig | None:
         """The thermal model, or None when the group is off. A cell that
@@ -299,10 +330,15 @@ class ThermalGroup(QGroupBox):
         values = {key: table.records(key) for key, table in self.tables.items()}
         environment = self.environment_table.records("environment")
         solver = self.solver_table.records("solver")
+        dispersions = self.dispersion_table.records("monte_carlo.dispersions")
+        monte_carlo = None
+        if dispersions:
+            monte_carlo = self.monte_carlo_table.records("monte_carlo")[0]
+            monte_carlo.dispersions = dispersions
         return thermal_schema.ThermalConfig(
             version=self._version, **values,
             environment=environment[0] if environment else thermal_schema.ThermalEnvironmentConfig(),
-            solver=solver[0] if solver else thermal_schema.ThermalSolverConfig())
+            solver=solver[0] if solver else thermal_schema.ThermalSolverConfig(), monte_carlo=monte_carlo)
 
     def _on_generate(self) -> None:
         from ..thermal import generate

@@ -63,6 +63,7 @@ LIST_ITEMS = {
     ("ThermalConfig", "dissipations"): "ThermalDissipationConfig",
     ("ThermalConfig", "heaters"): "ThermalHeaterConfig",
     ("ThermalConfig", "cases"): "ThermalCaseConfig",
+    ("ThermalMonteCarloConfig", "dispersions"): "ThermalDispersionConfig",
     ("Scenario", "spacecraft"): "SpacecraftConfig",
     ("Scenario", "ground_stations"): "GroundStationConfig",
     ("Scenario", "fsw_exports"): "FswExportRecord",
@@ -120,6 +121,7 @@ CHOICES = {
     ("ThermalSolverConfig", "start"): "START_MODES",
     ("ThermalEnvironmentConfig", "albedo_model"): "ALBEDO_MODELS",
     ("ThermalCaseConfig", "preset"): "CASE_PRESETS",
+    ("ThermalDispersionConfig", "distribution"): "DISTRIBUTIONS",
 }
 #: What kind of name a field refers to: "spacecraft", "ground_station", "part" or "material".
 REFERENCES = {

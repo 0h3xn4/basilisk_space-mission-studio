@@ -433,9 +433,11 @@
   "faces": "list[ThermalFaceConfig]",
   "heat_pipes": "list[ThermalHeatPipeConfig]",
   "heaters": "list[ThermalHeaterConfig]",
+  "monte_carlo": "Phase 2 (T-36)",
   "nodes": "list[ThermalNodeConfig]",
   "radiative_links": "list[ThermalRadiativeLinkConfig]"
  },
+ "ThermalDispersionConfig": {},
  "ThermalDissipationConfig": {
   "power_w": "[W]"
  },
@@ -461,6 +463,9 @@
   "off_c": "[degC]",
   "on_c": "[degC]",
   "power_w": "[W]"
+ },
+ "ThermalMonteCarloConfig": {
+  "dispersions": "list[ThermalDispersionConfig]"
  },
  "ThermalNodeConfig": {
   "capacitance_j_k": "[J/K]",

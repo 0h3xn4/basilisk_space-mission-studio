@@ -353,3 +353,36 @@ the mean of the two nodes at the start of each step, as before. **Why:**
 lagging `C` would leave a first-order error in the stored heat that the
 energy balance would show; the enthalpy form costs one table integral per
 node and Newton iteration.
+
+## T-36 Sweeps, sensitivity and the thermal Monte Carlo on one run (2026-11-16)
+
+**Chosen:** all three solve a case of the prepared analysis (the run's
+fluxes on every face, computed once) with extra overrides by path, the
+same mechanism as a case's (T-13); nothing is rerun in Basilisk
+(`thermal/sweeps.py`).
+
+- A **sweep** solves the case at each value of one parameter.
+- The **sensitivity** is one at a time: each parameter up and down by a
+  fraction of its value (10 % by default; optics kept within [0, 1]),
+  the change of every node's minimum, maximum and mean between the two
+  (a central difference), ranked by the largest. By default it varies
+  every face entry's optics (a coating's library value when no number is
+  given), conductances, heat pipes, constant dissipation, heater power,
+  and the sunlight and infrared; a parameter with no number is listed as
+  left out.
+- The **thermal Monte Carlo** draws the `thermal.monte_carlo` section's
+  dispersions (normal or uniform, absolute or relative to the value) from
+  one seeded generator in a fixed order, so the same seed gives the same
+  draws; a draw outside a parameter's range is clipped (optics to [0, 1],
+  the rest to 0 and up); a draw the model refuses counts as a failed run.
+  The batch is saved in the Monte Carlo summary format
+  (`engine.monte_carlo_results`, pickle-free) with `kind: thermal`: each
+  node's temperature per run, the drawn values and the case. The Monte
+  Carlo view then shows nodes instead of spacecraft: the coldest and
+  hottest any run reached, the 1-sigma of the runs' minima and maxima, the
+  per-run curves with the mean and its 3-sigma band, and the run table.
+  **Why:** the brief asks for it in the existing view; the view's loader,
+  table and plots needed only a second kind, and an orbit batch reads and
+  shows exactly as before. **Alternatives:** dispersing thermal parameters
+  in the scenario's Basilisk Monte Carlo (a full run per draw, for
+  parameters the run does not depend on).
