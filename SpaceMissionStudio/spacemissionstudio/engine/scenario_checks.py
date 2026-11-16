@@ -536,8 +536,23 @@ def plausibility_warnings(scenario, base_dir=None) -> list[str]:
     warnings: list[str] = []
     for name, check in (("orbits", _orbit_warnings), ("data coverage", _data_coverage_warnings),
                         ("3D models", lambda s: _model_warnings(s, base_dir)),
-                        ("design checks", lambda s: _design_warnings(s, base_dir))):
+                        ("design checks", lambda s: _design_warnings(s, base_dir)),
+                        ("thermal models", lambda s: _thermal_warnings(s, base_dir))):
         warnings += _checked(name, check, scenario)
+    return warnings
+
+
+def _thermal_warnings(scenario, base_dir) -> list[str]:
+    """The checks of each spacecraft's thermal model (thermal.checks):
+    faces in no node or without optics, nodes without capacity or a path to
+    space, and the faces other parts can shade."""
+    if not any(sc.thermal is not None for sc in scenario.spacecraft):
+        return []
+    from ..thermal import checks
+
+    warnings: list[str] = []
+    for sc in scenario.spacecraft:
+        warnings += checks.checks(sc, base_dir)
     return warnings
 
 

@@ -39,6 +39,8 @@ Without Basilisk, `template`, `load`, `validate`, `assumptions`,
 | `design_checks(scenario, spacecraft=None, samples=None, base_dir=None)` | `DesignReport` | The 3D model's design checks: field-of-view obstruction, thruster authority and plumes, mass budget, launcher envelope, and their `findings()` |
 | `model_analyses(scenario, result, spacecraft=None, base_dir=None)` | `RunReport` | A run's model analyses: the disturbance-torque budget, blinding, antenna obstruction, array shading, exposure and brightness; `base_dir` resolves the model's relative mesh paths (default: the scenario file's folder) |
 | `reentry(scenario, spacecraft=None, population_density_per_km2=None, base_dir=None)` | `ReentryEstimate` | The preliminary re-entry casualty estimate from the 3D model |
+| `thermal(scenario, result, spacecraft=None, cases=None, base_dir=None, size_heaters=True)` | `ThermalAnalysis` | The thermal analysis after a run, for a spacecraft with a `thermal` section: per case the node temperatures, heat flows, the summary against the limits, heaters with their sized power, radiators, limit events and the energy balance |
+| `thermal_model(scenario, spacecraft=None, base_dir=None)` | `Generated` | A starting thermal model from the spacecraft's 3D model (one node per part, contact conductors) and the notes on how it was built |
 | `record(scenario, analysis, spacecraft=None, result=None)` | `dict` | A lifetime's, budget's, sweep's, trade's, design report's, model analyses' or re-entry estimate's JSON record, as `--out` writes it; `result` is the run the analysis took its inputs from |
 | `write(path, data)` | `Path` | Writes a record as JSON |
 

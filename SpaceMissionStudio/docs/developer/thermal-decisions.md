@@ -230,3 +230,23 @@ the hardware. The user overrides any value per case.
 environment (TES map, infrared from radiative balance); their notes say
 so. **Why:** no sourced engineering extremes for Mars are in hand; the
 Sun distance of the run already gives Mars's large seasonal variation.
+
+## T-29 The solver steps on eclipse transitions (2026-11-16)
+
+**Found:** on template 32 the step check showed 1.7 K: sunlight jumps at
+eclipse entry and exit between two recorded samples, inside a solver
+step, and any integrator loses its order there. **Chosen:** the recorded
+times on either side of a jump in the absorbed loads are added to the
+solver's grid (`Loads.breaks_s`), so the loads are linear within every
+step; the step check fell to 0.19 K. **Alternatives:** a smaller default
+step (three times the cost everywhere for an error at two instants per
+orbit).
+
+## T-30 Heater sizing by warm-started regula falsi (2026-11-16)
+
+**Chosen:** the coldest temperature less the setpoint grows smoothly
+with the power, so the root is found by the Illinois variant of regula
+falsi after bracketing, each trial's orbit-periodic start warm-started
+from the previous trial's orbit; stops within 0.1 W or 1 mK above the
+setpoint. **Why:** bisection with a cold start took 9.2 s per heater and
+case on template 32; this takes 2.7 s with the same result (846.4 W).

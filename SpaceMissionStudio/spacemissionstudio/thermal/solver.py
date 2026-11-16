@@ -70,6 +70,7 @@ class Loads:
     albedo_w: np.ndarray  # (n, m)
     infrared_w: np.ndarray  # (n, m)
     emission_w_k4: np.ndarray  # (m,) E_i = sum eps sigma A
+    breaks_s: np.ndarray = field(default_factory=lambda: np.zeros(0))  # [s] where the loads jump (eclipse)
 
     def total(self) -> np.ndarray:
         return self.solar_w + self.albedo_w + self.infrared_w
@@ -92,7 +93,13 @@ def loads(network: Network, time_s: np.ndarray, solar: np.ndarray, albedo: np.nd
         w_vis[facet.facet, facet.node] += facet.absorptance * facet.area_m2
         w_ir[facet.facet, facet.node] += facet.emissivity * facet.area_m2
         emission[facet.node] += facet.emissivity * SIGMA * facet.area_m2
-    return Loads(np.asarray(time_s, float), solar @ w_vis, albedo @ w_vis, infrared @ w_ir, emission)
+    absorbed = solar @ w_vis
+    total = absorbed.sum(axis=1)
+    # Times around a jump of the loads (eclipse entry and exit between two recorded samples): the solver
+    # steps on them, so the loads are linear within every step and the integration keeps its order.
+    jump = np.abs(np.diff(total)) > 0.05 * max(float(np.abs(total).max()), 1.0e-12)
+    breaks = np.unique(np.concatenate([np.asarray(time_s, float)[:-1][jump], np.asarray(time_s, float)[1:][jump]]))
+    return Loads(np.asarray(time_s, float), absorbed, albedo @ w_vis, infrared @ w_ir, emission, breaks)
 
 
 @dataclass
@@ -106,13 +113,30 @@ class Integration:
     pipe_on: np.ndarray  # (k, p) bool
 
 
-def grid(start_s: float, end_s: float, step_s: float) -> np.ndarray:
+def grid(start_s: float, end_s: float, step_s: float, breaks_s: np.ndarray | None = None) -> np.ndarray:
     """Times from ``start_s`` to ``end_s`` by ``step_s``, the last step
-    shortened to end exactly at ``end_s``."""
+    shortened to end exactly at ``end_s``, with ``breaks_s`` (where the
+    loads jump) added and any step shorter than a tenth of ``step_s`` that
+    they make merged away."""
     count = max(int(np.ceil((end_s - start_s) / step_s - 1.0e-9)), 1)
     times = start_s + step_s * np.arange(count + 1)
     times[-1] = end_s
-    return times
+    if breaks_s is None or not len(breaks_s):
+        return times
+    inside = breaks_s[(breaks_s > start_s) & (breaks_s < end_s)]
+    merged = np.unique(np.concatenate([times, inside]))
+    keep = [merged[0]]
+    for t in merged[1:-1]:
+        if t - keep[-1] >= 0.1 * step_s or t in inside:
+            if keep[-1] not in inside and t in inside and t - keep[-1] < 0.1 * step_s and len(keep) > 1:
+                keep[-1] = t
+            else:
+                keep.append(t)
+    if merged[-1] - keep[-1] < 0.1 * step_s and len(keep) > 1 and keep[-1] not in inside:
+        keep[-1] = merged[-1]
+    else:
+        keep.append(merged[-1])
+    return np.asarray(keep)
 
 
 def _pipe_matrix(network: Network, temperature: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -163,20 +187,28 @@ def _newton(network: Network, base: np.ndarray, guess: np.ndarray, source: np.nd
     """Solve ``c_over_dt (T - base) = source - E T^4 + K T + R(T)`` from
     ``guess`` (with ``c_over_dt`` zero: the steady state)."""
     t = guess.copy()
+    diagonal = np.diag_indices(len(t))
+    links = bool(network.links)
     for _ in range(_NEWTON_ITERATIONS):
-        rad, rad_jac = _radiation(network, t)
-        residual = c_over_dt * (t - base) - (source - emission * t ** 4 + k_matrix @ t + rad)
-        jac = np.diag(c_over_dt + 4.0 * emission * t ** 3) - k_matrix - rad_jac
+        t3 = t * t * t
+        residual = c_over_dt * (t - base) - (source - emission * t3 * t + k_matrix @ t)
+        jac = -k_matrix
+        jac[diagonal] += c_over_dt + 4.0 * emission * t3
+        if links:
+            rad, rad_jac = _radiation(network, t)
+            residual -= rad
+            jac -= rad_jac
         try:
             delta = np.linalg.solve(jac, -residual)
         except np.linalg.LinAlgError as exc:
             raise ThermalSolveError(f"{where}: the network is singular (a node with no capacitance and no path?)") \
                 from exc
-        limit = np.max(np.abs(delta))
+        limit = float(np.abs(delta).max())
         if limit > 50.0:
             delta *= 50.0 / limit  # [K] damping far from the solution
+            limit = 50.0
         t = np.maximum(t + delta, _FLOOR_K)
-        if np.max(np.abs(delta)) < _NEWTON_TOLERANCE_K or np.all((t <= _FLOOR_K) | (np.abs(delta) < 1e-7)):
+        if limit < _NEWTON_TOLERANCE_K or np.all((t <= _FLOOR_K) | (np.abs(delta) < 1e-7)):
             return t
     raise ThermalSolveError(f"{where}: Newton did not converge in {_NEWTON_ITERATIONS} iterations")
 
@@ -282,11 +314,17 @@ class Solution:
 
 
 def _periodic_start(network: Network, loads_: Loads, start_s: float, period_s: float, step_s: float,
-                    tolerance_k: float, max_orbits: int, fixed_heaters: dict | None) -> tuple:
-    orbit = grid(start_s, start_s + period_s, step_s)
-    mean = loads_.at(orbit)[:-1].mean(axis=0)
-    t0 = steady_state(network, mean, loads_.emission_w_k4)
-    on, before = None, None
+                    tolerance_k: float, max_orbits: int, fixed_heaters: dict | None, warm: tuple | None = None) -> tuple:
+    """``(T, heaters on, before, Periodic)`` at the start of the converged
+    orbit; ``warm`` is a previous solve's ``(T, on, before)`` to start from
+    instead of the steady state (sizing, sweeps)."""
+    orbit = grid(start_s, start_s + period_s, step_s, loads_.breaks_s)
+    if warm is not None:
+        t0, on, before = warm
+    else:
+        mean = loads_.at(orbit)[:-1].mean(axis=0)
+        t0 = steady_state(network, mean, loads_.emission_w_k4)
+        on, before = None, None
     residual = float("inf")
     for count in range(1, max_orbits + 1):
         run = integrate(network, loads_, orbit, t0, on, fixed_heaters, before)
@@ -318,7 +356,8 @@ def energy_balance(network: Network, loads_: Loads, run: Integration,
 
 
 def solve(network: Network, loads_: Loads, solver, period_s: float, start_s: float | None = None,
-          end_s: float | None = None, step_check: bool = True, fixed_heaters: dict | None = None) -> Solution:
+          end_s: float | None = None, step_check: bool = True, fixed_heaters: dict | None = None,
+          warm: tuple | None = None) -> Solution:
     """Solve the network over the run window (``start_s`` to ``end_s``,
     the loads' span by default) with the ``ThermalSolverConfig``
     ``solver`` (module docstring)."""
@@ -341,17 +380,18 @@ def solve(network: Network, loads_: Loads, solver, period_s: float, start_s: flo
         t0 = steady_state(network, loads_.at(window).mean(axis=0), loads_.emission_w_k4)
     else:
         t0, on, before, periodic = _periodic_start(network, loads_, start_s, period_s, solver.time_step_s,
-                                                   solver.tolerance_k, solver.max_orbits, fixed_heaters)
+                                                   solver.tolerance_k, solver.max_orbits, fixed_heaters, warm)
         if not periodic.converged:
             warnings.append(f"the orbit-periodic start did not converge in {periodic.orbits} orbits "
                             f"(last change {periodic.residual_k:.3g} K); raise max_orbits")
-    times = grid(start_s, end_s, solver.time_step_s)
+    times = grid(start_s, end_s, solver.time_step_s, loads_.breaks_s)
     run = integrate(network, loads_, times, t0, on, fixed_heaters, before)
     residual, throughput = energy_balance(network, loads_, run, fixed_heaters)
     check = None
     if step_check:
         half_before = None if before is None else (before[0], before[1])
-        half = integrate(network, loads_, grid(start_s, end_s, solver.time_step_s / 2.0), t0, on, fixed_heaters,
+        half = integrate(network, loads_, grid(start_s, end_s, solver.time_step_s / 2.0, loads_.breaks_s), t0, on,
+                         fixed_heaters,
                          half_before)
         check = float(np.max(np.abs(np.interp(times, half.time_s, half.temperature_k[:, 0]) - run.temperature_k[:, 0])))
         for i in range(1, len(network.names)):
@@ -369,24 +409,44 @@ def size_heater(network: Network, loads_: Loads, solver, period_s: float, heater
     start_s = float(loads_.time_s[0]) if start_s is None else start_s
     span = period_s if np.isfinite(period_s) else float(loads_.time_s[-1] - start_s)
 
-    def coldest(power: float) -> float:
-        _t0, _on, _p = None, None, None
-        sol = solve(network, loads_, solver, span, start_s, start_s + span, step_check=False,
-                    fixed_heaters={heater_name: power})
-        return float(sol.integration.temperature_k[:, heater.node].min())
+    state: dict = {}
 
-    if coldest(0.0) >= heater.on_k:
+    def margin(power: float) -> float:
+        """The node's coldest temperature less its setpoint [K] with the
+        heater at ``power``, warm-started from the previous evaluation."""
+        sol = solve(network, loads_, solver, span, start_s, start_s + span, step_check=False,
+                    fixed_heaters={heater_name: power}, warm=state.get("warm"))
+        run = sol.integration
+        state["warm"] = (run.temperature_k[-1], run.heater_on[-1], (run.temperature_k[-2],
+                                                                     float(run.time_s[-1] - run.time_s[-2])))
+        return float(run.temperature_k[:, heater.node].min()) - heater.on_k
+
+    low, f_low = 0.0, margin(0.0)
+    if f_low >= 0.0:
         return 0.0
     high = max(heater.power_w, 1.0)
-    while coldest(high) < heater.on_k:
+    f_high = margin(high)
+    while f_high < 0.0:
+        low, f_low = high, f_high
         high *= 2.0
         if high > 1.0e5:
             raise ThermalSolveError(f"heater {heater_name!r}: no power up to 100 kW holds its node at its setpoint")
-    low = 0.0
-    while high - low > resolution_w:
-        mid = 0.5 * (low + high)
-        if coldest(mid) >= heater.on_k:
-            high = mid
+        f_high = margin(high)
+    side = 0
+    while high - low > resolution_w:  # Illinois (regula falsi): the margin grows smoothly with the power
+        mid = high - f_high * (high - low) / (f_high - f_low)
+        mid = min(max(mid, low + 0.25 * resolution_w), high - 0.25 * resolution_w)
+        f_mid = margin(mid)
+        if f_mid >= 0.0:
+            high, f_high = mid, f_mid
+            if side == 1:
+                f_low *= 0.5
+            side = 1
         else:
-            low = mid
+            low, f_low = mid, f_mid
+            if side == -1:
+                f_high *= 0.5
+            side = -1
+        if abs(f_mid) < 1.0e-3 and f_mid >= 0.0:  # [K] within a millikelvin above the setpoint
+            break
     return high

@@ -26,10 +26,10 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
 | 3 | Environment fluxes: solar, albedo (Basilisk), planetary IR | done |
 | 4 | Network and solver: MLI, conductors, heat pipes, links, dissipation, heaters, periodic start, energy balance, sizing | done |
 | 5 | Cases, presets, overrides | done |
-| 6 | Checks and the shadowing warning | next |
-| 7 | Results, series, events, record, CSV | |
-| 8 | `api.thermal`, CLI `thermal` | |
-| 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | |
+| 6 | Checks and the shadowing warning | done |
+| 7 | Results, series, events, record, CSV | done |
+| 8 | `api.thermal`, CLI `thermal` | done |
+| 9 | GUI: thermal editor, Run › Thermal, Timeline, Problems | next |
 | 10 | V&V records (Phase 1) | |
 | 11 | Template 33 (150 kg bus), claims, golden file | |
 | 12 | Documentation (Phase 1) | |
@@ -88,9 +88,24 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   type checks; the section's environment over the preset);
   `tests/test_thermal_cases.py`.
 
+- Steps 6-8: `thermal/checks.py` (rules `thermal.*` in
+  `engine/findings.py`; in the Problems panel through
+  `plausibility_warnings`; the shading screen cached on the model),
+  `thermal/results.py` (heat flows by kind and item, orbit averages,
+  summary and margins, heaters with sized power, radiators, limit events
+  of kind `thermal limit`, series), `thermal/analysis.py` (prepare once,
+  solve per case), `thermal/records.py` (JSON record, CSV tables and
+  series with provenance), `api.thermal`, `api.thermal_model`, CLI
+  `thermal` (`--generate`, `--case`, `--no-sizing`, `--out`, `--tables`);
+  the solver steps on the eclipse transitions (step check 1.7 K -> 0.19 K
+  on template 32) and sizes heaters by warm-started regula falsi (9.2 s ->
+  2.7 s); type hints of the thermal records resolved in their own module
+  when a scenario file loads. Tests: `test_thermal_checks.py`,
+  `test_thermal_analysis.py` (a real run).
+
 ## Next
 
-Step 6.
+Step 9: the GUI.
 
 ## Known issues
 

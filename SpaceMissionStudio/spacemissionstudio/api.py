@@ -47,7 +47,8 @@ from pathlib import Path
 API_VERSION = 1
 
 __all__ = ["API_VERSION", "template", "load", "validate", "assumptions", "run", "summary", "lifetime", "budget",
-           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "model_analyses", "reentry", "record", "write"]
+           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "model_analyses", "reentry",
+           "thermal", "thermal_model", "record", "write"]
 
 
 def template(name: str) -> Path:
@@ -235,6 +236,32 @@ def model_analyses(scenario, result, spacecraft: str | None = None, base_dir=Non
     from .analyses import common, run_analyses
 
     return run_analyses.report(result, scenario, common.spacecraft(scenario, spacecraft), base_dir)
+
+
+def thermal(scenario, result, spacecraft: str | None = None, cases: list[str] | None = None, base_dir=None,
+            size_heaters: bool = True):
+    """The thermal analysis of a spacecraft with a ``thermal`` section,
+    after a run: ``thermal.analysis.ThermalAnalysis`` with one
+    ``CaseResult`` per case (temperatures, heat flows, the summary against
+    the limits, heaters with their sized power, radiators, limit events,
+    energy balance), solved on ``result``'s recorded states. ``cases``
+    picks cases by name (default: the section's, or nominal, hot and cold).
+    """
+    from .thermal import analysis
+
+    return analysis.analyse(scenario, result, _spacecraft(scenario, spacecraft), base_dir, cases,
+                            size_heaters=size_heaters)
+
+
+def thermal_model(scenario, spacecraft: str | None = None, base_dir=None):
+    """A starting thermal model built from a spacecraft's 3D model (one
+    node per part, contact conductors): ``thermal.generate.Generated``
+    with ``thermal`` (a ``ThermalConfig`` to set as ``spacecraft.thermal``)
+    and ``notes``."""
+    from .thermal import generate
+
+    sc = next(s for s in scenario.spacecraft if s.name == _spacecraft(scenario, spacecraft))
+    return generate.generate(sc, base_dir)
 
 
 def reentry(scenario, spacecraft: str | None = None, population_density_per_km2: float | None = None,

@@ -4331,7 +4331,8 @@ def _check_types(obj, path: str, errors: list[str]) -> None:
     compares it with something."""
     hints = _TYPE_HINTS.get(type(obj))
     if hints is None:
-        hints = _TYPE_HINTS[type(obj)] = typing.get_type_hints(type(obj), globals())
+        hints = _TYPE_HINTS[type(obj)] = typing.get_type_hints(
+            type(obj), vars(sys.modules[type(obj).__module__]) | globals())
     for f in dataclasses.fields(obj):
         value, where = getattr(obj, f.name), f"{path}.{f.name}" if path else f.name
         problem = _type_problem(value, hints.get(f.name, typing.Any))

@@ -837,6 +837,115 @@ def cmd_model_analyses(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_thermal(args: argparse.Namespace) -> int:
+    """The thermal analysis (thermal.analysis): with ``--generate``, write
+    the scenario with a starting thermal model built from each chosen
+    spacecraft's 3D model; otherwise run the scenario and solve each
+    spacecraft's thermal cases on the run."""
+    loaded = _load_hashed(args.scenario)
+    if isinstance(loaded, int):
+        return loaded
+    scenario, file_record = loaded
+    base_dir = args.scenario.resolve().parent
+    if args.generate is not None:
+        from .schema.scenario import scenario_text
+        from .thermal import generate
+
+        chosen = [sc for sc in scenario.spacecraft if args.spacecraft is None or sc.name == args.spacecraft]
+        made = 0
+        for sc in chosen:
+            if sc.model is None or (sc.thermal is not None and not args.replace):
+                print(f"{sc.name}: " + ("has no 3D model" if sc.model is None else
+                                         "has a thermal model already (--replace to overwrite)"))
+                continue
+            built = generate.generate(sc, base_dir)
+            sc.thermal = built.thermal
+            made += 1
+            print(f"{sc.name}: {len(built.thermal.nodes)} nodes, {len(built.thermal.conductors)} conductors")
+            for note in built.notes:
+                print(f"    {note}")
+        if not made:
+            print("ERROR: no thermal model was generated", file=sys.stderr)
+            return 1
+        try:
+            scenario.validate()
+            args.generate.write_text(scenario_text(scenario), encoding="utf-8")
+        except (OSError, ValueError) as exc:
+            print(f"ERROR: could not write {args.generate}: {exc}", file=sys.stderr)
+            return 3
+        print(f"wrote {args.generate}")
+        return 0
+    chosen = [sc for sc in scenario.spacecraft if sc.thermal is not None
+              and (args.spacecraft is None or sc.name == args.spacecraft)]
+    if not chosen:
+        print("ERROR: no spacecraft " + (f"{args.spacecraft!r} " if args.spacecraft else "")
+              + "with a thermal model (make one with --generate OUT.json)", file=sys.stderr)
+        return 1
+    if args.out is not None and len(chosen) > 1:
+        print("ERROR: --out writes one spacecraft's record; name it with --spacecraft", file=sys.stderr)
+        return 2
+    try:
+        from . import api
+        from .thermal import analysis as thermal_analysis
+        from .thermal import records
+    except ImportError as exc:  # pragma: no cover - depends on the install
+        print(f"ERROR: Basilisk is not installed/built ({exc}) -- see SpaceMissionStudio/README.md", file=sys.stderr)
+        return 2
+    print(f"Running {scenario.name!r}...")
+    try:
+        result = api.run(scenario)
+    except Exception as exc:  # noqa: BLE001 -- report ANY run failure with a specific message
+        print(f"ERROR: run failed: {exc}", file=sys.stderr)
+        return 3
+    for sc in chosen:
+        try:
+            done = thermal_analysis.analyse(scenario, result, sc.name, base_dir, args.case or None,
+                                            size_heaters=not args.no_sizing,
+                                            progress=lambda text: print(f"  {text}..."))
+        except thermal_analysis.ThermalAnalysisError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 1
+        env = done.prepared.environment
+        print(f"{sc.name}: thermal analysis, {env.central_body}, inclination {env.inclination_deg:.1f} deg "
+              f"({env.band}), beta {env.beta_deg.min():.1f} to {env.beta_deg.max():.1f} deg, "
+              f"period {env.period_s / 60:.1f} min")
+        for case in done.cases:
+            sol = case.solution
+            start = (f"periodic after {sol.periodic.orbits} orbits ({sol.periodic.residual_k:.2g} K)"
+                     if sol.periodic is not None else sol.start)
+            print(f"  case {case.name}: {start}; energy balance {sol.energy_residual_j:.3g} J of "
+                  f"{sol.energy_throughput_j:.3g} J; step check {sol.step_check_k or 0.0:.3g} K")
+            for node in case.summary:
+                limits = "" if node.operating_c is None else \
+                    f"  operating {node.operating_c[0]:g} to {node.operating_c[1]:g} degC"
+                print(f"    {node.name}: {node.min_c:.1f} to {node.max_c:.1f} degC{limits}")
+            for heater in case.heaters:
+                sized = "" if heater.sized_w is None else f", sized {heater.sized_w:.1f} W"
+                print(f"    heater {heater.name}: duty {heater.duty:.0%}, {heater.energy_wh:.1f} W*h, "
+                      f"orbit average {heater.orbit_average_w:.1f} W{sized}")
+            for radiator in case.radiators:
+                print(f"    radiator {radiator.node}: {radiator.area_m2:.3f} m^2 rejects {radiator.rejected_w:.1f} W "
+                      "(orbit average)")
+        for finding in done.findings():
+            print(f"FINDING: {finding}")
+        if args.tables is not None or args.out is not None:
+            record = records.record(scenario, done, result)
+            record["provenance"].update(file_record)
+            if args.tables is not None:
+                folder = args.tables / sc.name if len(chosen) > 1 else args.tables
+                try:
+                    paths = records.write_tables(done, folder, record)
+                except OSError as exc:
+                    print(f"ERROR: could not write {folder}: {exc}", file=sys.stderr)
+                    return 3
+                print(f"wrote {len(paths)} file(s) to {folder}")
+            if args.out is not None:
+                code = _write_record(args, record, {})
+                if code:
+                    return code
+    return 0
+
+
 def cmd_reentry(args: argparse.Namespace) -> int:
     """The preliminary re-entry casualty estimate of a spacecraft's 3D
     model (analyses.reentry)."""
@@ -2082,6 +2191,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_analyses.add_argument("--out", type=Path, metavar="JSON", help="write the record (one spacecraft)")
     p_analyses.add_argument("--tables", type=Path, metavar="DIR", help="write each table as CSV, with its provenance")
     p_analyses.set_defaults(func=cmd_model_analyses)
+
+    p_thermal = subparsers.add_parser("thermal", help="run the scenario and solve each spacecraft's thermal model "
+                                      "(nominal, hot and cold, or its own cases); or --generate one from the 3D model")
+    p_thermal.add_argument("scenario", type=Path)
+    p_thermal.add_argument("--spacecraft", help="spacecraft name (default: every one with a thermal model)")
+    p_thermal.add_argument("--case", action="append", metavar="NAME", help="solve this case only (repeatable)")
+    p_thermal.add_argument("--no-sizing", action="store_true", help="do not size the heaters (faster)")
+    p_thermal.add_argument("--out", type=Path, metavar="JSON", help="write the record (one spacecraft)")
+    p_thermal.add_argument("--tables", type=Path, metavar="DIR",
+                           help="write the tables and the temperature and heat-flow series as CSV, with provenance")
+    p_thermal.add_argument("--generate", type=Path, metavar="OUT_JSON",
+                           help="write the scenario with a thermal model generated from each 3D model; no run")
+    p_thermal.add_argument("--replace", action="store_true", help="with --generate: replace an existing thermal model")
+    p_thermal.set_defaults(func=cmd_thermal)
 
     p_reentry = subparsers.add_parser("reentry", help="a preliminary re-entry casualty estimate from the 3D model "
                                       "(DAS-like, simplified)")
