@@ -202,6 +202,11 @@ def _heater(scenario, name: str):
     return next(h for h in scenario.spacecraft[0].thermal.heaters if h.name == name)
 
 
+def _conductor(scenario, name: str):
+    """Template 34's conductor ``name``."""
+    return next(c for c in scenario.spacecraft[0].thermal.conductors if c.name == name)
+
+
 def _tracker_tilt_deg(scenario) -> float:
     """Template 32's st-1: how far below level its boresight looks [deg]."""
     boresight = scenario.spacecraft[0].sensors[0].mount.boresight
@@ -1824,6 +1829,31 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         lambda s: _heater(s, "battery heater A").power_w,
                         lambda s, v: setattr(_heater(s, "battery heater A"), "power_w", v),
                         0.0, 50.0, decimals=1, step=1.0, suffix=" W", hint="Run › Thermal sizes it",
+                    ),
+                ],
+            ),
+            _duration_page("The thermal cases are orbit-periodic: a longer run adds orbits, not accuracy.",
+                           SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "34_microsat_flexible_thermal.json": TemplateWizardSpec(
+        template_filename="34_microsat_flexible_thermal.json",
+        pages=[
+            WizardPageSpec(
+                title="Thermal studies",
+                intro="Run › Thermal solves the cases; its Studies run the Monte Carlo set here.",
+                fields=[
+                    WizardField(
+                        "Battery isolators", "The conductance from the bus to the battery, through its isolators.",
+                        lambda s: _conductor(s, "battery isolators").conductance_w_k,
+                        lambda s, v: setattr(_conductor(s, "battery isolators"), "conductance_w_k", v),
+                        0.01, 10.0, decimals=2, step=0.1, suffix=" W/K", hint="Higher keeps the battery cooler",
+                    ),
+                    WizardField(
+                        "Monte Carlo runs", "How many runs the thermal Monte Carlo draws.",
+                        lambda s: float(s.spacecraft[0].thermal.monte_carlo.runs),
+                        lambda s, v: setattr(s.spacecraft[0].thermal.monte_carlo, "runs", int(v)),
+                        2.0, 500.0, decimals=0, step=10.0, suffix=" runs", hint="Each run takes about a second",
                     ),
                 ],
             ),

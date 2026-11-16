@@ -1,0 +1,859 @@
+{
+  "name": "34 - Microsatellite: flexible arrays and thermal studies",
+  "epoch_utc": "2030-01-01T08:30:00",
+  "simulation_mode": "full_attitude",
+  "gravity": {
+    "central_body": "earth",
+    "central_body_degree": 10,
+    "third_body_perturbers": [
+      "sun",
+      "moon"
+    ],
+    "polyhedral_gravity": false,
+    "albedo": false
+  },
+  "spacecraft": [
+    {
+      "name": "microsat-2",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6928.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.59,
+        "raan_deg": 259.42,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 148.0,
+      "inertia_kg_m2": [
+        18.1822469,
+        0.0,
+        0.1007785714,
+        0.0,
+        18.74217548,
+        0.0,
+        0.1007785714,
+        0.0,
+        13.61659524
+      ],
+      "center_of_mass_b_m": [
+        0.0007142857143,
+        0.0,
+        -0.04221428571
+      ],
+      "sigma_bn_init": [
+        0.05,
+        0.1,
+        0.0
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "enable_drag": true,
+      "drag_coeff": 2.2,
+      "drag_area_m2": 0.8,
+      "enable_srp": true,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.5,
+      "facets": [
+        {
+          "name": "bus: +x",
+          "area_m2": 0.8,
+          "normal_b": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "bus: -x",
+          "area_m2": 0.8,
+          "normal_b": [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          "location_b": [
+            -0.4,
+            0.0,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "bus: +y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "bus: -y",
+          "area_m2": 0.8,
+          "normal_b": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "location_b": [
+            0.0,
+            -0.4,
+            0.0
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "bus: +z",
+          "area_m2": 0.6400000000000001,
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "bus: -z",
+          "area_m2": 0.6400000000000001,
+          "normal_b": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "radiator: +z",
+          "area_m2": 0.16000000000000003,
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        },
+        {
+          "name": "radiator: -z",
+          "area_m2": 0.16000000000000003,
+          "normal_b": [
+            0.0,
+            0.0,
+            -1.0
+          ],
+          "location_b": [
+            0.0,
+            0.0,
+            -0.51
+          ],
+          "drag_coeff": 3.0,
+          "specular_coeff": 0.3,
+          "diffuse_coeff": 0.1
+        }
+      ],
+      "enable_gravity_gradient": false,
+      "sensors": [
+        {
+          "kind": "star_tracker",
+          "name": "st-1",
+          "params": {
+            "noise_arcsec": 5.0
+          }
+        },
+        {
+          "kind": "imu",
+          "name": "imu-1",
+          "params": {
+            "gyro_noise_rad_s": 1e-05
+          }
+        },
+        {
+          "kind": "coarse_sun_sensor",
+          "name": "css-1",
+          "params": {
+            "nHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      ],
+      "actuators": [
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-x",
+          "params": {
+            "gsHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-y",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "reaction_wheel",
+          "name": "rw-z",
+          "params": {
+            "gsHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "rw_type": "custom",
+            "maxMomentum": 6.0,
+            "Omega_max": 6000.0,
+            "u_max": 0.05
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-x",
+          "params": {
+            "gtHat_B": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-y",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        },
+        {
+          "kind": "magnetic_torque_rod",
+          "name": "mtb-z",
+          "params": {
+            "gtHat_B": [
+              0.0,
+              0.0,
+              1.0
+            ],
+            "max_dipole_a_m2": 15.0
+          }
+        }
+      ],
+      "fsw_mode": "sunSafePoint",
+      "fsw_params": {
+        "sHatBdyCmd": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "control_params": {},
+      "power": {
+        "panel_area_m2": 1.0,
+        "panel_efficiency": 0.29,
+        "panel_normal_b": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "bus_idle_power_w": 60.0,
+        "battery_capacity_wh": 300.0,
+        "battery_initial_soc": 0.9
+      },
+      "rf_link": null,
+      "comms_pointing": null,
+      "data_handling": null,
+      "solar_arrays": [
+        {
+          "name": "wing-1",
+          "mass_kg": 4.0,
+          "span_m": 0.72,
+          "width_m": 0.7,
+          "hinge_position_b": [
+            0.0,
+            0.45,
+            0.0
+          ],
+          "deploy_direction_b": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "first_mode_hz": 0.8,
+          "damping_ratio": 0.01,
+          "initial_deflection_deg": 0.0,
+          "initial_rate_deg_s": 0.0,
+          "generates_power": false
+        },
+        {
+          "name": "wing-2",
+          "mass_kg": 4.0,
+          "span_m": 0.72,
+          "width_m": 0.7,
+          "hinge_position_b": [
+            0.0,
+            -0.45,
+            0.0
+          ],
+          "deploy_direction_b": [
+            0.0,
+            -1.0,
+            0.0
+          ],
+          "normal_b": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "first_mode_hz": 0.8,
+          "damping_ratio": 0.01,
+          "initial_deflection_deg": 0.0,
+          "initial_rate_deg_s": 0.0,
+          "generates_power": false
+        }
+      ],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": {
+        "wheel_speed_biases_rad_s": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "c_gain": 0.003
+      },
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": {
+        "parts": [
+          {
+            "name": "bus",
+            "shape": "box",
+            "dimensions_m": {
+              "x": 0.8,
+              "y": 0.8,
+              "z": 1.0
+            },
+            "sides": 8,
+            "segments": 16,
+            "mesh_index": null,
+            "mesh_group": "",
+            "position_b_m": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "rotation_deg": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "color": [
+              0.8,
+              0.65,
+              0.2
+            ],
+            "visible": true,
+            "mass_kg": 120.0,
+            "distribution": "solid",
+            "counts_toward_mass": true,
+            "in_surface_model": true,
+            "excluded_faces": [],
+            "drag_coeff": 3.0,
+            "specular_coeff": 0.3,
+            "diffuse_coeff": 0.1,
+            "material": "aluminium_6061_t6",
+            "subsystem": "structure"
+          },
+          {
+            "name": "radiator",
+            "shape": "panel",
+            "dimensions_m": {
+              "width": 0.4,
+              "length": 0.4,
+              "thickness": 0.01
+            },
+            "sides": 8,
+            "segments": 16,
+            "mesh_index": null,
+            "mesh_group": "",
+            "position_b_m": [
+              0.0,
+              0.0,
+              -0.505
+            ],
+            "rotation_deg": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "color": [
+              0.9,
+              0.9,
+              0.95
+            ],
+            "visible": true,
+            "mass_kg": 2.0,
+            "distribution": "solid",
+            "counts_toward_mass": true,
+            "in_surface_model": true,
+            "excluded_faces": [],
+            "drag_coeff": 3.0,
+            "specular_coeff": 0.3,
+            "diffuse_coeff": 0.1,
+            "material": "aluminium_6061_t6",
+            "subsystem": "thermal"
+          },
+          {
+            "name": "battery",
+            "shape": "box",
+            "dimensions_m": {
+              "x": 0.25,
+              "y": 0.2,
+              "z": 0.15
+            },
+            "sides": 8,
+            "segments": 16,
+            "mesh_index": null,
+            "mesh_group": "",
+            "position_b_m": [
+              0.2,
+              0.0,
+              -0.3
+            ],
+            "rotation_deg": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "color": [
+              0.6,
+              0.2,
+              0.2
+            ],
+            "visible": false,
+            "mass_kg": 8.0,
+            "distribution": "solid",
+            "counts_toward_mass": true,
+            "in_surface_model": false,
+            "excluded_faces": [],
+            "drag_coeff": 2.2,
+            "specular_coeff": 0.3,
+            "diffuse_coeff": 0.1,
+            "material": "stainless_steel",
+            "subsystem": "battery"
+          },
+          {
+            "name": "avionics",
+            "shape": "box",
+            "dimensions_m": {
+              "x": 0.3,
+              "y": 0.3,
+              "z": 0.2
+            },
+            "sides": 8,
+            "segments": 16,
+            "mesh_index": null,
+            "mesh_group": "",
+            "position_b_m": [
+              -0.15,
+              0.0,
+              -0.25
+            ],
+            "rotation_deg": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "scale": [
+              1.0,
+              1.0,
+              1.0
+            ],
+            "color": [
+              0.2,
+              0.5,
+              0.3
+            ],
+            "visible": false,
+            "mass_kg": 10.0,
+            "distribution": "solid",
+            "counts_toward_mass": true,
+            "in_surface_model": false,
+            "excluded_faces": [],
+            "drag_coeff": 2.2,
+            "specular_coeff": 0.3,
+            "diffuse_coeff": 0.1,
+            "material": "aluminium_6061_t6",
+            "subsystem": "electronics"
+          }
+        ],
+        "meshes": [],
+        "mass_properties_source": "computed",
+        "mass_properties": null,
+        "apply_mass_properties": true,
+        "apply_facets": true
+      },
+      "thermal": {
+        "version": 1,
+        "nodes": [
+          {
+            "name": "bus",
+            "parts": [
+              "bus"
+            ],
+            "operating_c": [
+              -30.0,
+              50.0
+            ],
+            "survival_c": [
+              -40.0,
+              60.0
+            ]
+          },
+          {
+            "name": "radiator",
+            "parts": [
+              "radiator"
+            ]
+          },
+          {
+            "name": "battery",
+            "parts": [
+              "battery"
+            ],
+            "operating_c": [
+              10.0,
+              30.0
+            ],
+            "survival_c": [
+              -5.0,
+              40.0
+            ]
+          },
+          {
+            "name": "avionics",
+            "parts": [
+              "avionics"
+            ],
+            "operating_c": [
+              -20.0,
+              50.0
+            ],
+            "survival_c": [
+              -40.0,
+              70.0
+            ]
+          },
+          {
+            "name": "solar array wing-1",
+            "parts": [
+              "solar array wing-1"
+            ],
+            "operating_c": [
+              -100.0,
+              110.0
+            ]
+          },
+          {
+            "name": "solar array wing-2",
+            "parts": [
+              "solar array wing-2"
+            ],
+            "operating_c": [
+              -100.0,
+              110.0
+            ]
+          }
+        ],
+        "faces": [
+          {
+            "part": "bus",
+            "coating": "mli_kapton_aluminised_1mil",
+            "mli_effective_emittance": 0.03,
+            "radiator": false
+          },
+          {
+            "part": "solar array wing-1",
+            "face": "cells",
+            "coating": "solar_cell_triple_junction",
+            "radiator": false
+          },
+          {
+            "part": "solar array wing-1",
+            "face": "back",
+            "coating": "black_paint_z306",
+            "radiator": false
+          },
+          {
+            "part": "solar array wing-2",
+            "face": "cells",
+            "coating": "solar_cell_triple_junction",
+            "radiator": false
+          },
+          {
+            "part": "solar array wing-2",
+            "face": "back",
+            "coating": "black_paint_z306",
+            "radiator": false
+          },
+          {
+            "part": "radiator",
+            "coating": "silvered_teflon_10mil",
+            "radiator": true
+          }
+        ],
+        "conductors": [
+          {
+            "name": "bus--avionics",
+            "a": "bus",
+            "b": "avionics",
+            "kind": "contact",
+            "contact_area_m2": 0.09,
+            "contact_coefficient_w_m2_k": 136.352
+          },
+          {
+            "name": "radiator standoffs",
+            "a": "bus",
+            "b": "radiator",
+            "kind": "value",
+            "conductance_w_k": 0.5
+          },
+          {
+            "name": "battery isolators",
+            "a": "bus",
+            "b": "battery",
+            "kind": "value",
+            "conductance_w_k": 0.3
+          },
+          {
+            "name": "wing-1 hinge",
+            "a": "bus",
+            "b": "solar array wing-1",
+            "kind": "value",
+            "conductance_w_k": 0.2
+          },
+          {
+            "name": "wing-2 hinge",
+            "a": "bus",
+            "b": "solar array wing-2",
+            "kind": "value",
+            "conductance_w_k": 0.2
+          }
+        ],
+        "heat_pipes": [
+          {
+            "name": "avionics heat pipe",
+            "a": "avionics",
+            "b": "radiator",
+            "conductance_w_k": 8.0,
+            "operating_c": [
+              -40.0,
+              80.0
+            ],
+            "off_conductance_w_k": 0.01
+          }
+        ],
+        "dissipations": [
+          {
+            "name": "avionics",
+            "node": "avionics",
+            "source": "bus"
+          },
+          {
+            "name": "battery",
+            "node": "battery",
+            "power_w": 3.0
+          }
+        ],
+        "heaters": [
+          {
+            "name": "battery heater A",
+            "node": "battery",
+            "power_w": 8.0,
+            "on_c": 12.0,
+            "off_c": 15.0,
+            "enabled": true
+          },
+          {
+            "name": "battery heater B",
+            "node": "battery",
+            "power_w": 8.0,
+            "on_c": 10.0,
+            "off_c": 12.0,
+            "enabled": true
+          }
+        ],
+        "cases": [
+          {
+            "name": "nominal",
+            "preset": "nominal"
+          },
+          {
+            "name": "hot",
+            "preset": "hot"
+          },
+          {
+            "name": "cold",
+            "preset": "cold"
+          }
+        ],
+        "solver": {
+          "time_step_s": 5.0
+        },
+        "monte_carlo": {
+          "runs": 20,
+          "seed": 34,
+          "case": "hot",
+          "dispersions": [
+            {
+              "path": "faces[radiator].absorptance",
+              "sigma": 0.25,
+              "distribution": "normal",
+              "relative": true
+            },
+            {
+              "path": "heat_pipes[avionics heat pipe].conductance_w_k",
+              "sigma": 0.2,
+              "distribution": "uniform",
+              "relative": true
+            },
+            {
+              "path": "conductors[battery isolators].conductance_w_k",
+              "sigma": 0.3,
+              "distribution": "normal",
+              "relative": true
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "ground_stations": [],
+  "space_weather": {
+    "source": "bundled",
+    "local_file_path": null,
+    "cache_dir": null,
+    "atmosphere_model": "nrlmsise00",
+    "forecast_percentile": 50.0,
+    "msfc_file_path": null
+  },
+  "sim_settings": {
+    "duration_days": 0.15,
+    "dynamics_task_rate_s": 0.5,
+    "integrator": "rkf78",
+    "record_interval_s": 30.0,
+    "seed": 0
+  },
+  "monte_carlo": {
+    "enabled": false,
+    "num_runs": 10,
+    "thread_count": 1,
+    "verbose": false,
+    "dispersions": []
+  },
+  "mission_sequence": [],
+  "fsw_exports": [],
+  "description": "Template 33's microsatellite with its two arrays as flexible wings on hinges. Each wing is a node of the thermal model whose faces turn with the hinge angle the run records. Run > Thermal solves nominal, hot and cold, and its Studies run a Monte Carlo of the hot case.\n\nWhat to look at:\n- The wings swing by less than 0.01 deg after the Sun-safe turn: their sunlight follows the hinge, and the hinge barely moves.\n- Each wing at about -46 to 88 degC, the bus at 14 to 18 degC and the battery at 24 to 28 degC.\n- Studies, Monte Carlo: in 4 of 20 runs the battery passes its 30 degC limit, when its isolators conduct less.\n\nTry changing:\n- The isolators' conductance (Conductors), then run the Monte Carlo again.\n- A wing's first mode (Spacecraft > Solar arrays): a softer hinge swings further.",
+  "schema_version": 4
+}

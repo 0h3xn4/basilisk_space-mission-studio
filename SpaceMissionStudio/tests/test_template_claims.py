@@ -570,3 +570,38 @@ def test_33_the_thermal_cases_keep_the_bus_warm_and_safe_mode_needs_the_heater()
     events = analysis.events()
     assert events and all(e.kind == THERMAL_LIMIT and e.label == "avionics below operating" for e in events)
     assert "thermal.limit" in {getattr(f, "rule_id", None) for f in analysis.findings()}
+
+
+def test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery():
+    """Template 34's flexible wings as thermal nodes: the run records each
+    hinge angle (within 0.01 deg after the Sun-safe turn), the cases are
+    orbit-periodic with their energy balance closed and a step check under
+    0.5 K, each wing swings between about -46 and 88 degC, the bus stays at
+    13.5 to 18.5 degC and the battery at 24 to 28.5 degC; the hot case's
+    Monte Carlo (20 runs, seed 34) puts the battery above its 30 degC limit
+    in 4 runs, the same 4 again from the same seed."""
+    import numpy as np
+
+    from spacemissionstudio import api
+
+    scenario = _template("34")
+    result = _run(scenario)
+    for wing in ("wing-1", "wing-2"):
+        deflection = np.degrees(np.asarray(result.series[f"microsat-2.solar_array.{wing}.deflection"].data))
+        assert 0.0 < np.abs(deflection).max() < 0.01
+    analysis = api.thermal(scenario, result)
+    assert not analysis.prepared.warnings  # the deflections were recorded and used
+    by = {c.name: {n.name: n for n in c.summary} for c in analysis.cases}
+    for case in analysis.cases:
+        assert case.solution.periodic.converged and case.solution.step_check_k < 0.5
+        assert abs(case.solution.energy_residual_j) < 1.0e-3 * case.solution.energy_throughput_j
+        assert 13.5 < by[case.name]["bus"].min_c and by[case.name]["bus"].max_c < 18.5
+        assert 24.0 < by[case.name]["battery"].min_c and by[case.name]["battery"].max_c < 28.5
+    wing = by["hot"]["solar array wing-1"]
+    assert wing.min_c == pytest.approx(-42.6, abs=1.0) and wing.max_c == pytest.approx(87.5, abs=1.0)
+    assert by["nominal"]["solar array wing-1"].min_c == pytest.approx(-45.7, abs=1.0)
+    batch = api.thermal_monte_carlo(scenario, result)
+    warm = batch.temperatures_c["battery"].max(axis=1) > 30.0
+    assert len(batch.runs) == 20 and not batch.failed and int(warm.sum()) == 4
+    assert np.array_equal(api.thermal_monte_carlo(scenario, result).temperatures_c["battery"],
+                          batch.temperatures_c["battery"])

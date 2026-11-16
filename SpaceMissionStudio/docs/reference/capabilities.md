@@ -490,10 +490,10 @@ compliance matrix.
   the shell's areas and commands, dialogs and the plots in their embedded
   web view.
 - **Template claims are re-checked.** `tests/test_template_claims.py`
-  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-33 in Basilisk and
+  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-34 in Basilisk and
   checks the headline numbers their descriptions quote; template 25 runs
   in `tests/test_examples.py`. `tests/test_golden_outputs.py` checks that
-  all 33 templates still give the outputs recorded in `tests/golden/`.
+  all 34 templates still give the outputs recorded in `tests/golden/`.
 - **The thermal model** is verified against closed forms, hand
   calculations and Basilisk's own `sensorThermal` module
   ([compliance/validation/thermal-vv.md](../../compliance/validation/thermal-vv.md)).

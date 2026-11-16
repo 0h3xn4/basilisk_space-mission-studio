@@ -1,0 +1,3711 @@
+{
+ "budget": {
+  "microsat-2": {
+   "refused": "BudgetError: microsat-2: set propellant_budget.isp_s, or give it an orbit thruster"
+  }
+ },
+ "explain": {
+  "explanation": {
+   "formation_diagrams": [],
+   "headline": "34 - Microsatellite: flexible arrays and thermal studies",
+   "roe_diagrams": [],
+   "sections": [
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Sun pointing",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [],
+     "title": "Attitude control"
+    },
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Sun-synchronous",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "Drag",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "Solar radiation pressure",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "Facet model (drag/SRP torques)",
+       "spacecraft": ""
+      },
+      {
+       "kind": "neutral",
+       "label": "microsat-2: 3D model, 4 parts",
+       "spacecraft": "microsat-2"
+      }
+     ],
+     "notes": [
+      "microsat-2: gravity degree 10 leaves out ~3e-05 m/s^2, more than SRP (6e-08 m/s^2); degree 76 matches it (ECSS-E-ST-10-04C 4.2.1b)",
+      "microsat-2: center of mass 4.2 cm from B",
+      "Earth orientation: IAU rotation model, no IERS data installed"
+     ],
+     "title": "Environment"
+    },
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Power budget",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [],
+     "title": "Power & comms"
+    },
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Flexible solar arrays",
+       "spacecraft": ""
+      },
+      {
+       "kind": "warning",
+       "label": "microsat-2: samples every 30 s alias the flexing",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [
+      "microsat-2: 2 arrays, 8 kg, first mode from 0.8 Hz"
+     ],
+     "title": "Flexible solar arrays"
+    }
+   ],
+   "spacecraft_table": [],
+   "stat_tiles": [
+    {
+     "label": "Spacecraft",
+     "value": "1"
+    },
+    {
+     "label": "Duration",
+     "value": "3.6 h"
+    },
+    {
+     "label": "Gravity",
+     "value": "Degree-10 Earth + Sun/Moon"
+    },
+    {
+     "label": "Orbit",
+     "value": "SSO 97.59 deg, 550 km alt"
+    }
+   ]
+  },
+  "passes": [],
+  "plausibility": [
+   "Earth orientation: no IERS files installed -- the Earth-fixed frame is IAU_EARTH (about 160 m/day of error at 400 km); Settings > Reference data downloads them",
+   "microsat-2: thermal: 2 faces can be shaded by other parts, which the thermal model does not account for -- their sunlight is overestimated: radiator:+z (up to 100% by bus), bus:-z (up to 36% by radiator)"
+  ],
+  "warnings": []
+ },
+ "lifetime": {
+  "microsat-2/cd_2.2": {
+   "area_m2": 1.2000000000000002,
+   "deorbit": null,
+   "drag_coeff": 2.2,
+   "from_end_of_run": false,
+   "lifetime": {
+    "apogee_altitude_km": {
+     "first": 543.779184635845,
+     "last": 542.5536355343061,
+     "max": 543.779184635845,
+     "mean": 543.1596405393973,
+     "min": 542.5536355343061,
+     "non_finite": 0,
+     "samples": [
+      543.779184635845,
+      543.6626435501333,
+      543.5156881705514,
+      543.3934542764732,
+      543.2531972661204,
+      543.1219985452163,
+      543.0478454405368,
+      542.9484840390683,
+      542.8043493995452,
+      542.682394997594,
+      542.5536355343061
+     ]
+    },
+    "horizon_years": 1.0,
+    "lifetime_s": 31557600.0,
+    "perigee_altitude_km": {
+     "first": 537.2092428671522,
+     "last": 535.9990034733275,
+     "max": 537.2092428671522,
+     "mean": 536.5953594356008,
+     "min": 535.9990034733275,
+     "non_finite": 0,
+     "samples": [
+      537.2092428671522,
+      537.0637384442957,
+      536.9604836692987,
+      536.7965443134634,
+      536.6627924287366,
+      536.5765153645193,
+      536.4807128375331,
+      536.3972853911669,
+      536.2896185825216,
+      536.1285267130891,
+      535.9990034733275
+     ]
+    },
+    "reentered": "np.False_",
+    "start_utc": "2030-01-01T08:30:00",
+    "time_s": {
+     "first": 0.0,
+     "last": 31557600.0,
+     "max": 31557600.0,
+     "mean": 15811023.433242507,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      3196800.0,
+      6307200.0,
+      9504000.0,
+      12614400.0,
+      15811200.0,
+      19008000.0,
+      22118400.0,
+      25315200.0,
+      28425600.0,
+      31557600.0
+     ]
+    },
+    "warnings": [
+     "space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap"
+    ]
+   },
+   "mass_kg": 148.0
+  },
+  "microsat-2/own_cd": {
+   "area_m2": 1.2000000000000002,
+   "deorbit": null,
+   "drag_coeff": 3.0,
+   "from_end_of_run": false,
+   "lifetime": {
+    "apogee_altitude_km": {
+     "first": 543.779184635845,
+     "last": 542.1017864075974,
+     "max": 543.779184635845,
+     "mean": 542.9322530445943,
+     "min": 542.1017864075974,
+     "non_finite": 0,
+     "samples": [
+      543.779184635845,
+      543.6202066411795,
+      543.4195638630474,
+      543.2525499616582,
+      543.0607497489648,
+      542.8812237323048,
+      542.7797239224594,
+      542.6435653168903,
+      542.4458923021564,
+      542.278580046527,
+      542.1017864075974
+     ]
+    },
+    "horizon_years": 1.0,
+    "lifetime_s": 31557600.0,
+    "perigee_altitude_km": {
+     "first": 537.2092428671522,
+     "last": 535.5527691666372,
+     "max": 537.2092428671522,
+     "mean": 536.3701346394726,
+     "min": 535.5527691666372,
+     "non_finite": 0,
+     "samples": [
+      537.2092428671522,
+      537.0107467890251,
+      536.8697811213341,
+      536.6457788886446,
+      536.4629049041374,
+      536.3448622849053,
+      536.2136669903975,
+      536.0993672224954,
+      535.9517487023184,
+      535.7306566937538,
+      535.5527691666372
+     ]
+    },
+    "reentered": "np.False_",
+    "start_utc": "2030-01-01T08:30:00",
+    "time_s": {
+     "first": 0.0,
+     "last": 31557600.0,
+     "max": 31557600.0,
+     "mean": 15811023.433242507,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      3196800.0,
+      6307200.0,
+      9504000.0,
+      12614400.0,
+      15811200.0,
+      19008000.0,
+      22118400.0,
+      25315200.0,
+      28425600.0,
+      31557600.0
+     ]
+    },
+    "warnings": [
+     "space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap"
+    ]
+   },
+   "mass_kg": 148.0
+  }
+ },
+ "mission_output": null,
+ "rng_library": "libstdc++",
+ "run": {
+  "events": [
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 3480.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "microsat-2",
+    "start_s": 1410.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 9210.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "microsat-2",
+    "start_s": 7140.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 12960.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "microsat-2",
+    "start_s": 12870.0
+   }
+  ],
+  "provenance": {
+   "basilisk_qualified": true,
+   "central_body": "earth",
+   "central_body_mu_m3_s2": 398600436000000.0,
+   "configuration": {
+    "file": null,
+    "overrides": {}
+   },
+   "device_parameters": {
+    "spacecraft[microsat-2].actuators[rw-x]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[microsat-2].actuators[rw-y]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[microsat-2].actuators[rw-z]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    }
+   },
+   "dynamics_task_rate_s": 0.5,
+   "effective_config_note": "effective_defaults: each key the engine read that the file does not give, with the value it used; null: the engine set nothing, so the Basilisk module keeps its own value or the option is off. device_parameters: the values Basilisk's factories gave each wheel and thruster, in Basilisk's SI units (kg, kg*m^2, rad/s, N*m, N, s, W)",
+   "effective_defaults": {
+    "spacecraft[microsat-2].control_params": {
+     "K": 0.08086704753209878,
+     "Ki": -1.0,
+     "P": 0.6931461217037038,
+     "integral_limit": 0.0
+    },
+    "spacecraft[microsat-2].fsw_params": {
+     "min_unit_mag": 0.1,
+     "sun_axis_spin_rate_rad_s": 0.0,
+     "target_body": null,
+     "use_css_estimation": null
+    },
+    "spacecraft[microsat-2].sensors[css-1].params": {
+     "bias": 0.0,
+     "fault_mode": "none",
+     "fov_deg": 90.0,
+     "noise_std": 0.0
+    },
+    "spacecraft[microsat-2].sensors[imu-1].params": {
+     "accel_bias_m_s2": null,
+     "accel_lsb_m_s2": 0.0,
+     "accel_noise_m_s2": 0.0,
+     "gyro_bias_rad_s": null,
+     "gyro_lsb_rad_s": 0.0
+    },
+    "spacecraft[microsat-2].sensors[st-1].params": {
+     "bias_walk_bound_arcsec": null
+    }
+   },
+   "frames": {
+    "B": {
+     "axes": "fixed to the spacecraft structure, as given by inertia_kg_m2 and device axes",
+     "epoch": "-",
+     "mnemonic": "B",
+     "name": "Spacecraft body",
+     "origin": "spacecraft body point B (Basilisk hub frame origin)",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "H": {
+     "axes": "x radial out, z orbit normal, y completes (along-track)",
+     "epoch": "-",
+     "mnemonic": "H",
+     "name": "Hill (orbit)",
+     "origin": "spacecraft",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "L": {
+     "axes": "South-East-Zenith; elevation/azimuth from the geodetic horizon, azimuth from North to East",
+     "epoch": "-",
+     "mnemonic": "L",
+     "name": "Topocentric (ground station)",
+     "origin": "ground station site (WGS-84 geodetic, engine.geodesy)",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "N": {
+     "axes": "Earth mean equator and equinox of J2000 (SPICE J2000, treated as ICRF-aligned by SPICE)",
+     "epoch": "J2000.0 = 2000-01-01T12:00:00 TT",
+     "mnemonic": "N",
+     "name": "Inertial (EME2000 / SPICE J2000)",
+     "origin": "Earth centre of mass",
+     "realisation": "SPICE with DE430",
+     "time_scale": "TDB (ephemerides, propagation)"
+    },
+    "P": {
+     "axes": "IAU_EARTH: Earth-fixed, z = rotation pole, x = prime meridian",
+     "epoch": "-",
+     "mnemonic": "P",
+     "name": "Earth-fixed",
+     "origin": "Earth centre of mass",
+     "realisation": "SPICE PCK (engine.earth_orientation for Earth)",
+     "time_scale": "TDB"
+    },
+    "TEME": {
+     "axes": "SGP4 output frame, converted to N at the scenario epoch (engine.tle)",
+     "epoch": "-",
+     "mnemonic": "TEME",
+     "name": "True equator, mean equinox of date (TLE input only)",
+     "origin": "Earth centre of mass",
+     "realisation": "-",
+     "time_scale": "UTC"
+    }
+   },
+   "integrator": "rkf78",
+   "integrator_absolute_tolerance": 1e-08,
+   "integrator_relative_tolerance": 1e-10,
+   "rng_seed": 0,
+   "rng_seed_note": "each model's RNGSeed is derived from the scenario's seed (sim_settings.seed) and the model's name (SHA-256); a navigation error's own seed is kept, and a Monte Carlo run disperses them per run",
+   "rng_seeds": {
+    "Rec:CSSRawDataMsg": 3335757366,
+    "Rec:CmdTorqueBodyMsg": 4214472608,
+    "Rec:EclipseMsg": 139054789,
+    "Rec:HingedRigidBodyMsg": 3332325262,
+    "Rec:HingedRigidBodyMsg#2": 3455658746,
+    "Rec:IMUSensorMsg": 705316174,
+    "Rec:MTBCmdMsg": 405266180,
+    "Rec:NavAttMsg": 371790668,
+    "Rec:PowerStorageStatusMsg": 3769895843,
+    "Rec:RWSpeedMsg": 3665585116,
+    "Rec:SCStatesMsg": 455511093,
+    "Rec:STSensorMsg": 2669411928,
+    "Rec:SpicePlanetStateMsg": 3018906880,
+    "Rec:SpicePlanetStateMsg#2": 1042706021,
+    "Rec:SpicePlanetStateMsg#3": 3168780788,
+    "SpiceInterfaceData": 193139944,
+    "eclipse": 3106495040,
+    "geodeticProxy_microsat-2": 1871748905,
+    "magneticFieldWMM": 569455582,
+    "microsat-2": 1951852177,
+    "microsat-2Battery": 3235278577,
+    "microsat-2BusPowerSink": 1945920299,
+    "microsat-2Drag": 218966488,
+    "microsat-2SolarPanel": 1039034957,
+    "microsat-2Srp": 657430686,
+    "microsat-2_css-1": 964480880,
+    "microsat-2_desatTAM": 570168817,
+    "microsat-2_imu-1": 2568061231,
+    "microsat-2_mrpFeedback": 2790172971,
+    "microsat-2_mtbEffector": 1168697199,
+    "microsat-2_mtbMomentumManagement": 1902746074,
+    "microsat-2_reactionWheels": 68995336,
+    "microsat-2_rwMotorTorque": 1621755186,
+    "microsat-2_simpleNav": 3640000698,
+    "microsat-2_st-1": 2266147279,
+    "microsat-2_sunSafePoint": 3563913368,
+    "microsat-2_tamComm": 1416137037,
+    "midStepOrientation_earth": 2740032469,
+    "midStepOrientation_moon": 3302786954,
+    "midStepOrientation_sun": 896524486,
+    "msisAtmosphere": 177801070,
+    "spaceWeatherData": 3328266330,
+    "zeroWind": 507670478
+   },
+   "scenario_file": "",
+   "scenario_file_migrations": [],
+   "scenario_file_sha256": "",
+   "series_frames": {
+    "ephemeris.earth.position_N": "N",
+    "ephemeris.moon.position_N": "N",
+    "ephemeris.sun.position_N": "N",
+    "microsat-2.attitude_sigma_BN": "B relative to N",
+    "microsat-2.body_rate_omega_BN_B": "B",
+    "microsat-2.orbit_elements.arg_periapsis": "N",
+    "microsat-2.orbit_elements.eccentricity": "N",
+    "microsat-2.orbit_elements.inclination": "N",
+    "microsat-2.orbit_elements.raan": "N",
+    "microsat-2.orbit_elements.semi_major_axis": "N",
+    "microsat-2.orbit_elements.true_anomaly": "N",
+    "microsat-2.orbit_elements_mean.arg_periapsis": "N",
+    "microsat-2.orbit_elements_mean.eccentricity": "N",
+    "microsat-2.orbit_elements_mean.inclination": "N",
+    "microsat-2.orbit_elements_mean.raan": "N",
+    "microsat-2.orbit_elements_mean.semi_major_axis": "N",
+    "microsat-2.orbit_elements_mean.true_anomaly": "N",
+    "microsat-2.position_N": "N",
+    "microsat-2.sun_heading_body": "B",
+    "microsat-2.velocity_N": "N"
+   },
+   "time_system": {
+    "conversions": "ERFA (SOFA): dat, utctai, taitt, dtdb",
+    "epoch_tdb_seconds_past_j2000": 946758669.1839365,
+    "epoch_utc": "2030-01-01T08:30:00",
+    "last_leap_second_utc": "2017-01-01",
+    "tai_minus_utc_s": 37.0,
+    "tdb_minus_tt_s": -6.343412076977751e-05,
+    "time_variable": "TDB seconds since the scenario epoch",
+    "tt_minus_tai_s": 32.184
+   },
+   "transformations": {
+    "N -> B": "dcm_BN from the spacecraft MRP sigma_BN (integrated by Basilisk)",
+    "N -> H": "dcm_HN from r_BN_N, v_BN_N (Basilisk hillFrame convention)",
+    "N -> P": "dcm_PN = J20002Pfix from SPICE pxform(J2000, P frame, ET) each step; time dependent; SPICE evaluates the PCK Chebyshev/rotation model at ET (no further interpolation)",
+    "P -> L": "dcm_LP from the site's geodetic latitude and longitude (engine.geodesy)",
+    "TEME -> N": "P^T N^T R3(-Eq) at the scenario epoch, IAU 1976/1980 (engine.tle)"
+   }
+  },
+  "series": {
+   "ephemeris.earth.dcm_PN": {
+    "columns": [
+     "c00",
+     "c01",
+     "c02",
+     "c10",
+     "c11",
+     "c12",
+     "c20",
+     "c21",
+     "c22"
+    ],
+    "data": [
+     {
+      "first": -0.668318995493287,
+      "last": 0.21149731127987992,
+      "max": 0.21149731127987992,
+      "mean": -0.24703698311918315,
+      "min": -0.668318995493287,
+      "non_finite": 0,
+      "samples": [
+       -0.668318995493287,
+       -0.5954929158463644,
+       -0.517401298006216,
+       -0.4327635315562258,
+       -0.3461724104028058,
+       -0.25652032245198153,
+       -0.16460000002881575,
+       -0.07122423193884088,
+       0.024968324688733647,
+       0.11875786542909528,
+       0.21149731127987992
+      ]
+     },
+     {
+      "first": -0.7438722668037573,
+      "last": -0.9773783785851923,
+      "max": -0.7438722668037573,
+      "mean": -0.9308064423113643,
+      "min": -0.9999995885596769,
+      "non_finite": 0,
+      "samples": [
+       -0.7438722668037573,
+       -0.8033586982411663,
+       -0.8557415759958844,
+       -0.9015066027888698,
+       -0.9381703797215604,
+       -0.9665385551035147,
+       -0.9863602884876999,
+       -0.9974603097840222,
+       -0.9996882393717432,
+       -0.9929231806146841,
+       -0.9773783785851923
+      ]
+     },
+     {
+      "first": 0.001941891625057526,
+      "last": -0.0006264148484056547,
+      "max": 0.001941891625057526,
+      "mean": 0.0007113812802413993,
+      "min": -0.0006264148484056547,
+      "non_finite": 0,
+      "samples": [
+       0.001941891625057526,
+       0.0017289121011336503,
+       0.0015006443825555536,
+       0.001253348736076458,
+       0.0010004444086907853,
+       0.0007386931308415527,
+       0.00047040936999387546,
+       0.0001979653623837967,
+       -8.260788223809027e-05,
+       -0.00035608530486609875,
+       -0.0006264148484056547
+      ]
+     },
+     {
+      "first": 0.7438690840324047,
+      "last": 0.9773742277167289,
+      "max": 0.9999953354940831,
+      "mean": 0.9308024764793937,
+      "min": 0.7438690840324047,
+      "non_finite": 0,
+      "samples": [
+       0.7438690840324047,
+       0.8033552645436391,
+       0.8557379217327518,
+       0.9015027562915552,
+       0.9381663797530901,
+       0.9665344370321522,
+       0.9863560887262077,
+       0.9974560654676933,
+       0.9996839883143512,
+       0.9929189609960095,
+       0.9773742277167289
+      ]
+     },
+     {
+      "first": -0.6683218166305928,
+      "last": 0.21149823871217333,
+      "max": 0.21149823871217333,
+      "mean": -0.24703800720339145,
+      "min": -0.6683218166305928,
+      "non_finite": 0,
+      "samples": [
+       -0.6683218166305928,
+       -0.5954954255613003,
+       -0.5174034741053204,
+       -0.4327653463855962,
+       -0.34617385591242644,
+       -0.2565213858581454,
+       -0.16460067192643643,
+       -0.07122450638463439,
+       0.0249684594237614,
+       0.11875839887010395,
+       0.21149823871217333
+      ]
+     },
+     {
+      "first": -0.002176059828080153,
+      "last": -0.0028485113263670408,
+      "max": -0.002176059828080153,
+      "mean": -0.0027171523875441773,
+      "min": -0.0029165662796922617,
+      "non_finite": 0,
+      "samples": [
+       -0.002176059828080153,
+       -0.002348843456988513,
+       -0.002500858303873194,
+       -0.0026335083982952714,
+       -0.0027395955364546702,
+       -0.0028214585513256997,
+       -0.0028783735169733214,
+       -0.0029098371043942014,
+       -0.002915397385594973,
+       -0.002894752565261107,
+       -0.0028485113263670408
+      ]
+     },
+     {
+      "first": 0.0029165190955727574,
+      "last": 0.0029165590186871226,
+      "max": 0.0029165590186871226,
+      "mean": 0.0029165390571300144,
+      "min": 0.0029165190955727574,
+      "non_finite": 0,
+      "samples": [
+       0.0029165190955727574,
+       0.0029165230694012377,
+       0.002916527043229718,
+       0.002916531109473206,
+       0.002916535083301686,
+       0.0029165390571301653,
+       0.0029165430309586442,
+       0.0029165470047871236,
+       0.0029165510710301664,
+       0.0029165550448586445,
+       0.0029165590186871226
+      ]
+     },
+     {
+      "first": -9.78897401408286e-06,
+      "last": -9.78924201385498e-06,
+      "max": -9.78897401408286e-06,
+      "mean": -9.789108013664093e-06,
+      "min": -9.78924201385498e-06,
+      "non_finite": 0,
+      "samples": [
+       -9.78897401408286e-06,
+       -9.789000689821791e-06,
+       -9.78902736559642e-06,
+       -9.789054661777773e-06,
+       -9.78908133762594e-06,
+       -9.7891080135111e-06,
+       -9.789134689432607e-06,
+       -9.789161365389813e-06,
+       -9.789188661755852e-06,
+       -9.789215337787243e-06,
+       -9.78924201385498e-06
+      ]
+     },
+     {
+      "first": 0.9999957469012262,
+      "last": 0.9999957467847858,
+      "max": 0.9999957469012262,
+      "mean": 0.9999957468430061,
+      "min": 0.9999957467847858,
+      "non_finite": 0,
+      "samples": [
+       0.9999957469012262,
+       0.9999957468896361,
+       0.999995746878046,
+       0.9999957468661864,
+       0.9999957468545962,
+       0.9999957468430061,
+       0.999995746831416,
+       0.9999957468198258,
+       0.9999957468079661,
+       0.9999957467963759,
+       0.9999957467847858
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "ephemeris.earth.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m"
+   },
+   "ephemeris.moon.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -164312624.0039168,
+      "last": -151755254.09371045,
+      "max": -151755254.09371045,
+      "mean": -158052549.4083335,
+      "min": -164312624.0039168,
+      "non_finite": 0,
+      "samples": [
+       -164312624.0039168,
+       -163072836.98876253,
+       -161830762.73254824,
+       -160557453.31675977,
+       -159310804.00923866,
+       -158061919.55591413,
+       -156810817.26476052,
+       -155557514.48118222,
+       -154272805.40566272,
+       -153015103.6640686,
+       -151755254.09371045
+      ]
+     },
+     {
+      "first": -293111718.2859372,
+      "last": -299139085.638207,
+      "max": -293111718.2859372,
+      "mean": -296159633.2217476,
+      "min": -299139085.638207,
+      "non_finite": 0,
+      "samples": [
+       -293111718.2859372,
+       -293730064.95265824,
+       -294344366.45020974,
+       -294968757.6761172,
+       -295574848.5021628,
+       -296176868.3329804,
+       -296774808.7570121,
+       -297368661.42811763,
+       -297972084.53443986,
+       -298557641.379102,
+       -299139085.638207
+      ]
+     },
+     {
+      "first": -140738243.97584644,
+      "last": -142039429.81464982,
+      "max": -140738243.97584644,
+      "mean": -141405201.45119476,
+      "min": -142039429.81464982,
+      "non_finite": 0,
+      "samples": [
+       -140738243.97584644,
+       -140876569.9041909,
+       -141012953.19553083,
+       -141150495.2531972,
+       -141282942.2338449,
+       -141413440.84925115,
+       -141541989.26778707,
+       -141668585.68927565,
+       -141796103.75091732,
+       -141918745.40661192,
+       -142039429.81464982
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m"
+   },
+   "ephemeris.sun.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 26922373930.844112,
+      "last": 27308252277.420444,
+      "max": 27308252277.420444,
+      "mean": 27115328667.136086,
+      "min": 26922373930.844112,
+      "non_finite": 0,
+      "samples": [
+       26922373930.844112,
+       26960791489.51527,
+       26999207205.151062,
+       27038514398.69871,
+       27076926376.612022,
+       27115336502.799877,
+       27153744774.387196,
+       27192151188.498577,
+       27231448849.25739,
+       27269851496.424362,
+       27308252277.420444
+      ]
+     },
+     {
+      "first": -132692309773.42213,
+      "last": -132625764479.6711,
+      "max": -132625764479.6711,
+      "mean": -132659114776.56636,
+      "min": -132692309773.42213,
+      "non_finite": 0,
+      "samples": [
+       -132692309773.42213,
+       -132685727909.43306,
+       -132679136790.68657,
+       -132672382810.37155,
+       -132665772967.94977,
+       -132659153871.8277,
+       -132652525522.358,
+       -132645887919.89474,
+       -132639086376.67986,
+       -132632430054.13254,
+       -132625764479.6711
+      ]
+     },
+     {
+      "first": -57518748221.89306,
+      "last": -57489888922.82788,
+      "max": -57489888922.82788,
+      "mean": -57504352249.98596,
+      "min": -57518748221.89306,
+      "non_finite": 0,
+      "samples": [
+       -57518748221.89306,
+       -57515893806.889626,
+       -57513035377.91286,
+       -57510106318.942856,
+       -57507239769.20063,
+       -57504369206.00979,
+       -57501494629.54523,
+       -57498616039.98254,
+       -57495666352.485245,
+       -57492779643.93817,
+       -57489888922.82788
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m"
+   },
+   "microsat-2.attitude_sigma_BN": {
+    "columns": [
+     "s1",
+     "s2",
+     "s3"
+    ],
+    "data": [
+     {
+      "first": 0.05,
+      "last": 0.4892203741084046,
+      "max": 0.5793269806248913,
+      "mean": 0.48780970166314547,
+      "min": 0.05,
+      "non_finite": 0,
+      "samples": [
+       0.05,
+       0.48954076229697163,
+       0.48949319529156265,
+       0.48944557554247065,
+       0.48941967461491603,
+       0.4893959989500813,
+       0.48935818978715784,
+       0.48930762683521306,
+       0.48926886701651234,
+       0.4892492539869647,
+       0.4892203741084046
+      ]
+     },
+     {
+      "first": 0.1,
+      "last": 0.2360686344095669,
+      "max": 0.2509505238685999,
+      "mean": 0.2353568507439352,
+      "min": 0.1,
+      "non_finite": 0,
+      "samples": [
+       0.1,
+       0.23574761933687008,
+       0.23577244973477818,
+       0.23580418517041887,
+       0.2358503313674984,
+       0.23589090733100954,
+       0.2359207688332927,
+       0.23594747818622872,
+       0.23598684815399532,
+       0.23603260353875236,
+       0.2360686344095669
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -0.08772466469349176,
+      "max": 0.0,
+      "mean": -0.08778072094356826,
+      "min": -0.11408363097627333,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -0.088361184914033,
+       -0.08830051493913514,
+       -0.08823071974143326,
+       -0.088149573384094,
+       -0.08807610931883676,
+       -0.088012876458051,
+       -0.0879485235143326,
+       -0.08787176406215022,
+       -0.08779300238181623,
+       -0.08772466469349176
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.battery_charge": {
+    "columns": [
+     "charge"
+    ],
+    "data": [
+     {
+      "first": 270.0,
+      "last": 298.3319958806684,
+      "max": 300.0,
+      "mean": 292.8647371458537,
+      "min": 265.1802105744118,
+      "non_finite": 0,
+      "samples": [
+       270.0,
+       300.0,
+       280.1802105744118,
+       300.0,
+       300.0,
+       300.0,
+       289.2561310532996,
+       267.7561310532996,
+       300.0,
+       300.0,
+       298.3319958806684
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "W*hr"
+   },
+   "microsat-2.battery_net_power": {
+    "columns": [
+     "net_power"
+    ],
+    "data": [
+     {
+      "first": -60.0,
+      "last": -60.0,
+      "max": 348.2067933053919,
+      "mean": 210.75361010767529,
+      "min": -60.0,
+      "non_finite": 0,
+      "samples": [
+       -60.0,
+       348.15807508077944,
+       -60.0,
+       348.1706551475164,
+       348.2060882983297,
+       348.18004303096313,
+       -60.0,
+       -60.0,
+       348.1975292789483,
+       348.19844061151645,
+       -60.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "W"
+   },
+   "microsat-2.body_rate_omega_BN_B": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -1.4514804774880612e-07,
+      "max": 0.025128871444827734,
+      "mean": 0.00011457091280657671,
+      "min": -0.004052965887294987,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -1.3598364662928687e-07,
+       -1.7122067475647356e-07,
+       -1.6195882589940484e-07,
+       -1.059294961217116e-07,
+       -1.2456029631481842e-07,
+       -1.6801102784400917e-07,
+       -1.668312871509529e-07,
+       -1.26636450603623e-07,
+       -1.2374418791456785e-07,
+       -1.4514804774880612e-07
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 1.1525095699231877e-07,
+      "max": 0.00854063643820008,
+      "mean": 3.638910788887351e-05,
+      "min": -0.0009803389811319958,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.3084089955780513e-07,
+       1.1221594298135057e-07,
+       1.420605133959711e-07,
+       2.0592736265862718e-07,
+       1.5620444263275397e-07,
+       9.744418158179984e-08,
+       1.3105013543332095e-07,
+       2.0240642373382545e-07,
+       1.6426198013706925e-07,
+       1.1525095699231877e-07
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2.098076143227259e-10,
+      "max": 6.17198180457549e-05,
+      "mean": -1.8123354819672175e-06,
+      "min": -0.00032250852107892317,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.3559670992131187e-09,
+       -1.6630888650856966e-09,
+       -1.5805071486587306e-09,
+       3.6527280355969888e-09,
+       1.4679242238590358e-09,
+       -1.2033420707402725e-09,
+       -1.7480309044086924e-09,
+       1.9755261427055033e-09,
+       3.6298689357734853e-09,
+       -2.098076143227259e-10
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "microsat-2.control_torque": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.03459603424700691,
+      "last": -6.4545310101142285e-09,
+      "max": 0.03459603424700691,
+      "mean": 4.527764376732665e-05,
+      "min": -0.009738209698103014,
+      "non_finite": 0,
+      "samples": [
+       0.03459603424700691,
+       4.5424271869832004e-09,
+       4.921393970352612e-08,
+       -4.960912238930595e-08,
+       -1.2198187534712136e-07,
+       4.011522503920586e-08,
+       1.7823124120450454e-08,
+       -1.613821819793326e-08,
+       -7.977571899749815e-10,
+       -1.0567040667811434e-08,
+       -6.4545310101142285e-09
+      ]
+     },
+     {
+      "first": 0.010321911028400537,
+      "last": -4.5051318286290426e-08,
+      "max": 0.010321911028400537,
+      "mean": 1.3967268184590177e-05,
+      "min": -0.0025606729358086623,
+      "non_finite": 0,
+      "samples": [
+       0.010321911028400537,
+       -4.7755738235648864e-08,
+       7.669057591178655e-08,
+       5.23593578249898e-08,
+       -2.1935104792344924e-07,
+       1.1977060802213848e-08,
+       4.120528518835426e-08,
+       -1.0215478921144243e-08,
+       1.4313177461882683e-09,
+       -1.0885803357039934e-08,
+       -4.5051318286290426e-08
+      ]
+     },
+     {
+      "first": -0.0,
+      "last": 1.454273341717039e-10,
+      "max": 0.0002235455306022528,
+      "mean": 1.2562133105515903e-06,
+      "min": -4.278085251067328e-05,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       -9.398833359773947e-10,
+       1.1527635968827649e-09,
+       1.0955224004177784e-09,
+       -2.5318742715124415e-09,
+       -1.0174859827228102e-09,
+       8.340918894165239e-10,
+       1.211640842009103e-09,
+       -1.3693282841405974e-09,
+       -2.516029575124142e-09,
+       1.454273341717039e-10
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "N*m"
+   },
+   "microsat-2.eclipse.illumination_factor": {
+    "columns": [
+     "illumination_factor"
+    ],
+    "data": [
+     {
+      "first": 1.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.6674364896073903,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       1.0,
+       1.0,
+       0.0,
+       1.0,
+       1.0,
+       1.0,
+       0.0,
+       0.0,
+       1.0,
+       1.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.mtb_dipole_commanded": {
+    "columns": [
+     "mtb_0",
+     "mtb_1",
+     "mtb_2"
+    ],
+    "data": [
+     {
+      "first": -0.0,
+      "last": 0.0005585041133332799,
+      "max": 1.896497723804007,
+      "mean": -0.0856024785742125,
+      "min": -13.763414497205215,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       -0.12808237267974382,
+       -0.039326023647189415,
+       0.003743434432036906,
+       0.0034560467194422423,
+       -0.00024168338701822576,
+       0.0004052152645912816,
+       0.0004536819612592177,
+       -0.0026320212158876637,
+       -0.0023748354053834526,
+       0.0005585041133332799
+      ]
+     },
+     {
+      "first": -0.0,
+      "last": 0.0003589456346847936,
+      "max": 15.0,
+      "mean": 0.054657801780075205,
+      "min": -11.369825053365005,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       -0.26262937417775756,
+       -0.06206821868242472,
+       0.0044220827527724545,
+       -0.003523211100858323,
+       -0.0004053663238943907,
+       0.000744733154764784,
+       -0.00017271447217285103,
+       -0.0011639148007285209,
+       0.0017186158710615405,
+       0.0003589456346847936
+      ]
+     },
+     {
+      "first": -0.0,
+      "last": -0.0002998052006998528,
+      "max": 10.403815517078842,
+      "mean": -0.06393266572542364,
+      "min": -15.0,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       -0.1706335224003601,
+       -0.020854098622779194,
+       0.000958432769928566,
+       0.001413224508109396,
+       -0.00018661563345896513,
+       0.0002100120539694335,
+       0.00021989135043701252,
+       -0.0004894475622659991,
+       0.0032411446004842665,
+       -0.0002998052006998528
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "A*m^2"
+   },
+   "microsat-2.orbit_elements.arg_periapsis": {
+    "columns": [
+     "argp"
+    ],
+    "data": [
+     {
+      "first": 4.855392033102785,
+      "last": 4.516389552237639,
+      "max": 6.099549680391536,
+      "mean": 3.1361238576581756,
+      "min": 0.13207162953680293,
+      "non_finite": 0,
+      "samples": [
+       4.855392033102785,
+       4.222352863181445,
+       2.6602141869501557,
+       1.2107217193158486,
+       3.3683263716127887,
+       3.290592306526546,
+       5.453920149191514,
+       3.9645132590042227,
+       2.3798890915144737,
+       2.113490177811268,
+       4.516389552237639
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements.eccentricity": {
+    "columns": [
+     "e"
+    ],
+    "data": [
+     {
+      "first": 4.9400706359605605e-09,
+      "last": 0.0017669303988687571,
+      "max": 0.0019202507405765405,
+      "mean": 0.0010458759143661782,
+      "min": 4.9400706359605605e-09,
+      "non_finite": 0,
+      "samples": [
+       4.9400706359605605e-09,
+       0.001886273041337034,
+       0.0007306314471595218,
+       0.001185509969194842,
+       0.0009343544838337832,
+       0.0013135159844689407,
+       0.0006200415315830117,
+       0.0004119323595027045,
+       0.0018332398887643052,
+       0.00033511524634718563,
+       0.0017669303988687571
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.orbit_elements.inclination": {
+    "columns": [
+     "i"
+    ],
+    "data": [
+     {
+      "first": 1.7032668170212664,
+      "last": 1.703469352609348,
+      "max": 1.703483829054199,
+      "mean": 1.7033804847781924,
+      "min": 1.7032668170212664,
+      "non_finite": 0,
+      "samples": [
+       1.7032668170212664,
+       1.7034539012111036,
+       1.70329717389133,
+       1.7034398148069312,
+       1.703344915476202,
+       1.703388982386413,
+       1.703408367766769,
+       1.7033405429768531,
+       1.7034580738195801,
+       1.7033024325351744,
+       1.703469352609348
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements.raan": {
+    "columns": [
+     "raan"
+    ],
+    "data": [
+     {
+      "first": 4.5277331485211425,
+      "last": 4.530395878984274,
+      "max": 4.530395878984274,
+      "mean": 4.529059002646617,
+      "min": 4.5277331485211425,
+      "non_finite": 0,
+      "samples": [
+       4.5277331485211425,
+       4.527974958860261,
+       4.528314729141661,
+       4.528462687369409,
+       4.528890353198,
+       4.528975010310971,
+       4.529418681964293,
+       4.529513715902439,
+       4.529934630005183,
+       4.530095934196764,
+       4.530395878984274
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements.semi_major_axis": {
+    "columns": [
+     "a"
+    ],
+    "data": [
+     {
+      "first": 6928000.009755177,
+      "last": 6909385.184054723,
+      "max": 6928074.529450501,
+      "mean": 6918631.953352278,
+      "min": 6909274.2452917285,
+      "non_finite": 0,
+      "samples": [
+       6928000.009755177,
+       6909852.071871162,
+       6926222.400765547,
+       6912581.095209867,
+       6922135.41337748,
+       6918157.7580867065,
+       6916272.671075389,
+       6923728.242821458,
+       6911868.659657456,
+       6927148.9339841,
+       6909385.184054723
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m"
+   },
+   "microsat-2.orbit_elements.true_anomaly": {
+    "columns": [
+     "true_anomaly"
+    ],
+    "data": [
+     {
+      "first": 1.4277932793623602,
+      "last": 3.39949714129996,
+      "max": 6.280468760942795,
+      "mean": 3.209277902576597,
+      "min": 0.0027075165288467738,
+      "non_finite": 0,
+      "samples": [
+       1.4277932793623602,
+       3.4733556204681797,
+       0.1663007386543662,
+       3.0633931321713512,
+       2.318693898383297,
+       3.8088039197216683,
+       3.0586920996286686,
+       5.962984927843913,
+       2.7109720752837463,
+       4.38975079434557,
+       3.39949714129996
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements_mean.arg_periapsis": {
+    "columns": [
+     "argp"
+    ],
+    "data": [
+     {
+      "first": 9.424788271282072,
+      "last": 15.642402149751744,
+      "max": 15.708965841087007,
+      "mean": 12.880142466434481,
+      "min": 9.380916313326699,
+      "non_finite": 0,
+      "samples": [
+       9.424788271282072,
+       15.67068904337376,
+       9.414586573834837,
+       9.400576911080993,
+       9.416263467053183,
+       15.659821135695932,
+       15.677575329999744,
+       15.689963478319264,
+       9.403211906973734,
+       15.668263884850075,
+       15.642402149751744
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements_mean.eccentricity": {
+    "columns": [
+     "e"
+    ],
+    "data": [
+     {
+      "first": 0.0004748000148212046,
+      "last": 0.0005112264676331382,
+      "max": 0.000511294391009199,
+      "mean": 0.0004881558162465365,
+      "min": 0.0004660522083352323,
+      "non_finite": 0,
+      "samples": [
+       0.0004748000148212046,
+       0.000477375695024795,
+       0.0004833723648273673,
+       0.0004815445087515171,
+       0.00047945792434004247,
+       0.00047610464917899337,
+       0.0005011356650412153,
+       0.0005061410559206272,
+       0.0004939500733264483,
+       0.000489976878340739,
+       0.0005112264676331382
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.orbit_elements_mean.inclination": {
+    "columns": [
+     "i"
+    ],
+    "data": [
+     {
+      "first": 1.7033569212477495,
+      "last": 1.7033795341252373,
+      "max": 1.7033933575935736,
+      "mean": 1.7033799904598461,
+      "min": 1.7033569212477495,
+      "non_finite": 0,
+      "samples": [
+       1.7033569212477495,
+       1.703367902701613,
+       1.703370094724709,
+       1.703381937689539,
+       1.703378225402617,
+       1.7033833807808074,
+       1.7033856921007047,
+       1.7033889239649733,
+       1.7033922964350696,
+       1.7033839735066747,
+       1.7033795341252373
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements_mean.raan": {
+    "columns": [
+     "raan"
+    ],
+    "data": [
+     {
+      "first": -1.7554521586604461,
+      "last": -1.7528004857731037,
+      "max": -1.7528004857731037,
+      "mean": -1.7541199027049506,
+      "min": -1.7554521586604461,
+      "non_finite": 0,
+      "samples": [
+       -1.7554521586604461,
+       -1.7551816288966966,
+       -1.7549243031336406,
+       -1.7546525142434368,
+       -1.7543799295573483,
+       -1.7541189120189025,
+       -1.7538549655478786,
+       -1.7535945861624065,
+       -1.7533137278317061,
+       -1.7530504427736644,
+       -1.7528004857731037
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.orbit_elements_mean.semi_major_axis": {
+    "columns": [
+     "a"
+    ],
+    "data": [
+     {
+      "first": 6918630.823506446,
+      "last": 6918644.148569,
+      "max": 6918731.6400496,
+      "mean": 6918657.675640404,
+      "min": 6918549.073937348,
+      "non_finite": 0,
+      "samples": [
+       6918630.823506446,
+       6918715.009641511,
+       6918640.946011202,
+       6918556.7330828905,
+       6918671.531150468,
+       6918724.472808135,
+       6918616.672000557,
+       6918703.66001466,
+       6918645.9851693595,
+       6918673.370028669,
+       6918644.148569
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m"
+   },
+   "microsat-2.orbit_elements_mean.true_anomaly": {
+    "columns": [
+     "true_anomaly"
+    ],
+    "data": [
+     {
+      "first": 3.1415823483745755,
+      "last": -1.4433181766861423,
+      "max": 3.1415823483745755,
+      "mean": -0.25156247348983424,
+      "min": -3.1276744876202462,
+      "non_finite": 0,
+      "samples": [
+       3.1415823483745755,
+       -1.69182629454241,
+       -0.30482638570140624,
+       1.1566470930338295,
+       2.5540367403940922,
+       -2.277340455102333,
+       -0.8816811384263601,
+       0.5206345702780102,
+       1.9709031072404464,
+       -2.8818814835816764,
+       -1.4433181766861423
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -1272037.8044031078,
+      "last": -821221.2038070654,
+      "max": 1553237.4265801813,
+      "mean": -158453.39286179715,
+      "min": -1557619.6494669283,
+      "non_finite": 0,
+      "samples": [
+       -1272037.8044031078,
+       -1088874.8420481558,
+       925901.5137458188,
+       1351967.236384437,
+       -540508.543351137,
+       -1521040.8471426547,
+       59095.91672891226,
+       1536258.9817673583,
+       372672.9437806868,
+       -1422121.456036237,
+       -821221.2038070654
+      ]
+     },
+     {
+      "first": -6810220.546484027,
+      "last": 586502.0277561742,
+      "max": 6807855.259507758,
+      "mean": -477018.0359915413,
+      "min": -6814650.466958755,
+      "non_finite": 0,
+      "samples": [
+       -6810220.546484027,
+       -906732.7404284177,
+       6521210.02893663,
+       2735893.009577373,
+       -5729228.429889192,
+       -4542506.402666617,
+       4296580.667240613,
+       5883445.636505637,
+       -2670136.7888075234,
+       -6612577.548556371,
+       586502.0277561742
+      ]
+     },
+     {
+      "first": 0.03629752179798364,
+      "last": 6847222.800225331,
+      "max": 6860622.6617762195,
+      "mean": 520059.48139667814,
+      "min": -6860342.098831546,
+      "non_finite": 0,
+      "samples": [
+       0.03629752179798364,
+       6775593.00778828,
+       2126022.8113721837,
+       -6211591.3748331545,
+       -3854947.7097819224,
+       5001173.222437582,
+       5424929.801901429,
+       -3305375.508638235,
+       -6376884.839429612,
+       1498989.424130278,
+       6847222.800225331
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m"
+   },
+   "microsat-2.rw_speeds": {
+    "columns": [
+     "wheel_0",
+     "wheel_1",
+     "wheel_2"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -0.0015913064495887788,
+      "max": 13.173582491247043,
+      "mean": -0.15463351215978063,
+      "min": -61.573663682323044,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.7075780732812225,
+       0.009612038602926434,
+       -0.0037109964180973686,
+       0.001322069932457121,
+       -0.0004062024938750228,
+       -0.0008326051732691995,
+       -0.00031549113849497373,
+       0.0013461787576837102,
+       0.0023708200456839675,
+       -0.0015913064495887788
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0021399389597969967,
+      "max": 4.294454516245098,
+      "mean": 0.001204975079209351,
+      "min": -15.955637322100067,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -0.1471696031066674,
+       -0.02780594596562172,
+       0.0009358961503392899,
+       0.0024810490640449546,
+       0.00040170667745792834,
+       0.0008900582788129912,
+       -0.0006739035101930092,
+       -0.004226535114518214,
+       0.002809036941966152,
+       0.0021399389597969967
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -0.0004023594296445401,
+      "max": 0.2782275467829217,
+      "mean": -0.08022585076703152,
+      "min": -1.6130166186583093,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -0.30461316738321037,
+       0.06463296744924892,
+       0.010176260505571766,
+       0.0029522019518732566,
+       -0.000346519546039019,
+       -0.0015497757303299133,
+       0.00012160437125309132,
+       0.0028116509940606152,
+       0.00024764458620635775,
+       -0.0004023594296445401
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "microsat-2.sensor.css-1": {
+    "columns": [
+     "output"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 1.0342466070107772,
+      "mean": 0.685130028151641,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.0341231242916762,
+       0.0,
+       1.0341550970959383,
+       1.0342448272184945,
+       1.0341787826107391,
+       0.0,
+       0.0,
+       1.0342231690838413,
+       1.0342254118323109,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.sensor.imu-1.accel": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -1.5678160685953417e-08,
+      "max": 2.70165695681347e-06,
+      "mean": -1.3447029634041343e-08,
+      "min": -5.639131188286801e-06,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -1.1306632332934534e-08,
+       -1.7684962446970426e-08,
+       9.03216476549023e-09,
+       4.6012447014786246e-08,
+       2.731877142293432e-09,
+       -1.942969705629766e-08,
+       -9.394008182976392e-09,
+       4.5651405773058645e-08,
+       2.622801630737796e-08,
+       -1.5678160685953417e-08
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 1.992795336984051e-09,
+      "max": 1.627820202435927e-05,
+      "mean": 4.694522598826728e-08,
+      "min": -1.2927873202367972e-05,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -1.418493178363354e-09,
+       1.1487705112523536e-08,
+       1.0538929573416066e-08,
+       -2.525284749930805e-08,
+       -9.534398089290282e-09,
+       8.5155067867815e-09,
+       1.2078434984553891e-08,
+       -1.4685819134475955e-08,
+       -2.4494561462258097e-08,
+       1.992795336984051e-09
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 2.2924906202933753e-08,
+      "max": 2.449077774214377e-08,
+      "mean": -1.5436452535255922e-07,
+      "min": -2.7860290602220172e-05,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -9.270444030615512e-09,
+       -3.524732712092574e-09,
+       -8.51798325313032e-08,
+       -4.0437257254174834e-08,
+       -9.670013214922088e-09,
+       9.199713492488481e-09,
+       -2.082192517817101e-08,
+       -7.338459771365473e-08,
+       -6.0402599284381005e-09,
+       2.2924906202933753e-08
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m/s^2"
+   },
+   "microsat-2.sensor.imu-1.gyro": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.6659394344514072e-05,
+      "max": 0.02512927924817975,
+      "mean": 0.00011525517745251571,
+      "min": -0.004038394126727551,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -8.300502513526767e-08,
+       -1.576141840972114e-06,
+       -1.8160375632291753e-05,
+       -1.302141913919293e-06,
+       6.41803785312369e-06,
+       -1.2017892250761587e-05,
+       -1.5370363189292494e-05,
+       -2.0608597982611327e-06,
+       7.643521550345557e-06,
+       1.6659394344514072e-05
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -6.465056099840717e-06,
+      "max": 0.0085839897907116,
+      "mean": 3.678929879185253e-05,
+      "min": -0.0009787637164117538,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.2673180038252466e-05,
+       1.98026979664089e-06,
+       -5.556795013194756e-06,
+       5.861709022158966e-06,
+       8.056237668866411e-06,
+       2.042271846727522e-06,
+       -2.4250105168464164e-06,
+       6.697885331868359e-06,
+       -1.1242667989014299e-05,
+       -6.465056099840717e-06
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 5.823144959248933e-06,
+      "max": 5.9385783540952845e-05,
+      "mean": -1.802876388256593e-06,
+      "min": -0.00032330637540060756,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.0945064319388081e-06,
+       7.947187355775373e-06,
+       -1.6888960739173245e-06,
+       3.5383586329169557e-06,
+       1.6943403355348532e-05,
+       4.090963994530437e-06,
+       -4.247436401520088e-06,
+       -9.542144518955687e-06,
+       -8.683294373281392e-07,
+       5.823144959248933e-06
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "microsat-2.sensor.st-1": {
+    "columns": [
+     "q0",
+     "q1",
+     "q2",
+     "q3"
+    ],
+    "data": [
+     {
+      "first": 0.9753128570936358,
+      "last": 0.5352148362665297,
+      "max": 0.9753128570936358,
+      "mean": 0.5366803087861245,
+      "min": 0.416838357951985,
+      "non_finite": 0,
+      "samples": [
+       0.9753128570936358,
+       0.5348841938941142,
+       0.534933320800974,
+       0.5350026068115012,
+       0.5350078684485595,
+       0.5350259540211468,
+       0.5350614290258635,
+       0.5351230788607388,
+       0.5351701431894546,
+       0.5351859095180184,
+       0.5352148362665297
+      ]
+     },
+     {
+      "first": 0.09876417340719261,
+      "last": 0.7510441860782734,
+      "max": 0.8207994538895855,
+      "mean": 0.7488040507037507,
+      "min": 0.09876417340719261,
+      "non_finite": 0,
+      "samples": [
+       0.09876417340719261,
+       0.7513817013886087,
+       0.7513501263385653,
+       0.7512811753524171,
+       0.7512669783132196,
+       0.7512417135528523,
+       0.7511952332466206,
+       0.7511447026760893,
+       0.7511010898133711,
+       0.7510647888591754,
+       0.7510441860782734
+      ]
+     },
+     {
+      "first": 0.19751068027400126,
+      "last": 0.3624073305539503,
+      "max": 0.36320488026977815,
+      "mean": 0.3614319754621281,
+      "min": 0.19751068027400126,
+      "non_finite": 0,
+      "samples": [
+       0.19751068027400126,
+       0.361842639551126,
+       0.3618752323893116,
+       0.3619464448673977,
+       0.3620150367390509,
+       0.36207938168062015,
+       0.36216060033190556,
+       0.36220837170362297,
+       0.3622706096848636,
+       0.3623742636786944,
+       0.3624073305539503
+      ]
+     },
+     {
+      "first": 4.091991604868859e-06,
+      "last": -0.13467975482222838,
+      "max": 4.091991604868859e-06,
+      "mean": -0.13472046130914386,
+      "min": -0.16163390034558314,
+      "non_finite": 0,
+      "samples": [
+       4.091991604868859e-06,
+       -0.13562574292248986,
+       -0.1355199104598511,
+       -0.1354384631994948,
+       -0.13531304877607675,
+       -0.13520960655114533,
+       -0.1351099118628599,
+       -0.13501859716373432,
+       -0.13490765759697437,
+       -0.1347687582958974,
+       -0.13467975482222838
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.solar_array.wing-1.deflection": {
+    "columns": [
+     "deflection"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -1.8860576611541894e-09,
+      "max": 3.1485392881939615e-05,
+      "mean": 1.4194590299479566e-07,
+      "min": -9.15627033293184e-06,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       7.677117058732166e-10,
+       2.9234275894194985e-10,
+       7.0236428317644825e-09,
+       3.332199448854574e-09,
+       7.986827769412861e-10,
+       -7.557899696025524e-10,
+       1.7157932201126843e-09,
+       6.045452824003297e-09,
+       4.972504548213524e-10,
+       -1.8860576611541894e-09
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.solar_array.wing-1.deflection_rate": {
+    "columns": [
+     "deflection_rate"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 5.2445523509166016e-14,
+      "max": 6.468830817280841e-08,
+      "mean": -2.0458991199033486e-07,
+      "min": -7.604143131019925e-05,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       7.753262503735683e-13,
+       1.851343832287645e-12,
+       2.650960503217388e-12,
+       -5.481466041134693e-12,
+       1.2245088876601206e-12,
+       2.3319706104334865e-12,
+       1.1734634577897506e-12,
+       -4.140867816152964e-12,
+       -1.9260606425124846e-12,
+       5.2445523509166016e-14
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "microsat-2.solar_array.wing-2.deflection": {
+    "columns": [
+     "deflection"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -1.8940111217141538e-09,
+      "max": 1.3764837448324753e-05,
+      "mean": -1.1660463907435679e-07,
+      "min": -3.072207256026731e-05,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       7.614886623984122e-10,
+       2.8983603852884914e-10,
+       7.025821240192365e-09,
+       3.3339149856868824e-09,
+       7.96471705803566e-10,
+       -7.603022663882715e-10,
+       1.719208011533926e-09,
+       6.054200876555031e-09,
+       4.97981678229916e-10,
+       -1.8940111217141538e-09
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad"
+   },
+   "microsat-2.solar_array.wing-2.deflection_rate": {
+    "columns": [
+     "deflection_rate"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.8709006853048897e-13,
+      "max": 7.609059798247662e-05,
+      "mean": 2.0431155944744484e-07,
+      "min": -6.560843029380411e-08,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.1044150344406796e-12,
+       2.1576466104683364e-12,
+       1.8011502914840585e-12,
+       -4.119254549494685e-12,
+       1.1293073530589376e-12,
+       1.861973779605588e-12,
+       1.5513746141706774e-12,
+       -3.503570156068128e-12,
+       -2.8822153366195934e-12,
+       1.8709006853048897e-13
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "microsat-2.sun_heading_body": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.28421142146916184,
+      "last": 1.7230499617937323e-06,
+      "max": 0.28421142146916184,
+      "mean": 0.0012183488274456638,
+      "min": -0.05807389834065624,
+      "non_finite": 0,
+      "samples": [
+       0.28421142146916184,
+       2.1237893449987943e-06,
+       7.640823297599963e-06,
+       7.460551656374159e-06,
+       -3.7895945950161547e-06,
+       5.948022470919634e-06,
+       5.379121843868129e-06,
+       3.987852788794877e-06,
+       7.0104611002430595e-06,
+       5.09339337106951e-06,
+       1.7230499617937323e-06
+      ]
+     },
+     {
+      "first": -0.9525937632559964,
+      "last": 5.295779200498174e-06,
+      "max": 0.26941177942703165,
+      "mean": -0.003754814086917696,
+      "min": -0.9525937632559964,
+      "non_finite": 0,
+      "samples": [
+       -0.9525937632559964,
+       4.437612294849735e-06,
+       3.436111329968572e-06,
+       8.006742651556209e-06,
+       9.665572991923721e-06,
+       2.2863866332434313e-06,
+       4.878780525741089e-06,
+       6.518193677418349e-06,
+       4.381289924804133e-06,
+       4.765352832669656e-06,
+       5.295779200498174e-06
+      ]
+     },
+     {
+      "first": -0.10857711596951469,
+      "last": 0.999999999984493,
+      "max": 0.9999999999894954,
+      "mean": 0.9956611929588443,
+      "min": -0.10857711596951469,
+      "non_finite": 0,
+      "samples": [
+       -0.10857711596951469,
+       0.9999999999878983,
+       0.9999999999649055,
+       0.9999999999401165,
+       0.9999999999461077,
+       0.9999999999796966,
+       0.999999999973631,
+       0.9999999999708049,
+       0.999999999965829,
+       0.9999999999756741,
+       0.999999999984493
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "-"
+   },
+   "microsat-2.velocity_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -984.8417341325176,
+      "last": 1431.1469315086379,
+      "max": 1703.4282421798969,
+      "mean": 35.21711451358767,
+      "min": -1699.1065322221632,
+      "non_finite": 0,
+      "samples": [
+       -984.8417341325176,
+       1218.221034296211,
+       1368.1986543075718,
+       -837.404069847558,
+       -1592.7909422187615,
+       333.7817297462876,
+       1695.427053791422,
+       199.05692107048128,
+       -1642.3184502316421,
+       -661.0892604541954,
+       1431.1469315086379
+      ]
+     },
+     {
+      "first": 183.95232938187036,
+      "last": 7431.380037881162,
+      "max": 7458.442760596842,
+      "mean": 578.1591106253481,
+      "min": -7457.798540883208,
+      "non_finite": 0,
+      "samples": [
+       183.95232938187036,
+       7389.469642098238,
+       2139.145833103152,
+       -6829.529284848138,
+       -4039.444922255432,
+       5561.067128612308,
+       5788.332982923614,
+       -3756.880559928823,
+       -6862.914121255989,
+       1807.7978214060897,
+       7431.380037881162
+      ]
+     },
+     {
+      "first": 7518.706887795521,
+      "last": -468.35371994603236,
+      "max": 7518.706887795521,
+      "mean": 535.2087950748593,
+      "min": -7525.7230205969045,
+      "non_finite": 0,
+      "samples": [
+       7518.706887795521,
+       1179.8913311426666,
+       -7154.338185531486,
+       -3191.1100044101663,
+       6217.4165574706,
+       5144.023442756859,
+       -4602.370143824122,
+       -6592.531077179345,
+       2771.359030234524,
+       7336.510506290888,
+       -468.35371994603236
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 12960.0,
+     "max": 12960.0,
+     "mean": 6480.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      1290.0,
+      2580.0,
+      3900.0000000000005,
+      5190.0,
+      6480.0,
+      7770.000000000001,
+      9060.0,
+      10380.0,
+      11670.0,
+      12960.0
+     ]
+    },
+    "units": "m/s"
+   }
+  },
+  "summary": [
+   {
+    "decimals": 2,
+    "key": "run_length",
+    "label": "Run length",
+    "unit": "h",
+    "value": 3.6
+   },
+   {
+    "decimals": 3,
+    "key": "microsat-2.mean_sma_change",
+    "label": "microsat-2: Mean semi-major axis change",
+    "unit": "km",
+    "value": -0.0016131054302677512
+   },
+   {
+    "decimals": 2,
+    "key": "microsat-2.lowest_battery_charge",
+    "label": "microsat-2: Lowest battery charge",
+    "unit": "W*h",
+    "value": 265.1802105744118
+   },
+   {
+    "decimals": 0,
+    "key": "microsat-2.eclipses",
+    "label": "microsat-2: Eclipses",
+    "unit": "-",
+    "value": 3.0
+   },
+   {
+    "decimals": 1,
+    "key": "microsat-2.eclipse_time",
+    "label": "microsat-2: Eclipse time",
+    "unit": "min",
+    "value": 70.5
+   }
+  ],
+  "warnings": [
+   "space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap",
+   "the magnetic field model (WMM, epoch 2025.0) is valid from 2025.0 to 2030.0; outside those years magnetometer readings and torque-rod control use an extrapolated field",
+   "Earth orientation: IAU rotation model, no IERS data installed",
+   "Earth gravity field oriented by the IAU model (no IERS data): ~160 m/day position error at degree 20, 400 km"
+  ]
+ },
+ "span_days": 0.15,
+ "template": "34_microsat_flexible_thermal.json",
+ "thermal": {
+  "microsat-2": {
+   "thermal_heat_flows": [
+    {
+     "albedo_w": 3.0705967212385366,
+     "case": "nominal",
+     "conduction_w": 28.22394650930378,
+     "dissipation_w": 0.0,
+     "emitted_w": -49.00607191517461,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 8.050368080277307,
+     "node": "bus",
+     "radiation_w": 0.0,
+     "solar_w": 9.326902858370795
+    },
+    {
+     "albedo_w": 1.3021540854308855,
+     "case": "nominal",
+     "conduction_w": 1.706812777971801,
+     "dissipation_w": 0.0,
+     "emitted_w": -53.04840509912179,
+     "heat pipes_w": 40.223660029307474,
+     "heater_w": 0.0,
+     "infrared_w": 9.808919995937448,
+     "node": "radiator",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 0.0,
+     "case": "nominal",
+     "conduction_w": -3.08219817711343,
+     "dissipation_w": 3.0,
+     "emitted_w": 0.0,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 0.0,
+     "node": "battery",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 0.0,
+     "case": "nominal",
+     "conduction_w": -19.810565076194518,
+     "dissipation_w": 60.0,
+     "emitted_w": 0.0,
+     "heat pipes_w": -40.223660029307474,
+     "heater_w": 0.0,
+     "infrared_w": 0.0,
+     "node": "avionics",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 47.700721100039814,
+     "case": "nominal",
+     "conduction_w": -3.5189980172982867,
+     "dissipation_w": 0.0,
+     "emitted_w": -511.6187915428148,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 63.206100157450976,
+     "node": "solar array wing-1",
+     "radiation_w": 0.0,
+     "solar_w": 403.6437801395656
+    },
+    {
+     "albedo_w": 47.700721100039814,
+     "case": "nominal",
+     "conduction_w": -3.5189980166693524,
+     "dissipation_w": 0.0,
+     "emitted_w": -511.6187915036453,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 63.20610011764563,
+     "node": "solar array wing-2",
+     "radiation_w": 0.0,
+     "solar_w": 403.64378013958327
+    },
+    {
+     "albedo_w": 2.7714660565431277,
+     "case": "hot",
+     "conduction_w": 28.632184657345118,
+     "dissipation_w": 0.0,
+     "emitted_w": -50.34544430527198,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 9.309430386671387,
+     "node": "bus",
+     "radiation_w": 0.0,
+     "solar_w": 9.647579108804905
+    },
+    {
+     "albedo_w": 1.2389523188624807,
+     "case": "hot",
+     "conduction_w": 1.7084383108356438,
+     "dissipation_w": 0.0,
+     "emitted_w": -54.5151050663212,
+     "heat pipes_w": 40.2249915520189,
+     "heater_w": 0.0,
+     "infrared_w": 11.343016488193067,
+     "node": "radiator",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 0.0,
+     "case": "hot",
+     "conduction_w": -3.0790026253088536,
+     "dissipation_w": 3.0,
+     "emitted_w": 0.0,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 0.0,
+     "node": "battery",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 0.0,
+     "case": "hot",
+     "conduction_w": -19.7727115405038,
+     "dissipation_w": 60.0,
+     "emitted_w": 0.0,
+     "heat pipes_w": -40.2249915520189,
+     "heater_w": 0.0,
+     "infrared_w": 0.0,
+     "node": "avionics",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 44.37676095117676,
+     "case": "hot",
+     "conduction_w": -3.744454401552045,
+     "dissipation_w": 0.0,
+     "emitted_w": -531.7029436723367,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 73.0914144000855,
+     "node": "solar array wing-1",
+     "radiation_w": 0.0,
+     "solar_w": 417.521803304569
+    },
+    {
+     "albedo_w": 44.37676095117676,
+     "case": "hot",
+     "conduction_w": -3.7444544008160676,
+     "dissipation_w": 0.0,
+     "emitted_w": -531.702943627046,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 73.09141435405468,
+     "node": "solar array wing-2",
+     "radiation_w": 0.0,
+     "solar_w": 417.5218033045873
+    },
+    {
+     "albedo_w": 2.0001371755310977,
+     "case": "cold",
+     "conduction_w": 28.53999812484711,
+     "dissipation_w": 0.0,
+     "emitted_w": -47.85744214924805,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 8.317441902845747,
+     "node": "bus",
+     "radiation_w": 0.0,
+     "solar_w": 9.019872405827499
+    },
+    {
+     "albedo_w": 0.8941385321378351,
+     "case": "cold",
+     "conduction_w": 1.6118306525158355,
+     "dissipation_w": 0.0,
+     "emitted_w": -51.92906997668302,
+     "heat pipes_w": 39.28913828713402,
+     "heater_w": 0.0,
+     "infrared_w": 10.134334403385608,
+     "node": "radiator",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 0.0,
+     "case": "cold",
+     "conduction_w": -3.074556286148211,
+     "dissipation_w": 3.0,
+     "emitted_w": 0.0,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 0.0,
+     "node": "battery",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 0.0,
+     "case": "cold",
+     "conduction_w": -20.70822660320104,
+     "dissipation_w": 60.0,
+     "emitted_w": 0.0,
+     "heat pipes_w": -39.28913828713402,
+     "heater_w": 0.0,
+     "infrared_w": 0.0,
+     "node": "avionics",
+     "radiation_w": 0.0,
+     "solar_w": 0.0
+    },
+    {
+     "albedo_w": 32.02622997981653,
+     "case": "cold",
+     "conduction_w": -3.184522944374418,
+     "dissipation_w": 0.0,
+     "emitted_w": -484.9334451824292,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 65.3029849967977,
+     "node": "solar array wing-1",
+     "radiation_w": 0.0,
+     "solar_w": 390.35631115179643
+    },
+    {
+     "albedo_w": 32.02622997981653,
+     "case": "cold",
+     "conduction_w": -3.1845229436392755,
+     "dissipation_w": 0.0,
+     "emitted_w": -484.93344514203056,
+     "heat pipes_w": 0.0,
+     "heater_w": 0.0,
+     "infrared_w": 65.3029849556718,
+     "node": "solar array wing-2",
+     "radiation_w": 0.0,
+     "solar_w": 390.35631115181354
+    }
+   ],
+   "thermal_heaters": [
+    {
+     "case": "nominal",
+     "duty": 0.0,
+     "energy_wh": 0.0,
+     "heater": "battery heater A",
+     "node": "battery",
+     "orbit_average_w": 0.0,
+     "power_w": 8.0,
+     "sized_w": 0.0
+    },
+    {
+     "case": "nominal",
+     "duty": 0.0,
+     "energy_wh": 0.0,
+     "heater": "battery heater B",
+     "node": "battery",
+     "orbit_average_w": 0.0,
+     "power_w": 8.0,
+     "sized_w": 0.0
+    },
+    {
+     "case": "hot",
+     "duty": 0.0,
+     "energy_wh": 0.0,
+     "heater": "battery heater A",
+     "node": "battery",
+     "orbit_average_w": 0.0,
+     "power_w": 8.0,
+     "sized_w": 0.0
+    },
+    {
+     "case": "hot",
+     "duty": 0.0,
+     "energy_wh": 0.0,
+     "heater": "battery heater B",
+     "node": "battery",
+     "orbit_average_w": 0.0,
+     "power_w": 8.0,
+     "sized_w": 0.0
+    },
+    {
+     "case": "cold",
+     "duty": 0.0,
+     "energy_wh": 0.0,
+     "heater": "battery heater A",
+     "node": "battery",
+     "orbit_average_w": 0.0,
+     "power_w": 8.0,
+     "sized_w": 0.0
+    },
+    {
+     "case": "cold",
+     "duty": 0.0,
+     "energy_wh": 0.0,
+     "heater": "battery heater B",
+     "node": "battery",
+     "orbit_average_w": 0.0,
+     "power_w": 8.0,
+     "sized_w": 0.0
+    }
+   ],
+   "thermal_radiators": [
+    {
+     "absorbed_w": 11.111074081368333,
+     "area_m2": 0.16000000000000003,
+     "case": "nominal",
+     "emitted_w": 53.04840509912179,
+     "node": "radiator",
+     "rejected_w": 41.93733101775345
+    },
+    {
+     "absorbed_w": 12.581968807055548,
+     "area_m2": 0.16000000000000003,
+     "case": "hot",
+     "emitted_w": 54.5151050663212,
+     "node": "radiator",
+     "rejected_w": 41.93313625926565
+    },
+    {
+     "absorbed_w": 11.028472935523444,
+     "area_m2": 0.16000000000000003,
+     "case": "cold",
+     "emitted_w": 51.92906997668302,
+     "node": "radiator",
+     "rejected_w": 40.90059704115957
+    }
+   ],
+   "thermal_summary": [
+    {
+     "case": "nominal",
+     "cold_margin_k": 45.38041487756328,
+     "hot_margin_k": 33.86043806204958,
+     "max_c": 16.13956193795042,
+     "mean_c": 15.788022949325534,
+     "min_c": 15.380414877563283,
+     "node": "bus",
+     "operating_high_c": 50.0,
+     "operating_low_c": -30.0
+    },
+    {
+     "case": "nominal",
+     "cold_margin_k": null,
+     "hot_margin_k": null,
+     "max_c": 14.41597812961544,
+     "mean_c": 12.465180176153664,
+     "min_c": 10.816488277696521,
+     "node": "radiator",
+     "operating_high_c": null,
+     "operating_low_c": null
+    },
+    {
+     "case": "nominal",
+     "cold_margin_k": 15.987663381365792,
+     "hot_margin_k": 3.7474115068096694,
+     "max_c": 26.25258849319033,
+     "mean_c": 26.110084653183502,
+     "min_c": 25.987663381365792,
+     "node": "battery",
+     "operating_high_c": 30.0,
+     "operating_low_c": 10.0
+    },
+    {
+     "case": "nominal",
+     "cold_margin_k": 36.687821363585215,
+     "hot_margin_k": 31.895562238462105,
+     "max_c": 18.104437761537895,
+     "mean_c": 17.445134602476347,
+     "min_c": 16.687821363585215,
+     "node": "avionics",
+     "operating_high_c": 50.0,
+     "operating_low_c": -20.0
+    },
+    {
+     "case": "nominal",
+     "cold_margin_k": 54.27518862783148,
+     "hot_margin_k": 26.93429512905493,
+     "max_c": 83.06570487094507,
+     "mean_c": 38.01676641746227,
+     "min_c": -45.72481137216852,
+     "node": "solar array wing-1",
+     "operating_high_c": 110.0,
+     "operating_low_c": -100.0
+    },
+    {
+     "case": "nominal",
+     "cold_margin_k": 54.27518853549881,
+     "hot_margin_k": 26.934295153230323,
+     "max_c": 83.06570484676968,
+     "mean_c": 38.01676547658703,
+     "min_c": -45.72481146450119,
+     "node": "solar array wing-2",
+     "operating_high_c": 110.0,
+     "operating_low_c": -100.0
+    },
+    {
+     "case": "hot",
+     "cold_margin_k": 47.34128771531414,
+     "hot_margin_k": 31.894028461912,
+     "max_c": 18.105971538088,
+     "mean_c": 17.741445441625057,
+     "min_c": 17.341287715314138,
+     "node": "bus",
+     "operating_high_c": 50.0,
+     "operating_low_c": -30.0
+    },
+    {
+     "case": "hot",
+     "cold_margin_k": null,
+     "hot_margin_k": null,
+     "max_c": 16.716566169358032,
+     "mean_c": 14.427791271532552,
+     "min_c": 12.571983188169497,
+     "node": "radiator",
+     "operating_high_c": null,
+     "operating_low_c": null
+    },
+    {
+     "case": "hot",
+     "cold_margin_k": 17.930943462586697,
+     "hot_margin_k": 1.8124078067792198,
+     "max_c": 28.18759219322078,
+     "mean_c": 28.051084529797507,
+     "min_c": 27.930943462586697,
+     "node": "battery",
+     "operating_high_c": 30.0,
+     "operating_low_c": 10.0
+    },
+    {
+     "case": "hot",
+     "cold_margin_k": 38.58185312390458,
+     "hot_margin_k": 29.850562731109335,
+     "max_c": 20.149437268890665,
+     "mean_c": 19.40253142785736,
+     "min_c": 18.58185312390458,
+     "node": "avionics",
+     "operating_high_c": 50.0,
+     "operating_low_c": -20.0
+    },
+    {
+     "case": "hot",
+     "cold_margin_k": 57.41731251448999,
+     "hot_margin_k": 22.489404825403085,
+     "max_c": 87.51059517459692,
+     "mean_c": 41.069820806656715,
+     "min_c": -42.58268748551001,
+     "node": "solar array wing-1",
+     "operating_high_c": 110.0,
+     "operating_low_c": -100.0
+    },
+    {
+     "case": "hot",
+     "cold_margin_k": 57.41731243640453,
+     "hot_margin_k": 22.489404838941596,
+     "max_c": 87.5105951610584,
+     "mean_c": 41.06981986932529,
+     "min_c": -42.58268756359547,
+     "node": "solar array wing-2",
+     "operating_high_c": 110.0,
+     "operating_low_c": -100.0
+    },
+    {
+     "case": "cold",
+     "cold_margin_k": 43.71424535168592,
+     "hot_margin_k": 35.59008174251841,
+     "max_c": 14.409918257481593,
+     "mean_c": 14.076078776873699,
+     "min_c": 13.714245351685918,
+     "node": "bus",
+     "operating_high_c": 50.0,
+     "operating_low_c": -30.0
+    },
+    {
+     "case": "cold",
+     "cold_margin_k": null,
+     "hot_margin_k": null,
+     "max_c": 12.917371813551767,
+     "mean_c": 10.942683199095494,
+     "min_c": 9.320301872490518,
+     "node": "radiator",
+     "operating_high_c": null,
+     "operating_low_c": null
+    },
+    {
+     "case": "cold",
+     "cold_margin_k": 14.256957350318544,
+     "hot_margin_k": 5.500144963624507,
+     "max_c": 24.499855036375493,
+     "mean_c": 24.370145936128402,
+     "min_c": 24.256957350318544,
+     "node": "battery",
+     "operating_high_c": 30.0,
+     "operating_low_c": 10.0
+    },
+    {
+     "case": "cold",
+     "cold_margin_k": 35.08743227779479,
+     "hot_margin_k": 33.55003143274092,
+     "max_c": 16.449968567259077,
+     "mean_c": 15.806389370818238,
+     "min_c": 15.08743227779479,
+     "node": "avionics",
+     "operating_high_c": 50.0,
+     "operating_low_c": -20.0
+    },
+    {
+     "case": "cold",
+     "cold_margin_k": 54.506575076411536,
+     "hot_margin_k": 32.726993435490726,
+     "max_c": 77.27300656450927,
+     "mean_c": 34.43816460591831,
+     "min_c": -45.493424923588464,
+     "node": "solar array wing-1",
+     "operating_high_c": 110.0,
+     "operating_low_c": -100.0
+    },
+    {
+     "case": "cold",
+     "cold_margin_k": 54.506574974825156,
+     "hot_margin_k": 32.7269934488657,
+     "max_c": 77.2730065511343,
+     "mean_c": 34.438163658661715,
+     "min_c": -45.493425025174844,
+     "node": "solar array wing-2",
+     "operating_high_c": 110.0,
+     "operating_low_c": -100.0
+    }
+   ]
+  }
+ }
+}

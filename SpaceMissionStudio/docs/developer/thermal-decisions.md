@@ -445,3 +445,22 @@ its own values with its own source.
 **Why:** the brief asks for a sourced library and for anything without a
 source to be logged; a number without a source would break the rule the
 library has held since its start (model-analyses D-12).
+
+## T-39 The Phase 2 template (2026-11-16)
+
+**Chosen:** template 34, template 33's microsatellite with its two arrays
+as flexible wings (Basilisk's hinged panels, first mode 0.8 Hz), each a
+thermal node (T-37); a 10 mil silvered-Teflon radiator from the new
+library entries (T-38); 0.2 W/K across each hinge, the template's own
+assumption, stated in its file; and a thermal Monte Carlo of the hot case
+(20 runs, seed 34) over the radiator's absorptance, the heat pipe and the
+battery's isolators (T-36). The thermal step is 5 s: at 10 s the light
+wings at eclipse exit moved the step check to 0.6 K. Its claims are
+measured in `tests/test_template_claims.py`. **Not in it:** a
+specific-heat or conductivity table, because no source this project
+could read gives one for its materials (T-38); the tables are verified on
+analytic cases instead (`tests/test_thermal_tables.py`). **What it
+shows:** the hinge angle the run records moves by less than 0.01 deg
+after the Sun-safe turn, so the turning faces change the fluxes by a
+negligible amount; the machinery is exercised end to end, and the
+Monte Carlo finds the battery above its 30 degC limit in 4 of 20 runs.

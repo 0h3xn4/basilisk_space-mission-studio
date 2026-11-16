@@ -580,4 +580,19 @@ heater A runs all the time (sized at about 7.6 W).
 Try changing:
 - Heater A's power, or its setpoints (Spacecraft > 3D model > Thermal model > Heaters).
 - The safe-mode case's avionics power (Cases): at 20 W they stay in range.""",
+    "34": """\
+Template 33's microsatellite with its two arrays as flexible wings on hinges. Each wing is a node \
+of the thermal model whose faces turn with the hinge angle the run records. Run > Thermal solves \
+nominal, hot and cold, and its Studies run a Monte Carlo of the hot case.
+
+What to look at:
+- The wings swing by less than 0.01 deg after the Sun-safe turn: their sunlight follows the hinge, \
+and the hinge barely moves.
+- Each wing at about -46 to 88 degC, the bus at 14 to 18 degC and the battery at 24 to 28 degC.
+- Studies, Monte Carlo: in 4 of 20 runs the battery passes its 30 degC limit, when its isolators \
+conduct less.
+
+Try changing:
+- The isolators' conductance (Conductors), then run the Monte Carlo again.
+- A wing's first mode (Spacecraft > Solar arrays): a softer hinge swings further.""",
 }

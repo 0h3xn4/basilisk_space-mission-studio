@@ -399,7 +399,7 @@ its Scenario page ("Building your own scenario, step by step", below).
 
 ## 4. Your first simulation, in five minutes
 
-1. **Pick a template.** Home shows all 33 built-in example missions as
+1. **Pick a template.** Home shows all 34 built-in example missions as
    cards, numbered roughly from simplest to most advanced -- "01 -
    Two-body circular orbit" is the simplest possible case (one
    satellite, one orbit, nothing else going on) and a good first choice.
@@ -1898,7 +1898,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-three built-in templates teaches, in
+  describes what each of the thirty-four built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and
