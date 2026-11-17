@@ -17,6 +17,35 @@ case; and how it was checked.
 
 Newest first.
 
+## 2026-11-17: Scenario schema version 5 (decision B-01)
+
+**No computed number changes. The scenario hashes of the templates
+change.** The scenario file is now at schema version 5. Version 5 adds
+the optional `budgets` section of a spacecraft (the equipment list, the
+system modes and the static power budget; `docs/developer/system-budget-phase1-design.md`).
+The migration from 4 to 5 sets the version and changes nothing else.
+
+The 36 templates are saved at version 5. In each template file, only the
+line `"schema_version": 4` changed to `"schema_version": 5`. The version
+is part of the saved text and of the scenario's canonical JSON, so both
+hashes of each template in `tests/data/scenario_hashes.json` change (72
+values). The file was recorded again with the computation of
+`tests/test_scenario_hashes.py`.
+
+| Template | Hash | Before (version 4) | After (version 5) |
+|---|---|---|---|
+| 01 two-body circular orbit | saved text SHA-256 | `0227e9b704fb...` | `3340d296834e...` |
+| 01 two-body circular orbit | scenario SHA-256 | `16f53b9bde04...` | `d6ade2eba583...` |
+
+How it was checked: for each template, the saved text at version 5 with
+the version set back to 4 gives the recorded version 4 hash, and so does
+the canonical JSON. So the version is the only difference. The 36 golden
+output files (`tests/golden/`) do not change: they hold no schema
+version, and a run records no migration for a template.
+
+A file saved at version 5 does not open in SpaceMissionStudio 2.10.0 or
+earlier. Every older file still opens.
+
 ## 2026-11-16: NASA MSFC's November 2026 prediction (SRelD K-33)
 
 **Drag beyond CelesTrak's daily forecast changes: lifetimes most, some

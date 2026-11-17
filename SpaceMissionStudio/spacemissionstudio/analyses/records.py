@@ -79,6 +79,8 @@ def design_record(scenario, report) -> dict:
             "system_margin_kg": mass.system_margin_kg, "propellant_kg": mass.propellant_kg,
             "launch_mass_kg": mass.launch_mass_kg, "mass_limit_kg": mass.mass_limit_kg,
             "limit_source": mass.limit_source, "headroom_kg": mass.headroom_kg}
+        if mass.unknown:  # the equipment list's placeholder masses: the totals leave them out
+            results["mass_budget_totals"]["unknown_items"] = list(mass.unknown)
     if report.authority is not None:
         results["thruster_authority"] = {"com_bol_b_m": report.authority.com_bol_b_m,
                                          "com_eol_b_m": report.authority.com_eol_b_m,

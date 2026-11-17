@@ -29,6 +29,15 @@ the dry mass with it, an optional system margin on that (``system_margin_
 percent``), the propellant, and the launch mass, compared with the mass
 limit and its source. The model's typed or imported mass properties, when
 they replace the parts', are noted: the budget is always of the parts.
+
+The spacecraft's equipment list (its ``budgets`` section, ``schema.budgets``)
+adds a line, of kind "equipment list", for each item whose mass the 3D
+model does not hold (``mass_in_model`` false); its ``mass_column`` picks
+the policy's column. Without a 3D model those items replace the one line of
+``dry_mass_kg``, which the run still uses (a note compares the two). An
+item whose mass is a placeholder has a line with no mass: the totals leave
+it out and are incomplete (:attr:`MassBudget.unknown`). A spacecraft
+without a section has the lines it always had.
 """
 
 from __future__ import annotations
@@ -41,16 +50,16 @@ from ..config import materials as library
 @dataclass
 class MassLine:
     item: str
-    kind: str  # "part", "equipment", "solar array" or "propellant"
+    kind: str  # "part", "equipment", "equipment list", "solar array" or "propellant"
     subsystem: str
     maturity: str  # the category's label, or "" for none
-    mass_kg: float  # [kg] basic
+    mass_kg: float | None  # [kg] basic; None: unknown (a placeholder of the equipment list)
     margin_percent: float  # [%]
     column: str  # the policy's column used
 
     @property
-    def margin_kg(self) -> float:
-        return self.mass_kg * self.margin_percent / 100.0
+    def margin_kg(self) -> float | None:
+        return None if self.mass_kg is None else self.mass_kg * self.margin_percent / 100.0
 
 
 @dataclass
@@ -66,12 +75,18 @@ class MassBudget:
     notes: list = field(default_factory=list)
 
     @property
+    def unknown(self) -> list[str]:
+        """The lines of unknown mass: when there is one, every total leaves
+        it out and is incomplete."""
+        return [line.item for line in self.lines if line.mass_kg is None]
+
+    @property
     def basic_dry_kg(self) -> float:
-        return sum(line.mass_kg for line in self.lines)
+        return sum(line.mass_kg for line in self.lines if line.mass_kg is not None)
 
     @property
     def growth_kg(self) -> float:
-        return sum(line.margin_kg for line in self.lines)
+        return sum(line.margin_kg for line in self.lines if line.mass_kg is not None)
 
     @property
     def dry_with_growth_kg(self) -> float:
@@ -98,6 +113,8 @@ class MassBudget:
         """``{subsystem: (basic, growth)}`` [kg]."""
         groups: dict = {}
         for line in self.lines:
+            if line.mass_kg is None:
+                continue
             basic, growth = groups.get(line.subsystem or "(none)", (0.0, 0.0))
             groups[line.subsystem or "(none)"] = (basic + line.mass_kg, growth + line.margin_kg)
         return groups
@@ -105,7 +122,8 @@ class MassBudget:
     def rows(self) -> list[dict]:
         return [{"item": line.item, "kind": line.kind, "subsystem": line.subsystem, "maturity": line.maturity,
                  "basic_mass_kg": line.mass_kg, "growth_percent": line.margin_percent, "growth_kg": line.margin_kg,
-                 "mass_with_growth_kg": line.mass_kg + line.margin_kg, "column": line.column} for line in self.lines]
+                 "mass_with_growth_kg": None if line.mass_kg is None else line.mass_kg + line.margin_kg,
+                 "column": line.column} for line in self.lines]
 
 
 def mass_budget(sc) -> MassBudget:
@@ -120,12 +138,20 @@ def mass_budget(sc) -> MassBudget:
         budget.limit_source = settings.limit_source
 
     def line(item, kind, subsystem, maturity, mass):
-        if maturity:
-            margin, column = library.growth_allowance(policy, maturity, subsystem, mass)
+        if maturity and mass is None and subsystem == "electronics":  # the bracket needs the mass
+            margins = policy.categories[maturity][1]
+            margin = max(v for k, v in margins.items() if k.startswith("electronics"))
+            column, label = "electronics (mass unknown: the largest bracket)", policy.categories[maturity][0]
+        elif maturity:
+            margin, column = library.growth_allowance(policy, maturity, subsystem, 0.0 if mass is None else mass)
             label = policy.categories[maturity][0]
         else:
             margin, column, label = 0.0, "no maturity category", ""
-        budget.lines.append(MassLine(item, kind, subsystem, label, float(mass), float(margin), column))
+        budget.lines.append(MassLine(item, kind, subsystem, label, None if mass is None else float(mass),
+                                     float(margin), column))
+
+    section = getattr(sc, "budgets", None)
+    listed = [item for item in section.equipment if not item.mass_in_model] if section is not None else []
 
     if sc.model is not None:
         for part in sc.model.parts:
@@ -137,9 +163,11 @@ def mass_budget(sc) -> MassBudget:
         if sc.model.mass_properties_source != "computed":
             budget.notes.append(f"the model's mass properties are {sc.model.mass_properties_source}: the budget is "
                                 "of its parts, which the run does not use")
-    else:
+    elif not listed:
         line(sc.name, "spacecraft", "", "", sc.dry_mass_kg)
         budget.notes.append("no 3D model: the budget is the spacecraft's dry mass as one line")
+    for item in listed:
+        line(item.name, "equipment list", item.mass_column, item.maturity, item.mass_kg.known)
     for array in sc.solar_arrays:
         line(array.name, "solar array", "solar_array", "", array.mass_kg)
     for name, holder in (("fuel tank", sc.fuel_tank), ("station keeping", sc.station_keeping),
@@ -150,6 +178,16 @@ def mass_budget(sc) -> MassBudget:
         if mass:
             budget.propellant_kg += float(mass)
             budget.notes.append(f"propellant: {mass:g} kg in {name}")
+    if listed and sc.model is None:
+        budget.notes.append(f"no 3D model: the budget is the equipment list, basic dry mass {budget.basic_dry_kg:g} "
+                            f"kg; the run uses dry_mass_kg, {sc.dry_mass_kg:g} kg")
+    elif listed:
+        budget.notes.append(f"{len(listed)} equipment list item(s) are not in the 3D model (mass_in_model false): "
+                            "the run's dry mass, from the model, leaves them out")
+    if budget.unknown:
+        budget.notes.append(f"{len(budget.unknown)} line(s) of unknown mass (a placeholder): the totals leave them "
+                            "out and are incomplete: " + ", ".join(budget.unknown[:6])
+                            + ("..." if len(budget.unknown) > 6 else ""))
     unclassified = [ln.item for ln in budget.lines if not ln.maturity and ln.kind != "spacecraft"]
     if unclassified:
         budget.notes.append(f"{len(unclassified)} line(s) without a maturity category carry no growth allowance: "

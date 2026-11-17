@@ -47,6 +47,7 @@ from functools import cache
 from pathlib import Path
 from types import NoneType, UnionType
 
+from . import budgets as _budgets
 from . import command as _command
 from . import scenario as _scenario
 from . import thermal as _thermal
@@ -64,6 +65,11 @@ LIST_ITEMS = {
     ("ThermalConfig", "heaters"): "ThermalHeaterConfig",
     ("ThermalConfig", "cases"): "ThermalCaseConfig",
     ("ThermalMonteCarloConfig", "dispersions"): "ThermalDispersionConfig",
+    ("BudgetsConfig", "buses"): "BudgetBusConfig",
+    ("BudgetsConfig", "power_margins"): "PowerMarginConfig",
+    ("BudgetsConfig", "equipment"): "BudgetEquipmentConfig",
+    ("BudgetsConfig", "modes"): "BudgetModeConfig",
+    ("BudgetEquipmentConfig", "power_modes"): "BudgetPowerModeConfig",
     ("Scenario", "spacecraft"): "SpacecraftConfig",
     ("Scenario", "ground_stations"): "GroundStationConfig",
     ("Scenario", "fsw_exports"): "FswExportRecord",
@@ -122,6 +128,7 @@ CHOICES = {
     ("ThermalEnvironmentConfig", "albedo_model"): "ALBEDO_MODELS",
     ("ThermalCaseConfig", "preset"): "CASE_PRESETS",
     ("ThermalDispersionConfig", "distribution"): "DISTRIBUTIONS",
+    ("BudgetEquipmentConfig", "mass_column"): "MASS_COLUMNS",
 }
 #: What kind of name a field refers to: "spacecraft", "ground_station", "part" or "material".
 REFERENCES = {
@@ -144,13 +151,15 @@ REFERENCES = {
 def record(name: str) -> type | None:
     """The record class ``name`` of ``schema/scenario.py`` (or
     ``schema/command.py``'s ``Command``), or None."""
-    cls = getattr(_scenario, name, None) or getattr(_command, name, None) or getattr(_thermal, name, None)
+    cls = (getattr(_scenario, name, None) or getattr(_command, name, None) or getattr(_thermal, name, None)
+           or getattr(_budgets, name, None))
     return cls if isinstance(cls, type) and dataclasses.is_dataclass(cls) else None
 
 
 def constant(name: str):
     """The constant ``name`` of ``schema/scenario.py`` or ``schema/command.py``."""
-    return getattr(_scenario, name, None) or getattr(_command, name, None) or getattr(_thermal, name, ())
+    return (getattr(_scenario, name, None) or getattr(_command, name, None) or getattr(_thermal, name, None)
+            or getattr(_budgets, name, ()))
 
 
 @cache

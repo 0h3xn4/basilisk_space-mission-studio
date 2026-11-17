@@ -100,6 +100,17 @@ def _migrate_3_to_4(data: dict) -> dict:
     return data
 
 
+def _migrate_4_to_5(data: dict) -> dict:
+    """v4 -> v5: a spacecraft can have a ``budgets`` section (the equipment
+    list, the system modes and the static power budget;
+    ``schema/budgets.py``, decision B-01). The section is new and optional,
+    so a version 4 file has none, and nothing else changes: the step only
+    sets the version. Version 5 marks the files that 2.10.0 and earlier
+    cannot read."""
+    data["schema_version"] = 5
+    return data
+
+
 #: Fields this version no longer has, dropped on load whatever the file's
 #: version (step "retired fields"): a spacecraft's and its 3D model's.
 #: Files without them also open in versions that still had them (they had
@@ -138,6 +149,7 @@ MIGRATIONS: dict[int, Callable[[dict], dict]] = {
     1: _migrate_1_to_2,
     2: _migrate_2_to_3,
     3: _migrate_3_to_4,
+    4: _migrate_4_to_5,
 }
 
 

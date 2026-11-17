@@ -543,16 +543,35 @@ def _data_coverage_warnings(scenario) -> list[str]:
 def plausibility_warnings(scenario, base_dir=None) -> list[str]:
     """Checks to show while the scenario is edited (UX/UI guidelines,
     "plausibility checks while typing"): initial orbits that cannot be
-    flown, a run outside the installed reference data, and 3D models whose
-    applied values are out of date. Short lines, deterministic rules. Never
+    flown, a run outside the installed reference data, 3D models whose
+    applied values are out of date, and what the budgets sections leave
+    unknown. Short lines, deterministic rules. Never
     raises. ``base_dir`` (the scenario file's folder) resolves relative
     model mesh paths."""
     warnings: list[str] = []
     for name, check in (("orbits", _orbit_warnings), ("data coverage", _data_coverage_warnings),
                         ("3D models", lambda s: _model_warnings(s, base_dir)),
                         ("design checks", lambda s: _design_warnings(s, base_dir)),
-                        ("thermal models", lambda s: _thermal_warnings(s, base_dir))):
+                        ("thermal models", lambda s: _thermal_warnings(s, base_dir)),
+                        ("budgets", _budget_warnings)):
         warnings += _checked(name, check, scenario)
+    return warnings
+
+
+def _budget_warnings(scenario) -> list[str]:
+    """The findings of each spacecraft's ``budgets`` section
+    (``analyses.power_budget.findings``): placeholders and missing numbers
+    the power budget uses, items without a power margin or left out of a
+    system mode, duty cycles that do not add up to one, placeholder masses.
+    Nothing when no spacecraft has a section, so the warnings of a scenario
+    without one are as before."""
+    if not any(getattr(sc, "budgets", None) is not None for sc in scenario.spacecraft):
+        return []
+    from ..analyses import power_budget
+
+    warnings: list[str] = []
+    for sc in scenario.spacecraft:
+        warnings += power_budget.findings(sc)
     return warnings
 
 

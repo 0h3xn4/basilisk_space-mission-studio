@@ -37,6 +37,7 @@ New to the app? Do [Getting started](../getting-started.md) first.
 | Bring in a spacecraft designed in IDM-CIC (concurrent engineering), with its sensors, actuators, thrusters and power budget, and its later versions? | [Import from IDM-CIC](idm-cic.md) |
 | Check fields of view, thrusters, mass and launcher fit on my 3D model, and analyse disturbances, blinding, shading, exposure, brightness and re-entry? | [Analyses built on the 3D model](model-analyses.md) |
 | Model power, the radio link and data? | [Power, link and data](power-link-and-data.md) |
+| Keep an equipment list with sourced masses and powers, and get the power budget per system mode? | [Equipment list and power budget](budgets.md) |
 | Build a thermal model on my 3D model and find its temperatures, heater power and radiator heat? | [Thermal analysis](thermal.md) |
 | Plan a week of operations: images, passes, calibrations, against the battery and the memory? | [Plan a week of operations](operations.md#plan-a-week-of-operations) |
 | Fly a plan in the simulation and check it against the plan? | [Fly and verify a plan](operations.md#fly-and-verify-a-plan) |

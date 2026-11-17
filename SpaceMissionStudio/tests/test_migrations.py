@@ -248,3 +248,24 @@ def test_a_stored_run_record_with_the_retired_fields_still_opens():
     assert "vizard_model_path" in raw["spacecraft"][0]
     assert load_scenario(path).spacecraft[0].name == "sat-1"
     assert Scenario.from_dict(raw).spacecraft[0].name == "sat-1"
+
+
+def test_the_step_from_4_to_5_only_sets_the_version(tmp_path):
+    """Version 5 adds the optional ``budgets`` section of a spacecraft
+    (decision B-01). A version 4 file opens as it was: the step sets the
+    version and changes nothing else, so the file's record lists no change
+    and its scenario is the template's."""
+    from spacemissionstudio import output_provenance
+
+    template = _TESTS.parent / "spacemissionstudio" / "scenarios" / "templates" / "28_octagonal_bus_3d_model.json"
+    data = json.loads(template.read_text(encoding="utf-8"))
+    data["schema_version"] = 4
+    changes: list = []
+    migrated = migrate(json.loads(json.dumps(data)), changes)
+    assert changes == [] and migrated["schema_version"] == 5 == CURRENT_SCHEMA_VERSION
+    assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
+        {k: v for k, v in data.items() if k != "schema_version"}
+    path = tmp_path / "v4.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    assert load_scenario(path).to_dict() == load_scenario(template).to_dict()
+    assert output_provenance.scenario_file_record(path)["scenario_file_migrations"] == []

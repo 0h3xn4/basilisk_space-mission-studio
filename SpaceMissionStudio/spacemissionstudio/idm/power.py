@@ -52,13 +52,15 @@ class SystemMode:
 @dataclass
 class ModePower:
     """The power of the units counted in one system mode: the total [W],
-    each unit's (name, power [W], power mode name, or "custom"), and the
-    units no mapping covers in it."""
+    each unit's (name, power [W], power mode name, or "custom"), the same
+    by the unit's ``fullId`` (the equipment list of the ``budgets``
+    section is made from it), and the units no mapping covers in it."""
 
     mode: SystemMode
     total_w: float = 0.0  # [W]
     units: list = field(default_factory=list)  # (unit name, power [W], how)
     unstated: list = field(default_factory=list)  # unit names
+    by_unit: dict = field(default_factory=dict)  # {placed unit fullId: (power [W], how)}
 
 
 def system_modes(model) -> list[SystemMode]:
@@ -128,10 +130,27 @@ def mode_powers(model, units) -> list[ModePower]:
                 continue
             power, how = found
             entry.units.append((unit.equipment.name, power, how))
+            entry.by_unit[unit.full_id] = (power, how)
             entry.total_w += power
         entry.total_w = float(f"{entry.total_w:.10g}")
         result.append(entry)
     return result
+
+
+def equipment_power_modes(model, unit) -> list[tuple[str, float]]:
+    """``(name, power [W])`` of each power mode the equipment of placed
+    ``unit`` defines, in file order."""
+    g = model.graph
+    node = g.find(unit.equipment.full_id) if unit.equipment.full_id else None
+    if node is None:
+        return []
+    return [(mode.text("name") or mode.id, number(mode.text("power"), f"{mode.full_id}.power", 0.0))
+            for mode in node.many("powerModes")]
+
+
+def has_power_modes(model, unit) -> bool:
+    """Whether the equipment of placed ``unit`` defines power modes."""
+    return bool(unit.equipment.full_id) and _has_power_modes(model.graph, unit.equipment.full_id)
 
 
 def _has_power_modes(g, equipment_full_id: str) -> bool:

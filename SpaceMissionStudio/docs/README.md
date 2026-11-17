@@ -62,6 +62,7 @@ to do. New here? Start with **Getting started**.
 | [The JSON page as a code editor](developer/json-editor.md) | How the scenario's text is highlighted, its problems marked in place, completed, explained and refactored, and what was decided |
 | [Analyses built on the 3D model: design](developer/model-analyses-design.md) | The design of the equipment, design checks and model analyses, with its [decisions](developer/model-analyses-decisions.md), [progress](developer/model-analyses-progress.md) and [sources](developer/model-analyses-sources.md) |
 | [System Budget Studio in SpaceMissionStudio: merge plan](developer/system-budget-merge-design.md) | The proposal to bring the budgets of System Budget Studio into SpaceMissionStudio: overlap, phases, licence, open questions |
+| [System budgets, phase 1: design](developer/system-budget-phase1-design.md) | The equipment list, the system modes and the static power budget: the file format, the calculation, the findings, with its [decisions](developer/system-budget-decisions.md) |
 | [Releasing](developer/releasing.md) | Version numbers, checks, building the packages |
 | [Keeping up with upstream Basilisk](developer/upstream-sync.md) | Merging upstream, refreshing the root README's upstream part |
 | [Development log](../HISTORY.md) | Why everything is the way it is, change by change |

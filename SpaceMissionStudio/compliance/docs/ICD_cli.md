@@ -125,6 +125,17 @@ design checks of a spacecraft's 3D model: fields of view, thrusters and plumes, 
 | `--out` | write the record (inputs, tables, findings, provenance) |
 | `--tables` | write each table as CSV, with its provenance |
 
+## `budgets`
+
+the static power budget of a spacecraft's budgets section per system mode: loads, margins, source power, per bus (no Basilisk needed)
+
+| Argument | Help |
+|---|---|
+| `scenario` |  |
+| `--spacecraft` | spacecraft name (default: the first) |
+| `--csv` | print the totals of each system mode as CSV |
+| `--explain` | each finding's rule, why, fix and override |
+
 ## `model-analyses`
 
 run the scenario and report its model analyses: disturbance torques, blinding, obstruction, shading, exposure, brightness
@@ -321,6 +332,7 @@ build or update a spacecraft's 3D model from an IDM-CIC model (IDM-CIC is (c) CN
 | `--solar-panels {+,-}` | set the power budget's panel area and normal from the solar array panels found by name (the largest group along one normal line); + or - says which side of that line carries the cells, which the file does not say. Without a power budget, one is made with the editor's panel efficiency and battery until they are set |
 | `--property-map` | read a property the model's equipment carry as a device or battery value, in the unit given, e.g. 'Torque=reaction_wheel.u_max[mN*m]' (repeat for each; 'none' for none). Without it, the mapping of the spacecraft's last IDM-CIC import is used. idm-info lists the properties and the values they can give |
 | `--battery` | set the power budget's battery capacity from the batteries' mapped capacity property (battery.capacity_wh), added up |
+| `--budgets` | also write the spacecraft's budgets section: one equipment item per imported unit that draws power, with the power modes its system modes use, and one system mode per system mode of the model with its duty cycle (the budgets command prints the power budget). The converter efficiency, the distribution loss and the margins are placeholders (TBD): the file does not give them |
 | `--out` | write the updated scenario here (default: overwrite) |
 
 ## `export-fsw`

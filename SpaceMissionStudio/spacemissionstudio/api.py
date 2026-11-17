@@ -36,8 +36,8 @@ results with their calculation traces, provenance), and :func:`write`
 saves one.
 
 Without Basilisk only :func:`load`, :func:`validate`, :func:`assumptions`,
-:func:`compare` and :func:`design_checks` work; the others raise
-``ImportError``.
+:func:`compare`, :func:`design_checks` and :func:`power_budget` work; the
+others raise ``ImportError``.
 """
 
 from __future__ import annotations
@@ -47,7 +47,8 @@ from pathlib import Path
 API_VERSION = 1
 
 __all__ = ["API_VERSION", "template", "load", "validate", "assumptions", "run", "summary", "lifetime", "budget",
-           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "model_analyses", "reentry",
+           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "power_budget", "model_analyses",
+           "reentry",
            "thermal", "thermal_model", "thermal_sweep", "thermal_sensitivity", "thermal_monte_carlo",
            "plan_opportunities", "plan_schedule", "plan_fly", "plan_verify", "plan_export", "plan_load",
            "plan_replan", "plan_robustness", "plan_compare", "record",
@@ -227,6 +228,19 @@ def design_checks(scenario, spacecraft: str | None = None, samples: int | None =
     from .analyses import common, design_checks as checks
 
     return checks.design_checks(common.spacecraft(scenario, spacecraft), samples=samples, base_dir=base_dir)
+
+
+def power_budget(scenario, spacecraft: str | None = None):
+    """The static power budget of a spacecraft's ``budgets`` section per
+    system mode: ``analyses.power_budget.PowerBudget`` with ``modes`` (each
+    with its rows, subsystems, buses, ``average`` and ``peak`` flows; None
+    for unknown, never 0), ``inputs`` (the numbers used, with their
+    sources), ``findings``, ``duty_cycle_average()`` and the export rows.
+    Empty for a spacecraft without the section. Needs no Basilisk.
+    """
+    from .analyses import common, power_budget as budget
+
+    return budget.power_budget(common.spacecraft(scenario, spacecraft))
 
 
 def model_analyses(scenario, result, spacecraft: str | None = None, base_dir=None):

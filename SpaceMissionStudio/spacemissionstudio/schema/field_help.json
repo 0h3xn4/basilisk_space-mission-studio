@@ -2,6 +2,36 @@
  "ActuatorConfig": {
   "mount": "where it sits on the 3D model; written only when set"
  },
+ "BudgetBusConfig": {
+  "converter_efficiency": "[-] ratio in (0, 1]"
+ },
+ "BudgetEquipmentConfig": {
+  "bus": "the name of an entry of buses; required for an item with power modes",
+  "mass_column": "\"\" or an S-120 column (MASS_COLUMNS): the growth allowance; \"\" the largest of the row",
+  "mass_in_model": "the 3D model already holds this item's mass: no mass budget line",
+  "mass_kg": "[kg] at least 0; may be absent when mass_in_model",
+  "maturity": "\"\" or a category of the spacecraft's mass policy: the growth allowance and power margin",
+  "power_modes": "list[BudgetPowerModeConfig]",
+  "source_id": "the IDM-CIC unit's fullId when an import made the item",
+  "subsystem": "the functional subsystem (AOCS, DHS, EPS...), free text; groups the power budget"
+ },
+ "BudgetModeConfig": {
+  "duty_cycle": "[-] 0 to 1, the share of the time in this mode; absent: not stated",
+  "units": "{equipment item name: its power-mode name}"
+ },
+ "BudgetPowerModeConfig": {
+  "average_w": "[W] at least 0",
+  "duty_cycle": "[-] 0 to 1, the share of the mode's time the item draws its average power",
+  "peak_w": "[W] at least the average; absent: the average"
+ },
+ "BudgetsConfig": {
+  "buses": "list[BudgetBusConfig]",
+  "distribution_loss": "[-] ratio in [0, 1), lost between source and loads",
+  "equipment": "list[BudgetEquipmentConfig]",
+  "modes": "list[BudgetModeConfig]",
+  "power_margins": "list[PowerMarginConfig]",
+  "system_power_margin_percent": "[%] 0 to 1000, on the sum of the margined loads"
+ },
  "Command": {
   "children": "nested commands, meaningful ONLY for ``kind in (\"if\", \"while\")`` (the compound/control-block kinds) -- empty for every other kind. A plain ``list[Command]``, not a separate type, so the same tree-walking code (validation, reference-scanning, execution) recurses uniformly regardless of nesting depth.",
   "enabled": "False leaves the command (and its children) out of the run, as if commented out; it is still validated, so enabling it again cannot break the scenario. Saved only when False (``Scenario.to_dict``), so older files load unchanged.",
@@ -273,6 +303,10 @@
   "panel_efficiency": "[-] fraction of incident solar power converted to electrical power, 0 < x <= 1",
   "panel_normal_b": "body-frame unit vector"
  },
+ "PowerMarginConfig": {
+  "maturity": "a category of the spacecraft's mass policy (\"estimated\" ... \"measured\" for AIAA S-120)",
+  "percent": "[%] the margin on an item's effective power, 0 to 1000"
+ },
  "PresetRecord": {
   "values": "{path: number}, as added"
  },
@@ -368,6 +402,10 @@
   "span_m": "[m] hinge to tip",
   "width_m": "[m] along the hinge"
  },
+ "SourcedValue": {
+  "source": "where the number comes from (a data sheet, a rule); \"TBD\" marks a placeholder",
+  "value": "the number, in the unit of the field that holds it; null for a placeholder"
+ },
  "SpaceWeatherConfig": {
   "atmosphere_model": "\"nrlmsise00\" | \"exponential\" | \"tabular\"",
   "atmosphere_table": "The profile \"tabular\" interpolates (ATMOSPHERE_TABLES); written only with \"tabular\": a scenario without it saves, and hashes, as before.",
@@ -378,6 +416,7 @@
  },
  "SpacecraftConfig": {
   "actuators": "list[ActuatorConfig]",
+  "budgets": "equipment list, system modes, power budget (schema/budgets.py, SRS-F-31)",
   "center_of_mass_b_m": "[m] The center of mass from body point B, in body axes (Basilisk's hub.r_BcB_B); inertia_kg_m2 is about this point. Facet locations, thruster and sensor positions stay measured from B, so an offset here gives drag, SRP and thrust their torque about the center of mass.",
   "control_params": "{\"K\": ..., \"P\": ...} MRP feedback control gains; see engine.fsw.DEFAULT_MRP_GAINS for the defaults used when a key is absent.",
   "dry_mass_kg": "[kg] The spacecraft's mass WITHOUT station-keeping propellant. With station_keeping unset (the default), this is simply the whole spacecraft's simulated mass, exactly as before StationKeepingConfig existed. With station_keeping set, engine.service initializes the simulated mass to dry_mass_kg + station_keeping.propellant_kg, and the station-keeping controller depletes it back toward dry_mass_kg as propellant burns -- see StationKeepingConfig's docstring.",

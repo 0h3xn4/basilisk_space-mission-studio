@@ -34,7 +34,7 @@ with a non-zero status and prints `ERROR:` or `INVALID:` with the reason.
 
 ```console
 $ spacemissionstudio validate spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json
-OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 4, epoch 2030-01-01T08:30:00
+OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 5, epoch 2030-01-01T08:30:00
 ```
 
 Useful `run` options:
@@ -81,7 +81,7 @@ run records them (`scenario_file_migrations`):
 
 ```console
 $ spacemissionstudio validate old.json
-OK: 'old' -- 1 spacecraft, schema version 4, epoch 2030-01-01T00:00:00
+OK: 'old' -- 1 spacecraft, schema version 5, epoch 2030-01-01T00:00:00
 MIGRATED: schema 1 -> 2: space_weather.source 'celestrak' -> 'synthetic'
 MIGRATED: schema 2 -> 3: space_weather.source 'synthetic' -> 'bundled'
 ```
@@ -240,7 +240,8 @@ drag and solar pressure act on.
 | `plan schedule scenario.json` | Plans the scenario's `operations` section: the activities, the requests not placed and why, the resources (`--geometry propagation|run|analytic`, `--from-run`, `--seed`, `--iterations`, `--plan-out plan.json`, `--out DIR` for the operations products); also `plan opportunities` (windows and passes), `plan verify scenario.json plan.json` (fly and check, `--strict`), `plan export`, `plan replan --from UTC`, `plan robustness` (`--runs`, `--seed`, `--lost-pass-probability`, `--margin-sigma-db`, `--slew-spread`, `--soc-range`, `--replan`) and `plan compare`; see [Operations planning](operations.md) |
 | `thermal scenario.json` | Runs the scenario and solves each spacecraft's thermal model: every case's temperatures, heaters (with their sized power) and radiators, and the findings (`--spacecraft`, `--case NAME` (repeatable), `--no-sizing`, `--out` for the record, `--tables DIR` for the tables and series as CSV and the plots as SVG); `--generate OUT.json` writes the scenario with a thermal model generated from each 3D model instead (`--replace` an existing one); see [Thermal analysis](thermal.md) |
 | `idm-info model.idm` | Lists an IDM-CIC model's elements, configurations and what an import would approximate, and the devices, system modes, solar array panels and properties it finds; writes nothing (`--configuration`, `--body-element`) |
-| `idm-import model.idm scenario.json --spacecraft sat-1` | Builds or updates the spacecraft's 3D model from an IDM-CIC model (`--configuration`, `--stowed-configuration`, `--body-element`, `--apply-facets`, `--out`), with `--origin element\|cog` the origin of the body frame at the body element's or at the centre of gravity, with `--devices` the sensors and actuators found by name (and the thrusters with a plume cone, onto the 3D model's equipment), with `--bus-load MODE`, `--solar-panels +`/`-` and `--battery` the power budget's bus load, panel and battery, and with `--property-map 'NAME=KIND.PARAM[UNIT]'` (`none` for none) values from the team's properties; see [Import a spacecraft from IDM-CIC](idm-cic.md) |
+| `budgets scenario.json` | The static power budget of a spacecraft's `budgets` section per system mode, with no run: load, with margins, at the source, per bus, the duty-cycle average and the findings (`--spacecraft`, `--csv` for the totals as CSV, `--explain`); see [Equipment list and power budget](budgets.md) |
+| `idm-import model.idm scenario.json --spacecraft sat-1` | Builds or updates the spacecraft's 3D model from an IDM-CIC model (`--configuration`, `--stowed-configuration`, `--body-element`, `--apply-facets`, `--out`), with `--origin element\|cog` the origin of the body frame at the body element's or at the centre of gravity, with `--devices` the sensors and actuators found by name (and the thrusters with a plume cone, onto the 3D model's equipment), with `--bus-load MODE`, `--solar-panels +`/`-` and `--battery` the power budget's bus load, panel and battery, with `--budgets` the spacecraft's equipment list and system modes (its `budgets` section), and with `--property-map 'NAME=KIND.PARAM[UNIT]'` (`none` for none) values from the team's properties; see [Import a spacecraft from IDM-CIC](idm-cic.md) |
 
 ```console
 $ spacemissionstudio model octagon.json

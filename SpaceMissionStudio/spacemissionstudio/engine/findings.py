@@ -225,6 +225,30 @@ RULES: dict[str, Rule] = {rule.rule_id: rule for rule in (
          "momentum.", "Below it the momentum builds up from orbit to orbit until the wheels saturate. The dipole "
          "needed is a lower bound: the field taken at its mean and always perpendicular.",
          "Use stronger magnetorquers, or lower the disturbances.", override=_RESULT),
+    Rule("budget.placeholder", "A number the power budget uses (a power, a margin, the system margin, an "
+         "efficiency, the distribution loss) is given, with its source.",
+         "A placeholder (no number, or the source TBD) makes every total that needs it unknown; it is never "
+         "counted as zero.",
+         "Give the number and its source in the spacecraft's budgets section.",
+         override="A warning does not stop the run: the budget shows the totals as unknown. No run uses the "
+                  "budget yet."),
+    Rule("budget.unit_not_in_mode", "Each system mode gives every equipment item with power modes one of them.",
+         "An item a mode does not list has an unknown power in it, and so do the mode's totals; an IDM-CIC "
+         "file can leave units unstated.",
+         "Give the item a power mode in the system mode's units (an \"off\" mode at 0 W for an item that is off).",
+         override="A warning does not stop the run: the mode's totals are shown as unknown."),
+    Rule("budget.no_margin", "Each equipment item with power modes has a maturity, and the maturity a power "
+         "margin.", "Without the margin the margined power and the source power with margins are unknown.",
+         "Set the item's maturity, and give the category a power margin with its source in power_margins.",
+         override="A warning does not stop the run: the budget shows the margined totals as unknown."),
+    Rule("budget.mode_duty_sum", "When every system mode has a duty cycle, the duty cycles add up to 1.",
+         "Otherwise the time-weighted average power cannot be computed: part of the time is in no mode, or "
+         "counted twice.", "Correct the modes' duty cycles, or leave them out where they are not known.",
+         override="A warning does not stop the run: the budget shows no average."),
+    Rule("budget.mass_unknown", "Each equipment item the mass budget counts has a mass, with its source.",
+         "An item with a placeholder mass has no line mass: the mass budget's totals leave it out and are "
+         "incomplete.", "Give the item's mass and its source, or set mass_in_model when the 3D model holds it.",
+         override="A warning does not stop the run: the run uses dry_mass_kg, not the budget."),
     Rule("analyses.note", "A model analysis says what it could not compute, and why.",
          "Its results leave that part out.", "Give what the note names (a field, a tracked body), or accept it.",
          override=_RESULT),

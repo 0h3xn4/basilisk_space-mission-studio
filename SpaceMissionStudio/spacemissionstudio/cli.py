@@ -729,7 +729,8 @@ def cmd_check_design(args: argparse.Namespace) -> int:
     print(f"  mass budget ({mass.policy}): basic dry {mass.basic_dry_kg:.2f} kg, growth {mass.growth_kg:.2f} kg, "
           f"system margin {mass.system_margin_kg:.2f} kg, propellant {mass.propellant_kg:.2f} kg, launch "
           f"{mass.launch_mass_kg:.2f} kg"
-          + ("" if mass.mass_limit_kg is None else f" against {mass.mass_limit_kg:g} kg ({mass.limit_source})"))
+          + ("" if mass.mass_limit_kg is None else f" against {mass.mass_limit_kg:g} kg ({mass.limit_source})")
+          + (f"; incomplete: {len(mass.unknown)} line(s) of unknown mass" if mass.unknown else ""))
     if report.launcher is not None:
         check = report.launcher
         print(f"  launcher ({check.envelope}, {check.configuration}): "
@@ -760,6 +761,76 @@ def cmd_check_design(args: argparse.Namespace) -> int:
         print(f"wrote {len(paths)} table(s) to {args.tables}")
     if args.out is not None:
         return _write_record(args, record, {})
+    return 0
+
+
+def _watts(value, unit: str = "") -> str:
+    """A power of the budgets command [W] (with ``unit`` after it), or
+    "unknown"."""
+    return "unknown" if value is None else f"{value:.6g}{unit}"
+
+
+def cmd_budgets(args: argparse.Namespace) -> int:
+    """The static power budget of a spacecraft's ``budgets`` section per
+    system mode (analyses.power_budget): the totals, each bus, the
+    duty-cycle average and the findings; ``--csv`` prints the totals as CSV."""
+    loaded = _load_hashed(args.scenario)
+    if isinstance(loaded, int):
+        return loaded
+    scenario, _file_record = loaded
+    from .analyses import common, power_budget
+
+    try:
+        sc = common.spacecraft(scenario, args.spacecraft)
+    except common.AnalysisError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    if sc.budgets is None:
+        print(f"ERROR: {sc.name} has no budgets section (idm-import --budgets makes one from an IDM-CIC model)",
+              file=sys.stderr)
+        return 1
+    budget = power_budget.power_budget(sc)
+    if args.csv:
+        import csv
+
+        rows = budget.mode_rows()
+        names = list(rows[0]) if rows else ["mode", "duty_cycle"]
+        writer = csv.DictWriter(sys.stdout, fieldnames=names, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows({k: ("" if v is None else v) for k, v in row.items()} for row in rows)
+        return 0
+    items = sum(1 for m in budget.modes[:1] for _ in m.rows)
+    print(f"{sc.name}: power budget, {len(budget.modes)} system mode(s), {items} item(s) with power modes"
+          + ("" if budget.complete else "; incomplete (unknown values below)"))
+    header = ("Mode", "Duty [-]", "Load [W]", "With unit margins [W]", "With system margin [W]", "Source [W]",
+              "Source with margins [W]", "Peak [W]", "Peak source with margins [W]")
+    table = [header] + [(m.mode, "" if m.duty_cycle is None else f"{m.duty_cycle:g}", _watts(m.average.load_w),
+                         _watts(m.average.unit_margined_w), _watts(m.average.system_margined_w),
+                         _watts(m.average.source_w), _watts(m.average.source_margined_w), _watts(m.peak.load_w),
+                         _watts(m.peak.source_margined_w)) for m in budget.modes]
+    widths = [max(len(row[k]) for row in table) for k in range(len(header))]
+    for row in table:
+        print("  " + "  ".join(cell.ljust(w) if k == 0 else cell.rjust(w) for k, (cell, w) in
+                               enumerate(zip(row, widths))))
+    for m in budget.modes:
+        for bus in m.buses:
+            efficiency = "unknown" if bus.converter_efficiency is None else f"{bus.converter_efficiency:g}"
+            print(f"  {m.mode}, bus {bus.bus} (efficiency {efficiency}): load {_watts(bus.average.load_w, ' W')}, "
+                  f"with margins {_watts(bus.average.system_margined_w, ' W')}, at the source with margins "
+                  f"{_watts(bus.average.source_margined_w, ' W')}")
+    average = budget.duty_cycle_average()
+    if average is not None:
+        print(f"  duty-cycle average: load {_watts(average.load_w, ' W')}, at the source with margins "
+              f"{_watts(average.source_margined_w, ' W')}")
+    for finding in budget.findings:
+        print(f"FINDING: {finding}")
+    if args.explain:
+        from .engine.findings import explanation_lines
+
+        for finding in budget.findings:
+            print(f"{finding}:")
+            for line in explanation_lines(finding):
+                print(f"  {line}")
     return 0
 
 
@@ -1940,7 +2011,7 @@ def cmd_idm_import(args: argparse.Namespace) -> int:
         mappings = _property_mappings(args, scenario)
         idm_import.set_mappings(the_plan, mappings)
         power_choice = idm_import.PowerChoice(args.bus_load or "", args.solar_panels is not None,
-                                              -1 if args.solar_panels == "-" else 1, args.battery)
+                                              -1 if args.solar_panels == "-" else 1, args.battery, args.budgets)
         idm_import.power_values(the_plan, power_choice)  # what the file does not give stops here, before the merge
         summary = idm_import.merge(scenario, args.spacecraft, the_plan, out, author=history.current_author(),
                                    origin=args.origin)
@@ -1953,10 +2024,11 @@ def cmd_idm_import(args: argparse.Namespace) -> int:
             idm_import.add_devices(scenario, args.spacecraft, the_plan,
                                    idm_devices.default_choices(the_plan.devices, the_plan.mappings),
                                    history.current_author(), summary)
-        if power_choice.any and scenario.simulation_mode == "orbit_only":
+        if power_choice.power and scenario.simulation_mode == "orbit_only":
             summary.notes.append("--bus-load/--solar-panels/--battery: this scenario runs orbit only, which simulates "
                                  "no power budget: nothing set")
-        elif power_choice.any:
+            power_choice = idm_import.PowerChoice(budgets=power_choice.budgets)  # no run uses the budgets section
+        if power_choice.any:
             idm_import.apply_power(scenario, args.spacecraft, the_plan, power_choice, history.current_author(),
                                    summary)
         scenario.validate()
@@ -2467,6 +2539,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_design.add_argument("--tables", type=Path, metavar="DIR", help="write each table as CSV, with its provenance")
     p_design.set_defaults(func=cmd_check_design)
 
+    p_budgets = subparsers.add_parser("budgets", help="the static power budget of a spacecraft's budgets section per "
+                                      "system mode: loads, margins, source power, per bus (no Basilisk needed)")
+    p_budgets.add_argument("scenario", type=Path)
+    p_budgets.add_argument("--spacecraft", help="spacecraft name (default: the first)")
+    p_budgets.add_argument("--csv", action="store_true", help="print the totals of each system mode as CSV")
+    p_budgets.add_argument("--explain", action="store_true", help="each finding's rule, why, fix and override")
+    p_budgets.set_defaults(func=cmd_budgets)
+
     p_analyses = subparsers.add_parser("model-analyses", help="run the scenario and report its model analyses: "
                                        "disturbance torques, blinding, obstruction, shading, exposure, brightness")
     p_analyses.add_argument("scenario", type=Path)
@@ -2717,6 +2797,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_idm_in.add_argument("--battery", action="store_true",
                           help="set the power budget's battery capacity from the batteries' mapped capacity "
                                "property (battery.capacity_wh), added up")
+    p_idm_in.add_argument("--budgets", action="store_true",
+                          help="also write the spacecraft's budgets section: one equipment item per imported unit "
+                               "that draws power, with the power modes its system modes use, and one system mode per "
+                               "system mode of the model with its duty cycle (the budgets command prints the power "
+                               "budget). The converter efficiency, the distribution loss and the margins are "
+                               "placeholders (TBD): the file does not give them")
     p_idm_in.add_argument("--out", type=Path, help="write the updated scenario here (default: overwrite)")
     p_idm_in.set_defaults(func=cmd_idm_import)
 

@@ -166,7 +166,7 @@ Every command first prints a line like
 
 ```console
 $ spacemissionstudio validate spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json
-OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 4, epoch 2030-01-01T08:30:00
+OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 5, epoch 2030-01-01T08:30:00
 ```
 
 Then start the GUI (installed apps: from the menu; from source:

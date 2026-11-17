@@ -282,7 +282,7 @@ _SECTION_PREFIXES = {"station_keeping": "sk_", "geo_station_keeping": "geo_", "c
                      "constant_thrust": "ct_", "phasing_keeping": "pk_", "roe_formation": "roe_", "momentum_dumping": "md_",
                      "optical_navigation": "on_", "landmark_navigation": "ln_",
                      "magnetic_momentum_management": "mmm_", "fuel_tank": "ft_", "rf_link": "rf_",
-                     "data_handling": "dh_"}
+                     "data_handling": "dh_", "budgets": "budgets_"}
 _FIELD_WIDGETS = {"name": "name_edit", "propellant_budget": "budget_group", "inertia_kg_m2": "ixx", "center_of_mass_b_m": "com_x", "sigma_bn_init": "sigma1",
                   "omega_bn_b_init_rad_s": "omega1", "enable_gravity_gradient": "gravity_gradient_check",
                   "facets": "facet_table", "solar_arrays": "solar_array_table", "sensors": "sensor_list",
@@ -394,6 +394,9 @@ class SpacecraftEditorDialog(QDialog):
         # inertia: the form shows only the moments, and the products (from a
         # file or the model) must survive a re-edit.
         self._model = copy.deepcopy(config.model) if config is not None else None
+        # The budgets section (equipment list, system modes): no form edits it
+        # here, so a re-edit keeps it as it was.
+        self._budgets = copy.deepcopy(config.budgets) if config is not None else None
         self._full_inertia = list(config.inertia_kg_m2) if config is not None else [
             10.0, 0.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 10.0]
         self._other_spacecraft_names = other_spacecraft_names or []
@@ -975,6 +978,7 @@ class SpacecraftEditorDialog(QDialog):
         power_form.addRow("Battery capacity [W*hr]", self.battery_capacity_wh)
         power_form.addRow("Battery initial state of charge [-]", self.battery_initial_soc)
         power_layout.addWidget(self.power_group)
+        self._build_budgets_summary(power_layout, config)
 
         sk0 = config.station_keeping if config else None
         self.station_keeping_group = QGroupBox("Station keeping (altitude maintenance, delta-V + fuel tracking)")
@@ -1746,6 +1750,27 @@ class SpacecraftEditorDialog(QDialog):
         power_layout.addWidget(self.data_handling_group)
         power_layout.addStretch(1)
 
+    def _build_budgets_summary(self, layout, config) -> None:
+        """A read-only summary of the spacecraft's ``budgets`` section (the
+        equipment list, the system modes; schema.budgets), shown only when
+        it has one: the place a problem in the section opens (decision
+        B-15). The JSON page edits the section."""
+        budgets = config.budgets if config is not None else None
+        self.budgets_group = QGroupBox("Equipment list and power modes")
+        form = QFormLayout(self.budgets_group)
+        self.budgets_items = QLabel(str(len(budgets.equipment)) if budgets else "0")
+        self.budgets_modes = QLabel(str(len(budgets.modes)) if budgets else "0")
+        self.budgets_buses = QLabel(str(len(budgets.buses)) if budgets else "0")
+        self.budgets_version = QLabel(str(budgets.version) if budgets else "")
+        form.addRow("Equipment items", self.budgets_items)
+        form.addRow("System modes", self.budgets_modes)
+        form.addRow("Buses", self.budgets_buses)
+        form.addRow("Section version", self.budgets_version)
+        form.addRow(set_role(QLabel("Edit the section on the JSON page. The run does not use it."),
+                             tone="secondary"))
+        self.budgets_group.setVisible(budgets is not None)
+        layout.addWidget(self.budgets_group)
+
     def _build_budget_section(self, budget_tab: QWidget) -> None:
         """The Budget (AD10) section."""
         config = self._init_config
@@ -2139,6 +2164,7 @@ class SpacecraftEditorDialog(QDialog):
             propellant_budget=self.budget_group.to_config(),
             model_analyses=None if self._orbit_only else self.model_analyses_group.to_config(),
             thermal=None if self._orbit_only else self.thermal_group.to_config(),
+            budgets=copy.deepcopy(self._budgets),
             enable_drag=self.enable_drag_check.isChecked(),
             drag_coeff=self.drag_coeff.value(),
             drag_area_m2=self.drag_area_m2.value(),
