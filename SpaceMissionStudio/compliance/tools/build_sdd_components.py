@@ -122,7 +122,7 @@ SRS_TO_COMPONENTS = {
                  "thermal/solver", "thermal/cases", "thermal/checks", "thermal/results", "thermal/analysis",
                  "thermal/records", "thermal/plots", "engine/findings", "engine/events", "engine/scenario_checks",
                  "engine/service", "cli", "api", "gui/thermal_editor", "gui/thermal_widget", "gui/spacecraft_editor",
-                 "gui/event_timeline_widget"],
+                 "gui/event_timeline_widget", "gui/svg_plot", "gui/mission_view_widget", "engine/scene3d"],
     "SRS-F-30": ["schema/operations", "schema/scenario", "schema/references", "operations/timebase",
                  "operations/geometry", "operations/targets", "operations/opportunities", "operations/attitude",
                  "operations/resources", "operations/plan", "operations/scheduler", "operations/analysis",

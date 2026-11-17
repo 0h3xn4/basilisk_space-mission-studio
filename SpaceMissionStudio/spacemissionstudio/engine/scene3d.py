@@ -91,6 +91,8 @@ class Craft:
     altitude_km: np.ndarray | None = None  # (n,) above the body's ellipsoid (Earth) or sphere
     ground_track_deg: np.ndarray | None = None  # (m, 2) geocentric latitude, longitude of the path's points
     equipment: list[dict] = field(default_factory=list)  # mounted items with a direction (body frame, km)
+    part_names: list[str] = field(default_factory=list)  # the 3D model's visible parts, in the mesh's order
+    part_of_triangle: np.ndarray | None = None  # (t,) index into part_names per triangle; -1: the cube (no model)
 
 
 @dataclass
@@ -316,6 +318,15 @@ def _cube(size_m: float):
 def spacecraft_mesh(sc, base_dir=None) -> tuple[np.ndarray, np.ndarray, list[str], list[str]]:
     """Body-frame vertices [m], triangles, a colour per triangle and notes:
     the visible parts of the spacecraft's 3D model, or a 1 m cube."""
+    return spacecraft_mesh_parts(sc, base_dir)[:4]
+
+
+def spacecraft_mesh_parts(sc, base_dir=None) -> tuple[np.ndarray, np.ndarray, list[str], list[str], list[str],
+                                                      np.ndarray]:
+    """:func:`spacecraft_mesh` and which part each triangle belongs to
+    (display data, for colouring a part by its thermal node's temperature):
+    the visible parts' names and, per triangle, its part's index in them
+    (-1 for every triangle of the cube drawn without a model)."""
     notes: list[str] = []
     model = getattr(sc, "model", None)
     if model is not None:
@@ -326,7 +337,7 @@ def spacecraft_mesh(sc, base_dir=None) -> tuple[np.ndarray, np.ndarray, list[str
         except Exception as exc:  # noqa: BLE001 -- a model that cannot be built is drawn as a cube, with the reason
             notes.append(f"{sc.name}: its 3D model could not be built ({exc}); drawn as a 1 m cube")
         else:
-            vertices, triangles, colors = [], [], []
+            vertices, triangles, colors, names, owner = [], [], [], [], []
             offset = 0
             for part in derived.parts:
                 if part.mesh is None or not part.visible or not len(part.mesh.triangles):
@@ -334,12 +345,14 @@ def spacecraft_mesh(sc, base_dir=None) -> tuple[np.ndarray, np.ndarray, list[str
                 vertices.append(part.mesh.vertices)
                 triangles.append(part.mesh.triangles + offset)
                 colors += [_rgb(part.color)] * len(part.mesh.triangles)
+                owner += [len(names)] * len(part.mesh.triangles)
+                names.append(part.name)
                 offset += len(part.mesh.vertices)
             if vertices:
-                return np.vstack(vertices), np.vstack(triangles), colors, notes
+                return np.vstack(vertices), np.vstack(triangles), colors, notes, names, np.array(owner, dtype=int)
             notes.append(f"{sc.name}: its 3D model has no visible part; drawn as a 1 m cube")
     vertices, triangles = _cube(_DEFAULT_SIZE_M)
-    return vertices, triangles, [_rgb(_DEFAULT_RGB)] * len(triangles), notes
+    return vertices, triangles, [_rgb(_DEFAULT_RGB)] * len(triangles), notes, [], np.full(len(triangles), -1)
 
 
 def equipment(sc) -> list[dict]:
@@ -393,7 +406,7 @@ def empty_scene(scenario, crafts: list[tuple[object, bool]], *, base_dir=None) -
     notes: list[str] = []
     built: list[Craft] = []
     for sc, has_attitude in crafts:
-        vertices_m, triangles, colors, craft_notes = spacecraft_mesh(sc, base_dir)
+        vertices_m, triangles, colors, craft_notes, part_names, part_of_triangle = spacecraft_mesh_parts(sc, base_dir)
         if not has_attitude:
             craft_notes.append(f"{sc.name}: no attitude in this run; drawn aligned with the inertial axes")
         size_km = float(np.max(np.ptp(vertices_m, axis=0))) / 1000.0
@@ -403,7 +416,8 @@ def empty_scene(scenario, crafts: list[tuple[object, bool]], *, base_dir=None) -
             triangles=triangles, face_colors=colors, size_km=max(size_km, 1e-6), notes=craft_notes,
             face_rgb=_rgb_floats(colors), velocity_km_s=np.zeros((0, 3)),
             altitude_km=np.zeros(0) if radius_km > 0.0 else None,
-            ground_track_deg=np.zeros((0, 2)) if earth else None, equipment=equipment(sc)))
+            ground_track_deg=np.zeros((0, 2)) if earth else None, equipment=equipment(sc), part_names=part_names,
+            part_of_triangle=part_of_triangle))
         notes += craft_notes
 
     stations, ups, minimum = [], [], []

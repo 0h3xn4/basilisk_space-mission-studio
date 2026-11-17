@@ -264,6 +264,8 @@ export needs the page loaded and an asynchronous render, which a command
 line run and a test cannot rely on. matplotlib is not a dependency.
 **Alternatives:** Plotly figures in a web view (no export without the
 page); matplotlib (a new dependency for two plots).
+**Amended by T-40 (2026-11-17):** the screen and the files show the same
+content, but the screen copy has the view's size and the theme's look.
 
 ## T-32 The thermal editor as tables (2026-11-16)
 
@@ -465,3 +467,124 @@ in the Sun-safe turn (recorded every 0.5 s step: sampling at 30 s would
 alias the 0.8 Hz mode, and the scenario explainer flags it), so the turning faces change the fluxes by a
 negligible amount; the machinery is exercised end to end, and the
 Monte Carlo finds the battery above its 30 degC limit in 4 of 20 runs.
+
+## T-40 The screen plot at the view's size and in the theme (2026-11-17)
+
+Amends T-31 ("the screen and both exports are the same picture").
+
+**Problem:** the owner found the Run › Thermal plot "broken, cramped and
+skewed". `QSvgWidget` paints an SVG into its whole rectangle and ignores
+the aspect ratio. The 900 x 420 picture in a 1400 x 380 px view scaled x
+by 1.56 and y by 0.90, so the title and the legend were 1.7 times too
+wide. The picture also kept a white background and DejaVu Sans in the dark
+theme.
+**Chosen:** two copies of one plot.
+- **The files** (Save SVG, Save PNG, Save, `spacemissionstudio thermal
+  --tables`): `thermal/plots.py` with its defaults, byte for byte the
+  2.11.0 text (900 x 420, white, DejaVu Sans, the Okabe-Ito colours).
+  `tests/test_thermal_plot_style.py` pins the SHA-256 of three pictures.
+- **The screen:** the same function with the view's size and a `style`
+  (`gui/theme/svg_plot_style.py`: `bg.surface`, the text tokens,
+  `border.subtle` grid, `border.strong` frame, Inter 12 px and a 15 px
+  semibold title, JetBrains Mono for the tick numbers, the categorical
+  palette in order, the operating band in `status.normal` and the
+  survival band in `status.caution`, each band named in the legend). A
+  worker makes the SVG and paints it into a `QImage` at the screen's
+  pixel ratio. It runs when the case or the node changes, when the view's
+  size holds still for 250 ms after a resize, when a hidden tab is shown
+  at a new size, and on a theme change. One request runs at a time; the
+  newest wins.
+- **The view** (`gui/svg_plot.py: SvgPlotView`) draws the picture in a
+  rectangle of the picture's own aspect ratio, centred. Until the new
+  picture arrives after a resize, the old one is drawn smaller or larger,
+  never skewed. A view smaller than 480 x 240 px gets a 480 x 240 picture,
+  drawn smaller, so the text stays readable. A view needs 160 px of
+  height at least, so the window still fits a short screen.
+The content is the same in both copies: the cases, nodes, lines (with the
+same decimation), bands, axis titles with units and legend.
+**Why:** the picture fills the view with no stretch and no letterbox, and
+the text has the theme's sizes at every window size. The GUI thread only
+draws an image (the CLAUDE.md "Never freeze" rule). The files stay
+comparable with every earlier export.
+**Alternatives:** keep the one 900 x 420 SVG and draw it with
+`QSvgRenderer.setAspectRatioMode(KeepAspectRatio)` (PySide6 6.7 or later;
+`pyproject.toml` allows 6.6): no skew, but small text and wide empty
+bands on a wide window, and still white in the dark theme. Plotly in a
+web view: T-31's reasons stand. Making and painting on the GUI thread:
+measured on template 33's "cold safe mode" case (1,297 samples, six
+nodes), making the SVG takes 8 ms and painting it at 1188 x 347 px 10 ms,
+so the two plots of a node take about 36 ms on this machine, close to
+the 50 ms limit, and more on a slower one or with more nodes.
+
+## T-41 Run › Thermal as tabs; findings in the Problems panel (2026-11-17)
+
+**Chosen:** the page is a toolbar row (spacecraft, Size the heaters,
+Solve, Save...), one status line, a row with the case and node lists
+that every tab uses and Save SVG / Save PNG of the temperature plot,
+then tabs: Temperatures, Heat flows (a node's flows by kind over the
+orbit-average table), Summary, Heaters and radiators, 3D model, Studies, Notes. Before
+a solve the page is an empty state that says what to do. There is no
+group box and no scroll area around the page; each table scrolls itself.
+The findings go to the Problems panel (`ThermalWidget.problem_rows`,
+after the editor's and the plan's problems, without a second copy of a
+finding the scenario checks already list). The page keeps one line:
+"n findings" in the caution tone, with "Show in Problems". The 3D model
+tab makes its web view the first time it is shown, not when a solve
+ends. Every control of 2.11.0 keeps its name and its place in the
+widget, so the GUI tests reach them as before; one test now selects the
+3D model tab before it reads the web view (`docs/ui/TEST_CHANGES.md`).
+**Why:** CLAUDE.md's design rules ("No boxes in boxes, no group-box
+frames"; notes and findings in their place; a web view made lazily). The
+2.11.0 page was one long column of nine frames in a scroll area; a plot
+and its controls were seldom on the screen together. The thermal gap
+analysis (phase 1, item 2) and the 2.12.0 design note section 1 propose
+this layout.
+**Alternatives:** a splitter with a node list on the left (the gap
+analysis's first idea): more than this release needs, and the node list
+already exists. Findings kept as a list on the page: a second place for
+the same warnings.
+
+## T-42 Temperatures on Results › 3D View follow the playback (2026-11-17)
+
+**Chosen:** the 3D View's **Colours** list offers "Model colours" (the
+default) and "Temperature: <case>" for each case of the thermal analysis
+shown on Run › Thermal, when that analysis was solved on the run the 3D
+View shows. With a case chosen, each part of the solved spacecraft takes
+its thermal node's colour at the frame shown: during playback, with the
+slider and with the shared time cursor. A colour bar over the view's top
+right corner gives the case, the coldest and the hottest temperature in
+degC.
+"Show on 3D View" on the Thermal page's 3D model tab opens it with the
+case shown there.
+- **"Live" means playback of the finished run.** The thermal solve is
+  post-processing (T-01), so a run shown while it is computed has no
+  temperatures, and the list offers none.
+- **Display data only:** `engine/scene3d` keeps each triangle's part
+  (`Craft.part_names`, `Craft.part_of_triangle`,
+  `spacecraft_mesh_parts`). `spacecraft_mesh` returns what it returned.
+  No file format, no engine result and no golden file changes.
+- **Colour scale:** ColorBrewer's diverging RdBu, reversed (cold blue,
+  hot red), as `theme/palettes.TEMPERATURE_STOPS`. These are the stops of
+  Plotly's "RdBu_r", which the Thermal page's 3D model uses, so the two
+  views agree (`tests/test_thermal_plot_style.py`). One fixed range per
+  case: the coldest to the hottest temperature of the nodes drawn, over
+  the whole case, so a colour means one temperature on every frame. A
+  part in no node is grey (`NO_TEMPERATURE_COLOUR`, the 3D model's grey).
+- **Off the GUI thread:** a worker interpolates each node onto the
+  scene's frame times and maps it to the scale once
+  (`mission_view_widget.temperature_frames`; template 33, 433 frames,
+  six nodes: 0.3 ms and 31 kB of JSON). The page gets the table once (a
+  node index per triangle, three bytes per node per frame) and
+  writes the mesh's colour attribute itself on each frame
+  (`MV.setTemperatures`, `MV.paintTemperatures`). Playback costs Python
+  only the frame's index, as before.
+**Why:** the owner asked to see the thermal simulation in the 3D viewer.
+Per-part colours on the moving spacecraft show which parts heat and cool
+with the sunlight and the eclipses. The 3D View has a colour per
+triangle already, so no new renderer is needed.
+**Alternatives:** colours per triangle and per frame sent from Python
+(1,500 frames times thousands of triangles: tens of megabytes of JSON);
+a separate 3D view on the Thermal page with its own time slider (it
+exists for a still picture, but it does not follow the run or the time
+cursor); on by default (it would change what the 3D View shows after
+every solve).

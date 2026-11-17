@@ -2158,3 +2158,21 @@ Budgets area's own reachability is tested in
 | `test_scenario_tree.py::test_the_palette_goes_to_every_node` | "Go to > Run > Budget" in the palette | "Go to > Budgets > Propellant" | the same |
 | `test_shell_reachability.py` rows "**Analyses** › End of Life, Budget" and "Scenario › Analyses › End of Life, Budget" | `_shown(w, w.budget_widget, "run")` | `_shown(w, w.budget_widget, "budgets")` | the same; the plan's row texts are unchanged |
 | `test_panels.py::test_a_keyboard_only_walk_of_the_shell` | docstring "Ctrl+1 to Ctrl+6 reach the areas" | "Ctrl+1 to Ctrl+7"; the loop over `_AREAS` is unchanged | the same (wording only) |
+
+## 2.12.0 windows and views
+
+### PR-1: thermal results (decisions T-40 to T-42)
+
+Run › Thermal is a set of tabs now (T-41), and the 3D model tab makes its
+web view the first time the tab is shown, not when a solve ends (the
+"Never freeze" rule: a web view is made lazily). Every control keeps its
+name, and `tables[key]` stays a `(section, DataTable)` pair, so the tests
+reach the page as before. One test changed how it reaches the 3D model:
+it selects that tab first. Every behavioural assertion is kept; none is
+removed or weakened. No test outside `tests/gui/` changed, and no golden
+file. The new tests are in `tests/gui/test_thermal_views.py` (17) and
+`tests/test_thermal_plot_style.py` (6).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_thermal_pages.py::test_run_thermal_solves_shows_and_saves` | read `widget.model_view` right after the solve | selects the tab first, `widget.tabs.setCurrentWidget(widget.model_page)`, then reads `widget.model_view`; the assertions after it are unchanged | the web view is made when its tab is shown (T-41) |

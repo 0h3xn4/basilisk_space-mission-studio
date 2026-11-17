@@ -27,6 +27,24 @@ fixes bugs.
 - CI validates the desktop entry (`desktop-file-validate`) and the
   AppStream metadata (`appstreamcli validate --no-net`), and the release
   workflow checks the icons and the metadata in the built `.deb`.
+- **Temperatures on Results › 3D View.** After Run › Thermal solves the
+  run shown, the 3D View's new **Colours** list offers each thermal case.
+  Pick one, and each part of the spacecraft takes its thermal node's
+  temperature as the run plays back, as the slider moves and as the time
+  cursor moves. A colour bar gives the case, the coldest and the hottest
+  temperature in °C. **Show on 3D View** on the Thermal page's 3D model
+  tab opens it. A run shown while it runs has no temperatures: the
+  thermal analysis runs after the run (thermal decisions T-01, T-42).
+
+### Changed
+
+- **Run › Thermal is a set of tabs:** Temperatures, Heat flows, Summary,
+  Heaters and radiators, 3D model, Studies and Notes, under one row with
+  the case and the node. The page fits the window with no scroll bar of
+  its own. The findings are in the Problems panel; the page shows how
+  many there are, with **Show in Problems** (T-41).
+- The 3D model on the Thermal page is made when you open its tab, not
+  when the solve ends.
 
 ### Fixed
 
@@ -54,6 +72,13 @@ fixes bugs.
   sits on a dark rounded plate with a light rim: 5.15 : 1 or more on the
   dark panels, 15.0 : 1 or more on the light ones
   (`tests/gui/test_icons.py`).
+- **The thermal plots on Run › Thermal were stretched and cramped** (the
+  owner's report): the title and the legend were up to 1.7 times too wide
+  when the window was wide. A plot now fills its tab at its own aspect
+  ratio, at the tab's size, in the theme's colours and fonts, and it is
+  drawn again after a resize and a theme change. **Save SVG...**, **Save
+  PNG...**, **Save...** and `spacemissionstudio thermal --tables` write
+  the same files as 2.11.0, byte for byte (T-40).
 
 ## 2.11.0 (2026-11-17)
 
