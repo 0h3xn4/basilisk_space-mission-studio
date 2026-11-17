@@ -190,9 +190,13 @@ relative to `SpaceMissionStudio/` unless they start with `.github/`.
 - **Release** (only when `## Next release` is empty, this run moved at
   least one item to `## Done`, and the two rules above allow it), by
   `docs/developer/releasing.md` sections 2 to 4 and 6:
-  1. The version: take the newest tag from
-     `git ls-remote --tags origin 'spacemissionstudio-v*'` and raise it by
-     the semver rule above. It must be new.
+  1. The version: take the newest tag with
+     `git ls-remote --tags --refs origin 'spacemissionstudio-v*' | sed 's|.*/spacemissionstudio-v||' | sort -V | tail -1`
+     and raise it by the semver rule above. It must be new. Sort by
+     version (`sort -V`): a plain sort puts 2.9.0 after 2.11.0. Every
+     SpaceMissionStudio tag is `spacemissionstudio-vX.Y.Z`, all lower
+     case: the release workflow starts only on that pattern, git tags
+     are case sensitive, and `vX.Y.Z` belongs to Basilisk upstream.
   2. Set it in `pyproject.toml`, `spacemissionstudio/__init__.py` and
      `packaging/windows/spacemissionstudio.iss`.
   3. Move the Unreleased entries in `CHANGELOG.md` under
