@@ -18070,6 +18070,22 @@ an `operations` section open and validate in 2.9.0 with no message;
 'operations', not one this version knows"). The schema version stays 4,
 and the golden outputs of the 34 earlier templates are unchanged.
 
+## Release 2.10.0 published (2026-11-17)
+
+#269 was merged once CI was green, at 09:17 UTC, and CI passed on
+`develop`'s merge commit `b074260` by 09:56. As the owner asked, the
+assistant started the tag workflow at 09:58 with version 2.10.0, ref
+`develop` and **publish** on. The release check passed and the workflow
+tagged `b074260` at 09:59
+([run 44060467004](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44060467004)). The release workflow
+it started ([run 44060591211](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44060591211)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+10:37:39, so it was never public without its files. The digests of the
+`.deb` and the setup program equal the checksums in its notes. SRelD
+issue 40, the SDP, H05 and `releasing.md` record the tag, the runs and
+the files' digests.
+
 ## System Budget Studio merge: phase 0 (2026-11-17)
 
 The owner decided that System Budget Studio becomes a feature of
