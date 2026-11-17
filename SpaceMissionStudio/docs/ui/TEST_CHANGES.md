@@ -2192,3 +2192,21 @@ row), so `test_menu_bar.py`, `test_shell_reachability.py` and
 that `test_workspace.py::test_the_view_analyses_and_tools_commands` pins
 stays as it is. No existing test changed, and no
 golden file. The new tests are in `tests/gui/test_breakout.py` (19).
+
+### PR-3: ground tracks, stations and the live map (decision "Ground tracks, stations and the live map")
+
+Results › 3D View gets a **Globe | Map | Both** control and the 2D map
+(`gui/ground_map_widget.py`), which can open in its own window (view id
+"map"). The 3D View keeps its tab and its widgets, and the globe is
+shown at start, so the tests reach it as before. The live run's feed is
+drained by `gui/live_scene.LiveScene`; `test_mission_view.py`,
+`test_live_run_3d.py` and `test_breakout.py`'s live test pass unchanged
+through it. Three test lines in two files changed; no assertion is
+removed or weakened. No test outside `tests/gui/` changed, and no golden
+file. The new tests are in `tests/gui/test_ground_map.py` (22 tests, 32 cases).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_mission_view.py::test_the_show_menu_switches_what_is_drawn_and_remembers_it` | `assert not view.toggle_actions["groundTrack"].isChecked()` | `assert view.toggle_actions["groundTrack"].isChecked()`; the rest unchanged | The ground track is on by default (the owner's answer to Q1, design note section 10). Turning it off, and that being kept, is tested in `test_ground_map.py::test_the_ground_track_is_on_by_default_flown_solid_and_to_come_dashed` and by this test's other toggles |
+| `test_breakout.py::test_every_view_opens_docked_with_its_button_and_no_window_opens_by_itself` | `breakouts.ids() == list(_VIEWS)`; `(button,) = view.findChildren(BreakoutButton)` | `== list(_VIEWS) + ["map"]`; the button found among the view's children by its `view_id` | The map is one more registered view (Q3), and its own button is inside the 3D View: how the test reaches the 3D View's button changed, not what it checks |
+| `test_breakout.py::test_the_commands_are_in_the_view_menu_the_palette_and_the_shortcut_list` | View > Own Windows lists the three views' commands | lists `view.window.map` too, at the end | The same: one more registered view |

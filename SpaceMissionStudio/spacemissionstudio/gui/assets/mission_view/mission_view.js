@@ -6,8 +6,8 @@
  *   MV.setStyle(style)      the theme's colours and overlay CSS (theme/mission_view_style.py)
  *   MV.load(scene, opts)    a run (engine/scene3d.py via mission_view_widget.scene_payload);
  *                           opts.keepCamera keeps the view and the camera as they are
- *   MV.append(frames)       a live run's new frames (mission_view_widget.frames_payload);
- *                           frames.follow shows the newest
+ *   MV.append(frames, follow)  a live run's new frames (mission_view_widget.frames_payload, made
+ *                           by gui/live_scene.LiveScene's worker); follow (or frames.follow) shows the newest
  *   MV.setLive(on)          the LIVE badge (the view follows a run being computed)
  *   MV.setFrame(n)          the frame shown
  *   MV.setView(spec)        the camera: {mode: 'orbit' | 'earth' | 'follow' | 'instrument', craft, axis, item}
@@ -17,6 +17,14 @@
  *   MV.setTemperatures(t)   a spacecraft's parts in a thermal case's colours, frame by frame
  *                           (mission_view_widget.temperature_frames), or null for the model's own
  *   MV.state()              what is drawn, for the tests
+ *
+ * A ground station is a glyph (a triangle on a mast, outlined, 14 px on
+ * screen at any zoom) with its name, a line to each spacecraft it sees,
+ * and a ring on the surface per spacecraft: the footprint of its
+ * elevation mask at that spacecraft's altitude, stronger while the
+ * spacecraft is in view. The ground track (geocentric latitude) is drawn
+ * by default: solid where the spacecraft has flown, dashed where it is
+ * still to fly.
  *
  * A lost WebGL context (the view moved to a window of its own, gui/breakout.py;
  * a driver reset) is recovered by the page itself: MV.recover makes a new
@@ -37,9 +45,9 @@ const MV = {
   ready: false, pageReady: false, data: null, frame: 0, style: null, quality: 'full', autoQuality: true,
   autoReduced: false, reduceAboveMs: 50, frameMs: null, dirty: true, view: {mode: 'orbit'}, origin: [0, 0, 0],
   toggles: {paths: true, trails: true, axes: true, headings: true, cones: true, stations: true, labels: true,
-            stars: true, groundTrack: false},
+            stars: true, groundTrack: true},
   loaded: {earth: '', stars: ''}, textures: {}, playback: {speed: '', playing: false}, live: false,
-  crafts: [], stations: [], links: [], labels: [], lastRotation: 0, rendererName: '', software: false,
+  crafts: [], stations: [], links: [], rings: [], labels: [], lastRotation: 0, rendererName: '', software: false,
   temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null,
 };
 // No graphics card: start in reduced quality. Chromium's SwiftShader,
@@ -50,6 +58,11 @@ const ZAXIS = new THREE.Vector3(0, 0, 1);
 const TRAIL_FRACTION = 0.1;  // [-] of the run's frames shown as each spacecraft's trail
 const ORBIT_VIEW = new THREE.Vector3(1.0, 1.0, 0.6).normalize();  // [-] Whole orbit looks from here without a Sun
 const RECOVER_AFTER_MS = 2000;  // [ms] a lost context not given back by then: a new renderer anyway
+const RING_SEGMENTS = 128;  // [-] points of a station's visibility circle
+const RING_STEP_DEG = 0.01;  // [deg] a visibility circle is made again when its radius changes more than this
+const SVG = 'http://www.w3.org/2000/svg';
+// A station's glyph in a 14 x 14 box: a triangle on a mast, on a foot.
+const STATION_GLYPH = 'M7 1 L12.5 8.5 L1.5 8.5 Z M6 8.5 H8 V12 H6 Z M3.5 12 H10.5 V13.5 H3.5 Z';
 
 // ---------------------------------------------------------------- setup
 MV.init = function () {
@@ -315,17 +328,19 @@ MV.restyle = function () {
   if (MV.body && !MV.body.userData.earth) MV.body.material.color.set(MV.data.body.name === 'Sun' ? st.sun : st.plain);
   if (MV.moon) MV.moon.material.color.set(st.plain);
   if (MV.atmosphere) MV.atmosphere.material.uniforms.colour.value.set(st.atmosphere);
-  if (MV.stationPoints) {
-    MV.stationPoints.material.color.set(st.station);
-    MV.stationPoints.material.size = st.station_px;
-  }
   MV.links.forEach(function (link) { link.line.material.color.set(st.link); });
+  MV.rings.forEach(function (ring) { ring.contact = null; });  // coloured again on the next frame (MV.update)
   MV.crafts.forEach(function (c, n) {
     const colour = MV.craftColour(n);
     c.path.material.color.set(colour);
     c.path.material.opacity = st.path_opacity;
     c.trail.material.color.set(colour);
-    if (c.track) c.track.material.color.set(colour);
+    if (c.track) {
+      c.track.material.color.set(colour);
+      c.track.material.opacity = st.track_opacity;
+      c.trackFuture.material.color.set(colour);
+      c.trackFuture.material.opacity = st.future_track_opacity;
+    }
     c.axes.forEach(function (arrow, k) { arrow.setColor(MV.colour(st.axes[k])); });
     c.sunArrow.setColor(MV.colour(st.sun));
     c.nadirArrow.setColor(MV.colour(st.nadir));
@@ -356,9 +371,10 @@ MV.clearScene = function () {
   if (MV.moon) drop(MV.moon);
   if (MV.atmosphere) drop(MV.atmosphere);
   MV.links.forEach(function (link) { drop(link.line); });
-  MV.body = MV.atmosphere = MV.moon = MV.stationPoints = null;
+  MV.body = MV.atmosphere = MV.moon = null;
   MV.crafts = [];
   MV.links = [];
+  MV.rings = [];
   MV.labels = [];
   document.getElementById('labels').textContent = '';
 };
@@ -470,17 +486,75 @@ MV.placeAtmosphere = function (light) {
   atmosphere.material.uniforms.sunView.value.copy(light).transformDirection(cam.matrixWorldInverse);
 };
 
+// Each station: its glyph and name (an overlay, MV.updateLabels), and a
+// visibility circle per spacecraft on the surface (MV.updateRings).
 MV.buildStations = function () {
   const d = MV.data;
-  if (!d.stations.length) return;
-  const p = [];
-  d.stations.forEach(function (s) { p.push(s.p[0] * 1.0005, s.p[1] * 1.0005, s.p[2] * 1.0005); });
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
-  MV.stationPoints = new THREE.Points(g, new THREE.PointsMaterial({sizeAttenuation: false}));
-  MV.earthGroup.add(MV.stationPoints);
   d.stations.forEach(function (s, k) {
-    MV.addLabel(s.name, function () { return null; }, function () { return MV.stationWorld(k); }, 'station');
+    MV.addLabel(s.name, function () { return null; }, function () { return MV.stationWorld(k); }, 'station', k);
+    d.crafts.forEach(function (c, n) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(3 * RING_SEGMENTS), 3));
+      const line = new THREE.LineLoop(g, MV.lineMaterial(0.5));
+      line.frustumCulled = false;
+      line.visible = false;
+      MV.earthGroup.add(line);
+      MV.rings.push({station: k, craft: n, line: line, lambda: null, contact: null});
+    });
+  });
+};
+
+// The Earth central angle [deg] from a station to the edge of what it sees
+// above its elevation mask eps, for a spacecraft at altitude h above a
+// sphere of radius R: lambda = acos(R / (R + h) cos eps) - eps (Wertz and
+// Larson, Space Mission Analysis and Design, 3rd ed., section 5.2).
+MV.visibilityAngle = function (radius, altitude, minElevationDeg) {
+  if (!(altitude > 0) || !(radius > 0)) return 0;
+  const eps = minElevationDeg * Math.PI / 180;
+  const lambda = Math.acos(Math.min(1, radius / (radius + altitude) * Math.cos(eps))) - eps;
+  return Math.max(0, lambda * 180 / Math.PI);
+};
+
+// A point on the body's surface (the ellipsoid, just above it) in the
+// direction of the unit vector u, body-fixed: as the ground track's.
+MV.surfacePoint = function (u, lift) {
+  const a = MV.data.body.radius * lift, b = a * (1 - (MV.data.body.flattening || 0));
+  const t = 1 / Math.sqrt((u.x * u.x + u.y * u.y) / (a * a) + u.z * u.z / (b * b));
+  return [u.x * t, u.y * t, u.z * t];
+};
+
+MV.placeRing = function (ring, lambdaDeg) {
+  const s = MV.data.stations[ring.station].p, u = new THREE.Vector3(s[0], s[1], s[2]).normalize();
+  const e1 = new THREE.Vector3().crossVectors(Math.abs(u.z) < 0.999 ? ZAXIS : new THREE.Vector3(1, 0, 0), u).normalize();
+  const e2 = new THREE.Vector3().crossVectors(u, e1);
+  const lambda = lambdaDeg * Math.PI / 180, a = ring.line.geometry.attributes.position;
+  for (let i = 0; i < RING_SEGMENTS; i++) {
+    const theta = 2 * Math.PI * i / RING_SEGMENTS;
+    const v = u.clone().multiplyScalar(Math.cos(lambda))
+      .addScaledVector(e1, Math.sin(lambda) * Math.cos(theta)).addScaledVector(e2, Math.sin(lambda) * Math.sin(theta));
+    const p = MV.surfacePoint(v, 1.0015);
+    a.setXYZ(i, p[0], p[1], p[2]);
+  }
+  a.needsUpdate = true;
+  ring.lambda = lambdaDeg;
+};
+
+// The visibility circles at frame f: their radius from each spacecraft's
+// altitude, stronger (the line-of-sight colour) while it is in view.
+MV.updateRings = function (f) {
+  const d = MV.data, st = MV.style, on = MV.toggles.stations;
+  MV.rings.forEach(function (ring) {
+    const c = d.crafts[ring.craft], s = d.stations[ring.station];
+    const lambda = on && c.alt ? MV.visibilityAngle(d.body.radius, c.alt[f], s.min_el) : 0;
+    ring.line.visible = lambda > 0;
+    if (!ring.line.visible) return;
+    if (ring.lambda === null || Math.abs(lambda - ring.lambda) > RING_STEP_DEG) MV.placeRing(ring, lambda);
+    const contact = Boolean(s.visible[ring.craft][f]);
+    if (contact !== ring.contact && st) {
+      ring.line.material.color.set(contact ? st.link : st.station);
+      ring.line.material.opacity = contact ? st.ring_contact_opacity : st.ring_opacity;
+      ring.contact = contact;
+    }
   });
 };
 
@@ -575,15 +649,21 @@ MV.buildCraft = function (c, n) {
   trail.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * trailLength), 3));
   trail.frustumCulled = false;
   MV.scene.add(trail);
-  let track = null;
-  if (c.track && MV.data.body.earth) {
-    track = new THREE.Line(MV.trackGeometry(c.track), MV.lineMaterial(0.8));
+  let track = null, trackFuture = null;
+  if (c.track && MV.data.body.earth) {  // flown: solid; still to come: dashed (MV.splitTrack)
+    track = new THREE.Line(MV.trackGeometry(c.track), MV.lineMaterial(0.9));
     track.frustumCulled = false;
     MV.earthGroup.add(track);
+    trackFuture = new THREE.Line(MV.trackGeometry(c.track), new THREE.LineDashedMaterial({
+      transparent: true, opacity: 0.6, depthWrite: false, dashSize: 1, gapSize: 1}));
+    trackFuture.computeLineDistances();
+    trackFuture.frustumCulled = false;
+    MV.earthGroup.add(trackFuture);
   }
   const craft = {data: c, group: group, body: body, headings: headings, mesh: mesh, axes: axes, cones: cones,
                  sunArrow: sunArrow, nadirArrow: nadirArrow, velocityArrow: velocityArrow, path: path, trail: trail,
-                 trailLength: trailLength, track: track, pathOrigin: null, trackBuilt: 0, trackDirty: false,
+                 trailLength: trailLength, track: track, trackFuture: trackFuture, pathOrigin: null, trackBuilt: 0,
+                 trackDirty: false, trackSplit: [0, 0],
                  painted: null};
   MV.addLabel(c.name, function () { return MV.craftColour(n); }, function () {
     const p = c.pos[MV.frame];
@@ -606,6 +686,7 @@ MV.trackGeometry = function (track) {
     p.push(u.x * t, u.y * t, u.z * t);
   };
   let previous = null;
+  const vertexOf = [];  // the vertex of each track point (between them, the subdivisions)
   track.forEach(function (point) {
     const u = unit(point[0], point[1]);
     if (previous) {
@@ -614,25 +695,65 @@ MV.trackGeometry = function (track) {
         push(previous.clone().lerp(u, k / steps).normalize());
       }
     }
+    vertexOf.push(p.length / 3);
     push(u);
     previous = u;
   });
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+  g.userData.vertexOf = vertexOf;
   return g;
+};
+
+// The track flown up to frame f (solid) and the track still to come
+// (dashed): split at the last track point at or before the frame's time.
+MV.splitTrack = function (c, f) {
+  const tt = c.data.tt, vertexOf = c.track.geometry.userData.vertexOf || [];
+  const total = c.track.geometry.attributes.position.count, time = MV.data.times[f];
+  let low = 0, high = tt ? Math.min(tt.length, vertexOf.length) : vertexOf.length;
+  if (tt) {
+    while (low < high) {  // the number of track points at or before `time`
+      const mid = (low + high) >> 1;
+      if (tt[mid] <= time) low = mid + 1; else high = mid;
+    }
+  } else {
+    low = high;  // no times: all of it flown
+  }
+  const v = low > 0 ? vertexOf[low - 1] : 0;
+  c.track.geometry.setDrawRange(0, low > 0 ? v + 1 : 0);
+  c.trackFuture.geometry.setDrawRange(v, Math.max(0, total - v));
+  c.trackSplit = [low > 0 ? v + 1 : 0, Math.max(0, total - v)];
 };
 
 MV.addLabel = function (text, colour, where, kind, craft) {
   const el = document.createElement('div');
-  el.className = 'label';
+  el.className = kind === 'station' ? 'label station' : 'label';
+  let name = null;
   if (kind === 'craft') {
     const dot = document.createElement('span');
     dot.className = 'dot';
     el.appendChild(dot);
   }
-  el.appendChild(document.createTextNode(text));
+  if (kind === 'station') {  // its glyph, and its name beside it
+    const glyph = document.createElementNS(SVG, 'svg');
+    glyph.setAttribute('class', 'glyph');
+    glyph.setAttribute('viewBox', '0 0 14 14');
+    glyph.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(SVG, 'path');
+    path.setAttribute('d', STATION_GLYPH);
+    glyph.appendChild(path);
+    el.appendChild(glyph);
+    name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = text;
+    el.appendChild(name);
+  } else {
+    el.appendChild(document.createTextNode(text));
+  }
   document.getElementById('labels').appendChild(el);
-  MV.labels.push({el: el, text: text, colour: colour, where: where, kind: kind, craft: craft, shown: false});
+  // craft: the spacecraft's index (a spacecraft's label) or the station's (a station's)
+  MV.labels.push({el: el, text: text, colour: colour, where: where, kind: kind, craft: craft, shown: false,
+                  name: name, glyphShown: false});
 };
 
 // ---------------------------------------------------------------- frames and views
@@ -809,7 +930,6 @@ MV.update = function () {
     MV.controls.update();
   }
   MV.lastRotation = rotation;
-  if (MV.stationPoints) MV.stationPoints.visible = t.stations;
   const sun = d.sun ? new THREE.Vector3().fromArray(d.sun[f]) : null;
   if (MV.moon) {
     const m = d.moon[f];
@@ -861,13 +981,22 @@ MV.update = function () {
     }
     if (c.track) {
       c.track.visible = t.groundTrack;
+      c.trackFuture.visible = t.groundTrack;
       if (t.groundTrack && c.trackDirty && performance.now() - c.trackBuilt > TRACK_REBUILD_MS) {
         c.track.geometry.dispose();
         c.track.geometry = MV.trackGeometry(c.data.track);
+        c.trackFuture.geometry.dispose();
+        c.trackFuture.geometry = MV.trackGeometry(c.data.track);
+        c.trackFuture.computeLineDistances();
         c.trackDirty = false;
         c.trackBuilt = performance.now();
       }
+      if (t.groundTrack) MV.splitTrack(c, f);
     }
+  });
+  MV.updateRings(f);
+  MV.stationContact = d.stations.map(function (s) {
+    return s.visible.some(function (row) { return Boolean(row[f]); });
   });
   MV.links.forEach(function (link) {
     const seen = d.stations[link.station].visible[link.craft][f];
@@ -887,6 +1016,7 @@ MV.update = function () {
     cam.lookAt(pose.position.clone().add(pose.look));
   }
   cam.updateMatrixWorld();
+  MV.dashTracks();
   // Lighting: the Sun's direction, or a light from the camera without one.
   const light = sun ? sun.clone() : cam.position.clone().normalize();
   MV.sunLight.position.copy(light);
@@ -902,6 +1032,22 @@ MV.update = function () {
   MV.sky.visible = t.stars && Boolean(MV.sky.material.map);
   MV.sky.position.copy(cam.position);
   MV.updateHud();
+};
+
+// The dashes of a track still to come: the same length on screen at any
+// zoom (st.track_dash_px), from the kilometres a pixel spans at the
+// body's surface seen from the camera.
+MV.dashTracks = function () {
+  const st = MV.style;
+  if (!st || !MV.data || !MV.crafts.some(function (c) { return c.trackFuture && c.trackFuture.visible; })) return;
+  const cam = MV.camera, h = MV.canvas().clientHeight || window.innerHeight;
+  const distance = Math.max(1, cam.position.distanceTo(MV.earthGroup.position) - MV.data.body.radius);
+  const kmPerPx = 2 * distance * Math.tan(cam.fov * Math.PI / 360) / Math.max(1, h);
+  MV.crafts.forEach(function (c) {
+    if (!c.trackFuture) return;
+    c.trackFuture.material.dashSize = st.track_dash_px[0] * kmPerPx;
+    c.trackFuture.material.gapSize = st.track_dash_px[1] * kmPerPx;
+  });
 };
 
 MV.elapsed = function (seconds) {
@@ -936,7 +1082,9 @@ MV.updateLabels = function () {
   const cam = MV.camera, w = MV.canvas().clientWidth, h = MV.canvas().clientHeight;
   const centre = MV.earthGroup.position, radius = MV.data.body.radius;
   MV.labels.forEach(function (label) {
-    let show = MV.toggles.labels && !(label.kind === 'station' && !MV.toggles.stations);
+    const station = label.kind === 'station';
+    // A station's glyph shows with Stations, its name with Labels too.
+    let show = station ? MV.toggles.stations : MV.toggles.labels;
     const v = MV.view;
     if (label.kind === 'craft' && (v.mode === 'follow' || v.mode === 'instrument') && v.craft === label.craft) show = false;
     let p = null;
@@ -951,8 +1099,13 @@ MV.updateLabels = function () {
       p.project(cam);
       if (p.z > 1 || p.z < -1 || Math.abs(p.x) > 1.05 || Math.abs(p.y) > 1.05) show = false;
     }
-    label.shown = show;
+    label.shown = show && (!station || MV.toggles.labels);
+    label.glyphShown = station && show;
     label.el.style.display = show ? 'block' : 'none';
+    if (station) {
+      label.name.style.display = MV.toggles.labels ? 'block' : 'none';
+      label.el.classList.toggle('contact', Boolean(MV.stationContact && MV.stationContact[label.craft]));
+    }
     if (show) {
       label.el.style.left = ((p.x + 1) / 2 * w).toFixed(1) + 'px';
       label.el.style.top = ((1 - p.y) / 2 * h).toFixed(1) + 'px';
@@ -1004,8 +1157,9 @@ MV.setLive = function (on) { MV.live = Boolean(on); MV.dirty = true; };
 
 // A live run's new frames, appended to the scene's arrays (the frame
 // logic reads their current length); `f.follow` shows the newest.
-MV.append = function (f) {
+MV.append = function (f, follow) {
   const d = MV.data;
+  if (follow === undefined) follow = f.follow;
   if (!d || !f.times.length) return d ? d.times.length : 0;
   const push = function (target, rows) { for (let i = 0; i < rows.length; i++) target.push(rows[i]); };
   push(d.times, f.times);
@@ -1022,6 +1176,7 @@ MV.append = function (f) {
     craft.pathOrigin = null;
     if (c.track && n.track) {
       push(c.track, n.track);
+      if (c.tt && n.tt) push(c.tt, n.tt);
       craft.trackDirty = true;
     }
   });
@@ -1029,7 +1184,7 @@ MV.append = function (f) {
     s.visible.forEach(function (row, n) { push(row, f.visible[k][n]); });
   });
   d.extent = Math.max(d.extent, f.extent);
-  if (f.follow) MV.frame = d.times.length - 1;
+  if (follow) MV.frame = d.times.length - 1;
   MV.paintTemperatures();
   MV.dirty = true;
   return d.times.length;
@@ -1088,6 +1243,8 @@ MV.state = function () {
     return {world: world.toArray(), scale: c.group.scale.x, axes: c.axes[0].visible, xAxis: x.toArray(),
             path: c.path.visible, trail: c.trail.visible, headings: c.nadirArrow.visible,
             cones: c.cones.map(function (k) { return k.visible; }), track: c.track ? c.track.visible : null,
+            trackFuture: c.trackFuture ? c.trackFuture.visible : null, trackSplit: c.trackSplit,
+            trackDashed: c.trackFuture ? c.trackFuture.material.isLineDashedMaterial === true : null,
             colour: '#' + c.trail.material.color.getHexString(THREE.SRGBColorSpace),
             meshColour: Array.from(c.mesh.geometry.getAttribute('color').array.slice(0, 3)), painted: c.painted};
   });
@@ -1099,6 +1256,15 @@ MV.state = function () {
     starsTexture: MV.sky.material.map ? [MV.sky.material.map.image.width, MV.sky.material.map.image.height] : null,
     atmosphere: MV.atmosphere ? MV.atmosphere.visible : null, moon: MV.moon ? MV.moon.position.toArray() : null,
     links: MV.links.map(function (l) { return l.line.visible; }),
+    stations: MV.labels.filter(function (l) { return l.kind === 'station'; }).map(function (l) {
+      const box = l.el.querySelector('.glyph').getBoundingClientRect();
+      return {name: l.text, glyph: l.glyphShown, label: l.shown, contact: l.el.classList.contains('contact'),
+              size: [box.width, box.height], fill: getComputedStyle(l.el.querySelector('.glyph path')).fill};
+    }),
+    rings: MV.rings.map(function (r) {
+      return {station: r.station, craft: r.craft, visible: r.line.visible, lambda: r.lambda,
+              opacity: r.line.material.opacity, colour: '#' + r.line.material.color.getHexString(THREE.SRGBColorSpace)};
+    }),
     labels: MV.labels.filter(function (l) { return l.shown; }).map(function (l) { return l.text; }),
     hud: document.getElementById('hud-time').textContent + document.getElementById('hud-craft').textContent,
     styleMode: MV.style ? MV.style.mode : null, webgl: MV.webgl,

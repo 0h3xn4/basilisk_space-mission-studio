@@ -9,10 +9,16 @@ sent anywhere.
   spacecraft (its [3D model](3d-model.md), or a 1 m cube without one)
   turned by the run's attitude, with its path, trail, body axes, arrows
   to the Sun, to nadir and along its velocity, its instruments' fields
-  of view and its thrusters' plumes; the ground stations with a line to
-  each spacecraft they see; the ground track; labels; and a panel with
-  the UTC time, the speed and the followed spacecraft's altitude and
-  speed.
+  of view and its thrusters' plumes; the ground stations (a glyph and a
+  name, a line to each spacecraft they see, and a ring on the surface:
+  what they see above their minimum elevation at that spacecraft's
+  altitude, brighter while it is in view); the ground track (on by
+  default: solid where flown, dashed where still to fly); labels; and a
+  panel with the UTC time, the speed and the followed spacecraft's
+  altitude and speed.
+- **Globe, Map or Both** (`G`, `M`, `B`; also **View > 3D View**): the
+  globe, a flat [map](#the-2d-map) of the ground tracks, or both side by
+  side. Your choice is kept.
 - **Play** (Space) plays the run. The speed beside it is simulated time
   per second; it starts at the speed that plays the whole run in about
   30 s.
@@ -38,12 +44,38 @@ sent anywhere.
   window, **Bring Back** or closing the window puts it back
   ([Open a view in its own window](../../USER_MANUAL.md#open-a-view-in-its-own-window)).
 
+## The 2D map
+
+The map shows the same run at the same time as the globe, on NASA's Blue
+Marble, flat (equirectangular: longitude across, latitude up).
+
+- Each spacecraft's ground track in its colour: solid where it has flown,
+  dashed where it is still to fly. A dot ringed light and dark shows
+  where it is now. The legend names the colours.
+- Each ground station: its glyph and name, a line to each spacecraft it
+  sees, and its visibility circle for each spacecraft at that
+  spacecraft's altitude now (the area where the spacecraft is above the
+  station's minimum elevation). The circle is green and thicker while the
+  spacecraft is in view.
+- The night side is shaded. A grid marks every 30°.
+- Latitudes are geocentric (from the Earth's centre), as on the globe:
+  at most about 0.19° from the geodetic latitude of a map or GPS.
+- **Show** (on the map's bar) switches the tracks, the stations, day and
+  night, the grid and the labels; your choice is kept.
+- It follows **Play**, the slider and the time cursor, and it is drawn
+  live while a run runs.
+- **Open in Own Window** (on the map's bar, or **View > Own Windows >
+  Open Map in Own Window**): the map in a window of its own, with its own
+  **Play** (Space) and the time; **Go live** is End. Bring it back as any
+  view; it then shows beside the globe.
+
 ## While it runs
 
 Check **Show in 3D View while running** on the Run area's **Run** page
 (remembered). The next single run opens the 3D View and is drawn as it
 is computed, with a **LIVE** badge: the spacecraft and their growing
-paths, the Earth turning, the Sun moving.
+paths and ground tracks, the Earth turning, the Sun moving; on the map
+too.
 
 - **Pace** (beside it): **As fast as possible**, or **1×** to **1000×
   real time**, so a run can be watched; it can change during the run.

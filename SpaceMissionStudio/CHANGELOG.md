@@ -43,6 +43,21 @@ fixes bugs.
 - The 3D View recovers when its graphics (WebGL) context is lost, for
   example when it moves to another window: it draws the same scene again,
   with the camera and the time kept.
+- **A live 2D map in Results › 3D View.** **Globe**, **Map** or **Both**
+  (keys `G`, `M` and `B`, **View > 3D View** or the palette; remembered)
+  shows each spacecraft's ground track on a flat map of the Earth (NASA's
+  Blue Marble, equirectangular, geocentric latitude), with where each
+  spacecraft is now, the night side, a latitude and longitude grid and a
+  legend. Each ground station has its glyph, its name, a line to each
+  spacecraft it sees and the visibility circle of its elevation mask at
+  each spacecraft's altitude (Wertz and Larson, SMAD 3rd ed., 5.2), in
+  the line-of-sight colour while that spacecraft is in view. The map
+  follows the playback, the slider and the time cursor, and it is drawn
+  live while a run runs. It can open in a window of its own (**Open in
+  Own Window** on its bar, **View > Own Windows**), with its own **Play**
+  and the time; bringing it back shows it beside the globe. Its **Show**
+  menu switches the tracks, the stations, day and night, the grid and the
+  labels (decision "Ground tracks, stations and the live map").
 
 - **Temperatures on Results › 3D View.** After Run › Thermal solves the
   run shown, the 3D View's new **Colours** list offers each thermal case.
@@ -62,6 +77,19 @@ fixes bugs.
   many there are, with **Show in Problems** (T-41).
 - The 3D model on the Thermal page is made when you open its tab, not
   when the solve ends.
+- **The ground track is on by default** on the 3D View's globe (the
+  owner: "I am missing the ground-tracks on the earth surface"). It is
+  solid where a spacecraft has flown and dashed where it is still to fly.
+  **Show > Ground track** still turns it off, and that choice is kept.
+- **A ground station is easy to see on the globe:** a 14 px glyph (a
+  triangle on a mast) with a dark outline and its name, instead of an
+  8 px near-white square that was lost on clouds and ice. A ring on the
+  surface shows what it sees above its elevation mask for each
+  spacecraft, stronger and in the line-of-sight colour while the
+  spacecraft is in view.
+- A run shown live is extended in a worker (`gui/live_scene.py`): the
+  window's thread only sends the new frames to the globe and the map, so
+  it stays responsive with many spacecraft.
 
 ### Fixed
 

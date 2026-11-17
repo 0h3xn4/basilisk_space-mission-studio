@@ -285,7 +285,7 @@ def test_the_show_menu_switches_what_is_drawn_and_remembers_it(shown, qtbot):
 
     view, _cursor = shown
     assert [action.text() for action in view.toggle_actions.values()] == [text for _key, text in TOGGLES]
-    assert not view.toggle_actions["groundTrack"].isChecked()
+    assert view.toggle_actions["groundTrack"].isChecked()  # on by default since 2.12.0 (Q1)
     for key in ("paths", "trails", "axes", "headings", "stars", "labels"):
         view.toggle_actions[key].setChecked(False)
     view.toggle_actions["groundTrack"].setChecked(True)

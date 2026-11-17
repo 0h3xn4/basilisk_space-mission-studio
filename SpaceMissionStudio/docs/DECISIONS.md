@@ -3463,3 +3463,97 @@ window".
   through a style-sheet rule on the property `breakout="true"`
   (`theme/qss.py`). **Why:** a tab page is transparent
   (`QStackedWidget > QWidget`), and a transparent window draws black.
+
+## Ground tracks, stations and the live map (2026-11-17)
+
+The design is in
+[`developer/windows-views-design.md`](developer/windows-views-design.md),
+section 3, with the owner's answers at its end (Q1 and Q3). The owner: "I
+am missing the ground-tracks on the earth surface"; a station must be
+clearly visible on the globe; the 2D map lives in the 3D View and can
+open in its own window.
+
+- **Decision:** the globe's ground track is on by default (Q1). It is
+  solid where the spacecraft has flown and dashed where it is still to
+  fly, split at the time shown. The dashes keep their length on screen
+  at any zoom (6 px dash, 4 px gap). **Why:** the owner's answer; the
+  split tells the past from the future without a second colour.
+- **Decision:** a ground station on the globe is a 14 px glyph (a
+  triangle on a mast, on a foot) with a 1 px dark outline
+  (`palettes.STATION_OUTLINE_COLOUR`) and its name beside it. The glyph is
+  an SVG in the page's overlay, placed as the labels are and hidden behind
+  the Earth as they are. In contact it takes the line-of-sight colour.
+  **Alternatives:** a `THREE.Sprite` (the design note). **Why:** the
+  overlay draws it crisp at one size on screen at any zoom and pixel
+  ratio, and the outline comes from CSS; a sprite needs a texture per
+  colour and blurs when scaled. The Show menu's Stations switches the
+  glyph, Labels the name.
+- **Decision:** each station has a ring on the surface per spacecraft:
+  the visibility circle of its elevation mask at that spacecraft's
+  altitude now, Earth central angle `lambda = acos(R / (R + h) cos eps) -
+  eps` (Wertz and Larson, *Space Mission Analysis and Design*, 3rd ed.,
+  section 5.2), on the ellipsoid. It is drawn again only when `lambda`
+  changes by more than 0.01 deg. It is the station's colour at 0.5
+  opacity, and the line-of-sight colour at 0.95 while that spacecraft is
+  in view (`station_visible`). **Why:** the design note; the station's
+  colours, not status colours, because it depicts a thing.
+- **Decision:** the 2D map (`gui/ground_map_widget.py`) is a Qt widget
+  that paints, not a second web page. A worker paints the Earth image,
+  the grid, the night side and the tracks into a `QImage` at device
+  pixels; the flown part of a track goes on a layer the worker keeps and
+  only adds to while the time moves forward. A long line is drawn in
+  pieces of 256 points, because each Qt call holds the interpreter lock
+  (about 1.5 ms a call, measured). The GUI thread draws that image and,
+  on top, the spacecraft markers, the station glyphs, the visibility
+  circles, the labels and the legend (a few ms; a test holds it under
+  10 ms median). A resize waits 120 ms; a theme change repaints.
+  **Why:** "Never freeze"; no second `QWebEngineView`.
+- **Decision:** the map is equirectangular, 2 : 1, with geocentric
+  latitude, the same as the globe's track (`scene3d.ground_track_deg`); it
+  differs from geodetic latitude by at most about 0.19 deg, and the map
+  says so. The image is the 3D View's own Blue Marble (2k, or 4k on a map
+  wider than 2048 device pixels): no new asset, no new licence; the NASA
+  credit is in the map's tooltip. A track is cut at the date line, at the
+  latitude where it crosses. **Why:** the design note's risk 6.
+- **Decision:** the map also shades the night side (from the Sun's
+  direction at the time shown) and draws a 30 deg latitude and longitude
+  grid with labels, and a legend (spacecraft colours; flown solid, to fly
+  dashed). Its own **Show** menu switches tracks, stations, day and night,
+  grid and labels, each on by default and remembered (`ground_map/<key>`).
+  The night shade and the grid colours are depicted things, the same in
+  both themes (`palettes.NIGHT_COLOUR`, `palettes.MAP_GRID_COLOUR`); the
+  labels and the legend are on the theme's raised panels.
+- **Decision:** the 3D View has a segmented control **Globe | Map |
+  Both** (keys `G`, `M`, `B` in the view; **View > 3D View** and the
+  palette: Show Globe, Show Map, Show Globe and Map), kept per user
+  (`mission_view/layout`). It starts on Globe. Both is a splitter, half
+  and half. With Map alone the globe's web view is not made. **Why:** Q3
+  (the map inside the 3D View area); "Calm by default"; a web view only
+  when it is shown. The tab names stay, so `test_workspace.py` and
+  `test_live_run_3d.py` reach the 3D View as before.
+- **Decision:** the map is a view of its own for `gui.breakout` (id
+  "map", title "Map"), with its own **Open in Own Window** button. In its
+  own window it shows **Play** and the time, since the 3D View's controls
+  stay behind. Brought back while the 3D View shows Globe only, the 3D
+  View switches to Both, so the map is seen where it came back to.
+- **Decision:** `gui/live_scene.py: LiveScene` is the one consumer of a
+  live run's feed (its `drain` removes what it returns). It drains 20
+  times a second and, in one serial worker, builds the scene or extends
+  it (`extend_scene`) and makes the page's `MV.append` JSON. It extends a
+  shallow copy of the scene, so the scene the GUI thread holds stays
+  whole. The globe sends the JSON; the map paints the new segments in its
+  own worker. `LiveSceneBuilder` is gone; `LIVE_TICK_MS`, `LIVE_BATCH`
+  and `LIVE_BATCH_STATES` stay importable from `mission_view_widget`.
+  **Why:** the design note's risk 4 (`np.concatenate` grows with the
+  run) and "Never freeze".
+- **Decision:** no separate `Playback` class. The 3D View's playback (its
+  timer, slider, LIVE state and the shared time cursor) stays the one
+  clock, and the map follows it (`set_frame`, `set_live`,
+  `set_playing`); the map's Play and End ask the 3D View. **Alternatives:**
+  the design note's extracted `Playback`. **Why:** the simplest form; the
+  map has no clock of its own, and the 3D View's tested playback is left
+  as it is.
+- **Decision:** `scene3d.Craft.path_times_s` keeps the time of each point
+  of the path and the ground track (display data, in memory). The page
+  gets it as `tt`, to split the track at the time shown. No output file,
+  no golden file and no file format changes.
