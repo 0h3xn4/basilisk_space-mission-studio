@@ -123,3 +123,67 @@ very few lines, colour only where it means something.
 - the screenshot harness (`scripts/capture_ui_screens.py`) at the end of a
   milestone, with the differences noted;
 - CHANGELOG "Unreleased" and `docs/DECISIONS.md` updated.
+
+## Backlog and release procedure
+
+An unattended run (a scheduled task) follows this procedure. Paths are
+relative to `SpaceMissionStudio/` unless they start with `.github/`.
+
+- **The backlog** is the items under `## Next release` in `BACKLOG.md`.
+- **Branch.** Find the default branch with
+  `git symbolic-ref refs/remotes/origin/HEAD` (today it is `develop`).
+  Never assume it is called `main`. Work on that branch and push to it.
+  A backlog run does not open pull requests.
+- **One item at a time:**
+  1. Fix the item.
+  2. Add a test that fails without the fix.
+  3. Run the checks below.
+  4. Commit with `git commit -s`. Write the message in short, plain
+     sentences, about 80 % of the way to ASD-STE100 Simplified Technical
+     English. Name every choice you made without asking.
+  5. Push.
+  6. Move the item to `## Done` with the short commit hash.
+- **The checks** (from `SpaceMissionStudio/`), all must pass before a push:
+  - `python -m ruff check spacemissionstudio tests scripts compliance/tools`
+  - `QT_QPA_PLATFORM=offscreen python -m pytest tests -q -n auto`
+  - `pre-commit run --files <changed files>` (from the repository root)
+  - `python compliance/tools/check_drds.py`, the other generators in
+    "Checks before a commit", then `git diff --exit-code compliance/docs`
+  The hard rules above still apply. The golden files stay byte-identical.
+- **Unclear or blocked items** move to `## Needs human` with a short
+  reason. Examples: the fix breaks a hard rule, changes a golden file,
+  or needs a choice that changes a workflow users rely on. Skip the item
+  and continue.
+- **Never ask questions** during a backlog run. Make reasonable choices
+  and note them in the commit message.
+- **Semver:** a breaking change is a major step, a new feature a minor
+  step, anything else a patch.
+- **Release** (only when `## Next release` is empty and `## Done` has
+  items since the last release), by `docs/developer/releasing.md`
+  sections 2 to 4:
+  1. Set the version in `pyproject.toml`, `spacemissionstudio/__init__.py`
+     and `packaging/windows/spacemissionstudio.iss`.
+  2. Move the Unreleased entries in `CHANGELOG.md` under
+     `## X.Y.Z (YYYY-MM-DD)`. List every item of the release.
+  3. Update the release records: HISTORY, SRelD, and the others
+     `releasing.md` names.
+  4. Commit (`-s`) and push.
+  5. Wait until the "SpaceMissionStudio" workflow is green on that commit.
+  6. Run `python packaging/release_check.py --commit "$(git rev-parse HEAD)" --tags "$(git ls-remote --tags origin)"`.
+     It must pass.
+  7. Run `git tag -a spacemissionstudio-vX.Y.Z -m "SpaceMissionStudio X.Y.Z"`.
+     The tag name is `spacemissionstudio-vX.Y.Z`, not `vX.Y.Z`: the
+     release workflow starts only on that pattern, and `vX.Y.Z` is
+     Basilisk upstream's tag namespace.
+  8. Run `git push --follow-tags origin <default branch>`. The tag push
+     starts `.github/workflows/spacemissionstudio-release.yml`. It
+     builds, installs, checks and attaches every file to a draft release.
+  9. **Publish:** start the same workflow with the GitHub tool
+     `mcp__github__actions_run_trigger` (`run_workflow`, workflow
+     `spacemissionstudio-release.yml`, ref the default branch, inputs
+     `tag: spacemissionstudio-vX.Y.Z` and `publish: true`). It
+     publishes the release once every file is attached. Do not use the
+     `gh` CLI.
+  10. Check that `git ls-remote --tags origin` shows the tag and that
+      the release has its files.
+- **Progress** goes to `PROGRESS.md`, next to this file. Git ignores it.

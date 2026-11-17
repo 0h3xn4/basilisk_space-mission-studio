@@ -63,7 +63,7 @@ No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
 signed (decision 11). The current release is 2.11.0, the System
 Budget Studio merge's phase 1: the equipment list, the static power
-budget and the Budgets area, at scenario schema version 5 (prepared
+budget and the Budgets area, at scenario schema version 5 (published
 2026-11-17); before it 2.10.0, mission operations planning (published
 2026-11-17), 2.9.0, spacecraft thermal analysis on the 3D model with
 NASA's November 2026 solar-cycle prediction (published 2026-11-16), 2.8.0, a calmer window
