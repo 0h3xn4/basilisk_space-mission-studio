@@ -204,6 +204,7 @@ def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path, monkeypatch):
     png = widget.save_plot(tmp_path / "plot.png", "png")
     assert png.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
     # The 3D model in its node temperatures: the hottest by default, then a chosen time.
+    widget.tabs.setCurrentWidget(widget.model_page)  # its tab makes the web view (2.12.0, TEST_CHANGES.md)
     assert widget.model_view is not None
     hot = widget.part_temperatures()
     battery = next(c for c in widget.analysis.cases if c.name == widget.case_combo.currentText())

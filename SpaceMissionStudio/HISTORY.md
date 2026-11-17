@@ -18212,3 +18212,70 @@ The other way, this code opens and validates the 36 templates as 2.10.0
 saves them (version 4) with no message. The templates as the two
 versions save them differ only in their `schema_version` line, and the
 golden outputs of the 36 templates are unchanged.
+
+## 2.12.0 windows and views: thermal results (2026-11-17)
+
+The first part of 2.12.0 (`docs/developer/windows-views-design.md`,
+sections 1 and 4; PR-1). It answers two items of the owner's feedback of
+2026-11-17. The Run › Thermal plot "looks very bad, broken, cramped and
+skewed". And: "It would be great if the thermal simulation could also be
+visible in the live 3D viewer".
+
+**The skewed plot (a defect).** `QSvgWidget` paints an SVG into its whole
+rectangle and does not keep the aspect ratio. The 900 x 420 picture in a
+view of 1400 x 380 px scaled x by 1.56 and y by 0.90, so the title and
+the legend were 1.7 times too wide. The picture also stayed white in the
+dark theme. The fix (thermal decision T-40, amending T-31) keeps two
+copies of one plot. The files keep `thermal/plots.py`'s defaults, byte
+for byte: a new test pins the SHA-256 of three pictures, taken from the
+2.11.0 code before the change. The screen copy takes the view's size and
+a style from the theme (`gui/theme/svg_plot_style.py`). A worker makes
+the SVG and paints it into an image; the new `gui/svg_plot.py:
+SvgPlotView` draws that image at its own aspect ratio. A resize asks for
+a new picture once the size holds still for 250 ms, and a theme change
+asks at once. Measured on template 33's longest case (1,297 samples, six
+nodes): making the SVG takes 8 ms and painting it 10 ms, so the two plots
+of a node took about 36 ms of the GUI thread in 2.11.0. Now the GUI
+thread only draws an image.
+
+**The page (T-41).** The nine group boxes in a scroll area are now tabs:
+Temperatures, Heat flows, Summary, Heaters and radiators, 3D model,
+Studies and Notes, under the toolbar, one status line and a row with the
+case, the node and Save SVG / Save PNG. The findings go to the Problems
+panel, after the editor's and the plan's problems, and a finding the
+scenario checks already list is not listed twice. The 3D model tab makes
+its web view when it is first shown. With the scroll area gone, the
+page's least height reaches the window. Two things the full GUI suite
+and the screenshots found: the 3D model's least height of 380 px pushed
+the main window to 781 px, and two plot views of 240 px each pushed the
+window's least height to 734 px (`test_budgets_area.py` and
+`test_landing_page.py`, which keep the window at 720 and 560 px). The 3D
+model now needs 240 px, a plot view 160 px (it gets a 480 x 240 picture,
+drawn smaller), and an empty Heat flows tab shows only its empty state.
+A new test holds the window at 1280 x 720 with the 3D model shown.
+
+**Temperatures on the 3D View (T-42).** The thermal solve is
+post-processing on a finished run (T-01), so "live" means playback of
+the finished run. `engine/scene3d` now keeps each triangle's part
+(display data; `spacecraft_mesh` returns what it returned). A worker
+builds a table once per case: a node index per triangle and each node's
+colour per frame, on one fixed range per case (template 33: 433 frames,
+0.3 ms, 31 kB of JSON). The page writes the mesh's colour attribute on
+each frame. The colour scale is Plotly's "RdBu_r" stops, now in
+`theme/palettes.py`, so the Thermal page's 3D model and the 3D View
+agree; a test compares them at 41 points. The colour bar floats over the
+view's top right corner, so it takes no row of the window's height (the
+Results area at 1280 x 720 has 11 px to spare).
+
+**Tests.** New: `tests/test_thermal_plot_style.py` (6: the exports byte
+for byte, the style, dashes after the palette, the part per triangle,
+the scale against Plotly) and `tests/gui/test_thermal_views.py` (17: the
+aspect ratio at five view sizes, the resize debounce, the screen plot at
+the view's size in a worker, a theme switch, the exports, the page in
+both themes at 1280 x 720 with every 2.11.0 control reachable, the
+findings, the window at 1280 x 720, the colour table, the 3D View
+following the time cursor and the slider, and less than 50 ms on the GUI
+thread for a case, a node, a resize, a cursor move and a playback tick).
+One existing test changed how it reaches a widget: it selects the 3D
+model tab before it reads the web view (`docs/ui/TEST_CHANGES.md`). No
+golden file and no file format changed.

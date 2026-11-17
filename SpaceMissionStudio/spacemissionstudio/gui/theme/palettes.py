@@ -79,6 +79,31 @@ VELOCITY_COLOUR = "#35C2E0"
 STATION_COLOUR = "#F4F5F7"
 LINE_OF_SIGHT_COLOUR = "#5BD27A"
 
+# Temperatures on a 3D model (Run › Thermal's 3D model and Results › 3D
+# View): ColorBrewer's diverging "RdBu" (Brewer, colorbrewer2.org),
+# reversed, so cold is blue and hot is red; the same stops as Plotly's
+# "RdBu_r", which the Thermal page's 3D model takes by name. It stays
+# readable with red-green colour-vision deficiency. Data, not status, and
+# the same in both themes; every view that uses it shows a colour bar with
+# the values and the unit, so colour is never the only cue. A part in no
+# thermal node is a neutral grey.
+TEMPERATURE_STOPS = ("#053061", "#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", "#F7F7F7", "#FDDBC7", "#F4A582",
+                     "#D6604D", "#B2182B", "#67001F")
+NO_TEMPERATURE_COLOUR = "#A0A0A0"
+
+
+def temperature_rgb(fraction):
+    """The colour at ``fraction`` (0 coldest to 1 hottest, clipped; a
+    number or an array) of :data:`TEMPERATURE_STOPS`, linear between
+    stops, as 0 to 255 sRGB floats (shape ``fraction.shape + (3,)``)."""
+    import numpy as np
+
+    stops = np.array([[int(c[i:i + 2], 16) for i in (1, 3, 5)] for c in TEMPERATURE_STOPS], dtype=float)
+    position = np.clip(np.asarray(fraction, dtype=float), 0.0, 1.0) * (len(stops) - 1)
+    low = np.minimum(np.floor(position).astype(int), len(stops) - 2)
+    weight = (position - low)[..., None]
+    return stops[low] * (1.0 - weight) + stops[low + 1] * weight
+
 
 def ink_on(colour: str) -> str:
     """Black or white, whichever reads on a fill of ``colour`` (a colour

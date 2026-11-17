@@ -52,6 +52,15 @@ live** (End) returns to the newest state, and Play catches up with it.
 When the run ends (or is cancelled) its full result replaces the live
 frames (:meth:`set_run`), in the same view and camera, at the same time.
 
+**Temperatures** (the Colours list, decision T-42): when Run › Thermal
+has solved the run shown, each part of the solved spacecraft can take its
+thermal node's temperature in a case, frame by frame, as the run plays
+back and as the time cursor moves; a colour bar gives the range and the
+unit. Thermal is solved after the run (T-01), so a run shown live has no
+temperatures. A worker resamples each node onto the scene's frames and
+maps it to the colour scale once (:func:`temperature_frames`); the page
+recolours the parts' triangles itself on each frame (``MV.setTemperatures``).
+
 The slider and the shared time cursor move together. The scene
 (``engine.scene3d``) and the data the page takes are built off the GUI
 thread (:class:`SceneBuilder`); the page (``gui/assets/mission_view/``:
@@ -69,17 +78,17 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QSettings, QThread, QTimer, QUrl, Qt, Signal
-from PySide6.QtGui import QAction, QColor, QKeySequence, QShortcut
-from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLabel, QMenu, QPushButton, QSlider, QStackedWidget,
+from PySide6.QtCore import QEvent, QPointF, QSettings, QThread, QTimer, QUrl, Qt, Signal
+from PySide6.QtGui import QAction, QColor, QKeySequence, QLinearGradient, QPainter, QPen, QShortcut
+from PySide6.QtWidgets import (QComboBox, QFrame, QHBoxLayout, QLabel, QMenu, QPushButton, QSlider, QStackedWidget,
                                QToolButton, QVBoxLayout, QWidget)
 
 from ..constants import CENTRAL_BODY_EQUATORIAL_RADIUS_KM
 from ..engine import live_view, scene3d
 from ..schema.epochs import parse_epoch_utc
-from .theme import SPACE, current_theme, icon, mono_font, on_change, set_role
+from .theme import SPACE, TOKENS, current_theme, icon, mono_font, on_change, set_role
 from .theme.mission_view_style import mission_view_style
-from .theme.palettes import SPACE_COLOUR
+from .theme.palettes import NO_TEMPERATURE_COLOUR, SPACE_COLOUR, TEMPERATURE_STOPS, temperature_rgb
 
 ASSETS = Path(__file__).resolve().parent / "assets" / "mission_view"
 PAGE = ASSETS / "mission_view.html"
@@ -100,6 +109,8 @@ TOGGLES = (("paths", "Paths"), ("trails", "Trails"), ("axes", "Body axes"),
 _TOGGLES_OFF = ("groundTrack",)  # off until the user turns them on
 _AXES = (("+x", (1, 0, 0)), ("+y", (0, 1, 0)), ("+z", (0, 0, 1)), ("-z", (0, 0, -1)))
 _SETTINGS_GROUP = "mission_view"
+MODEL_COLOURS = "Model colours"  # the Colours list's first entry; then "Temperature: <case>" per thermal case
+_TEMPERATURE = "Temperature: "
 
 
 def _settings() -> QSettings:
@@ -251,6 +262,115 @@ class LiveSceneBuilder(QThread):
         self.built.emit(scene, payload)
 
 
+def temperature_frames(scene: scene3d.Scene, analysis, case_name: str) -> dict | None:
+    """A thermal case's colours on ``scene``'s frames (T-42), as the
+    page's ``MV.setTemperatures`` takes them, or None when the scene has no
+    spacecraft of ``analysis`` (a ``thermal.analysis.ThermalAnalysis``).
+
+    Each triangle of the spacecraft takes its part's thermal node
+    (``triangles``: the node's index, -1 for a part in no node, drawn in
+    ``none``). Each node's temperature is interpolated onto the scene's
+    frame times and placed on the temperature scale (``theme.palettes``)
+    over one range per case: the coldest to the hottest temperature of the
+    nodes drawn over the whole case (``low_c``, ``high_c``), so a colour
+    means the same temperature on every frame. ``colours`` holds, per
+    frame, each node's red, green and blue (0 to 255, sRGB)."""
+    craft_index = next((k for k, craft in enumerate(scene.crafts) if craft.name == analysis.spacecraft), None)
+    if craft_index is None:
+        return None
+    craft = scene.crafts[craft_index]
+    case = analysis.case(case_name)
+    names = list(case.network.names)
+    index = {name: k for k, name in enumerate(names)}
+    node_of_part = {}
+    for node in analysis.prepared.spacecraft.thermal.nodes:
+        for part in node.parts:
+            node_of_part.setdefault(part, node.name)
+    part_node = np.array([index.get(node_of_part.get(part), -1) for part in craft.part_names] + [-1], dtype=int)
+    owner = craft.part_of_triangle if craft.part_of_triangle is not None else np.full(len(craft.triangles), -1)
+    triangles = part_node[np.asarray(owner, dtype=int)]  # -1 picks the appended "no node"
+    drawn = sorted({int(k) for k in triangles if k >= 0}) or list(range(len(names)))
+    series = np.column_stack([case.temperature_c(name) for name in names])  # (k, nodes) [degC]
+    low, high = float(np.min(series[:, drawn])), float(np.max(series[:, drawn]))
+    times = np.asarray(scene.times_s, dtype=float)
+    frames = np.column_stack([np.interp(times, case.time_s, series[:, k]) for k in range(len(names))])
+    fraction = (frames - low) / (high - low) if high > low else np.full(frames.shape, 0.5)
+    rgb = np.rint(temperature_rgb(fraction)).astype(int)  # (frames, nodes, 3)
+    none = [int(NO_TEMPERATURE_COLOUR[i:i + 2], 16) for i in (1, 3, 5)]
+    return {"craft": craft_index, "case": case_name, "triangles": triangles.tolist(), "nodes": names,
+            "colours": rgb.reshape(len(times), -1).tolist(), "none": none, "low_c": low, "high_c": high}
+
+
+class TemperatureFramesBuilder(QThread):
+    """Builds :func:`temperature_frames` and its JSON off the GUI thread."""
+
+    built = Signal(int, object, str)  # the request's number, the table (dict or None), its JSON
+    failed = Signal(int, str)
+
+    def __init__(self, number: int, scene, analysis, case_name: str, parent=None):
+        super().__init__(parent)
+        self._number, self._scene, self._analysis, self._case = number, scene, analysis, case_name
+
+    def run(self) -> None:
+        try:
+            table = temperature_frames(self._scene, self._analysis, self._case)
+            text = json.dumps(table, separators=(",", ":")) if table is not None else "null"
+        except Exception as exc:  # noqa: BLE001 -- said in the view; the run and the analysis are not affected
+            self.failed.emit(self._number, str(exc))
+            return
+        self.built.emit(self._number, table, text)
+
+
+class _ScaleStrip(QWidget):
+    """The temperature scale as a strip, cold to hot (theme.palettes);
+    data colours, so they stay the same in both themes."""
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setFixedSize(5 * SPACE["xxl"], SPACE["md"])
+
+    def paintEvent(self, _event) -> None:  # noqa: N802 -- Qt's name
+        painter = QPainter(self)
+        gradient = QLinearGradient(QPointF(0.0, 0.0), QPointF(float(self.width()), 0.0))
+        for k, colour in enumerate(TEMPERATURE_STOPS):
+            gradient.setColorAt(k / (len(TEMPERATURE_STOPS) - 1), QColor(colour))
+        painter.setPen(QPen(QColor(TOKENS["border.subtle"])))
+        painter.setBrush(gradient)
+        painter.drawRect(self.rect().adjusted(0, 0, -1, -1))
+        painter.end()
+
+
+class TemperatureBar(QFrame):
+    """The colour bar of the temperatures shown, floating over the view's
+    top right corner (it takes no row of the window's height): the case,
+    the coldest value, the scale and the hottest value, each with its
+    unit, so colour is never the only cue."""
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        set_role(self, role="card")
+        row = QHBoxLayout(self)
+        row.setContentsMargins(SPACE["md"], SPACE["xs"], SPACE["md"], SPACE["xs"])
+        row.setSpacing(SPACE["sm"])
+        self.title_label = set_role(QLabel(""), tone="secondary")
+        row.addWidget(self.title_label)
+        self.low_label = set_role(QLabel(""), role="mono")
+        row.addWidget(self.low_label)
+        self.strip = _ScaleStrip()
+        row.addWidget(self.strip)
+        self.high_label = set_role(QLabel(""), role="mono")
+        row.addWidget(self.high_label)
+
+    def set_range(self, case: str, low_c: float, high_c: float) -> None:
+        self.title_label.setText(f"Temperature, {case} case")
+        self.low_label.setText(f"{low_c:.1f} °C")
+        self.high_label.setText(f"{high_c:.1f} °C")
+        text = (f"Colour scale of the {case} case: {low_c:.1f} °C (blue) to {high_c:.1f} °C (red); grey: a part in "
+                "no thermal node")
+        self.setToolTip(text)
+        self.setAccessibleName(text)
+
+
 def grouped_notes(notes: list[str]) -> tuple[list[str], list[str]]:
     """``(short, full)``: the scene's notes with the same message for
     several spacecraft ("sat-1: no attitude in this run; ...") said once,
@@ -308,6 +428,11 @@ class MissionViewWidget(QWidget):
         self.following = False  # a live run: the view shows its newest state
         self._sent = 0  # frames of a live scene the page has
         self._restore = None  # (view text, time [s] or None for the end): the live view's, kept by set_run
+        self._shown_result = None  # the result of the finished run shown (a thermal result must belong to it)
+        self.thermal = None  # the thermal analysis of the run shown (thermal.analysis.ThermalAnalysis), or None
+        self._temperatures: tuple | None = None  # (table, its JSON) of the case shown in temperatures
+        self._temperature_number = 0  # the newest request; an older table is dropped
+        self._temperature_builders: set = set()
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -338,6 +463,14 @@ class MissionViewWidget(QWidget):
             self.speed_combo.addItem(_speed_text(speed), speed)
         self.speed_combo.currentIndexChanged.connect(lambda _index: self._send_playback())
         controls.addWidget(self.speed_combo)
+        self.colour_combo = QComboBox()
+        self.colour_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.colour_combo.addItem(MODEL_COLOURS)
+        self.colour_combo.setToolTip("Colour the spacecraft by its 3D model's colours, or by the temperatures of a "
+                                     "thermal case solved on this run (Run › Thermal), as the run plays back")
+        self.colour_combo.setAccessibleName("Colours")
+        self.colour_combo.currentIndexChanged.connect(lambda _index: self._on_colour_mode())
+        controls.addWidget(self.colour_combo)
         self.view_combo = QComboBox()
         self.view_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.view_combo.setToolTip("The camera: whole orbit, following a spacecraft, Earth-fixed, or from a "
@@ -393,6 +526,9 @@ class MissionViewWidget(QWidget):
         set_role(self.empty, tone="secondary")
         self.stack.addWidget(self.empty)
         layout.addWidget(self.stack, 1)
+        self.temperature_bar = TemperatureBar(self.stack)  # over the view, not one of the stack's pages
+        self.temperature_bar.hide()
+        self.stack.installEventFilter(self)
 
         self._timer = QTimer(self)
         self._timer.setInterval(_TICK_MS)
@@ -415,6 +551,9 @@ class MissionViewWidget(QWidget):
             self._end_live()
         self.pause()
         self._run = (scenario, result, base_dir)
+        if result is not self._shown_result:
+            self.set_thermal(None, None)
+        self._shown_result = result
         self.scene = None
         try:
             self._epoch = parse_epoch_utc(scenario.epoch_utc)
@@ -431,6 +570,8 @@ class MissionViewWidget(QWidget):
         self._restore = None
         self.pause()
         self._run = None
+        self._shown_result = None
+        self.set_thermal(None, None)
         self.scene = None
         self.empty.setText("Run a scenario to see it here in 3D.")
         self.stack.setCurrentWidget(self.empty)
@@ -585,6 +726,8 @@ class MissionViewWidget(QWidget):
         """Let a scene still being built finish (closing the window)."""
         if self._builder is not None:
             self._builder.wait()
+        for builder in list(self._temperature_builders):
+            builder.wait()
         self._end_live()
         for builder in list(self._live_builders):
             builder.wait()
@@ -637,6 +780,8 @@ class MissionViewWidget(QWidget):
         self._show_scale_note()
         self._update_time_label(self.slider.value())
         self._set_controls_enabled(True)
+        self._temperatures = None  # made again for this scene's frames
+        self._on_colour_mode()
         if self.isVisible():
             self._ensure_view()
             self.stack.setCurrentWidget(self.web_view)
@@ -705,6 +850,8 @@ class MissionViewWidget(QWidget):
         if not options.get("keepCamera"):  # else the page keeps its view and camera
             page.runJavaScript(f"MV.setView({json.dumps(self.view_combo.currentData() or {'mode': 'orbit'})});")
         page.runJavaScript(f"MV.setFrame({self.slider.value()});")
+        if self._temperatures is not None:
+            page.runJavaScript(f"MV.setTemperatures({self._temperatures[1]});")
         self._send_playback()
         self._set_live_badge()
 
@@ -842,9 +989,96 @@ class MissionViewWidget(QWidget):
     def _set_controls_enabled(self, enabled: bool) -> None:
         for widget in (self.play_button, self.slider, self.speed_combo, self.view_combo, self.show_button):
             widget.setEnabled(enabled)
+        self.colour_combo.setEnabled(enabled and self.colour_combo.count() > 1)
         if not enabled:
             self.time_label.clear()
             self.scale_note.clear()
+
+    # -- temperatures (T-42) -------------------------------------------------------------
+    def set_thermal(self, analysis, result=None) -> None:
+        """The thermal analysis solved on ``result`` (Run › Thermal), or
+        None. Its cases join the Colours list only when ``result`` is the
+        run shown; any other analysis takes them away."""
+        belongs = analysis is not None and result is not None and result is self._shown_result
+        self.thermal = analysis if belongs else None
+        current = self.colour_combo.currentText()
+        self.colour_combo.blockSignals(True)
+        self.colour_combo.clear()
+        self.colour_combo.addItem(MODEL_COLOURS)
+        if self.thermal is not None:
+            self.colour_combo.addItems([_TEMPERATURE + case.name for case in self.thermal.cases])
+        self.colour_combo.setCurrentIndex(max(self.colour_combo.findText(current), 0))
+        self.colour_combo.blockSignals(False)
+        self.colour_combo.setEnabled(self.scene is not None and self.colour_combo.count() > 1)
+        self._temperatures = None
+        self._on_colour_mode()
+
+    def show_temperatures(self, case: str) -> bool:
+        """Colour the spacecraft by ``case``'s temperatures (False: no such
+        case solved on the run shown)."""
+        index = self.colour_combo.findText(_TEMPERATURE + case)
+        if index > 0:
+            self.colour_combo.setCurrentIndex(index)
+        return index > 0
+
+    def temperature_case(self) -> str | None:
+        """The case whose temperatures colour the spacecraft, or None."""
+        text = self.colour_combo.currentText()
+        return text[len(_TEMPERATURE):] if text.startswith(_TEMPERATURE) and self.thermal is not None else None
+
+    def _on_colour_mode(self) -> None:
+        self._temperature_number += 1
+        case = self.temperature_case()
+        if case is None or self.scene is None:
+            self._temperatures = None
+            self.temperature_bar.hide()
+            self._call("MV.setTemperatures(null);")
+            return
+        if self._temperatures is not None and self._temperatures[0]["case"] == case:
+            return
+        builder = TemperatureFramesBuilder(self._temperature_number, self.scene, self.thermal, case, self)
+        builder.built.connect(self._on_temperatures_built)
+        builder.failed.connect(self._on_temperatures_failed)
+        builder.finished.connect(lambda b=builder: self._temperature_builder_done(b))
+        self._temperature_builders.add(builder)
+        builder.start()
+
+    def _temperature_builder_done(self, builder) -> None:
+        self._temperature_builders.discard(builder)
+        builder.deleteLater()
+
+    def _on_temperatures_built(self, number: int, table, text: str) -> None:
+        if number != self._temperature_number:
+            return  # an older request's
+        if table is None:
+            self._temperatures = None
+            self.temperature_bar.hide()
+            self._call("MV.setTemperatures(null);")
+            return
+        self._temperatures = (table, text)
+        self.temperature_bar.set_range(table["case"], table["low_c"], table["high_c"])
+        self.temperature_bar.show()
+        self._place_temperature_bar()
+        self._call(f"MV.setTemperatures({text});")
+
+    def _place_temperature_bar(self) -> None:
+        """The colour bar in the view's top right corner, above the page."""
+        bar = self.temperature_bar
+        size = bar.sizeHint()
+        bar.setGeometry(max(0, self.stack.width() - size.width() - SPACE["md"]), SPACE["md"], size.width(),
+                        size.height())
+        bar.raise_()
+
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802 -- Qt's name
+        if watched is self.stack and event.type() in (QEvent.Type.Resize, QEvent.Type.ChildAdded):
+            if self.temperature_bar.isVisibleTo(self):
+                self._place_temperature_bar()
+        return super().eventFilter(watched, event)
+
+    def _on_temperatures_failed(self, number: int, message: str) -> None:
+        if number == self._temperature_number:
+            self.temperature_bar.hide()
+            self.scale_note.setText(f"The temperatures could not be shown: {message}")
 
     # -- the shared time cursor --------------------------------------------------------
     def set_time_cursor(self, cursor) -> None:
