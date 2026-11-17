@@ -127,6 +127,11 @@ beta range.
      come from, the energy balance and the step check): see below.
 5. A node outside its range appears on the **Timeline** as a `thermal
    limit` event (the **Thermal limits** box).
+6. **Open in Own Window** (the last button of the top row, or
+   `Ctrl+Shift+D`) puts the whole Thermal page in a window of its own,
+   for a second screen, with everything it holds; `Ctrl+Shift+D` there,
+   **Bring Back** or closing the window puts it back
+   ([Open a view in its own window](../../USER_MANUAL.md#open-a-view-in-its-own-window)).
 
 **Sized power** is the least constant heater power that holds the node at
 its "on" temperature over the orbit. Carry it into the power budget.

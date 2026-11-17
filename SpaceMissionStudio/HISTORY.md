@@ -18279,3 +18279,80 @@ thread for a case, a node, a resize, a cursor move and a playback tick).
 One existing test changed how it reaches a widget: it selects the 3D
 model tab before it reads the web view (`docs/ui/TEST_CHANGES.md`). No
 golden file and no file format changed.
+
+## 2.12.0 windows and views: breakout windows (2026-11-17)
+
+The second part of 2.12.0 (`docs/developer/windows-views-design.md`,
+section 2 and the answered questions; PR-2). The owner: "thermal
+simulation should have its own breakout window, similar to the 3d model
+window. basically, every 'bigger' feature inside SpaceMissionStudio
+should have its own breakout window", and "it would be great if the 3D
+viewer/render would be a separate window".
+
+**One mechanism.** The new `gui/breakout.py` moves Results › 3D View,
+Run › Thermal and the Budgets area into a window of their own and back.
+`Breakouts.register(id, widget, title)` is the whole API for a view; the
+live 2D map of PR-3 is one more call. The 3D model editor, the
+precedent, edits a copy with OK and Cancel. A view must stay the same
+live widget, so the mechanism moves the widget itself: the web view, the
+scene, the live timer, the playback and the time cursor stay, and a run
+shown live goes on in the window. Its place shows a placeholder, "<view>
+is in its own window", with **Bring Back** and **Show Window**; the tab
+keeps its index and text.
+
+**The view keeps its parent (measured).** The design note's first form
+put the view in a new top-level window. A new parent makes Qt restyle
+every widget of the view under the application's style sheet: 50 to 70
+ms for Budgets' 431 widgets, offscreen, over the 50 ms of "Never freeze".
+The view now leaves its tab or layout slot without a new parent and gets
+the window flags: 15 to 26 ms for Budgets, 4 to 13 ms for the 3D View and
+Thermal. A test holds every detach and attach under 50 ms, three times
+for each view, with the 3D View's page loaded. A tab page is transparent
+under the style sheet, and a transparent window draws black; a rule on
+the property `breakout="true"` gives the window `bg.canvas`.
+
+**Geometry.** Each view's window is kept in `layout.ini`, keys
+`breakout/<id>/geometry` and `breakout/<id>/maximized`. One write of the
+file took 50 to 220 ms on the GUI thread here (the lock file and
+`sync`), so the window's geometry is read with the layout at start,
+written by a worker when the view comes back, and written with the
+layout at quit. A rectangle whose top is on no screen (a monitor
+unplugged) gives only its size, centred on the main window; on Wayland
+only the size is used.
+
+**Commands.** `Ctrl+Shift+D` (free in 2.11.0) moves the view shown; in a
+view's window it brings that view back. **View > Own Windows** has it
+and one command per view, all in the palette, and each view has an icon
+button at the end of its toolbar (Budgets: in its tab bar's corner). Two
+Lucide icons came from the same 1.52.0 archive, its SHA-256 checked:
+external-link and square-arrow-down-left. A view's window carries the
+global commands, Run and Cancel Run and its area's commands, so `Ctrl+K`
+(over that window), `Ctrl+S` and `Ctrl+R` work there.
+
+**Rules.** Every view starts docked ("Calm by default"; D-191 is System
+Budget Studio's rule, not this app's). With no scenario open, and at
+quit before the layout is saved, every view comes back. Showing a view
+in its window (a command, the palette, a live run) brings the window to
+the front and leaves the main window's area as it was. Budgets in its
+own window counts as shown for B-21 (Q2, decision B-26): it is computed
+after an edit, Remove and Copy as CSV act on it, and its spacecraft
+picker goes with it.
+
+**WebGL.** A `QWebEngineView` that moves to another native window can
+lose its WebGL context on some drivers. `mission_view.js` had no handler.
+Now `webglcontextlost` stops drawing and asks for the context back;
+`webglcontextrestored`, or 2 s without it, makes a new renderer and loads
+the same scene with the camera, the frame and a thermal case's colours
+kept. Two tests lose the context through `WEBGL_lose_context`: one gives
+it back, one does not.
+
+**Tests.** New: `tests/gui/test_breakout.py` (19: docked at start with
+the buttons, the commands in the menu, the palette and the shortcut list,
+disabled with nothing open, the same 3D View and page with their state
+after detach and attach, close brings back, the main window keeps its
+area, scenario close and quit bring back, the geometry kept, a screen
+gone, Wayland, `Ctrl+Shift+D` from either window, the keyboard in the
+window, the button and the menu, a theme switch, the two context losses,
+Budgets counted as shown, the timing, and a live run in the detached 3D
+View). No existing test changed. No golden file, no file format and no
+engine change.

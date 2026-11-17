@@ -12,6 +12,22 @@ fixes bugs.
 
 ### Added
 
+- **A view in its own window.** Results › 3D View, Run › Thermal and the
+  Budgets area can open in a window of their own, for example on a
+  second screen. Press `Ctrl+Shift+D` on the view, click **Open in Own
+  Window** at the end of its toolbar, or use **View > Own Windows** or
+  the command palette. It is the same view, not a copy: the run, the
+  camera, the playback and the tables stay, and a run shown live goes on
+  there. Its place in the main window says so, with **Bring Back**.
+  `Ctrl+Shift+D` in the window, **Bring Back** or closing the window puts
+  the view back. Each window keeps its size and place (only on a screen
+  that is still there; on Wayland only the size). Every view starts in
+  the main window. Budgets in its own window counts as shown (decision
+  "Breakout windows", B-26).
+- The 3D View recovers when its graphics (WebGL) context is lost, for
+  example when it moves to another window: it draws the same scene again,
+  with the camera and the time kept.
+
 - **Temperatures on Results › 3D View.** After Run › Thermal solves the
   run shown, the 3D View's new **Colours** list offers each thermal case.
   Pick one, and each part of the spacecraft takes its thermal node's

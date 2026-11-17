@@ -2176,3 +2176,19 @@ file. The new tests are in `tests/gui/test_thermal_views.py` (17) and
 | Test | Before | Now | Why |
 |---|---|---|---|
 | `test_thermal_pages.py::test_run_thermal_solves_shows_and_saves` | read `widget.model_view` right after the solve | selects the tab first, `widget.tabs.setCurrentWidget(widget.model_page)`, then reads `widget.model_view`; the assertions after it are unchanged | the web view is made when its tab is shown (T-41) |
+
+### PR-2: breakout windows (decision "Breakout windows", B-26)
+
+Results › 3D View, Run › Thermal and the Budgets area can open in a window
+of their own (`gui/breakout.py`). A view keeps its parent and its tab or
+slot while it is docked, and every view starts docked, so the tests reach
+every widget as before: `window.run_views.widget(index) is
+window.thermal_widget` and `window.shell.page("budgets").content is
+window.budgets_views` still hold. The View menu, the palette and the
+shortcut table get the new commands (DESIGN.md has the `Ctrl+Shift+D`
+row), so `test_menu_bar.py`, `test_shell_reachability.py` and
+`test_design_rules.py` pass unchanged. The new commands' category is
+"Own Windows" (their submenu), not "View", so the list of View commands
+that `test_workspace.py::test_the_view_analyses_and_tools_commands` pins
+stays as it is. No existing test changed, and no
+golden file. The new tests are in `tests/gui/test_breakout.py` (19).

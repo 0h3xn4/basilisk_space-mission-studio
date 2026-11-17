@@ -18,6 +18,10 @@
  *                           (mission_view_widget.temperature_frames), or null for the model's own
  *   MV.state()              what is drawn, for the tests
  *
+ * A lost WebGL context (the view moved to a window of its own, gui/breakout.py;
+ * a driver reset) is recovered by the page itself: MV.recover makes a new
+ * renderer and loads the same scene again, camera, view, frame and colours kept.
+ *
  * Positions are kilometres in the run's inertial frame N (x, y, z of
  * three.js), held in double precision (JavaScript numbers). Every frame
  * they are taken relative to the camera's focus (the floating origin: the
@@ -36,7 +40,7 @@ const MV = {
             stars: true, groundTrack: false},
   loaded: {earth: '', stars: ''}, textures: {}, playback: {speed: '', playing: false}, live: false,
   crafts: [], stations: [], links: [], labels: [], lastRotation: 0, rendererName: '', software: false,
-  temperatures: null,
+  temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null,
 };
 // No graphics card: start in reduced quality. Chromium's SwiftShader,
 // Mesa's llvmpipe/softpipe, Windows' WARP ("Microsoft Basic Render Driver").
@@ -45,6 +49,7 @@ const TRACK_REBUILD_MS = 500;  // [ms] a live ground track is rebuilt at most th
 const ZAXIS = new THREE.Vector3(0, 0, 1);
 const TRAIL_FRACTION = 0.1;  // [-] of the run's frames shown as each spacecraft's trail
 const ORBIT_VIEW = new THREE.Vector3(1.0, 1.0, 0.6).normalize();  // [-] Whole orbit looks from here without a Sun
+const RECOVER_AFTER_MS = 2000;  // [ms] a lost context not given back by then: a new renderer anyway
 
 // ---------------------------------------------------------------- setup
 MV.init = function () {
@@ -144,12 +149,51 @@ MV.makeRenderer = function () {
   renderer.setSize(host.clientWidth || window.innerWidth, host.clientHeight || window.innerHeight);
   host.appendChild(renderer.domElement);
   renderer.domElement.addEventListener('dblclick', function () { MV.resetView(); });
+  renderer.domElement.addEventListener('webglcontextlost', MV.onContextLost);
+  renderer.domElement.addEventListener('webglcontextrestored', MV.onContextRestored);
   MV.renderer = renderer;
   if (MV.style) renderer.setClearColor(new THREE.Color(MV.style.space), 1);
   const target = MV.controls ? MV.controls.target.clone() : null, enabled = MV.controls ? MV.controls.enabled : true;
   MV.makeControls();
   if (target) MV.controls.target.copy(target);
   MV.controls.enabled = enabled;
+  MV.dirty = true;
+};
+
+// The WebGL context went away (the web view moved to another native
+// window, a driver reset): stop drawing and ask for it back
+// (preventDefault); MV.recover runs when it is given back, or after
+// RECOVER_AFTER_MS with a new context of its own.
+MV.onContextLost = function (event) {
+  if (event) event.preventDefault();
+  if (MV.contextLost) return;
+  MV.contextLost = true;
+  clearTimeout(MV.recoverTimer);
+  MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS);
+};
+
+MV.onContextRestored = function () {
+  clearTimeout(MV.recoverTimer);
+  MV.recoverTimer = null;
+  MV.recover();
+};
+
+// A new renderer, and the same scene loaded into it: the camera, the view,
+// the frame and a thermal case's colours as they were.
+MV.recover = function () {
+  clearTimeout(MV.recoverTimer);
+  MV.recoverTimer = null;
+  if (!MV.contextLost) return;
+  MV.contextLost = false;
+  MV.makeRenderer();
+  if (MV.data) {
+    const frame = MV.frame, temperatures = MV.temperatures;
+    MV.load(MV.data, {keepCamera: true});
+    MV.frame = Math.min(frame, MV.data.times.length - 1);
+    if (temperatures) MV.setTemperatures(temperatures);
+  }
+  MV.resize();
+  MV.recoveries += 1;
   MV.dirty = true;
 };
 
@@ -926,7 +970,7 @@ MV.render = function () {
 };
 
 MV.loop = function () {
-  if (MV.dirty && MV.data && MV.style) MV.render();
+  if (MV.dirty && MV.data && MV.style && !MV.contextLost) MV.render();
   requestAnimationFrame(MV.loop);
 };
 
@@ -1069,6 +1113,8 @@ MV.state = function () {
     trackPoints: MV.crafts.map(function (c) { return c.data.track ? c.data.track.length : null; }),
     temperatures: MV.temperatures ? {craft: MV.temperatures.craft, case: MV.temperatures.case,
                                      frames: MV.temperatures.colours.length} : null,
+    contextLost: MV.contextLost, recoveries: MV.recoveries,
+    contextAlive: MV.renderer ? !MV.renderer.getContext().isContextLost() : null,
   };
 };
 

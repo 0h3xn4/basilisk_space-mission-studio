@@ -1385,6 +1385,17 @@ class BudgetsViews(TabWidget):
             page.set_copy_action(self.copy_action)
         self.propellant_widget = None  # BudgetWidget, given by add_propellant
         self.currentChanged.connect(self._apply_pending)
+        # The tab bar's right corner: the window's Open in Own Window button (gui.breakout) and, while the
+        # area is in a window of its own, the spacecraft picker (the area's header stays in the main window).
+        self.corner = QWidget()
+        self.corner_layout = QHBoxLayout(self.corner)
+        self.corner_layout.setContentsMargins(0, 0, SPACE["sm"], 0)
+        self.corner_layout.setSpacing(SPACE["sm"])
+        self.setCornerWidget(self.corner, Qt.Corner.TopRightCorner)
+
+    def add_tool_button(self, button: QWidget) -> None:
+        """A button of the window's in the tab bar's corner (it moves with the area)."""
+        self.corner_layout.addWidget(button)
 
     def add_propellant(self, scroll: QScrollArea, budget_widget) -> None:
         """The delta-V and propellant budget, moved from Run › Budget (Q3)."""

@@ -14,7 +14,7 @@ recorded here and in `docs/DECISIONS.md`.
 |---|---|---|---|---|
 | Inter | 4.1 | SIL Open Font License 1.1 | `gui/assets/fonts/inter/Inter-{Regular,Medium,SemiBold}.ttf`, `OFL.txt` | <https://github.com/rsms/inter/releases/tag/v4.1> (`Inter-4.1.zip`, `extras/ttf/`) |
 | JetBrains Mono | 2.304 | SIL Open Font License 1.1 | `gui/assets/fonts/jetbrains-mono/JetBrainsMono-{Regular,Medium}.ttf`, `OFL.txt` | <https://github.com/JetBrains/JetBrainsMono/releases/tag/v2.304> (`JetBrainsMono-2.304.zip`, `fonts/ttf/`) |
-| Lucide icons | 1.52.0 (`lucide-static`) | ISC; the icons derived from Feather also MIT (both texts in `LICENSE`) | 45 SVGs in `gui/assets/icons/lucide/`, `LICENSE` | npm `lucide-static@1.52.0` (`package/icons/`) |
+| Lucide icons | 1.52.0 (`lucide-static`) | ISC; the icons derived from Feather also MIT (both texts in `LICENSE`) | 47 SVGs in `gui/assets/icons/lucide/`, `LICENSE` | npm `lucide-static@1.52.0` (`package/icons/`) |
 | three.js (with its `OrbitControls`) | 0.187.0 | MIT (`THREE_LICENSE.txt`, the package's `LICENSE`) | `gui/assets/mission_view/three.bundle.min.js`, `THREE_LICENSE.txt` | npm `three@0.187.0`, bundled by esbuild 0.25.10 (`scripts/build_three_bundle.py`) |
 | NASA Blue Marble (SVS 2915) | 2004 release | public domain (NASA SVS; credit in `NASA_IMAGES.txt`) | `gui/assets/mission_view/earth_day_4k.jpg`, `earth_day_2k.jpg` | <https://svs.gsfc.nasa.gov/2915>: `bluemarble-west-4096.png`, `bluemarble-east-4096.png` (`scripts/prepare_mission_view_textures.py`) |
 | NASA Deep Star Maps 2020 (SVS 4851) | 2020 release | public domain (NASA SVS; credit in `NASA_IMAGES.txt`) | `gui/assets/mission_view/stars_4k.jpg`, `stars_2k.jpg`, `NASA_IMAGES.txt` | <https://svs.gsfc.nasa.gov/4851>: `starmap_2020_4k.exr` (same script) |
@@ -45,6 +45,11 @@ recorded here and in `docs/DECISIONS.md`.
 - **Added in 2.11.0** (the Budgets area), from the same archive, its
   SHA-256 checked again: calculator (decision B-20 of
   `docs/developer/system-budget-decisions.md`).
+- **Added in 2.12.0** (views in their own windows), from the same
+  archive, downloaded again from npm on 2026-11-17 and its SHA-256
+  checked: external-link and square-arrow-down-left (decision "Breakout
+  windows" in `docs/DECISIONS.md`). The ISC and MIT texts in `LICENSE`
+  cover them.
 - **Removed in 1.1.0:** IBM Plex Sans and Mono (`.woff`, SIL OFL 1.1) and
   the app's 23 hand-drawn SVG glyphs.
 - **The 3D View's page (added after 2.6.0, `gui/assets/mission_view/`):**

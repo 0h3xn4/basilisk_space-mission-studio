@@ -70,6 +70,7 @@ from . import autosave
 from . import export_log
 from .actions import ActionRegistry
 from .menu_bar import build_menu_bar
+from .breakout import BACK_TEXT, OPEN_TEXT, SHORTCUT as BREAKOUT_SHORTCUT, Breakouts
 from .app_shell import NoScenarioState, RunProgressStrip, StatusBarItems, StatusChip, TopBar, source_of
 from .feedback import StaleResultsBanner, report, show_toast
 from .icons import toolbar_icon
@@ -227,6 +228,8 @@ class MainWindow(QMainWindow):
 
         self._current_path: Path | None = None
         self._dirty = False
+        # The views that can open in a window of their own (gui.breakout), registered below.
+        self.breakouts = Breakouts(self, settings=self._layout_settings, actions=self._breakout_actions)
         # The landing page (owner's decision of 2026-11-10): the window starts
         # with no scenario open, on Home; the editor keeps its blank default
         # inside, but every area, command and run list behaves as if nothing
@@ -426,6 +429,14 @@ class MainWindow(QMainWindow):
         self.budgets_views.add_propellant(budget_scroll, self.budget_widget)
         self.budgets_views.budgets_edited.connect(self._on_budgets_edited)
         self.budgets_views.spacecraft_changed.connect(self._on_budgets_spacecraft_changed)
+        # Views that can open in a window of their own (gui.breakout; 2.12.0, decision "Breakout windows"):
+        # the same widget moves, so nothing is built twice. They open docked ("Calm by default").
+        for view_id, widget, title in (("3d_view", self.mission_view_widget, "3D View"),
+                                       ("thermal", self.thermal_widget, "Thermal"),
+                                       ("budgets", self.budgets_views, "Budgets")):
+            self.breakouts.register(view_id, widget, title)
+            widget.add_tool_button(self.breakouts.button(view_id))
+        self.breakouts.changed.connect(self._on_breakout_changed)
         # No run is listed until a scenario is open; then its own (U-33, landing page).
         self.results_widget.set_runs(self._listed_runs(), None)
         self._refresh_compare_tab()
@@ -774,6 +785,18 @@ class MainWindow(QMainWindow):
             action=self.problems_dock.toggleViewAction(), shortcut="Ctrl+J",
             tip="Show or hide the Problems panel: what does not validate.").triggered.connect(
                 self._on_dock_toggled)
+        # A view in a window of its own (gui.breakout): the view shown, and each view by name. Their
+        # category is their submenu's name, View > Own Windows (as Tools > Budgets and Go > Time Cursor).
+        self.breakout_action = add(
+            "view.breakout", OPEN_TEXT, self._on_breakout_command, category="Own Windows", area="global",
+            shortcut=BREAKOUT_SHORTCUT, qicon=icon("external-link"), keywords=("separate window", "detach", "dock"),
+            tip=self._BREAKOUT_TIP)
+        for view_id in self.breakouts.ids():
+            title = self.breakouts.title(view_id)
+            add(f"view.window.{view_id}", self._breakout_text(view_id), self._on_window_command, category="Own Windows",
+                area="global", keywords=("separate window", "detach", "dock", title),
+                tip=f"{title} in a window of its own, beside the main window, or back in the main window. "
+                    f"{BREAKOUT_SHORTCUT} does it for the view shown.").setData(view_id)
         self.menu_bar_action = add(
             "view.menu_bar", "&Menu Bar", self._on_menu_bar_toggled, category="View", area="global",
             checkable=True, checked=True, keywords=("menus", "File Edit View"),
@@ -904,6 +927,10 @@ class MainWindow(QMainWindow):
 
         self.shell.area_changed.connect(self._on_area_changed)
         self.shell.area_changed.connect(self.budgets_views.refresh_if_stale)  # computed when shown
+        # View > Own Windows > Open in Own Window follows the view shown.
+        self.shell.area_changed.connect(self._refresh_breakout_commands)
+        for tabs in (self.results_views, self.run_views):
+            tabs.currentChanged.connect(self._refresh_breakout_commands)
         # Compare, refreshed when shown (M5a): its tab, or the Results area, chosen.
         self.shell.area_changed.connect(self._refresh_compare_if_shown)
         self.results_views.currentChanged.connect(self._refresh_compare_if_shown)
@@ -926,7 +953,7 @@ class MainWindow(QMainWindow):
                           "run.clear_cursor", "tools.model_3d", "tools.ccsds_export",
                           "analyses.end_of_life", "analyses.budget", "analyses.design_checks",
                           "tools.flight_software", "view.explain", "budgets.add_item", "budgets.remove_item",
-                          "budgets.copy_csv")
+                          "budgets.copy_csv", "view.window.3d_view", "view.window.thermal", "view.window.budgets")
 
     def _on_go_to_area(self) -> None:
         self.shell.show_area(self.sender().data())
@@ -972,6 +999,8 @@ class MainWindow(QMainWindow):
         their content or their empty state, the scenario's commands are
         enabled or not, and the title, top bar and Problems follow."""
         was_open, self._scenario_open = self._scenario_open, is_open
+        if not is_open:
+            self.breakouts.attach_all()  # their areas show the empty state; no window stays open for nothing
         for area_id in self._SCENARIO_AREAS:
             self.shell.page(area_id).show_empty(not is_open)
         for action in self._scenario_commands():
@@ -983,6 +1012,7 @@ class MainWindow(QMainWindow):
         self._on_problems_changed(self.scenario_editor.problem_rows())
         self._update_window_title()
         self._refresh_breadcrumbs()
+        self._refresh_breakout_commands()
 
     def _run_going(self) -> bool:
         """A single run or a Monte Carlo batch is going."""
@@ -1110,6 +1140,80 @@ class MainWindow(QMainWindow):
         top bar's problem count)."""
         self.show_panel(self.problems_dock)
 
+    # -- views in a window of their own (gui.breakout) ------------------------------------------
+    _BREAKOUT_TIP = ("Open the view shown (Results › 3D View, Run › Thermal or Budgets) in a window of its own, "
+                     "or bring it back to the main window. Closing its window brings it back too.")
+    # The area whose commands a view's window carries besides the global ones (Ctrl+K, Ctrl+S, Ctrl+R, ...).
+    _BREAKOUT_AREAS = {"3d_view": "results", "thermal": "run", "budgets": "budgets"}
+
+    def _breakout_text(self, view_id: str) -> str:
+        title = self.breakouts.title(view_id)
+        return f"Bring Back {title}" if self.breakouts.is_detached(view_id) else f"Open {title} in Own Window"
+
+    def _breakout_actions(self, view_id: str) -> list:
+        """The commands a view's window carries, so their shortcuts work there
+        too: the global ones, Run and Cancel Run, and those of the view's
+        area (not Go to: they show an area of this window)."""
+        area = self._BREAKOUT_AREAS.get(view_id)
+        own = set(self.actions())
+        return [command.action for command in self.commands
+                if command.action in own and command.category != "Go"
+                and (command.area in ("global", area) or command.id in ("run.run", "run.cancel"))]
+
+    def _active_breakout_window(self) -> QWidget | None:
+        """The view's own window that is active (or owns the active dialog), or None."""
+        view_id = self.breakouts.detached_at(QApplication.activeWindow())
+        return self.breakouts.window(view_id) if view_id is not None else None
+
+    def _breakout_target(self) -> str | None:
+        """The view Ctrl+Shift+D moves: that of the active window of its own,
+        else the view (or its placeholder) shown in this window."""
+        view_id = self.breakouts.detached_at(QApplication.activeWindow())
+        if view_id is not None:
+            return view_id
+        if not self._scenario_open or not hasattr(self, "shell"):
+            return None
+        return self.breakouts.view_at(self.current_view())
+
+    def _on_breakout_command(self) -> None:
+        """View > Own Windows > Open in Own Window, or Bring Back (Ctrl+Shift+D)."""
+        view_id = self._breakout_target()
+        if view_id is not None:
+            self.breakouts.toggle(view_id)
+
+    def _on_window_command(self) -> None:
+        """View > Own Windows > Open <view> in Own Window, or Bring Back <view>."""
+        self.breakouts.toggle(self.sender().data())
+
+    def _on_breakout_changed(self, view_id: str, detached: bool) -> None:
+        """A view moved: the commands say what they do now; Budgets takes its
+        spacecraft picker along (the area's header stays here)."""
+        if view_id == "budgets":
+            selector = self.budgets_views.selector
+            if detached:
+                self.budgets_views.corner_layout.insertWidget(0, selector)
+            else:
+                self.shell.page("budgets").add_widget(selector)
+            selector.setVisible(self.budgets_views.spacecraft_combo.count() > 1)
+        self._refresh_breakout_commands()
+
+    def _refresh_breakout_commands(self, *_args) -> None:
+        if not hasattr(self, "commands") or "view.breakout" not in self.commands:
+            return  # still being built
+        for view_id in self.breakouts.ids():
+            command_id = f"view.window.{view_id}"
+            text = self._breakout_text(view_id)
+            if self.commands.action(command_id).text() != text:
+                self.commands.action(command_id).setText(text)
+                self.commands.refresh_tooltip(command_id)
+        target = self._breakout_target()
+        text = BACK_TEXT if target is not None and self.breakouts.is_detached(target) else OPEN_TEXT
+        if self.breakout_action.text() != text:
+            self.breakout_action.setText(text)
+            self.breakout_action.setIcon(icon("square-arrow-down-left" if text == BACK_TEXT else "external-link"))
+            self.commands.refresh_tooltip("view.breakout")
+        self.breakout_action.setEnabled(target is not None)
+
     def _on_guide_navigate(self, target: str) -> None:
         """The Scenario page's guide pointing at a page this window owns:
         the templates (Home) or the first analysis (Run > End of Life)."""
@@ -1126,6 +1230,9 @@ class MainWindow(QMainWindow):
         if widget is self.data_panel_widget:
             show_window(self.data_dialog)
             return
+        widget = self.breakouts.resolve(widget)  # a view's placeholder: the view, in its own window
+        detached = self.breakouts.detached_at(widget)
+        stop = self.breakouts.window(detached) if detached is not None else self  # not past a view's own window
         for dock in self._docks():
             if dock.isAncestorOf(widget):
                 dock.show()
@@ -1135,7 +1242,7 @@ class MainWindow(QMainWindow):
                 not self.scenario_editor.is_editor_page(current):
             self.scenario_editor.show_scenario_page()
         node = widget
-        while node is not None and node is not self:
+        while node is not None and node is not self and node is not stop:
             stack = node.parentWidget()
             if isinstance(stack, AreaStack):
                 stack.setCurrentWidget(node)  # an area's page: the rail follows
@@ -1146,6 +1253,8 @@ class MainWindow(QMainWindow):
             elif stack is self.scenario_editor.mode_stack:
                 self.scenario_editor.set_json_mode(node is self.scenario_editor.json_page)  # Form or JSON
             node = stack
+        if detached is not None:  # a view in its own window: that window comes to the front (a live run too)
+            self.breakouts.show_window(detached)
 
     def current_view(self) -> QWidget:
         """The innermost page the area shown holds (a scroll area's
@@ -1335,7 +1444,11 @@ class MainWindow(QMainWindow):
     def _on_budgets_command(self) -> None:
         """A Budgets command from the menu or the palette: its page in view
         (Copy as CSV copies the page shown, so it keeps it)."""
-        if self.sender() is self.budgets_views.copy_action:
+        if self.breakouts.is_detached("budgets"):
+            # In its own window, the area is shown (B-21, Q2 of the windows design): its window comes to the front.
+            self.show_view(self.budgets_views.equipment_page if self.sender() is not self.budgets_views.copy_action
+                           else self.budgets_views)
+        elif self.sender() is self.budgets_views.copy_action:
             self.shell.show_area("budgets")
         else:
             self.show_view(self.budgets_views.equipment_page)
@@ -1383,6 +1496,7 @@ class MainWindow(QMainWindow):
 
     def _on_focus_changed(self, _old, new) -> None:
         """The Inspector follows the focused field in this window."""
+        self._refresh_breakout_commands()  # the window with the focus decides what Ctrl+Shift+D moves
         if new is None or not self.isAncestorOf(new) or self.inspector_widget.isAncestorOf(new):
             return
         self.inspector_widget.inspect(new)
@@ -1488,12 +1602,14 @@ class MainWindow(QMainWindow):
         if geometry is not None:
             self.restoreGeometry(geometry)
         self._read_layout(settings, "window")
+        self.breakouts.read_geometry(settings)  # the views' own windows, used when one opens
 
     def _save_layout(self) -> None:
         """The window's layout, and the open project's (M2b)."""
         settings = self._layout_settings()
         settings.setValue("window/geometry", self.saveGeometry())
         self._write_layout(settings, "window")
+        self.breakouts.write_geometry(settings)
         self._save_project_layout(settings)
         settings.sync()
 
@@ -1606,7 +1722,9 @@ class MainWindow(QMainWindow):
     def on_command_palette(self) -> None:
         from .command_palette import CommandPalette
 
-        CommandPalette(self.palette_entries(), self).exec()
+        # Over the window it was asked from: a view's own window, or this one.
+        parent = self._active_breakout_window() or self
+        CommandPalette(self.palette_entries(), parent).exec()
 
     def on_keyboard_shortcuts(self) -> None:
         """The shortcut list: Settings > Keyboard, generated from the registry."""
@@ -1642,11 +1760,13 @@ class MainWindow(QMainWindow):
     def _update_window_title(self) -> None:
         if not self._scenario_open:
             self.setWindowTitle("SpaceMissionStudio -- no scenario open")
+            self.breakouts.set_document("")
             self._refresh_top_bar()
             return
         name = self._current_path.name if self._current_path else "untitled"
         star = "*" if self._dirty else ""
         self.setWindowTitle(f"SpaceMissionStudio -- {name}{star}")
+        self.breakouts.set_document(f"{name}{star}")
         self._refresh_top_bar()
 
     def _refresh_top_bar(self) -> None:
@@ -2937,6 +3057,7 @@ class MainWindow(QMainWindow):
             return
         if self._confirm_discard_unsaved():
             self.scenario_editor.spacecraft_list.close_model_editors()  # windows of their own: they go too
+            self.breakouts.attach_all()  # every view back, its window's geometry kept (layout.ini)
             self.close_own_windows()
             if batch is not None:
                 batch.request_cancel()

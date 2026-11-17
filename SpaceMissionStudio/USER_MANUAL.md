@@ -279,9 +279,10 @@ A few things to notice right away:
     scenarios as Home), Save, Save As..., Change History..., Export Orbits
     as CCSDS... and Quit.
   * **Edit**: Undo, Redo and **Settings...** (`Ctrl+,`).
-  * **View**: the Inspector, Calculation and Problems panels, Explain, the
-    menu bar itself, the rail as icons only, the theme, Reset Layout and
-    the command palette.
+  * **View**: the Inspector, Calculation and Problems panels, Explain,
+    **Own Windows** (a view in a window of its own, below), the menu bar
+    itself, the rail as icons only, the theme, Reset Layout and the
+    command palette.
   * **Go**: the seven areas (`Ctrl+1` to `Ctrl+7`) and the **Time Cursor**
     moves of Results.
   * **Run**: Run, Cancel Run, the run mode, Live plot, End of Life,
@@ -405,6 +406,42 @@ its Scenario page ("Building your own scenario, step by step", below).
   reaches the cards with `Tab`; the arrow keys move between them and
   `Enter` opens one. A card's own **Open** and **Customize...** act on
   that card, whatever is selected.
+
+### Open a view in its own window
+
+Three bigger views can open in a window of their own, beside the main
+window or on a second screen: **Results › 3D View**, **Run › Thermal**
+and the **Budgets** area.
+
+* Show the view and press `Ctrl+Shift+D`, or click the **Open in Own
+  Window** button at the right end of the view's toolbar (Budgets: at the
+  right of its tabs). **View > Own Windows** and the command palette
+  (`Ctrl+K`, type "own window") have the same commands, one per view.
+* It is the same view, not a copy: it keeps its run, its camera, its
+  playback, its tables and what you typed. A run shown live goes on in
+  the window.
+* In the main window, the view's tab says "3D View is in its own
+  window", with **Bring Back** and **Show Window**.
+* To bring the view back: press `Ctrl+Shift+D` in its window, click
+  **Bring Back** (in the main window or on the view's toolbar), or close
+  the window.
+* The window remembers its size and place for the next time. If that
+  place was on a screen that is gone, the window opens over the main
+  window. On Wayland the desktop places the window; only its size is
+  kept.
+* The window has the same theme, and the main shortcuts work there too:
+  `Ctrl+K`, `Ctrl+S`, `Ctrl+R`, `Esc` (Cancel Run) and, for Budgets, the
+  Budgets keys.
+* Every view starts in the main window. With no scenario open, and when
+  you quit, every view goes back.
+* Budgets in its own window counts as shown: it is computed after each
+  edit, and **Remove Equipment Item** and **Copy as CSV** act on it. Its
+  **Spacecraft** list goes with it.
+
+| Keys | Does |
+|---|---|
+| `Ctrl+Shift+D` | Open the view shown in its own window; in that window, bring it back |
+| `Ctrl+K` | The command palette, over the window you are in |
 
 ## 4. Your first simulation, in five minutes
 

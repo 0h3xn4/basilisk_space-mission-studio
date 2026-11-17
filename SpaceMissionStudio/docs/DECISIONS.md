@@ -3334,3 +3334,86 @@ The plan, its overlap table and its phases are in
   empty source). **Why:** CLAUDE.md asks for a decisions entry with each
   engine or format change; the feature keeps its own, as thermal and
   operations do.
+
+## Breakout windows (2026-11-17)
+
+The design is in
+[`developer/windows-views-design.md`](developer/windows-views-design.md),
+section 2, with the owner's answers at its end. The owner: "every
+'bigger' feature inside SpaceMissionStudio should have its own breakout
+window"; "it would be great if the 3D viewer/render would be a separate
+window".
+
+- **Decision:** one mechanism, `gui/breakout.py`, for Results › 3D View,
+  Run › Thermal (the whole page) and the Budgets area (its tab widget).
+  The live 2D map of PR-3 registers the same way. **Why:** one way to
+  open, place, remember and bring back a view, and one set of tests.
+- **Decision:** the same widget object becomes a window. It keeps its
+  parent: it leaves its tab (`QTabWidget.removeTab` does not reparent) or
+  its layout slot and gets the window flags. **Alternatives:** a new
+  top-level window that takes the view as its child (the design note's
+  first form). **Why:** a new parent makes Qt restyle every widget of the
+  view under the application's style sheet. Measured offscreen: 50 to 70
+  ms to move Budgets (431 widgets) into a new window, over the 50 ms of
+  "Never freeze"; with the parent kept, 15 to 26 ms for Budgets and 4 to
+  13 ms for the 3D View and Thermal. Nothing is copied or built twice: the
+  web view, the scene, the live timer and the time cursor stay.
+- **Decision:** the view's place shows a placeholder: "<view> is in its
+  own window", **Bring Back** (primary) and **Show Window**. The tab keeps
+  its index and text; the tab goes from the view to the placeholder
+  directly, so no other tab is shown (and built) in between.
+- **Decision:** the commands are "Open in Own Window" and "Bring Back".
+  `Ctrl+Shift+D` (free in 2.11.0) moves the view shown; in a view's own
+  window it brings that view back. **View > Own Windows** has it and one
+  command per view ("Open 3D View in Own Window" or "Bring Back 3D
+  View"); all are in the palette. Each view has an icon button at the end
+  of its toolbar (Budgets: in its tab bar's corner) with the shortcut in
+  its tooltip and an accessible name. Their palette category is their
+  submenu's name, "Own Windows", as "Budgets" is for Tools > Budgets.
+  **Why:** CLAUDE.md "Keyboard first"; the words say what happens, and
+  "own window" is the one word for it everywhere. The category keeps the
+  View commands as `test_workspace.py` lists them.
+- **Decision:** two Lucide icons are added, `external-link` (open) and
+  `square-arrow-down-left` (bring back), from the same `lucide-static`
+  1.52.0 archive, its SHA-256 checked again
+  (`docs/THIRD_PARTY_ASSETS.md`).
+- **Decision:** a view's window carries the main window's global
+  commands, Run and Cancel Run, and the commands of its area, not Go to.
+  **Why:** `Ctrl+K`, `Ctrl+S`, `Ctrl+R`, `Ctrl+Shift+D` and, for Budgets,
+  its `Ctrl+Shift+N`, `Ctrl+Del` and `Ctrl+Shift+C` work there; Go to
+  would change the hidden main window. `Ctrl+K` opens the palette over
+  the window it was pressed in.
+- **Decision:** the window's geometry is kept per view in `layout.ini`
+  (keys `breakout/<id>/geometry` and `breakout/<id>/maximized`). It is
+  read with the layout at start, written by a worker when the view comes
+  back, and written with the layout at quit. It is used again only when
+  the top of the window is on a screen that still exists; otherwise the
+  window takes the saved size, centred on the main window. On Wayland,
+  which ignores a window's position, only the size is used. **Why:** a
+  write of the file on the GUI thread measured 50 to 220 ms here (the
+  file lock and `sync`), and file I/O belongs in a worker ("Never
+  freeze").
+- **Decision:** every view opens docked at start, and no window opens by
+  itself. When no scenario is open, and before the layout is saved at
+  quit, every view comes back. Showing a view in its own window (a
+  command, the palette, a live run) brings its window to the front and
+  leaves the main window's area as it is. **Why:** "Calm by default"
+  above. D-191 is a rule of System Budget Studio, not of
+  SpaceMissionStudio (the design note, section 2).
+- **Decision:** a detached Budgets area counts as shown (B-21, the design
+  note's Q2): it is computed after an edit, and Remove and Copy as CSV
+  act on it from either window. Its spacecraft picker goes with it, into
+  the tab bar's corner, and comes back to the area's header. **Why:** the
+  owner's answer to Q2.
+- **Decision:** the 3D View's page handles a lost WebGL context: on
+  `webglcontextlost` it stops drawing and asks for the context back; on
+  `webglcontextrestored`, or after 2 s without it, it makes a new
+  renderer and loads the same scene with the camera kept
+  (`MV.load(MV.data, {keepCamera: true})`), with the frame and a thermal
+  case's colours. **Why:** a `QWebEngineView` that moves to another
+  native window can lose its context on some drivers (the design note's
+  risk 1).
+- **Decision:** a view in its own window has the `bg.canvas` background
+  through a style-sheet rule on the property `breakout="true"`
+  (`theme/qss.py`). **Why:** a tab page is transparent
+  (`QStackedWidget > QWidget`), and a transparent window draws black.

@@ -26,7 +26,7 @@ colours and IBM Plex), which stays in git history.
    type, layout, icons
 2. [Components](#components)
 3. [Patterns](#patterns): messages, feedback, keyboard, themes, long
-   operations, empty states
+   operations, empty states, views in their own windows
 4. [Rules for new code](#rules-for-new-code)
 5. [Checking a change](#checking-a-change)
 6. [Known gaps](#known-gaps)
@@ -438,6 +438,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Elided label | `app_shell.ElidedLabel` | One line that ends in "..." rather than widening the window; the whole text is its tooltip |
 | SVG plot | `svg_plot.SvgPlotView`: `set_image(svg, image)`, `load(svg)`, `target_rect()`, `size_settled`; `svg_plot.render_image` in a worker | A plot made as SVG (the thermal plots): drawn at its own aspect ratio, made again at the view's size once a resize ends |
 | Event table | `EventTimelineWidget.table`, a `DataTable` over `event_timeline_widget._EventRows` | Events, sortable; Ctrl+C copies the selection as TSV |
+| Own window | `breakout.Breakouts`: `register(id, widget, title)`, `button(id)` for the view's toolbar, `detach`, `attach`, `toggle`, `attach_all`; `breakout.BreakoutPlaceholder` | A bigger view in a window of its own and back (3D View, Thermal, Budgets; the live map next): the same widget, so nothing is built twice; its place shows the placeholder with Bring Back; Ctrl+Shift+D, View > Own Windows and the palette |
 
 ## Patterns
 
@@ -532,6 +533,7 @@ Time Cursor commands are under Go > Time Cursor).
 | Run > Clear Time Cursor | Alt+Backspace | - |
 | View > Inspector | Ctrl+I | - |
 | View > Problems | Ctrl+J | - |
+| Own Windows > Open in Own Window | Ctrl+Shift+D | - |
 | Time Cursor > Next Sample | Alt+Right | - |
 | Time Cursor > Previous Sample | Alt+Left | - |
 | Time Cursor > Ten Samples On | Alt+Shift+Right | - |
@@ -553,6 +555,11 @@ Time Cursor commands are under Go > Time Cursor).
 | Budgets > Add Equipment Item | Ctrl+Shift+N | - |
 | Budgets > Remove Equipment Item | Ctrl+Del | - |
 | Budgets > Copy as CSV | Ctrl+Shift+C | - |
+
+Open in Own Window (in View > Own Windows) moves the view shown (Results ›
+3D View, Run › Thermal, Budgets) into a window of its own; in that window, or on its
+placeholder, it reads Bring Back. A view's window carries the global
+commands and those of its area, so their shortcuts work there too.
 
 The Time Cursor commands work while Results has the focus. Remove
 Equipment Item and Copy as CSV act on the Budgets page shown; from
@@ -640,6 +647,24 @@ An empty view says why it is empty and what fills it, for example:
   the area works on, and New Scenario (the primary action), Open... and
   Go to Home (`gui.app_shell.NoScenarioState`, in place of the area's
   header and content: `AreaPage.show_empty`).
+
+### Views in their own windows
+
+A bigger view can open in a window of its own (`gui/breakout.py`,
+decision "Breakout windows" in `docs/DECISIONS.md`):
+
+- **The same widget moves.** Its tab or slot shows a
+  `BreakoutPlaceholder`: "<view> is in its own window", **Bring Back**
+  (primary) and **Show Window**. The tab keeps its index and its text.
+- **Every view opens docked** at start ("Calm by default"); no window
+  opens by itself. Closing the window brings the view back; so do Bring
+  Back, the view's own button and Ctrl+Shift+D.
+- **The window** has the app icon, the title "<view> - <scenario> -
+  SpaceMissionStudio", the `bg.canvas` background (`QWidget[breakout="true"]`
+  in `theme/qss.py`) and the theme of the app. Its geometry is kept in
+  `layout.ini` and used again only on a screen that still exists.
+- **Showing a view in its window** (a command, the palette, a live run)
+  brings that window to the front; the main window keeps its area.
 
 ## Rules for new code
 

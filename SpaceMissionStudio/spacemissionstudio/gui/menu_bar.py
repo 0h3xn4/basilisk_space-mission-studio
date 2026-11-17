@@ -52,6 +52,8 @@ MENUS: tuple[tuple[str, tuple[Entry, ...]], ...] = (
                "file.quit")),
     ("&Edit", ("edit.undo", "edit.redo", "-", "edit.settings")),
     ("&View", ("view.inspector", "view.calculation", "view.problems", "view.explain", "-",
+               ("Own &Windows", ("view.breakout", "-", "view.window.3d_view", "view.window.thermal",
+                                 "view.window.budgets")), "-",
                "view.menu_bar", "view.status_details", "view.rail_icons", "-",
                "view.theme.system", "view.theme.light", "view.theme.dark", "-",
                "view.reset_layout", "-",

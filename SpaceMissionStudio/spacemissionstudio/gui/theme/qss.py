@@ -103,6 +103,10 @@ QMainWindow, QDialog, QWizard {{
 QLabel, QCheckBox, QRadioButton, QStackedWidget, QStackedWidget > QWidget {{
     background: transparent;
 }}
+/* a view in a window of its own (gui/breakout.py): the window's canvas, not a page's transparent background */
+QWidget[breakout="true"] {{
+    background-color: {t['bg.canvas']};
+}}
 QToolTip {{
     background-color: {t['bg.raised']};
     color: {t['text.primary']};
