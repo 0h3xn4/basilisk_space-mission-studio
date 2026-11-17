@@ -3472,6 +3472,12 @@ window".
   thread for 36 ms), and CI measured one move at 146 ms. A crash now
   loses the windows' places since the start, as it loses the rest of the
   layout.
+- **Decision:** when a lost WebGL context comes back too early (no new
+  context can start yet), the 3D View tries again 2 s later, five times
+  in all, before it says that WebGL is gone. **Why:** on Windows a move
+  to another window loses the GPU context, and the GPU process takes a
+  moment to start again; giving up at the first try left the view
+  without a picture for good (Windows CI, second round).
 - **Decision:** every view opens docked at start, and no window opens by
   itself. When no scenario is open, and before the layout is saved at
   quit, every view comes back. Showing a view in its own window (a

@@ -489,7 +489,8 @@ class Breakouts(QObject):
             window.setGeometry(rect)
             return
         size = rect.size() if rect is not None else docked_size.expandedTo(_DEFAULT_SIZE)
-        size = size.expandedTo(_MIN_SIZE)
+        # Never smaller than the view's own minimum: Qt would enlarge it at show, after it was centred.
+        size = size.expandedTo(_MIN_SIZE).expandedTo(window.minimumSizeHint())
         owner = self._owner()
         screen = (owner.screen() if owner is not None else None) or QGuiApplication.primaryScreen()
         if screen is not None:

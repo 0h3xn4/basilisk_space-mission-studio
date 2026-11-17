@@ -18532,3 +18532,22 @@ back checks that the overlay follows the frame while the context is
 lost. Two geometry tests expected a window of exactly the saved size; on
 Windows the Thermal view's own minimum is 714 px wide, so they now
 expect the saved size enlarged to the view's minimum.
+
+**Windows CI, second round: a recovery that came too early.** With the
+overlay fixed, three tests of `test_breakout.py` still failed on
+Windows. (1) After a move to its own window the 3D View had no renderer:
+the move lost the GPU context, and `MV.recover` asked for a new one while
+the GPU process was still starting again. `createRenderer` threw, and
+the page put up "could not start WebGL" for good. A user on Windows could
+have seen that. `MV.recover` now tries again `RECOVER_AFTER_MS` later,
+`RECOVER_TRIES` (5) times in all, and says that WebGL is gone only
+after that. A new test refuses the first new context and checks that
+the second try draws. (2) A window saved on a screen that is gone opened
+49 px off centre: it was centred at the saved width (620 px) and Qt then
+widened it to the Thermal view's minimum (714 px on Windows). `_place`
+now takes the view's minimum size into account before it centres the
+window. (3) The test of a context never given back found
+`Script error. (:0)` in the page's errors. The tests' own JavaScript
+(take the context away, give it back, hold the timer) now runs in a
+`try` block that returns the error's text, so a step that throws fails
+the test with its message and never shows as an error of the page.

@@ -40,7 +40,7 @@ const MV = {
             stars: true, groundTrack: false},
   loaded: {earth: '', stars: ''}, textures: {}, playback: {speed: '', playing: false}, live: false,
   crafts: [], stations: [], links: [], labels: [], lastRotation: 0, rendererName: '', software: false,
-  temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null,
+  temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null, recoverTries: 0,
 };
 // No graphics card: start in reduced quality. Chromium's SwiftShader,
 // Mesa's llvmpipe/softpipe, Windows' WARP ("Microsoft Basic Render Driver").
@@ -50,6 +50,7 @@ const ZAXIS = new THREE.Vector3(0, 0, 1);
 const TRAIL_FRACTION = 0.1;  // [-] of the run's frames shown as each spacecraft's trail
 const ORBIT_VIEW = new THREE.Vector3(1.0, 1.0, 0.6).normalize();  // [-] Whole orbit looks from here without a Sun
 const RECOVER_AFTER_MS = 2000;  // [ms] a lost context not given back by then: a new renderer anyway
+const RECOVER_TRIES = 5;  // [-] new renderers tried, RECOVER_AFTER_MS apart, before the view says WebGL is gone
 
 // ---------------------------------------------------------------- setup
 MV.init = function () {
@@ -120,11 +121,23 @@ MV.createRenderer = function (options) {
   return new THREE.WebGLRenderer(options);
 };
 
+// No WebGL (no graphics driver and no software fallback): say so in the
+// view instead of failing on every frame.
+MV.showNoWebgl = function () {
+  const host = document.getElementById('view');
+  MV.webgl = false;
+  host.textContent = 'This computer could not start WebGL, which the 3D View draws with. ' +
+    'Update the graphics driver, or start the app where a graphics card or software rendering is available.';
+  host.className = 'no-webgl';
+  MV.makeControls();
+};
+
+
 // The WebGL renderer, made once: antialiased if the page starts in full
 // quality, not if it starts reduced (multisampling is most of a software
 // renderer's cost); a later quality switch keeps it. The logarithmic
 // depth buffer keeps millimetres and the Moon's distance in one view.
-MV.makeRenderer = function () {
+MV.makeRenderer = function (retrying) {
   const host = document.getElementById('view'), full = MV.quality === 'full';
   if (MV.renderer) {
     host.removeChild(MV.renderer.domElement);
@@ -135,14 +148,11 @@ MV.makeRenderer = function () {
   try {
     renderer = MV.createRenderer({antialias: full, logarithmicDepthBuffer: true});
   } catch (e) {
-    // No WebGL (no graphics driver and no software fallback): say so in
-    // the view instead of failing on every frame.
-    MV.webgl = false;
-    host.textContent = 'This computer could not start WebGL, which the 3D View draws with. ' +
-      'Update the graphics driver, or start the app where a graphics card or software rendering is available.';
-    host.className = 'no-webgl';
-    MV.makeControls();
-    return;
+    // A recovery while the GPU process is still starting again: the caller
+    // tries again later (MV.recover).
+    if (retrying) return false;
+    MV.showNoWebgl();
+    return false;
   }
   MV.webgl = true;
   renderer.setPixelRatio(full ? (window.devicePixelRatio || 1) : 1);
@@ -158,6 +168,7 @@ MV.makeRenderer = function () {
   if (target) MV.controls.target.copy(target);
   MV.controls.enabled = enabled;
   MV.dirty = true;
+  return true;
 };
 
 // The WebGL context went away (the web view moved to another native
@@ -185,12 +196,27 @@ MV.onContextRestored = function () {
 // thermal case's colours stay as they were. (Loading the scene again reset
 // them; a software renderer on Windows loses and restores its context
 // during normal use.)
+//
+// No new context yet (the GPU process is still starting again, as on
+// Windows when the view moves to a window of its own): the view stays as
+// it is and tries again RECOVER_AFTER_MS later, RECOVER_TRIES times in all,
+// before it says that WebGL is gone.
 MV.recover = function () {
   clearTimeout(MV.recoverTimer);
   MV.recoverTimer = null;
   if (!MV.contextLost) return;
+  if (!MV.makeRenderer(true)) {
+    MV.recoverTries += 1;
+    if (MV.recoverTries < RECOVER_TRIES) {
+      MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS);
+    } else {
+      MV.contextLost = false;
+      MV.showNoWebgl();
+    }
+    return;
+  }
+  MV.recoverTries = 0;
   MV.contextLost = false;
-  MV.makeRenderer();
   if (MV.scene) {
     MV.scene.traverse(function (object) {
       const materials = !object.material ? [] : (Array.isArray(object.material) ? object.material : [object.material]);

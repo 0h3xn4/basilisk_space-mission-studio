@@ -443,10 +443,17 @@ def _lose_context(qtbot, view) -> int:
     qtbot.waitUntil(lambda: _js(qtbot, view, "Boolean(MV.renderer) && !MV.contextLost && "
                                              "!MV.renderer.getContext().isContextLost()") is True, timeout=10000)
     before = _js(qtbot, view, "MV.recoveries")
-    _js(qtbot, view, "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
-                     "window.CANVAS = MV.renderer.domElement; LOSE.loseContext(); 1")
+    assert _try_js(qtbot, view, "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
+                                "window.CANVAS = MV.renderer.domElement; LOSE.loseContext();") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.contextLost") is True, timeout=10000)
     return before
+
+
+def _try_js(qtbot, view, code: str) -> str:
+    """Run a test's own JavaScript: "ok", or its error's text. A test step
+    that throws must not show as an error of the page (MV_ERRORS)."""
+    return _js(qtbot, view, "(function () { try { " + code + " return 'ok'; } "
+                            "catch (e) { return String(e && e.stack || e); } })()")
 
 
 def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
@@ -469,7 +476,7 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
                      "window.KEEP = [MV.scene, MV.body, MV.body.material, MV.body.material.map, MV.crafts[0].mesh]; 1")
     clock = _js(qtbot, view, "document.getElementById('hud-time').textContent")
     before = _lose_context(qtbot, view)
-    _js(qtbot, view, "LOSE.restoreContext(); 1")
+    assert _try_js(qtbot, view, "LOSE.restoreContext();") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=10000)
     state = _state(qtbot, view)
     assert state["contextLost"] is False and state["contextAlive"] is True and state["ready"] is True
@@ -501,7 +508,7 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     _drawn(qtbot, view)
     before = _lose_context(qtbot, view)
     # The page's own timer waits while the overlay is checked (a slow runner can take RECOVER_AFTER_MS for it).
-    _js(qtbot, view, "clearTimeout(MV.recoverTimer); 1")
+    assert _try_js(qtbot, view, "clearTimeout(MV.recoverTimer);") == "ok"
     shown = _js(qtbot, view, "document.getElementById('hud-time').textContent").split("\n")[0]
     view.slider.setValue(120)
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 120, timeout=10000)
@@ -509,12 +516,39 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
                     .split("\n")[0] != shown, timeout=10000)
     # Still lost: the overlay was drawn without a context.
     assert _js(qtbot, view, "MV.contextLost") is True and _js(qtbot, view, "MV.recoveries") == before
-    _js(qtbot, view, "MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS); 1")  # as onContextLost set it
+    # As onContextLost set it.
+    assert _try_js(qtbot, view, "MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS);") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=15000)
     state = _state(qtbot, view)
     assert state["contextAlive"] is True and state["ready"] is True and state["frames"] == 300
     assert _js(qtbot, view, "JSON.stringify(MV_ERRORS)") == "[]"
 
+
+
+def test_the_3d_view_tries_again_while_no_new_context_can_start(qtbot):
+    """No new WebGL context yet (the GPU process starting again, as on
+    Windows after a move to another window): the view tries again
+    RECOVER_AFTER_MS later instead of saying that WebGL is gone."""
+    from spacemissionstudio.gui.mission_view_widget import MissionViewWidget
+
+    view = MissionViewWidget()
+    qtbot.addWidget(view)
+    view.resize(900, 600)
+    view.show()
+    view.set_run(*_run())
+    _drawn(qtbot, view)
+    before = _lose_context(qtbot, view)
+    assert _try_js(qtbot, view, "window.REAL = MV.createRenderer; window.REFUSED = 0; "
+                                "MV.createRenderer = function (o) { if (REFUSED < 1) { REFUSED += 1; "
+                                "throw new Error('no context yet'); } return REAL(o); };") == "ok"
+    assert _try_js(qtbot, view, "MV.recover();") == "ok"  # as the page's own timer would
+    assert _js(qtbot, view, "REFUSED === 1 && MV.contextLost && MV.webgl && MV.recoverTries === 1") is True
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=15000)
+    state = _state(qtbot, view)
+    assert state["contextAlive"] is True and state["webgl"] is True and state["frames"] == 300
+    assert _js(qtbot, view, "MV.recoverTries === 0 && document.getElementById('view').className !== 'no-webgl'") \
+        is True
+    assert _js(qtbot, view, "JSON.stringify(MV_ERRORS)") == "[]"
 
 # -- Budgets ----------------------------------------------------------------------------------------------
 
