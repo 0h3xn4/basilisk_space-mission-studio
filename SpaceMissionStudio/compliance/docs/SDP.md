@@ -61,10 +61,12 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.10.0, mission
-operations planning (published 2026-11-17); before it 2.9.0, spacecraft
-thermal analysis on the 3D model with NASA's November 2026 solar-cycle
-prediction (published 2026-11-16), 2.8.0, a calmer window
+signed (decision 11). The current release is 2.11.0, the System
+Budget Studio merge's phase 1: the equipment list, the static power
+budget and the Budgets area, at scenario schema version 5 (prepared
+2026-11-17); before it 2.10.0, mission operations planning (published
+2026-11-17), 2.9.0, spacecraft thermal analysis on the 3D model with
+NASA's November 2026 solar-cycle prediction (published 2026-11-16), 2.8.0, a calmer window
 that is easier to read (a menu bar, a quieter Home and status bar,
 values as tables and notes as lists), with what the tool computes
 unchanged (published 2026-11-16), 2.7.0, the 3D View as a
@@ -163,7 +165,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.10.0, and the code is at 2.10.0.
+  release is 2.11.0, and the code is at 2.11.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;

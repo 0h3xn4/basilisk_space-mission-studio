@@ -8,7 +8,24 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.11.0 (2026-11-17)
+
+SpaceMissionStudio now keeps a spacecraft's equipment list and works out
+its power budget. Give a spacecraft a `budgets` section, or let the
+IDM-CIC import fill it, and list each unit with its mass, its power in
+each of its modes and where every number came from. Define the system
+modes, and the new **Budgets** area shows the load, the margins and the
+power the source has to deliver in each mode, per subsystem and per bus.
+The same units appear as lines of the mass budget. A number you do not
+know yet can stay "TBD": the budget then says it is unknown instead of
+quietly counting it as zero.
+
+This is the first part of bringing System Budget Studio into
+SpaceMissionStudio, and the calculation is System Budget Studio's own,
+checked against its reference cases with the same numbers. The run does
+not use the budgets yet; that comes in the next part. To hold the new
+section the scenario file moves to schema version 5, so files saved by
+2.11.0 do not open in 2.10.0 or earlier. Basilisk itself is unchanged.
 
 ### Added
 
@@ -51,6 +68,52 @@ fixes bugs.
   as before. A file saved by this version does not open in 2.10.0 or
   earlier. The templates' scenario hashes change with the version
   (`docs/changes.md`); no computed result changes.
+
+### Who should update
+
+- **Anyone who keeps an equipment list or a power budget for a
+  spacecraft:** this is the release that adds them. Open **Budgets ›
+  Equipment** (`Ctrl+5`) and press **Add Budgets Section**, or import an
+  IDM-CIC model with `idm-import --budgets`;
+  [`docs/user-manual/budgets.md`](docs/user-manual/budgets.md) walks
+  through it.
+- **Everyone else:** nothing that a run computes has changed. The 36
+  templates give 2.10.0's results. The delta-V and propellant budget has
+  moved from **Run › Budget** to **Budgets › Propellant**, and Timeline
+  and Reports are now `Ctrl+6` and `Ctrl+7`.
+- **Compatibility:** the scenario format moves to version 5, and 2.11.0
+  saves every file at version 5, with or without a `budgets` section.
+  2.10.0 and earlier refuse such a file ("scenario file is schema_version
+  5, but this build of SpaceMissionStudio only understands up to
+  version 4"). If you share scenarios with someone on an older version,
+  update together. 2.11.0 opens every file the earlier versions saved.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.11.0_amd64.deb` replaces 2.10.0; on Windows, run
+  the 2.11.0 setup over 2.10.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The run does not use the budgets yet.** It still takes the
+  spacecraft's `dry_mass_kg` and its power budget's bus load; the
+  equipment's power modes become a load in the simulation in the next
+  part of the merge.
+- **No budget report to export yet:** each Budgets page copies its table
+  as CSV with the scenario's provenance, and `spacemissionstudio budgets
+  --csv` prints the totals.
+- **An IDM-CIC model gives no converter efficiency, distribution loss
+  or power margins,** so `idm-import --budgets` leaves them as
+  placeholders, and the power at the source stays unknown until you set
+  them.
+- **The bundled CelesTrak space weather is still 2.8.0's** (observations
+  to 2026-11-14): CelesTrak refused the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**.
+- **The 3D View without a graphics card is slow,** as in 2.10.0: about
+  15 frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.10.0 (2026-11-17)
 
