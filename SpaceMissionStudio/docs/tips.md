@@ -21,9 +21,11 @@ writes, so you can move data to and from other tools.
 | `F1` | User Manual |
 | `Ctrl+Z` / `Ctrl+Shift+Z` (`Ctrl+Y` on Windows) | Undo / redo a scenario edit (the menu names the edit: "Undo dry_mass_kg (sat-1)") |
 | `Ctrl+J`, `Ctrl+I` | Show or hide the Problems panel, the Inspector |
-| `Ctrl+1` to `Ctrl+6` | Go to Home, Scenario, Run, Results, Timeline, Reports |
+| `Ctrl+1` to `Ctrl+7` | Go to Home, Scenario, Run, Results, Budgets, Timeline, Reports |
 | `Ctrl+N`, `Ctrl+O`, `Ctrl+S`, `Ctrl+Shift+S` | New, Open, Save, Save As |
 | `Esc` in the Timeline, `Alt+Backspace` anywhere | Clear the time cursor |
+| `Ctrl+Shift+N`, `Ctrl+Del` | Add an item to the equipment list, remove the item picked (Budgets > Equipment) |
+| `Ctrl+Shift+C` | Copy the Budgets page shown as CSV |
 | `Alt+Right` / `Alt+Left` in Results (with `Shift`: ten) | Move the time cursor a sample |
 | `Alt+PgDown` / `Alt+PgUp`, `Alt+Home` / `Alt+End` in Results | The time cursor to the next or previous event, or the run's start or end |
 
@@ -127,7 +129,8 @@ app (the JSON page's keys are in its right-click menu), and
 | Orbit messages | CCSDS OPM, OMM, OEM (KVN text) | Export Orbits as CCSDS... (`Ctrl+K`), Results > Plots > Export all... > CCSDS ephemeris (OEM)..., `ccsds-export`, `run --oem` |
 | Monte Carlo batch | `batch_results.npz` and `.json`, plus Basilisk's archive | Run in Monte Carlo mode, `monte-carlo --archive-dir` |
 | Monte Carlo table | CSV | Results > Monte Carlo > Export table CSV... |
-| Budget | CSV on the clipboard | Run > Budget > Copy as CSV |
+| Budget | CSV on the clipboard | Budgets > Propellant > Copy as CSV |
+| Power and mass budgets, equipment list | CSV on the clipboard | Budgets > Power, Mass or Equipment > Copy as CSV (`Ctrl+Shift+C`) |
 | 3D model | Wavefront OBJ and `.mtl` | 3D Model... > Export .obj..., `model --export-obj` |
 | Flight software | A C project with CMake, `ICD.md`, `TRACEABILITY.md`, `manifest.json` | Reports > Flight Software > Export..., `export-fsw` |
 | SIL report | JSON and CSV | Reports > Flight Software > Save report..., `sil --report` |

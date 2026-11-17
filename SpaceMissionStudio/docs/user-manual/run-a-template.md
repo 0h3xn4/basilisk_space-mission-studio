@@ -22,7 +22,7 @@ How to run one of the 32 ready-made missions and look at what it did.
 5. **Results > Plots** opens. Click a plot in the catalog on the left,
    for example "Inertial Position (ECI)", or one of the **Suggested**
    buttons. Tick several to see them side by side.
-6. Open the **Timeline** (`Ctrl+5`) to see ground-station passes and eclipses.
+6. Open the **Timeline** (`Ctrl+6`) to see ground-station passes and eclipses.
 
 To keep a copy you can change, use **Save As...** (Ctrl+Shift+S) first. The
 template file itself is never changed.

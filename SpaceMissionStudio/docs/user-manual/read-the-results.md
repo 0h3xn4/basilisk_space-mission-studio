@@ -19,7 +19,10 @@ and the exported files.
 | **Run > History** | Every run kept, newest first, with its status, start and duration; **Show everything recorded** opens a run's whole record | Yes |
 | **Run > Log** | What the app logged in this session, with every message a toast showed; a failed run opens it | No |
 | **Run > End of Life** | Orbital lifetime and deorbit check | No |
-| **Run > Budget** | Delta-V and propellant budget | No (better after a run) |
+| **Budgets > Equipment** | The equipment list, power modes, system modes and power settings, as tables you edit ([Equipment list and power budget](budgets.md)) | No |
+| **Budgets > Power** | The power budget per system mode: per item, subsystem and bus, with margins and losses | No |
+| **Budgets > Mass** | The mass budget with the equipment list and the AIAA S-120 growth allowances | No |
+| **Budgets > Propellant** | Delta-V and propellant budget (until 2.10.0: **Run > Budget**) | No (better after a run) |
 | **Run > Design Checks** | The 3D model's fields of view, thrusters and plumes, mass budget and launcher envelope ([Check the design](model-analyses.md#check-the-design-no-run)) | No |
 | **Reports > Exports** | Every export the app makes, where it is made, and when this machine last wrote one | No |
 | **Reports > Flight Software** | Export the flight software, or run it in the loop | No |

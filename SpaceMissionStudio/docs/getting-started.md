@@ -200,7 +200,7 @@ orbit for one day, with a ground station in Berlin.
 4. **Run** in the top bar (`Ctrl+R`). It takes a few seconds.
 5. The **Results** area opens. Click "Inertial Position (ECI)" in the
    catalog on the left (search `position_N`) to see the orbit.
-6. Open the **Timeline** (`Ctrl+5`): four Berlin passes (the first about
+6. Open the **Timeline** (`Ctrl+6`): four Berlin passes (the first about
    10 to 18 minutes in) and fifteen eclipses of about 35 minutes each.
 7. **Save As...** (Ctrl+Shift+S) to keep your own copy before changing anything.
 

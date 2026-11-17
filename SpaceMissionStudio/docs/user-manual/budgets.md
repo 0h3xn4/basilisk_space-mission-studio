@@ -9,11 +9,75 @@ static budget, with the same reference numbers
 The budget is a design check. It does not change a run: the run still
 uses the spacecraft's `dry_mass_kg` and its power budget's bus load.
 
-In this version you write the section on the **JSON** page of the
-Scenario Editor, or let the IDM-CIC import make it. The spacecraft
-editor's **Power** tab shows a summary of it, and **Run › Design Checks**
-shows its masses in the mass budget. Pages of their own in the window
-come in a later version.
+You edit the section in the **Budgets** area of the window (below), on
+the **JSON** page of the Scenario Editor, or let the IDM-CIC import make
+it. The spacecraft editor's **Power** tab shows a summary of it, and
+**Run › Design Checks** shows its masses in the mass budget.
+
+## The Budgets area
+
+**Budgets** is the area after **Results** in the navigation rail
+(`Ctrl+5`, or **Go > Go to Budgets**). It has four pages. When the
+scenario has more than one spacecraft, pick one with **Spacecraft** at
+the top; every page, **Propellant** too, shows that spacecraft.
+
+**Equipment** edits the section in tables:
+
+- **Equipment list**: one row per item, with its name, subsystem, mass
+  column, bus, maturity, mass, the source of the mass and **Mass in
+  model**. Double-click a cell, or select it and type, to change it;
+  `Enter` keeps the change, `Esc` drops it. Clear a number to make it a
+  placeholder.
+- **Power modes of** the item picked: name, average power and its
+  source, peak power and its source (empty: the average), duty cycle.
+- **System modes**: name, duty cycle, and for each item with power modes
+  the power mode it is in. "not listed" means that the mode gives the
+  item no power mode: its power is unknown in that mode.
+- **Power settings**: the distribution loss, the system power margin,
+  each bus's converter efficiency (the bus name can be changed here) and
+  the power margin of each maturity category.
+
+A placeholder shows **TBD** behind a caution icon. A new item, power
+mode or bus starts with placeholders: the window never guesses a number.
+Each change goes into the scenario at once: **Undo** (`Ctrl+Z`) takes
+it back and **Save** writes it. A change that makes the section invalid,
+for example a name used twice, shows in the **Problems** panel. Double-
+click the problem to come back to the page. A spacecraft without a
+section shows **Add Budgets Section**. It adds a section with one bus,
+"main", and placeholders for the efficiency, the distribution loss and
+the system margin.
+
+**Power** shows the power budget of each system mode: the load, the load
+with the margins, the power at the source, and the peak. When the duty
+cycles of the modes add up to 1, the last row is the duty-cycle average.
+Pick a **System mode** to see its items, subsystems and buses. A badge
+says **Complete** or **Unknown values**; the notes under it say which
+number is missing. A cell that cannot be computed says "unknown".
+**Computed with** lists the margins, losses and efficiencies the budget
+used.
+
+**Mass** shows the mass budget: the lines of the 3D model and of the
+equipment list, with the AIAA S-120 growth allowances, and the totals. A
+placeholder mass reads "unknown", and the badge says the totals are
+incomplete. It is the same budget as **Run › Design Checks**.
+
+**Propellant** is the delta-V and propellant budget. Until 2.10.0 it was
+**Run > Budget**; it works as before
+([Lifetime and propellant budget](lifetime-and-budget.md)).
+
+Each page has **Copy as CSV**. The CSV ends with the scenario's
+provenance (the versions, the scenario's SHA-256 and the time).
+
+| Keys | Does |
+|---|---|
+| `Ctrl+5` | Go to the Budgets area |
+| `Ctrl+Shift+N` | Add an item to the equipment list |
+| `Ctrl+Del` | Remove the item picked (Budgets › Equipment only) |
+| `Ctrl+Shift+C` | Copy the page shown as CSV |
+| `Ctrl+C` | Copy the selected rows of a table as tab-separated text |
+
+The commands are also in **Tools > Budgets** and in the command palette
+(`Ctrl+K`, type "budget").
 
 ## The budgets section
 

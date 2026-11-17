@@ -50,7 +50,7 @@ UM section 12 (glossary) and the SRS terms.
 ## 4 Conventions (H.2.1<4>)
 
 - **Areas, pages and buttons:** in bold (**Cancel Run**). A path such as
-  **Run > Budget** is an area of the navigation rail and its page.
+  **Budgets > Propellant** is an area of the navigation rail and its page.
 - **Typed text and commands:** in `code`.
 - **CLI syntax:** `spacemissionstudio <command> [arguments]`. Optional
   arguments are in brackets; AD1 lists every argument.
@@ -132,10 +132,12 @@ The tool lets a mission analyst do the following without writing code:
   `docs/ui/BEFORE_AFTER.md`):
   - a navigation rail with the areas **Home** (templates, recent
     scenarios), **Scenario** (the scenario tree, with **Overview**, the
-    former Explain), **Run** (**Run**, **End of Life**, **Budget**,
+    former Explain), **Run** (**Run**, **End of Life**,
     **Design Checks**, **History**, **Log**), **Results** (**Overview**,
     **Plots**, **Dashboard**, **Output**, **Compare**, **Model Analyses**
     when the run asked for some, **Monte Carlo** when there is a batch),
+    **Budgets** (**Equipment**, **Power**, **Mass**, **Propellant**, the
+    former Run > Budget; since 2.11.0),
     **Timeline** (the former Events), **Reports** (**Exports**,
     **Flight Software**), **Settings** and **Help**;
   - a top bar with Run and the command palette (`Ctrl+K`), which holds
@@ -278,7 +280,8 @@ in the CLI. An error never closes the application.
 | Run | **Run** (`Ctrl+R`; the top bar or the Run area's header), in the run mode beside it | `spacemissionstudio run FILE --out-dir DIR [--oem] [--allow-scripts]` |
 | Cancel | **Cancel Run** (`Esc`) | Ctrl+C |
 | Lifetime | **Run > End of Life** | `spacemissionstudio lifetime FILE` |
-| Budget | **Run > Budget** | `spacemissionstudio budget FILE` |
+| Budget | **Budgets > Propellant** | `spacemissionstudio budget FILE` |
+| Equipment list, power budget | **Budgets > Equipment**, **Budgets > Power** | `spacemissionstudio budgets FILE` |
 | Earth orientation files | the reference-data card on Home; **Settings > Reference data** | `spacemissionstudio earth-orientation [--fetch \| --import FILES \| --rollback]` |
 | CCSDS | **Import CCSDS OPM/OMM...** (a spacecraft's Orbit / mass page); **Export Orbits as CCSDS...** and **Check a CCSDS File...** (`Ctrl+K`); **Results > Plots > Export all... > CCSDS ephemeris (OEM)...** | `ccsds-validate`, `ccsds-export`, `ccsds-import`, `run --oem` |
 | IDM-CIC model | **3D Model... > Import IDM-CIC model...** | `idm-info FILE.idm`, `idm-import FILE.idm SCENARIO --spacecraft NAME` |

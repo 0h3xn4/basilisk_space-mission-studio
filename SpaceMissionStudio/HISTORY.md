@@ -18140,3 +18140,44 @@ budget only. A placeholder may have an empty source.
 The IDM-CIC import writes the section with `idm-import --budgets`
 (B-08). It matches items by `fullId` on a re-import and keeps the user's
 names, buses and maturities. The bus load is set as before.
+
+## System Budget Studio merge: phase 1, the window (2026-11-17)
+
+Phase 1's second pull request adds the Budgets area
+(`docs/developer/system-budget-phase1-design.md`, section 8; decisions
+B-11, B-12 and B-18 to B-25).
+
+The area comes after Results in the rail, `Ctrl+5` (B-11). It has four
+pages. **Propellant** is the `BudgetWidget` of Run › Budget, moved
+without change (Q3). The existing GUI tests that named the old place changed; each
+change is in `docs/ui/TEST_CHANGES.md`.
+
+**Equipment** is the first editable table of the window. `GridModel` is
+a `QAbstractTableModel` with `ItemIsEditable` under a `QTableView`
+(B-12), with a combo box for a choice and a number-only line edit for a
+number. The item fields are the grid's columns; the power modes, the
+system modes and the power settings are three more tables (B-18). An
+edit changes the page's copy of the section, and
+`ScenarioEditorWidget.set_budgets` puts a copy in the spacecraft, as the
+3D model editor does. So the edit is saved, undone and checked, and a
+problem goes to the Problems panel. A problem in the section opens the
+page (B-24). New values are placeholders, never numbers (B-22).
+
+**Power** and **Mass** show `analyses.power_budget` and
+`analyses.mass_budget`. They compute on the GUI thread, for the page
+shown and only when the spacecraft changed (B-23). Two measurements set
+this up. The first version deep-copied the section at each edit and
+sized each column over every row: 145 ms with 180 items. A dedicated
+copy and a sample of 25 rows brought a change to 31 ms at most, and no
+change to under 1 ms.
+
+Two things in the window changed for the room rule. With eight areas
+the rail needs 578 px with names; at 1280 x 720 with the Problems panel
+open it has 510 px. It now shows icons only until there is room (B-19).
+The tables of the Power and Mass pages are as tall as their rows, so
+the page scrolls and not each table.
+
+The full GUI suite found one crash: a later test segfaulted in
+`setStyleSheet` after the new theme tests had applied a theme without
+putting the app's look back. The tests now use the `restored_theme`
+fixture, as the other theme tests do.
