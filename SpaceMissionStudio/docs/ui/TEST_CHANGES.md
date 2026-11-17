@@ -2193,6 +2193,20 @@ that `test_workspace.py::test_the_view_analyses_and_tools_commands` pins
 stays as it is. No existing test changed, and no
 golden file. The new tests are in `tests/gui/test_breakout.py` (19).
 
+After the first CI run, one test of this PR changed (its own test, not an
+older one): the window's geometry is no longer written to `layout.ini` by
+a worker when the view comes back, because `QSettings.sync` keeps the
+interpreter lock and stopped the GUI thread (CI measured one move at
+146 ms, so `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+failed; that test is unchanged).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_breakout.py::test_the_geometry_is_kept_per_view_and_used_again` | after `attach`, waited for the worker and read the key from `layout.ini` | after `attach`, reads `breakouts.saved_geometry` and asserts that the file has no key yet; after quit it asserts the file and the key, as before; "used again" and "read at start" are unchanged | no move writes the file now (decision "Breakout windows", geometry) |
+| `test_breakout.py::test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window`, `test_on_wayland_only_the_size_is_used` | the window's size equal to the saved size | equal to the saved size enlarged to the view's `minimumSizeHint()` | on Windows the Thermal view's minimum is 714 px wide, more than the saved 620 or 630 px; a window is never smaller than its content |
+| `test_breakout.py::_lose_context` (both recovery tests) | took the context away at once | waits for a live context first | Windows CI's GPU process loses contexts by itself, and a lost context has no `WEBGL_lose_context` |
+| `test_breakout.py::test_the_3d_view_recovers_a_webgl_context_never_given_back` | lost, then one recovery | also: while lost (the page's timer held), a new frame changes the overlay's time; the recovery assertions are unchanged | the frame loop draws the overlay without a context now (HISTORY, "Windows CI") |
+
 ### PR-3: ground tracks, stations and the live map (decision "Ground tracks, stations and the live map")
 
 Results › 3D View gets a **Globe | Map | Both** control and the 2D map

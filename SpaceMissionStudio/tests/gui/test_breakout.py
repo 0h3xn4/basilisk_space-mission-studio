@@ -281,8 +281,9 @@ def test_closing_the_scenario_and_quitting_bring_every_view_back(window, qtbot, 
 # -- geometry ---------------------------------------------------------------------------------------------
 
 def test_the_geometry_is_kept_per_view_and_used_again(window):
-    """Written to layout.ini (by a worker) when the view comes back, and
-    the window opens there again; on quit too, and read at start."""
+    """Kept when the view comes back, and the window opens there again;
+    written to layout.ini on quit (no move writes the file: a write stops
+    the GUI thread), and read at start."""
     from PySide6.QtCore import QRect
 
     from spacemissionstudio.gui.breakout import settings_key
@@ -291,14 +292,14 @@ def test_the_geometry_is_kept_per_view_and_used_again(window):
     view = window.breakouts.detach("budgets")
     view.setGeometry(rect)
     window.breakouts.attach("budgets")
-    window.breakouts.wait()  # a worker writes the file
-    assert window._layout_settings().value(settings_key("budgets")) == rect
-    assert (Path.home() / ".spacemissionstudio" / "layout.ini").is_file()
+    assert window.breakouts.saved_geometry("budgets") == (rect, False)
+    assert window._layout_settings().value(settings_key("budgets")) is None  # not written by the move
     window.breakouts.detach("budgets")
     assert view.geometry() == rect
     moved = QRect(60, 80, 600, 400)  # [px]
     view.setGeometry(moved)
     window.close()  # quitting
+    assert (Path.home() / ".spacemissionstudio" / "layout.ini").is_file()
     assert window._layout_settings().value(settings_key("budgets")) == moved
     assert window._layout_settings().value(settings_key("3d_view")) is None  # never opened: nothing kept
     from spacemissionstudio.gui.main_window import MainWindow
@@ -314,7 +315,7 @@ def test_the_geometry_is_kept_per_view_and_used_again(window):
 def test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window(window):
     """A rectangle no screen shows (a monitor unplugged): its size, centred
     on the main window."""
-    from PySide6.QtCore import QRect
+    from PySide6.QtCore import QRect, QSize
 
     from spacemissionstudio.gui.breakout import on_a_screen, settings_key
 
@@ -322,7 +323,8 @@ def test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window(window
     settings.setValue(settings_key("thermal"), QRect(9000, 9000, 620, 410))
     window.breakouts.read_geometry(settings)  # as at start
     view = window.breakouts.detach("thermal")
-    assert view.size().width() == 620 and view.size().height() == 410
+    # The saved size, or the view's own minimum where that is larger (on Windows its fonts make it 714 px wide).
+    assert view.size() == QSize(620, 410).expandedTo(view.minimumSizeHint())
     assert on_a_screen(view.geometry())
     centre, middle = view.geometry().center(), window.frameGeometry().center()
     assert abs(centre.x() - middle.x()) <= 4 and abs(centre.y() - middle.y()) <= 4  # [px] the frame's margins
@@ -331,7 +333,7 @@ def test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window(window
 def test_on_wayland_only_the_size_is_used(window, monkeypatch):
     """Wayland ignores a window's position: the saved size is kept, the
     compositor places the window."""
-    from PySide6.QtCore import QRect
+    from PySide6.QtCore import QRect, QSize
 
     from spacemissionstudio.gui import breakout
 
@@ -344,7 +346,7 @@ def test_on_wayland_only_the_size_is_used(window, monkeypatch):
     real_move = type(view).move
     monkeypatch.setattr(type(view), "move", lambda self, *a: moves.append(a) or real_move(self, *a))
     window.breakouts.detach("thermal")
-    assert (view.width(), view.height()) == (630, 430) and moves == []
+    assert view.size() == QSize(630, 430).expandedTo(view.minimumSizeHint()) and moves == []
 
 
 # -- the keyboard -----------------------------------------------------------------------------------------
@@ -435,6 +437,10 @@ def test_a_theme_change_reaches_the_window(window, qtbot, restored_theme):
 # -- the 3D View's WebGL context ---------------------------------------------------------------------------
 
 def _lose_context(qtbot, view):
+    # A live context first: a GPU process can lose and give back every context by itself (Windows CI's D3D
+    # backend does), and a lost context has no WEBGL_lose_context extension to call.
+    qtbot.waitUntil(lambda: _js(qtbot, view, "Boolean(MV.renderer) && !MV.contextLost && "
+                                             "!MV.renderer.getContext().isContextLost()") is True, timeout=10000)
     _js(qtbot, view, "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
                      "window.CANVAS = MV.renderer.domElement; LOSE.loseContext(); 1")
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.contextLost") is True, timeout=10000)
@@ -480,7 +486,8 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
 
 def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     """A context the browser does not give back: a new renderer of its own
-    after RECOVER_AFTER_MS."""
+    after RECOVER_AFTER_MS. Meanwhile the overlay follows the frame: only
+    the draw call waits for a context."""
     from spacemissionstudio.gui.mission_view_widget import MissionViewWidget
 
     view = MissionViewWidget()
@@ -491,6 +498,15 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     _drawn(qtbot, view)
     _lose_context(qtbot, view)
     assert _js(qtbot, view, "MV.recoveries") == 0
+    # The page's own timer waits while the overlay is checked (a slow runner can take RECOVER_AFTER_MS for it).
+    _js(qtbot, view, "clearTimeout(MV.recoverTimer); 1")
+    shown = _js(qtbot, view, "document.getElementById('hud-time').textContent").split("\n")[0]
+    view.slider.setValue(120)
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 120, timeout=10000)
+    qtbot.waitUntil(lambda: _js(qtbot, view, "document.getElementById('hud-time').textContent")
+                    .split("\n")[0] != shown, timeout=10000)
+    assert _js(qtbot, view, "MV.contextLost && MV.recoveries === 0") is True  # still lost: drawn without a context
+    _js(qtbot, view, "MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS); 1")  # as onContextLost set it
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == 1, timeout=15000)
     state = _state(qtbot, view)
     assert state["contextAlive"] is True and state["ready"] is True and state["frames"] == 300

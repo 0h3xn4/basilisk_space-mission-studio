@@ -28,3 +28,6 @@ packaging/.python-build-cache/
 
 # scripts/network_audit.py output
 network-audit/
+
+# Backlog run progress (CLAUDE.md, "Backlog and release procedure")
+PROGRESS.md

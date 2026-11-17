@@ -18265,6 +18265,28 @@ them on the built `.deb`. Not checked: how the App Center shows a
 downloaded `.deb` before it is installed. That needs Ubuntu 24.04 with a
 desktop.
 
+## Release 2.11.0 published (2026-11-17)
+
+#275 was merged at 16:13 UTC. The tag workflow's first run
+([run 44123360812](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44123360812)) started at 16:13:52
+and stopped at the release check, because CI on `develop`'s merge commit
+`d387dc5` had not finished yet. Every other check passed, and nothing
+was tagged. CI passed on `d387dc5` at 17:02
+([run 44123329286](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44123329286)). As the owner asked, the
+assistant started the tag workflow again at 17:05 with version 2.11.0,
+ref `develop` and **publish** on. The release check passed and the
+workflow tagged `d387dc5` at 17:06
+([run 44133160433](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44133160433)). The release workflow
+it started ([run 44133393083](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44133393083)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+17:54:47, so it was never public without its files. The digests of the
+`.deb`, the setup program and the LGPL sources equal the checksums in
+`SHA256SUMS-*` and in its notes; the wheel, the sdist and both bills of
+materials, downloaded from the release, pass `sha256sum -c`. SRelD issue
+42, the SDP, H05 and `releasing.md` record the tag, the runs and the
+files' digests.
+
 ## 2.12.0 windows and views: thermal results (2026-11-17)
 
 The first part of 2.12.0 (`docs/developer/windows-views-design.md`,
@@ -18408,6 +18430,39 @@ window, the button and the menu, a theme switch, the two context losses,
 Budgets counted as shown, the timing, and a live run in the detached 3D
 View). No existing test changed. No golden file, no file format and no
 engine change.
+
+**After the first CI run: no file write when a view comes back.** CI
+failed `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`: one
+move of the Budgets area took 146 ms (the others 4 to 29 ms). Here it
+took 168 ms once in three runs, always when a view came back. No garbage
+collection ran during that move. The profile showed the cause: each
+`attach` started a worker that wrote the window's geometry to
+`layout.ini` with `QSettings.sync`, and `sync` keeps the interpreter lock
+while it writes. A probe showed this alone: a 30 ms `sync` in a thread
+stopped a Python loop on the GUI thread for 36 ms. While the worker wrote,
+the Budgets area's own Python code in `show()` (its header and flow
+layout callbacks) waited for the lock. The geometry is now kept in memory
+and written with the rest of the layout at quit, which already happened.
+A crash loses the windows' places since the start, as it loses the rest
+of the layout. The geometry test now checks that a move writes nothing
+and that quitting writes the key (`docs/ui/TEST_CHANGES.md`).
+
+**Windows CI: the overlay stopped while a context was lost.** On the
+Windows runner the GPU process lost and gave back WebGL contexts by
+itself (its log: "Context lost during MakeCurrent", "Already being
+accessed for read" in the D3D shared-image backing). PR-2's frame loop
+skipped the whole frame while a context was lost, so the HUD's time,
+the sky and the labels kept their old state. That failed two tests of
+`test_mission_view.py` (the stars and the ISO time), and the recovery
+test read `00:00:00Z` before it took the context away. The loop now
+updates the scene, the overlay and the labels in every frame; only the
+draw call waits for a context, as before PR-2. The recovery tests wait
+for a live context before they take one away (a lost context has no
+`WEBGL_lose_context` to call), and the test of a context never given
+back checks that the overlay follows the frame while the context is
+lost. Two geometry tests expected a window of exactly the saved size; on
+Windows the Thermal view's own minimum is 714 px wide, so they now
+expect the saved size enlarged to the view's minimum.
 
 ## 2.12.0 windows and views: ground tracks, stations and a live 2D map (2026-11-17)
 
