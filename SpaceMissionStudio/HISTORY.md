@@ -18085,3 +18085,19 @@ installers, attached the eleven files and published the release at
 `.deb` and the setup program equal the checksums in its notes. SRelD
 issue 40, the SDP, H05 and `releasing.md` record the tag, the runs and
 the files' digests.
+
+## System Budget Studio merge: phase 0 (2026-11-17)
+
+The owner decided that System Budget Studio becomes a feature of
+SpaceMissionStudio. The plan (#270,
+`docs/developer/system-budget-merge-design.md`) was reviewed with the
+owner, who answered its six open questions and one raised in review: the
+IDM-CIC import already reads power modes and duty cycles, so phase 1
+builds the equipment list and the power modes on it.
+
+Phase 0 records the decisions in `docs/DECISIONS.md` and replaces
+CLAUDE.md's "UI only during the overhaul" rule, written for the 1.3.0
+overhaul, with a rule for engine and format changes: a schema migration,
+unchanged golden files for the existing templates unless the owner
+decides otherwise, and a decisions entry. System Budget Studio's README
+says it is frozen at 2.15.1 and continues here.

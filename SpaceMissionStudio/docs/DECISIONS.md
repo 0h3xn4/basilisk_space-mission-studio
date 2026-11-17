@@ -3285,3 +3285,41 @@ what is open. Not legal advice.
   publish." The draft-first default stays for a run started without
   it, and a push of a tag by hand (2.6.0 and 2.7.0 were public without
   files when published early, `releasing.md`).
+
+## System Budget Studio becomes a feature (2026-11-17)
+
+The plan, its overlap table and its phases are in
+[`developer/system-budget-merge-design.md`](developer/system-budget-merge-design.md).
+
+- **Decision:** one tool. System Budget Studio
+  (`0h3xn4/system-budget-studio`) becomes a feature of SpaceMissionStudio,
+  in the phases of the plan. **Why:** the owner; one set of inputs, and
+  the budgets get SpaceMissionStudio's propagation (a tester of System
+  Budget Studio 2.11.0 asked for high-precision propagation).
+- **Decision:** SpaceMissionStudio wins every overlap. Where both tools
+  compute the same thing, SpaceMissionStudio's model stays and System
+  Budget Studio's is not ported; what moves is re-implemented on
+  SpaceMissionStudio's data structures, with System Budget Studio's code,
+  tests and reference cases as its specification. **Why:** the owner.
+- **Decision:** the moved code is EUPL-1.2, with the usual SPDX header.
+  It is re-implemented, not copied, so no Apache-2.0 notice is needed; a
+  file ever copied as it is keeps its Apache-2.0 header and is listed in
+  `THIRD_PARTY_NOTICES`. System Budget Studio's released versions stay
+  Apache-2.0. **Why:** the owner holds the copyright of both tools and
+  decided it (Q1).
+- **Decision:** a one-way import opens System Budget Studio projects
+  (phase 6); nothing is written back. **Why:** the owner.
+- **Decision:** System Budget Studio is frozen at 2.15.1: fixes only
+  until the merge is done, then a last release that points here and an
+  archived repository. **Why:** the owner.
+- **Decision:** CLAUDE.md's hard rule "UI only during the overhaul" is
+  replaced: engine and format changes are allowed with a schema
+  migration, unchanged golden files for the existing templates (unless
+  the owner decides otherwise) and a decisions entry. **Why:** the owner
+  (Q4); the merge needs schema version 5 and engine changes, and the
+  thermal and operations features were already built as exceptions.
+- **Decision:** the other answers of the plan (Q2, Q3, Q5, Q6, Q7): PDF,
+  XLSX and DOCX reports are decided in phase 5; a Budgets area in the
+  navigation rail; the "TBD" placeholder in the `budgets` section only;
+  budget problems may show values; phase 1 builds on the IDM-CIC
+  import's power modes. **Why:** the owner, 2026-11-17 (plan, section 7).

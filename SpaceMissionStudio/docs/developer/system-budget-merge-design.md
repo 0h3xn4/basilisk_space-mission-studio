@@ -1,8 +1,9 @@
 # System Budget Studio in SpaceMissionStudio: merge plan
 
-**Status:** a proposal for the owner's review (2026-11-17). The owner
-answered the open questions on 2026-11-17 (section 7). No code moves
-until the owner accepts this plan.
+**Status:** accepted by the owner on 2026-11-17 (#270), with the answers
+to the open questions in section 7. Phase 0 (the decisions in
+`docs/DECISIONS.md`, CLAUDE.md's hard rule replaced, System Budget
+Studio's README) is under way.
 
 System Budget Studio (`0h3xn4/system-budget-studio`, Apache-2.0, last
 release 2.15.1) is an offline tool for the system budgets of a satellite:

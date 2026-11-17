@@ -8,11 +8,20 @@ documents disagree, these win.
 
 ## Hard rules
 
-- **UI only during the overhaul:** no change to computation, the engine,
-  scenario or project file formats, CLI commands and flags, or any
-  generated output file. Every existing test passes; golden files stay
-  byte-identical. GUI tests may change only how they reach a widget, each
-  change logged in `docs/ui/TEST_CHANGES.md`.
+- **Engine and format changes come with their records** (replaces the
+  1.3.0 overhaul's "UI only" rule, owner 2026-11-17): a change to
+  computation, the engine, the scenario or project file formats, CLI
+  commands and flags, or a generated output file is allowed only with
+  - a schema version step and a migration when a file format changes, so
+    every older file still opens;
+  - the golden files of the existing templates byte-identical, unless the
+    owner decides otherwise and `docs/changes.md` explains each change;
+  - a decisions entry (`docs/DECISIONS.md` or the feature's decisions
+    file).
+
+  Every existing test passes and none is weakened. A GUI test may change
+  only how it reaches a widget, each change logged in
+  `docs/ui/TEST_CHANGES.md`.
 - **Do not modify the Basilisk framework** (anything outside
   `SpaceMissionStudio/`): no edits, patches or monkey-patching.
 - **PySide6 only:** no web frontend, no Electron/Tauri, no third-party Qt
