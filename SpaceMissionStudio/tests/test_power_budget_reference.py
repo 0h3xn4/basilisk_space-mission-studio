@@ -252,6 +252,8 @@ def test_case16_missing_inputs_become_findings_not_zero():
         assert needle in text, needle
     assert "layout" not in text and "aux" not in text  # only what is actually missing
     assert all(f.startswith(f"{sc.name}: budgets.") for f in found)
+    assert f"{sc.name}: budgets.distribution_loss has no value (a placeholder): the source power of every mode is " \
+           "unknown" in found
 
 
 def test_case17_result_is_deterministic():

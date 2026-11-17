@@ -374,8 +374,12 @@ def findings(sc, inputs: list | None = None) -> list:
                                  f"margined power of {_listed(users)} is unknown", "budget.no_margin",
                                  actual=f"maturity {maturity}: no margin", limit="a margin for each maturity used"))
             continue
-        state = ("is a placeholder (source " + repr(entry.source) + ")" if entry.state == "placeholder"
-                 else "is not given")
+        if entry.state == "missing":
+            state = "is not given"
+        elif entry.value is None:
+            state = "has no value (a placeholder)"
+        else:
+            state = f"is a placeholder (source {entry.source!r})"
         found.append(Finding(f"{name}: {entry.path} {state}: {effect}", "budget.placeholder",
                              actual=f"{entry.name}: {entry.state}", limit="a number with its source"))
     unclassified = [item.name for item in items if not item.maturity]
