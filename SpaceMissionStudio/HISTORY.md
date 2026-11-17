@@ -18264,3 +18264,25 @@ CI now runs both tools in the test job, and the release workflow runs
 them on the built `.deb`. Not checked: how the App Center shows a
 downloaded `.deb` before it is installed. That needs Ubuntu 24.04 with a
 desktop.
+
+## Release 2.11.0 published (2026-11-17)
+
+#275 was merged at 16:13 UTC. The tag workflow's first run
+([run 44123360812](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44123360812)) started at 16:13:52
+and stopped at the release check, because CI on `develop`'s merge commit
+`d387dc5` had not finished yet. Every other check passed, and nothing
+was tagged. CI passed on `d387dc5` at 17:02
+([run 44123329286](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44123329286)). As the owner asked, the
+assistant started the tag workflow again at 17:05 with version 2.11.0,
+ref `develop` and **publish** on. The release check passed and the
+workflow tagged `d387dc5` at 17:06
+([run 44133160433](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44133160433)). The release workflow
+it started ([run 44133393083](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44133393083)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+17:54:47, so it was never public without its files. The digests of the
+`.deb`, the setup program and the LGPL sources equal the checksums in
+`SHA256SUMS-*` and in its notes; the wheel, the sdist and both bills of
+materials, downloaded from the release, pass `sha256sum -c`. SRelD issue
+42, the SDP, H05 and `releasing.md` record the tag, the runs and the
+files' digests.

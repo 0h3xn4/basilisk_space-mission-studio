@@ -509,6 +509,16 @@ this build of SpaceMissionStudio only understands up to version 4");
 2.11.0 opens the files 2.10.0 saves (the 36 templates, with no message).
 The space weather was not refreshed: CelesTrak reset the connection, so
 2.11.0 carries 2.8.0's file (observations to 2026-11-14).
+It was published on 2026-11-17 at 17:54 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 42). The first tag
+workflow run ([run 44123360812](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44123360812)), started
+at 16:13, stopped at the release check because CI on `d387dc5`, #275's
+merge, had not finished yet; it tagged nothing. Once CI had passed, the
+second ([run 44133160433](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44133160433)) passed the
+release check on `d387dc5` and tagged it at 17:06; the release workflow
+([run 44133393083](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44133393083)) built, installed and
+checked every file, attached the eleven and published the release 48
+minutes later. It was never a public release without files.
 
 ---
 
