@@ -8,7 +8,7 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.10.0 (2026-11-17)
 
 SpaceMissionStudio can now plan a mission's operations. Give a scenario
 an `operations` section (targets, kinds of activity, station masks and
@@ -57,6 +57,51 @@ plan is flown by two of SpaceMissionStudio's own modules inside the run.
 
 - The Timeline keeps the events each analysis adds apart, so a plan's
   activities and a thermal analysis's limits are shown together.
+
+### Who should update
+
+- **Anyone planning what a spacecraft or a constellation does day by
+  day:** this is the release that adds it. Start from template 35 or 36,
+  or add an `operations` section in **Scenario › JSON** and press
+  **Plan** on **Run › Plan**; [`docs/user-manual/operations.md`](docs/user-manual/operations.md)
+  walks through it.
+- **Everyone else:** nothing that a run computes has changed. The 34
+  earlier templates give 2.9.0's results.
+- **Compatibility:** the scenario format's version is still 4. 2.9.0
+  opens the files 2.10.0 saves, except those with an `operations`
+  section, which it refuses by name ("unexpected field 'operations'").
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.10.0_amd64.deb` replaces 2.9.0; on Windows, run
+  the 2.10.0 setup over 2.9.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The planner's models are simpler than the simulation:** a one-axis
+  slew model, the panel's angle to the Sun from the planned attitude,
+  and resources at the geometry's step. **Fly and verify** tells you how
+  far that matters for your spacecraft. Weather and clouds,
+  conjunctions, a ground network's costs and bookings, and binary
+  telecommands are not modelled
+  ([Limitations](docs/reference/limitations.md#operations-planning)).
+- **Without the Earth orientation files** the planner's geometry is
+  about 10 km off on the ground; a window at the edge of a limit can
+  then hold an image or not (template 35 plans 17 or 18 of 23 images).
+- **The planner is slower than intended:** a week of template 35 takes
+  about 40 s to plan with its 20 improvement steps, and about ten minutes
+  to fly.
+- **The AEM attitude files' rotation direction** follows the CCSDS
+  schema and version 1's convention and is stated in each file; the
+  Blue Book could not be read to confirm it.
+- **The bundled CelesTrak space weather is still 2.8.0's** (observations
+  to 2026-11-14): CelesTrak refused the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**.
+- **The 3D View without a graphics card is slow,** as in 2.9.0: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.9.0 (2026-11-16)
 

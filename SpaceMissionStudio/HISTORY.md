@@ -18015,3 +18015,57 @@ What flying the templates found, and what was done about it:
 - The scenario editor dropped the `operations` section on save (it had
   no form for it); it now keeps it, and a renamed spacecraft or station
   is renamed in it.
+
+## Upstream Basilisk sync (2026-11-17)
+
+At the owner's request, #258 merged upstream Basilisk's `develop` into
+the repository's `develop`, so the fork's Basilisk source stays current.
+SpaceMissionStudio still runs on Basilisk 2.12.0 from PyPI, so nothing it
+computes changed. Three things in upstream's CI did not pass on this
+fork, and were fixed in the pull request:
+
+- Upstream reformatted `astroConstants.h` (`#define SOLAR_FLUX_EARTH
+  1361.0` without its column spacing); the values are unchanged.
+  `tests/test_constants.py` now reads each value whatever the spacing.
+- Upstream added a clang-format hook (v22.1.5, `--style=file`), which
+  CI ran on every C file because `.clang-format` changed. A
+  `SpaceMissionStudio/.clang-format` with `DisableFormat: true` leaves
+  the flight-software templates as they are; `.gitignore` lost a final
+  blank line for the end-of-file hook.
+- Upstream moved the docs job and a new macOS build to `macos-26`
+  runners, which this fork never gets (GitHub cancelled the jobs after
+  about 15 minutes in the queue), and the Windows build stopped at its
+  105-minute limit after its tests had passed. With the owner's
+  agreement, `pull-request.yml` runs the docs job on Ubuntu again, the
+  macOS build only in upstream, and the Windows build with 150 minutes.
+
+## Release 2.10.0 prepared (2026-11-17)
+
+A minor release: it adds a feature and a scenario field. Contents since
+2.9.0: the 2.9.0 publication record (#267), the upstream Basilisk sync
+(#258) and mission operations planning with templates 35 and 36 (#268,
+SRS-F-30).
+
+Before #268 was merged, its CI found two things the local checks had
+not: one f-string in `operations/exports.py` reused its own quote inside
+the braces, which Python 3.12 accepts and the pre-commit hooks' Python
+3.11 refuses (the summary is now built before the f-string; every
+SpaceMissionStudio file now parses with 3.11), and `SDD_components.md`
+still had the scheduler's and the exports' line counts from before the
+last changes (regenerated).
+
+Prepared by `docs/developer/releasing.md`: version 2.10.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script; the
+CHANGELOG's Unreleased entries under 2.10.0 with an introduction, Who
+should update and Known limits; SRelD issue 39 (K-36 and K-37 added);
+the SDP, SRS, ICD, CSD, SUM and both READMEs name 2.10.0. The space
+weather was not refreshed: CelesTrak reset the connection on
+2026-11-17, so 2.10.0 carries 2.8.0's file (observations to 2026-11-14;
+K-13).
+
+Compatibility checked with 2.9.0's own code (the tagged commit
+`8646823`): of the 36 templates as this code saves them, the 34 without
+an `operations` section open and validate in 2.9.0 with no message;
+2.9.0 refuses templates 35 and 36 by name ("unexpected field
+'operations', not one this version knows"). The schema version stays 4,
+and the golden outputs of the 34 earlier templates are unchanged.

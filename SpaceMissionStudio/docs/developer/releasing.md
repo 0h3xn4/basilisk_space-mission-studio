@@ -472,6 +472,18 @@ workflow ([run 43930715195](https://github.com/0h3xn4/basilisk_space-mission-stu
 and checked every file, attached the eleven and published the release 26
 minutes later. It was never a public release without files.
 
+2.10.0 was prepared on 2026-11-17 by this checklist: mission operations
+planning with templates 35 and 36 (#268), the upstream Basilisk sync
+(#258) and the 2.9.0 publication record (#267); a minor release because
+it adds a feature and an optional scenario field (`operations`, schema
+version still 4). 2.9.0 opens the files 2.10.0 saves except those with
+an `operations` section, which it refuses by name (checked with 2.9.0's
+code on the 36 templates as 2.10.0 saves them: 34 open with no message,
+35 and 36 refused). The space weather was not refreshed: CelesTrak reset
+the connection, so 2.10.0 carries 2.8.0's file (observations to
+2026-11-14). The sync changed upstream Basilisk's files in the
+repository, not the Basilisk 2.12.0 the installers carry.
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

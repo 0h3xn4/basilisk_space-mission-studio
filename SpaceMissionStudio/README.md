@@ -1,7 +1,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-![Version 2.9.0](https://img.shields.io/badge/version-2.9.0-blue)
+![Version 2.10.0](https://img.shields.io/badge/version-2.10.0-blue)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -149,11 +149,14 @@ internet needed.
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.9.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.9.0),
-  [changelog](CHANGELOG.md)): spacecraft thermal analysis: a thermal
-  model built on the 3D model, solved on a run in hot, cold and nominal
-  cases, with sweeps, sensitivity and a thermal Monte Carlo; and NASA's
-  November 2026 solar-cycle prediction. 2.8.0 made the window calmer and
+- **Version:** 2.10.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.10.0),
+  [changelog](CHANGELOG.md)): mission operations planning: which targets each
+  spacecraft images and when, which passes send the data down, all within
+  its battery, memory, slews and the stations it shares; the plan flown
+  in the simulation and checked, exported as operations products, and
+  planned again when a pass is lost. 2.9.0 added spacecraft thermal
+  analysis on the 3D model and NASA's November 2026 solar-cycle
+  prediction. 2.8.0 made the window calmer and
   easier to read (a menu bar, a quieter Home and status bar, values as
   tables and notes as lists). 2.7.0 made
   **Results › 3D View** a real 3D renderer (the textured Earth lit by the Sun, the stars, the Moon, each
@@ -187,7 +190,7 @@ internet needed.
   relative-orbital-element formations, optical and landmark navigation,
   asteroid Eros, Mars's gravity field and albedo on the sun sensors; and
   1.0.0 was the first release of the renewed tool.
-- **Platforms:** 2.9.0 has the Linux `.deb`, the Windows setup program
+- **Platforms:** 2.10.0 has the Linux `.deb`, the Windows setup program
   and the wheel. Both installers carry their own Python, Basilisk and
   reference data; each was installed and run offline by the release
   workflow, the `.deb` also by hand in a container
