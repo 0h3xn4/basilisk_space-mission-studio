@@ -441,9 +441,10 @@ def _lose_context(qtbot, view):
 
 def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     """webglcontextlost stops drawing; webglcontextrestored makes a new
-    renderer for the same scene: the scene's objects, materials and
-    textures are the same objects (not loaded again), camera and frame
-    kept, and the overlay still shows the frame's time."""
+    renderer and keeps the same scene, camera, frame and time shown.
+
+    The scene is not loaded again: its objects, materials and textures
+    are the same objects after the recovery."""
     from spacemissionstudio.gui.mission_view_widget import MissionViewWidget
 
     view = MissionViewWidget()

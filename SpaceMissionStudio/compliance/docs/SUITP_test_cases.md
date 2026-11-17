@@ -383,7 +383,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_the_keyboard_works_in_the_window` | The window's first control has the focus, Tab moves on inside the window, and Ctrl+K opens the palette over the window. | - | integration |
 | `test_the_view_s_own_button_and_the_menu_command_move_it` | - | - | integration |
 | `test_a_theme_change_reaches_the_window` | The window takes the application's palette and style sheet: a switch restyles it at once, as the main window. | - | integration |
-| `test_the_3d_view_recovers_a_webgl_context_given_back` | webglcontextlost stops drawing; webglcontextrestored makes a new renderer and loads the same scene, camera and frame kept. | - | integration |
+| `test_the_3d_view_recovers_a_webgl_context_given_back` | webglcontextlost stops drawing; webglcontextrestored makes a new renderer and keeps the same scene, camera, frame and time shown. | - | integration |
 | `test_the_3d_view_recovers_a_webgl_context_never_given_back` | A context the browser does not give back: a new renderer of its own after RECOVER_AFTER_MS. | - | integration |
 | `test_budgets_in_its_own_window_counts_as_shown` | B-21 with the windows design's Q2: a detached Budgets area is shown. | - | integration |
 | `test_detach_and_attach_take_under_50_ms_on_the_gui_thread` | The view keeps its parent and becomes a window: no restyle of its widgets (a new parent took 50 to 70 ms for Budgets). | - | integration |
