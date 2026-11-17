@@ -17,13 +17,22 @@
 #
 """Run › Thermal: the thermal analysis of a run (``thermal.analysis``) for
 a spacecraft with a thermal model. **Solve** solves its cases on a
-background thread (seconds per case; sizing the heaters takes longer);
-the page then shows the summary per case with the margins, the
-temperatures with a node's operating and survival bands, a node's heat
-flows by kind, the orbit-average heat flows, the heaters and radiators,
-and the findings. Limit violations go to the Timeline. **Save...** writes
-the record, the tables and series (CSV) and the plots (SVG and PNG), each
-with its provenance."""
+background thread (seconds per case; sizing the heaters takes longer).
+The page then has a tab each (decision T-41) for the temperatures with a
+node's operating and survival bands, a node's heat flows by kind with the
+orbit-average heat flows, the summary per case with the margins, the
+heaters and radiators, the 3D model in its temperatures, the studies and
+the notes; the findings go to the Problems panel, with one line here.
+Limit violations go to the Timeline, and Results › 3D View can colour the
+spacecraft by a case's temperatures (``analysis_changed``). **Save...**
+writes the record, the tables and series (CSV) and the plots (SVG and
+PNG), each with its provenance.
+
+The plots on screen are made at their view's size and in the theme
+(decision T-40) by a worker (:class:`_PlotRenderer`), again when the view
+is resized (once the size holds still) and when the theme changes. The
+files keep the fixed 900 x 420 picture of T-31: ``temperature_svg`` and
+``flow_svg`` are that text, made when they are read."""
 
 from __future__ import annotations
 
@@ -32,30 +41,35 @@ from pathlib import Path
 from PySide6.QtCore import QByteArray, QRectF, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtSvgWidgets import QSvgWidget
 from PySide6.QtWidgets import (
     QCheckBox,
     QCompleter,
     QFileDialog,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QSlider,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from . import export_log
+from .budgets_area import EmptyState
 from .data_table import DataTable, Row
 from .feedback import report
-from .theme import set_role
+from .svg_plot import SvgPlotView, render_image, render_size
+from .theme import SPACE, current_theme, on_change, set_role
+from .theme.svg_plot_style import svg_plot_style
 from .value_sheet import NoteList
-from .widgets import ComboBox
+from .widgets import ComboBox, TabWidget
 
 _ALL_NODES = "All nodes"
-_PLOT_HEIGHT_PX = 380
+_MODEL_HEIGHT_PX = 240  # [px] the 3D model's least height (the page fits a 720 px window)
+#: The tabs, in their order (T-41).
+TABS = ("Temperatures", "Heat flows", "Summary", "Heaters and radiators", "3D model", "Studies", "Notes")
+_DRAWING = "Drawing the plot..."
 
 
 def _text(value) -> str:
@@ -90,6 +104,30 @@ def write_png(svg: str, path, scale: float = 2.0) -> Path:
     if not image.save(str(path), "PNG"):
         raise OSError(f"could not write {path}")
     return Path(path)
+
+
+def _section(title: str, content: QWidget, note: QWidget | None = None) -> QWidget:
+    """A titled part of a tab: its section title, then ``content``. A
+    surface, not a frame (no group box)."""
+    section = QWidget()
+    layout = QVBoxLayout(section)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(SPACE["sm"])
+    title_label = set_role(QLabel(title), role="section-title")
+    layout.addWidget(title_label)
+    if note is not None:
+        layout.addWidget(note)
+    layout.addWidget(content, 1)
+    section.title_label = title_label
+    return section
+
+
+def _page() -> tuple[QWidget, QVBoxLayout]:
+    page = QWidget()
+    layout = QVBoxLayout(page)
+    layout.setContentsMargins(0, SPACE["md"], 0, 0)
+    layout.setSpacing(SPACE["md"])
+    return page, layout
 
 
 class _ThermalWorker(QThread):
@@ -131,19 +169,64 @@ class _StudyWorker(QThread):
             self.failed.emit(str(exc))
 
 
+class _PlotRenderer(QThread):
+    """The screen copies of the plots shown (T-40), off the GUI thread:
+    each plot's SVG at its view's size in the theme's style, and its
+    picture (``svg_plot.render_image``)."""
+
+    rendered = Signal(int, object)  # the request's number, {"temperature": (svg, QImage), "flow": ... or None}
+    failed = Signal(int, str)
+
+    def __init__(self, number: int, case, node: str | None, sizes: dict, ratio: float, mode: str, parent=None):
+        super().__init__(parent)
+        self._number, self._case, self._node, self._sizes, self._ratio, self._mode = (number, case, node, sizes,
+                                                                                      ratio, mode)
+
+    def run(self) -> None:
+        from ..thermal import plots
+
+        try:
+            style = svg_plot_style(self._mode)
+            node = self._node
+            size = render_size(self._sizes["temperature"])
+            svg = plots.temperature_svg(self._case, [node] if node else None, node, size.width(), size.height(),
+                                        style=style)
+            pictures = {"temperature": (svg, render_image(svg, size, self._ratio, style["background"])),
+                        "flow": None}
+            if node:
+                size = render_size(self._sizes["flow"])
+                svg = plots.heat_flow_svg(self._case, node, size.width(), size.height(), style=style)
+                pictures["flow"] = (svg, render_image(svg, size, self._ratio, style["background"]))
+        except Exception as exc:  # noqa: BLE001 -- a plot that cannot be drawn says so; the analysis stays
+            self.failed.emit(self._number, str(exc))
+            return
+        self.rendered.emit(self._number, pictures)
+
+
 class ThermalWidget(QWidget):
     """Run › Thermal."""
 
     events_changed = Signal(list)  # the thermal limit events of the analysis shown (engine.events.Event)
     monte_carlo_saved = Signal(str)  # the folder a thermal Monte Carlo was saved in (the Monte Carlo view opens it)
+    analysis_changed = Signal(object, object)  # the analysis shown (or None) and the run's result it belongs to
+    problems_changed = Signal()  # problem_rows() changed
+    problems_requested = Signal()  # "Show in Problems": the main window shows the Problems panel
+    show_in_3d_view = Signal(str)  # a case to show on Results › 3D View
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self._scenario = self._result = self._base_dir = None
         self.analysis = None
         self._worker: _ThermalWorker | None = None
+        self._study_worker: _StudyWorker | None = None
+        self._plot_worker: _PlotRenderer | None = None
+        self._plot_number = 0  # the newest plot request; an older picture is dropped
+        self._plot_pending = False  # a request came while the worker was busy
+        self._export_cache: tuple = (None, "", "")  # (case and node, temperature SVG, heat-flow SVG) as the files
         layout = QVBoxLayout(self)
+        layout.setSpacing(SPACE["sm"])
         top = QHBoxLayout()
+        top.setSpacing(SPACE["sm"])
         top.addWidget(QLabel("Spacecraft"))
         self.spacecraft_combo = ComboBox()
         self.spacecraft_combo.currentTextChanged.connect(lambda _name: self._clear())
@@ -163,84 +246,211 @@ class ThermalWidget(QWidget):
         self.save_button.clicked.connect(self._save_clicked)
         top.addWidget(self.save_button)
         layout.addLayout(top)
+
+        status = QHBoxLayout()
+        status.setSpacing(SPACE["sm"])
         self.status_label = set_role(QLabel(""), tone="secondary")
         self.status_label.setWordWrap(True)
-        layout.addWidget(self.status_label)
-        self.findings_list = NoteList("finding")
-        layout.addWidget(self.findings_list)
+        self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        status.addWidget(self.status_label, 1)
+        self.findings_label = set_role(QLabel(""), tone="caution")
+        status.addWidget(self.findings_label)
+        self.problems_button = set_role(QPushButton("Show in Problems"), variant="ghost")
+        self.problems_button.setToolTip("The thermal findings (limit violations, shading, the checks) are in the "
+                                        "Problems panel")
+        self.problems_button.clicked.connect(self.problems_requested.emit)
+        status.addWidget(self.problems_button)
+        layout.addLayout(status)
 
-        self.summary_group = QGroupBox("Summary per case")
-        self.summary_table = DataTable()
-        QVBoxLayout(self.summary_group).addWidget(self.summary_table)
-        layout.addWidget(self.summary_group)
-
-        self.plot_group = QGroupBox("Temperatures and heat flows")
-        plot_layout = QVBoxLayout(self.plot_group)
-        choices = QHBoxLayout()
+        self.choices = QWidget()  # the case and node every tab shows
+        choices = QHBoxLayout(self.choices)
+        choices.setContentsMargins(0, 0, 0, 0)
+        choices.setSpacing(SPACE["sm"])
         choices.addWidget(QLabel("Case"))
         self.case_combo = ComboBox()
+        self.case_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.case_combo.setToolTip("The case the plots, the tables, the 3D model and the studies show")
         self.case_combo.currentTextChanged.connect(lambda _name: self._show_case())
         choices.addWidget(self.case_combo)
         choices.addWidget(QLabel("Node"))
         self.node_combo = ComboBox()
+        self.node_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
         self.node_combo.setToolTip("All nodes, or one with its operating and survival ranges and its heat flows")
         self.node_combo.currentTextChanged.connect(lambda _name: self._show_plots())
         choices.addWidget(self.node_combo)
         choices.addStretch(1)
         self.save_svg_button = QPushButton("Save SVG...")
+        self.save_svg_button.setToolTip("Save the temperature plot of the case and node shown as SVG (900 x 420, "
+                                        "with its provenance)")
         self.save_svg_button.clicked.connect(lambda: self._save_plot("svg"))
         self.save_png_button = QPushButton("Save PNG...")
+        self.save_png_button.setToolTip("Save the temperature plot of the case and node shown as PNG (900 x 420 at "
+                                        "twice the pixels, with its provenance)")
         self.save_png_button.clicked.connect(lambda: self._save_plot("png"))
         choices.addWidget(self.save_svg_button)
         choices.addWidget(self.save_png_button)
-        plot_layout.addLayout(choices)
-        self.temperature_plot = QSvgWidget()
-        self.temperature_plot.setMinimumHeight(_PLOT_HEIGHT_PX)
-        plot_layout.addWidget(self.temperature_plot)
-        self.flow_plot = QSvgWidget()
-        self.flow_plot.setMinimumHeight(_PLOT_HEIGHT_PX)
-        plot_layout.addWidget(self.flow_plot)
-        layout.addWidget(self.plot_group)
-        self.temperature_svg = self.flow_svg = ""
-        self._build_model_view(layout)
+        layout.addWidget(self.choices)
 
-        self.tables: dict[str, tuple[QGroupBox, DataTable]] = {}
-        for key, title in (("flows", "Orbit-average heat flows [W] (positive in)"), ("heaters", "Heaters"),
-                           ("radiators", "Radiators")):
-            group = QGroupBox(title)
-            table = DataTable()
-            QVBoxLayout(group).addWidget(table)
-            layout.addWidget(group)
-            self.tables[key] = (group, table)
-        self._build_studies(layout)
-        self.notes_list = NoteList("note")
-        layout.addWidget(self.notes_list)
-        layout.addStretch(1)
-        self._study_worker: _StudyWorker | None = None
+        self.stack = QStackedWidget()
+        self.empty_state = EmptyState("No thermal result")
+        self.stack.addWidget(self.empty_state)
+        self.tabs = TabWidget()
+        self.tabs.setObjectName("thermalViews")
+        self.stack.addWidget(self.tabs)
+        layout.addWidget(self.stack, 1)
+        self._build_temperatures()
+        self._build_heat_flows()
+        self._build_summary()
+        self._build_heaters()
+        self._build_model_view()
+        self._build_studies()
+        self._build_notes()
+        self.tabs.currentChanged.connect(self._on_tab)
+        on_change(self._on_theme_changed)
         self._clear()
+
+    # -- the tabs -----------------------------------------------------------------
+    def _build_temperatures(self) -> None:
+        page, layout = _page()
+        self.temperature_plot = SvgPlotView("Temperatures", _DRAWING)
+        self.temperature_plot.size_settled.connect(self._request_plots)
+        layout.addWidget(self.temperature_plot, 1)
+        self.temperature_page = page
+        self.tabs.addTab(page, TABS[0])
+
+    def _build_heat_flows(self) -> None:
+        page, layout = _page()
+        self.flow_plot = SvgPlotView("Heat flows", _DRAWING)
+        self.flow_plot.size_settled.connect(self._request_plots)
+        layout.addWidget(self.flow_plot, 3)
+        self.flow_empty = EmptyState("Pick a node", "The heat flows into one node, by kind: pick it in the Node list "
+                                     "above.")
+        layout.addWidget(self.flow_empty, 3)
+        self.tables: dict[str, tuple[QWidget, DataTable]] = {}
+        table = DataTable("No heat flow in this case.")
+        self.tables["flows"] = (_section("Orbit-average heat flows [W] (positive in)", table), table)
+        layout.addWidget(self.tables["flows"][0], 2)
+        self.flow_page = page
+        self.tabs.addTab(page, TABS[1])
+
+    def _build_summary(self) -> None:
+        page, layout = _page()
+        self.summary_table = DataTable("No case solved.")
+        self.summary_group = _section("Summary per case", self.summary_table)
+        layout.addWidget(self.summary_group, 1)
+        self.summary_page = page
+        self.tabs.addTab(page, TABS[2])
+
+    def _build_heaters(self) -> None:
+        page, layout = _page()
+        for key, title in (("heaters", "Heaters"), ("radiators", "Radiators")):
+            table = DataTable(f"No {key} in this case.")
+            self.tables[key] = (_section(title, table), table)
+            layout.addWidget(self.tables[key][0], 1)
+        self.heaters_empty = EmptyState("No heaters or radiators",
+                                        "The thermal model has no heater and no face marked as a radiator (Spacecraft "
+                                        "› 3D model › Thermal model).")
+        layout.addWidget(self.heaters_empty, 1)
+        self.heaters_page = page
+        self.tabs.addTab(page, TABS[3])
 
     _COLOUR_MODES = ("Hottest over the run", "Coldest over the run", "Mean over the run", "At a time")
 
-    def _build_model_view(self, layout) -> None:
+    def _build_model_view(self) -> None:
         """The 3D model coloured by temperature (thermal Phase 2): each part
-        in its node's colour, for the case shown. The web view is made when
-        an analysis is first shown."""
-        self.model_group = QGroupBox("Temperatures on the 3D model")
+        in its node's colour, for the case shown. Its web view is made the
+        first time the tab is shown."""
+        page, layout = _page()
+        self.model_group = QWidget()  # the tab's content (the name of 2.11.0's group)
         model_layout = QVBoxLayout(self.model_group)
+        model_layout.setContentsMargins(0, 0, 0, 0)
+        model_layout.setSpacing(SPACE["sm"])
         row = QHBoxLayout()
+        row.setSpacing(SPACE["sm"])
         self.colour_combo = ComboBox()
         self.colour_combo.addItems(self._COLOUR_MODES)
+        self.colour_combo.setToolTip("Which temperature of each node colours its parts")
         self.colour_combo.currentTextChanged.connect(lambda _text: self._show_model_colours())
         row.addWidget(self.colour_combo)
         self.time_slider = QSlider(Qt.Orientation.Horizontal)
         self.time_slider.setToolTip("The time shown, with 'At a time'")
         self.time_slider.valueChanged.connect(lambda _value: self._show_model_colours())
         row.addWidget(self.time_slider, 1)
-        self.time_label = set_role(QLabel(""), tone="secondary")
+        self.time_label = set_role(QLabel(""), role="mono")
         row.addWidget(self.time_label)
+        self.view_3d_button = QPushButton("Show on 3D View")
+        self.view_3d_button.setToolTip("Colour the spacecraft on Results › 3D View by this case's temperatures, as "
+                                       "the run plays back")
+        self.view_3d_button.clicked.connect(lambda: self.show_in_3d_view.emit(self.case_combo.currentText()))
+        row.addWidget(self.view_3d_button)
         model_layout.addLayout(row)
-        self.model_view = None  # gui.model_view_widget.ModelViewWidget, made when first needed
-        layout.addWidget(self.model_group)
+        self.model_view = None  # gui.model_view_widget.ModelViewWidget, made when the tab is first shown
+        layout.addWidget(self.model_group, 1)
+        self.model_page = page
+        self.tabs.addTab(page, TABS[4])
+
+    def _build_studies(self) -> None:
+        """Sweeps, sensitivity and the thermal Monte Carlo of the case shown
+        (thermal.sweeps, T-36): solved on the same fluxes, no new run."""
+        page, layout = _page()
+        self.studies_group = QWidget()
+        studies = QVBoxLayout(self.studies_group)
+        studies.setContentsMargins(0, 0, 0, 0)
+        studies.setSpacing(SPACE["sm"])
+        row = QHBoxLayout()
+        row.setSpacing(SPACE["sm"])
+        row.addWidget(QLabel("Parameter"))
+        self.sweep_path = QLineEdit()
+        self.sweep_path.setPlaceholderText("faces[radiator].absorptance")
+        self.sweep_path.setToolTip("A parameter of the thermal model by its path, as in a case's overrides")
+        row.addWidget(self.sweep_path, 2)
+        row.addWidget(QLabel("Values"))
+        self.sweep_values = QLineEdit()
+        self.sweep_values.setPlaceholderText("0.1, 0.2, 0.3")
+        row.addWidget(self.sweep_values, 1)
+        self.sweep_button = QPushButton("Sweep")
+        self.sweep_button.setToolTip("Solve the case at each value")
+        self.sweep_button.clicked.connect(self.run_sweep)
+        row.addWidget(self.sweep_button)
+        studies.addLayout(row)
+        row = QHBoxLayout()
+        row.setSpacing(SPACE["sm"])
+        self.sensitivity_button = QPushButton("Sensitivity")
+        self.sensitivity_button.setToolTip("Move each optic, conductance, dissipation, heater power, the sunlight and "
+                                           "the infrared 10 % up and down, one at a time, and rank their effect")
+        self.sensitivity_button.clicked.connect(self.run_sensitivity)
+        row.addWidget(self.sensitivity_button)
+        self.monte_carlo_button = QPushButton("Monte Carlo...")
+        self.monte_carlo_button.setToolTip("Run the thermal model's Monte Carlo (its monte_carlo section) and show "
+                                           "it in the Monte Carlo view")
+        self.monte_carlo_button.clicked.connect(self._monte_carlo_clicked)
+        row.addWidget(self.monte_carlo_button)
+        row.addStretch(1)
+        studies.addLayout(row)
+        self.study_label = set_role(QLabel(""), tone="secondary")
+        self.study_label.setWordWrap(True)
+        studies.addWidget(self.study_label)
+        self.study_table = DataTable("No study yet.")
+        studies.addWidget(self.study_table, 1)
+        self.study_empty = EmptyState("No study yet", "Sweep a parameter, rank the parameters by their effect, or "
+                                      "run the thermal Monte Carlo of the case shown.")
+        studies.addWidget(self.study_empty, 1)
+        self._show_study_table(False)
+        layout.addWidget(self.studies_group, 1)
+        self.studies_page = page
+        self.tabs.addTab(page, TABS[5])
+
+    def _build_notes(self) -> None:
+        page, layout = _page()
+        self.notes_list = NoteList("note", empty="No notes.")
+        layout.addWidget(self.notes_list)
+        layout.addStretch(1)
+        self.notes_page = page
+        self.tabs.addTab(page, TABS[6])
+
+    def _on_tab(self, _index: int) -> None:
+        if self.tabs.currentWidget() is self.model_page:
+            self._show_model_colours()
 
     def part_temperatures(self) -> dict:
         """``{part: degC}`` for the case shown, by the colour mode: each part
@@ -260,59 +470,22 @@ class ThermalWidget(QWidget):
 
     def _show_model_colours(self) -> None:
         case = self._case()
-        if case is None or not self.model_group.isVisibleTo(self):
-            return
         at_time = self.colour_combo.currentText() == self._COLOUR_MODES[3]
-        self.time_slider.setEnabled(at_time)
+        self.time_slider.setEnabled(at_time and case is not None)
+        if case is None:
+            self.time_label.setText("")
+            return
         index = min(self.time_slider.value(), len(case.time_s) - 1)
         self.time_label.setText(f"{case.time_s[index] / 3600.0:.2f} h" if at_time else "")
+        if self.tabs.currentWidget() is not self.model_page:
+            return  # drawn when the tab is shown: the web view is made only then
         if self.model_view is None:
             from .model_view_widget import ModelViewWidget
 
             self.model_view = ModelViewWidget()
-            self.model_view.setMinimumHeight(_PLOT_HEIGHT_PX)
-            self.model_group.layout().addWidget(self.model_view)
+            self.model_view.setMinimumHeight(_MODEL_HEIGHT_PX)
+            self.model_group.layout().addWidget(self.model_view, 1)
         self.model_view.show_model(self.analysis.prepared.geometry.derived, temperatures=self.part_temperatures())
-
-    def _build_studies(self, layout) -> None:
-        """Sweeps, sensitivity and the thermal Monte Carlo of the case shown
-        (thermal.sweeps, T-36): solved on the same fluxes, no new run."""
-        self.studies_group = QGroupBox("Studies on the case shown")
-        studies = QVBoxLayout(self.studies_group)
-        row = QHBoxLayout()
-        row.addWidget(QLabel("Parameter"))
-        self.sweep_path = QLineEdit()
-        self.sweep_path.setPlaceholderText("faces[radiator].absorptance")
-        self.sweep_path.setToolTip("A parameter of the thermal model by its path, as in a case's overrides")
-        row.addWidget(self.sweep_path, 2)
-        row.addWidget(QLabel("Values"))
-        self.sweep_values = QLineEdit()
-        self.sweep_values.setPlaceholderText("0.1, 0.2, 0.3")
-        row.addWidget(self.sweep_values, 1)
-        self.sweep_button = QPushButton("Sweep")
-        self.sweep_button.setToolTip("Solve the case at each value")
-        self.sweep_button.clicked.connect(self.run_sweep)
-        row.addWidget(self.sweep_button)
-        studies.addLayout(row)
-        row = QHBoxLayout()
-        self.sensitivity_button = QPushButton("Sensitivity")
-        self.sensitivity_button.setToolTip("Move each optic, conductance, dissipation, heater power, the sunlight and "
-                                           "the infrared 10 % up and down, one at a time, and rank their effect")
-        self.sensitivity_button.clicked.connect(self.run_sensitivity)
-        row.addWidget(self.sensitivity_button)
-        self.monte_carlo_button = QPushButton("Monte Carlo...")
-        self.monte_carlo_button.setToolTip("Run the thermal model's Monte Carlo (its monte_carlo section) and show "
-                                           "it in the Monte Carlo view")
-        self.monte_carlo_button.clicked.connect(self._monte_carlo_clicked)
-        row.addWidget(self.monte_carlo_button)
-        row.addStretch(1)
-        studies.addLayout(row)
-        self.study_label = set_role(QLabel(""), tone="secondary")
-        self.study_label.setWordWrap(True)
-        studies.addWidget(self.study_label)
-        self.study_table = DataTable()
-        studies.addWidget(self.study_table)
-        layout.addWidget(self.studies_group)
 
     @staticmethod
     def has_thermal(scenario) -> bool:
@@ -329,19 +502,37 @@ class ThermalWidget(QWidget):
         self._clear()
 
     def _clear(self) -> None:
+        had = self.analysis is not None
         self.analysis = None
+        self._export_cache = (None, "", "")
+        self._plot_number += 1  # a picture still being made is not wanted
         ready = self._result is not None and self.spacecraft_combo.count() > 0
         self.status_label.setText("Press Solve to solve the thermal cases on this run." if ready else
                                   "Run a scenario whose spacecraft has a thermal model (Spacecraft › 3D model › "
                                   "Thermal model) to solve it here.")
-        for widget in (self.summary_group, self.plot_group, self.studies_group, self.model_group,
-                       *(group for group, _table in self.tables.values())):
-            widget.setVisible(False)
-        self.findings_list.set_notes([])
+        if ready:
+            self.empty_state.set_text("No thermal result", "Press Solve to solve the thermal cases of "
+                                      f"{self.spacecraft_combo.currentText()} on this run.")
+        else:
+            self.empty_state.set_text("No thermal result", "Run a scenario whose spacecraft has a thermal model "
+                                      "(Spacecraft › 3D model › Thermal model), then solve it here.")
+        self.stack.setCurrentWidget(self.empty_state)
+        self.choices.setVisible(False)
+        for group, _table in self.tables.values():
+            group.setVisible(False)
+        self.temperature_plot.clear()
+        self.flow_plot.clear()
+        self.flow_plot.setVisible(False)
+        self.flow_empty.setVisible(True)
+        self.findings_label.setVisible(False)
+        self.problems_button.setVisible(False)
         self.notes_list.set_notes([])
         self.save_button.setEnabled(False)
         self.solve_button.setEnabled(ready and self._worker is None)
         self.events_changed.emit([])
+        if had:
+            self.problems_changed.emit()
+        self.analysis_changed.emit(None, None)
 
     # -- solving ------------------------------------------------------------
 
@@ -360,7 +551,7 @@ class ThermalWidget(QWidget):
         self._worker.start()
 
     def wait_for_worker(self, timeout_ms: int = 300000) -> None:
-        for worker in (self._worker, self._study_worker):
+        for worker in (self._worker, self._study_worker, self._plot_worker):
             if worker is not None:
                 worker.wait(timeout_ms)
 
@@ -407,13 +598,17 @@ class ThermalWidget(QWidget):
         self._study(f"Sweeping {path}...", lambda: sweeps.sweep(prepared, case, path, values),
                     lambda points: self._show_sweep(path, case.name, points))
 
+    def _show_study_table(self, shown: bool) -> None:
+        self.study_table.setVisible(shown)
+        self.study_empty.setVisible(not shown)
+
     def _show_sweep(self, path: str, case: str, points) -> None:
         nodes = [n.name for n in points[0].summary]
         rows = [{"value": p.value, **{f"{n.name} min_c": n.min_c for n in p.summary},
                  **{f"{n.name} max_c": n.max_c for n in p.summary}} for p in points]
         columns = ["value"] + [f"{n} {e}_c" for n in nodes for e in ("min", "max")]
         self._fill(self.study_table, [{c: r[c] for c in columns} for r in rows])
-        self.study_table.setVisible(True)
+        self._show_study_table(True)
         self.study_label.setText(f"Sweep of {path} in the {case} case: each node's extremes at each value.")
 
     def run_sensitivity(self) -> None:
@@ -433,7 +628,7 @@ class ThermalWidget(QWidget):
                           "largest change_k": row.largest_k, "node": node, "min change_k": d_min,
                           "max change_k": d_max, "mean change_k": d_mean})
         self._fill(self.study_table, table)
-        self.study_table.setVisible(bool(table))
+        self._show_study_table(bool(table))
         left_out = f" Left out: {'; '.join(notes)}." if notes else ""
         self.study_label.setText(f"Sensitivity in the {case} case: each parameter 10 % up and down (optics kept "
                                  f"within 0 to 1), the change between the two, largest first.{left_out}")
@@ -477,6 +672,7 @@ class ThermalWidget(QWidget):
         from ..thermal import records
 
         self.analysis = analysis
+        self._export_cache = (None, "", "")
         cases = analysis.cases
         solved = [f"{c.name}: periodic after {c.solution.periodic.orbits} orbits"
                   if c.solution.periodic is not None else f"{c.name}: from the initial temperatures" for c in cases]
@@ -485,8 +681,10 @@ class ThermalWidget(QWidget):
                                   f"{float(env.beta_deg.min()):.1f} to {float(env.beta_deg.max()):.1f} deg.")
         tables = records.tables(analysis)
         self._fill(self.summary_table, tables["thermal_summary"])
-        self.summary_group.setVisible(True)
-        self.findings_list.set_notes(analysis.findings())
+        findings = analysis.findings()
+        self.findings_label.setText(f"{len(findings)} finding{'' if len(findings) == 1 else 's'}")
+        self.findings_label.setVisible(bool(findings))
+        self.problems_button.setVisible(bool(findings))
         notes = [f"{c.name}: {note}" for c in cases for note in c.notes]
         notes += [f"{c.name}: energy balance closes to {abs(c.solution.energy_residual_j):.3g} J of "
                   f"{c.solution.energy_throughput_j:.3g} J; half the step changes it by "
@@ -496,10 +694,9 @@ class ThermalWidget(QWidget):
         self.case_combo.clear()
         self.case_combo.addItems([c.name for c in cases])
         self.case_combo.blockSignals(False)
-        self.plot_group.setVisible(bool(cases))
-        self.studies_group.setVisible(bool(cases))
-        self.model_group.setVisible(bool(cases))
-        self.study_table.setVisible(False)
+        self.choices.setVisible(bool(cases))
+        self.stack.setCurrentWidget(self.tabs if cases else self.empty_state)
+        self._show_study_table(False)
         self.study_label.setText("")
         from ..thermal import sweeps
 
@@ -508,6 +705,16 @@ class ThermalWidget(QWidget):
         self.save_button.setEnabled(True)
         self._show_case()
         self.events_changed.emit(analysis.events())
+        self.problems_changed.emit()
+        self.analysis_changed.emit(analysis, self._result)
+
+    def problem_rows(self) -> list:
+        """The findings of the analysis shown as Problems rows ``(severity,
+        text, shown text)``: limit violations, the shading warning, a start
+        that did not converge, a step that is too long."""
+        if self.analysis is None:
+            return []
+        return [("warning", str(finding), str(finding)) for finding in self.analysis.findings()]
 
     def _case(self):
         if self.analysis is None or not self.case_combo.currentText():
@@ -537,30 +744,99 @@ class ThermalWidget(QWidget):
             group.setVisible(bool(rows))
             if rows:
                 self._fill(table, [{k: v for k, v in r.items() if k != "case"} for r in rows])
+        self.heaters_empty.setVisible(self.tables["heaters"][0].isHidden() and self.tables["radiators"][0].isHidden())
         self._show_plots()
         self._show_model_colours()
 
-    def _show_plots(self) -> None:
-        from ..thermal import plots
+    def _node(self, case) -> str | None:
+        node = self.node_combo.currentText()
+        return node if node in case.network.names else None
 
+    def _show_plots(self) -> None:
         case = self._case()
         if case is None:
             return
-        node = self.node_combo.currentText()
-        node = node if node in case.network.names else None
-        self.temperature_svg = plots.temperature_svg(case, [node] if node else None, node)
-        self.temperature_plot.load(QByteArray(self.temperature_svg.encode("utf-8")))
-        self.flow_svg = plots.heat_flow_svg(case, node) if node else ""
+        node = self._node(case)
         self.flow_plot.setVisible(bool(node))
-        if node:
-            self.flow_plot.load(QByteArray(self.flow_svg.encode("utf-8")))
+        self.flow_empty.setVisible(not node)
+        self._request_plots()
+
+    # -- the plots: the files' text, and the screen's pictures (T-40) ---------------
+
+    def _exported(self) -> tuple[str, str]:
+        """The plots shown as the files have them (T-31's defaults), made
+        once per case and node."""
+        case = self._case()
+        if case is None:
+            return "", ""
+        node = self._node(case)
+        key = (id(case), node)
+        if self._export_cache[0] != key:
+            from ..thermal import plots
+
+            self._export_cache = (key, plots.temperature_svg(case, [node] if node else None, node),
+                                  plots.heat_flow_svg(case, node) if node else "")
+        return self._export_cache[1], self._export_cache[2]
+
+    @property
+    def temperature_svg(self) -> str:
+        """The temperature plot shown, as Save SVG writes it ("" without one)."""
+        return self._exported()[0]
+
+    @property
+    def flow_svg(self) -> str:
+        """The heat-flow plot of the node shown, as the files have it ("" for all nodes)."""
+        return self._exported()[1]
+
+    def _request_plots(self) -> None:
+        """Make the screen's pictures of the case and node shown, at the
+        views' sizes and in the theme, in the worker; one request at a
+        time, the newest wins."""
+        case = self._case()
+        if case is None:
+            return
+        self._plot_number += 1
+        self.temperature_plot.waiting = _DRAWING
+        if self._plot_worker is not None:
+            self._plot_pending = True
+            return
+        sizes = {"temperature": self.temperature_plot.size(), "flow": self.flow_plot.size()}
+        worker = _PlotRenderer(self._plot_number, case, self._node(case), sizes, self.devicePixelRatioF(),
+                               current_theme(), self)
+        worker.rendered.connect(self._on_rendered)
+        worker.failed.connect(self._on_render_failed)
+        worker.finished.connect(lambda w=worker: self._plot_done(w))
+        self._plot_worker = worker
+        worker.start()
+
+    def _plot_done(self, worker) -> None:
+        if self._plot_worker is worker:
+            self._plot_worker = None
+        worker.deleteLater()
+        if self._plot_pending:
+            self._plot_pending = False
+            self._request_plots()
+
+    def _on_rendered(self, number: int, pictures: dict) -> None:
+        if number != self._plot_number or self.analysis is None:
+            return  # an older request's, or the analysis is gone
+        self.temperature_plot.set_image(*pictures["temperature"])
+        if pictures["flow"] is not None:
+            self.flow_plot.set_image(*pictures["flow"])
+
+    def _on_render_failed(self, number: int, message: str) -> None:
+        if number == self._plot_number:
+            self.temperature_plot.waiting = f"The plot could not be drawn: {message}"
+            self.temperature_plot.clear()
+
+    def _on_theme_changed(self, _mode: str) -> None:
+        self._request_plots()
 
     @staticmethod
     def _fill(table: DataTable, rows: list[dict]) -> None:
         columns = list(rows[0]) if rows else []
         table.set_table([heading(c) for c in columns], [Row(tuple(_text(r.get(c)) for c in columns)) for r in rows],
                         numeric=range(1, len(columns)), stretch=0)
-        table.fit_rows()
 
     # -- saving -------------------------------------------------------------
 

@@ -14,6 +14,8 @@
  *   MV.setToggle(name, on)  paths, trails, axes, headings, cones, stations, labels, stars, groundTrack
  *   MV.setQuality(q)        'full' or 'reduced' (2k textures, no atmosphere, pixel ratio 1)
  *   MV.setPlayback(p)       {speed: text, playing: bool} for the overlay
+ *   MV.setTemperatures(t)   a spacecraft's parts in a thermal case's colours, frame by frame
+ *                           (mission_view_widget.temperature_frames), or null for the model's own
  *   MV.state()              what is drawn, for the tests
  *
  * Positions are kilometres in the run's inertial frame N (x, y, z of
@@ -34,6 +36,7 @@ const MV = {
             stars: true, groundTrack: false},
   loaded: {earth: '', stars: ''}, textures: {}, playback: {speed: '', playing: false}, live: false,
   crafts: [], stations: [], links: [], labels: [], lastRotation: 0, rendererName: '', software: false,
+  temperatures: null,
 };
 // No graphics card: start in reduced quality. Chromium's SwiftShader,
 // Mesa's llvmpipe/softpipe, Windows' WARP ("Microsoft Basic Render Driver").
@@ -326,6 +329,7 @@ MV.load = function (d, options) {
     lastRotation: MV.lastRotation} : null;
   MV.clearScene();
   MV.data = d;
+  MV.temperatures = null;  // the widget sends them again for this scene
   const body = d.body;
   if (body.radius > 0) {
     const earth = body.earth;
@@ -535,7 +539,8 @@ MV.buildCraft = function (c, n) {
   }
   const craft = {data: c, group: group, body: body, headings: headings, mesh: mesh, axes: axes, cones: cones,
                  sunArrow: sunArrow, nadirArrow: nadirArrow, velocityArrow: velocityArrow, path: path, trail: trail,
-                 trailLength: trailLength, track: track, pathOrigin: null, trackBuilt: 0, trackDirty: false};
+                 trailLength: trailLength, track: track, pathOrigin: null, trackBuilt: 0, trackDirty: false,
+                 painted: null};
   MV.addLabel(c.name, function () { return MV.craftColour(n); }, function () {
     const p = c.pos[MV.frame];
     return [p[0] - MV.origin[0], p[1] - MV.origin[1], p[2] - MV.origin[2]];
@@ -595,7 +600,59 @@ MV.rotation = function () {
 MV.setFrame = function (frame) {
   if (!MV.data) return;
   MV.frame = Math.max(0, Math.min(frame, MV.data.times.length - 1));
+  MV.paintTemperatures();
   MV.dirty = true;
+};
+
+// sRGB (0 to 255) to linear light, as the vertex colours take them.
+const SRGB_TO_LINEAR = (function () {
+  const table = new Float32Array(256);
+  for (let k = 0; k < 256; k++) {
+    const v = k / 255;
+    table[k] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  }
+  return table;
+}());
+
+// A thermal case's colours (t.colours[frame][3 * node + rgb], sRGB) on
+// the parts of spacecraft t.craft (t.triangles: each triangle's node, -1
+// for none, drawn in t.none); null puts back every model's own colours.
+MV.setTemperatures = function (t) {
+  MV.temperatures = t && MV.data && t.craft < MV.crafts.length ? t : null;
+  MV.crafts.forEach(function (c) { c.painted = undefined; });
+  MV.paintTemperatures();
+  MV.dirty = true;
+  return MV.temperatures !== null;
+};
+
+MV.paintTemperatures = function () {
+  const t = MV.temperatures;
+  MV.crafts.forEach(function (c, n) {
+    const attribute = c.mesh.geometry.getAttribute('color'), a = attribute.array;
+    if (!t || t.craft !== n) {
+      if (c.painted !== null) {  // back to the model's own colours
+        a.set(c.data.mesh.c);
+        attribute.needsUpdate = true;
+        c.painted = null;
+      }
+      return;
+    }
+    const frame = Math.min(MV.frame, t.colours.length - 1);
+    if (c.painted === frame) return;
+    const row = t.colours[frame];
+    for (let i = 0; i < t.triangles.length; i++) {
+      const k = t.triangles[i], rgb = k < 0 ? t.none : [row[3 * k], row[3 * k + 1], row[3 * k + 2]];
+      const r = SRGB_TO_LINEAR[rgb[0]], g = SRGB_TO_LINEAR[rgb[1]], b = SRGB_TO_LINEAR[rgb[2]];
+      for (let v = 0; v < 3; v++) {
+        const j = 9 * i + 3 * v;
+        a[j] = r;
+        a[j + 1] = g;
+        a[j + 2] = b;
+      }
+    }
+    attribute.needsUpdate = true;
+    c.painted = frame;
+  });
 };
 
 MV.scaleFor = function (c) {
@@ -929,6 +986,7 @@ MV.append = function (f) {
   });
   d.extent = Math.max(d.extent, f.extent);
   if (f.follow) MV.frame = d.times.length - 1;
+  MV.paintTemperatures();
   MV.dirty = true;
   return d.times.length;
 };
@@ -986,7 +1044,8 @@ MV.state = function () {
     return {world: world.toArray(), scale: c.group.scale.x, axes: c.axes[0].visible, xAxis: x.toArray(),
             path: c.path.visible, trail: c.trail.visible, headings: c.nadirArrow.visible,
             cones: c.cones.map(function (k) { return k.visible; }), track: c.track ? c.track.visible : null,
-            colour: '#' + c.trail.material.color.getHexString(THREE.SRGBColorSpace)};
+            colour: '#' + c.trail.material.color.getHexString(THREE.SRGBColorSpace),
+            meshColour: Array.from(c.mesh.geometry.getAttribute('color').array.slice(0, 3)), painted: c.painted};
   });
   const earth = MV.body && MV.body.material.map ? MV.body.material.map.image : null;
   return {
@@ -1008,6 +1067,8 @@ MV.state = function () {
     rendererName: MV.rendererName, times: d ? [d.times[0], d.times[d.times.length - 1]] : null,
     pathPoints: MV.crafts.map(function (c) { return c.path.geometry.drawRange.count; }),
     trackPoints: MV.crafts.map(function (c) { return c.data.track ? c.data.track.length : null; }),
+    temperatures: MV.temperatures ? {craft: MV.temperatures.craft, case: MV.temperatures.case,
+                                     frames: MV.temperatures.colours.length} : null,
   };
 };
 

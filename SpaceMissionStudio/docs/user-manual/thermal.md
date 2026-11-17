@@ -104,21 +104,28 @@ beta range.
 2. **Run › Thermal**, pick the spacecraft, press **Solve**. Each case
    takes seconds; sizing the heaters takes longer (untick **Size the
    heaters** to skip it).
-3. Read:
-   - the status line: how many orbits each case needed to repeat itself;
-   - the findings: limit violations, the shading warning, a start that
-     did not converge, a step that is too long;
-   - **Summary per case**: each node's minimum, maximum and mean, and its
-     margins to the operating range;
-   - the plot of the temperatures: pick a **Node** to see it alone with
-     its operating (green) and survival (orange) bands, and its heat flows
-     by kind below;
-   - **Orbit-average heat flows** (positive into the node), **Heaters**
-     (duty, energy, orbit-average and sized power) and **Radiators**
-     (heat rejected);
-   - the notes: where each case's values come from, the energy balance
-     and the step check.
-4. A node outside its range appears on the **Timeline** as a `thermal
+3. Read the status line: how many orbits each case needed to repeat
+   itself, and the run's beta angle. The findings (limit violations, the
+   shading warning, a start that did not converge, a step that is too
+   long) are in the **Problems** panel; the page says how many there are,
+   and **Show in Problems** opens the panel.
+4. Pick the **Case** and the **Node** above the tabs; every tab shows
+   them. **Save SVG...** and **Save PNG...** beside them save the
+   temperature plot at 900 x 420 on white, as before. The tabs:
+   - **Temperatures**: every node, or the node picked with its operating
+     band (green) and survival band (amber), each named in the legend.
+     The plot fills the tab at any window size and follows the light or
+     dark theme;
+   - **Heat flows**: the node's heat flows by kind (pick a node first),
+     over the **Orbit-average heat flows** of every node (positive into
+     the node);
+   - **Summary**: each node's minimum, maximum and mean in each case, and
+     its margins to the operating range;
+   - **Heaters and radiators**: the heaters' duty, energy, orbit-average
+     and sized power, and the heat the radiators reject;
+   - **3D model**, **Studies** and **Notes** (where each case's values
+     come from, the energy balance and the step check): see below.
+5. A node outside its range appears on the **Timeline** as a `thermal
    limit` event (the **Thermal limits** box).
 
 **Sized power** is the least constant heater power that holds the node at
@@ -145,11 +152,33 @@ override its absorptance in a case.
 
 ## Colour the 3D model by temperature
 
-Under **Temperatures on the 3D model** on the Thermal page, each part
-takes its node's colour: blue is cold, red is warm. Pick **Hottest over
-the run**, **Coldest over the run**, **Mean over the run**, or **At a
-time** and move the slider. Parts without a node are grey. Flexible
-arrays are not drawn in the 3D model, so they do not appear there.
+On the Thermal page's **3D model** tab, each part takes its node's
+colour: blue is cold, red is warm. Pick **Hottest over the run**,
+**Coldest over the run**, **Mean over the run**, or **At a time** and
+move the slider. Parts without a node are grey. Flexible arrays are not
+drawn in the 3D model, so they do not appear there.
+
+## See the temperatures as the run plays back
+
+**Results › 3D View** can colour the spacecraft by a case's temperatures
+while it plays the run back:
+
+1. Solve the run on **Run › Thermal**.
+2. On **Results › 3D View**, open the **Colours** list (beside the
+   speed) and pick **Temperature: <case>**. Or press **Show on 3D View**
+   on the Thermal page's **3D model** tab: it opens the 3D View with the
+   case shown there.
+3. Play the run, drag the slider, or click a plot or the Timeline. Each
+   part takes its node's temperature at that moment, on the same scale
+   as the 3D model tab: blue is cold, red is warm, grey is a part in no
+   node. The colour bar in the view's top right corner gives the case,
+   the coldest and the hottest temperature in °C; the scale stays the
+   same for the whole case.
+4. **Model colours** puts the model's own colours back.
+
+The list offers the cases only when the thermal result belongs to the
+run the 3D View shows. A run shown while it runs has no temperatures:
+the thermal analysis runs after the run.
 
 ## Study the case: sweeps, sensitivity, Monte Carlo
 

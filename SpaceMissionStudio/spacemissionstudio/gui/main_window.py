@@ -333,11 +333,11 @@ class MainWindow(QMainWindow):
         design_scroll = QScrollArea()
         design_scroll.setWidgetResizable(True)
         design_scroll.setWidget(self.design_checks_widget)
-        self.thermal_scroll = QScrollArea()
-        self.thermal_scroll.setWidgetResizable(True)
-        self.thermal_scroll.setWidget(self.thermal_widget)
+        # Run › Thermal's tabs fit the window: no scroll area around it (T-41).
         self.thermal_widget.events_changed.connect(self.event_timeline_widget.set_extra_events)
         self.thermal_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
+        self.thermal_widget.problems_changed.connect(self._on_plan_problems_changed)
+        self.thermal_widget.problems_requested.connect(self.show_problems)
         self.plan_scroll = QScrollArea()
         self.plan_scroll.setWidgetResizable(True)
         self.plan_scroll.setWidget(self.plan_widget)
@@ -363,6 +363,9 @@ class MainWindow(QMainWindow):
         self.mission_view_widget = MissionViewWidget()
         self.mission_view_widget.set_time_cursor(self.time_cursor)
         self.results_views.addTab(self.mission_view_widget, "3D View")
+        # The thermal result of the run shown colours the spacecraft on the 3D View (T-42).
+        self.thermal_widget.analysis_changed.connect(self.mission_view_widget.set_thermal)
+        self.thermal_widget.show_in_3d_view.connect(self._show_thermal_in_3d_view)
         self.results_views.addTab(self.mission_dashboard_widget, "Dashboard")
         self.results_views.addTab(self.mission_output_widget, "Output")
         # Added and removed as needed (_update_monte_carlo_tab), never kept
@@ -413,7 +416,7 @@ class MainWindow(QMainWindow):
         self.run_views.addTab(self.run_page, "Run")
         self.run_views.addTab(lifetime_scroll, "End of Life")
         self.run_views.addTab(design_scroll, "Design Checks")
-        self.run_views.addTab(self.thermal_scroll, "Thermal")
+        self.run_views.addTab(self.thermal_widget, "Thermal")
         self.run_views.addTab(self.plan_scroll, "Plan")
         self.run_views.addTab(self.history_view, "History")
         self.run_views.addTab(self.log_widget, "Log")
@@ -1240,7 +1243,7 @@ class MainWindow(QMainWindow):
         views = {"events_csv": self.event_timeline_widget, "output_csv": self.mission_output_widget,
                  "monte_carlo_csv": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
                  "design_checks": self.design_checks_widget, "reentry_json": self.lifetime_widget,
-                 "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_scroll,
+                 "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_widget,
                  "plan": self.plan_scroll, "operations": self.plan_scroll, "operations_robustness": self.plan_scroll,
                  "fsw_project": self.flight_software_widget, "sil_report": self.flight_software_widget}
         self.show_view(views.get(key, self.results_widget))  # the plot exports: Results › Plots
@@ -1348,12 +1351,16 @@ class MainWindow(QMainWindow):
         else:
             plan = getattr(self, "plan_widget", None)  # made after the editor, which reports at once
             rows = list(rows) + (plan.problem_rows() if plan is not None else [])  # its unplaced requests, flags
+            thermal = getattr(self, "thermal_widget", None)
+            shown = {row[1] for row in rows}  # the scenario checks can name a finding already (shading)
+            rows += [row for row in (thermal.problem_rows() if thermal is not None else []) if row[1] not in shown]
         editor = self.scenario_editor
         self.problems_widget.set_problems(rows, [c.name for c in editor.spacecraft_list.to_list()],
                                           [g.name for g in editor.ground_station_list.to_list()])
 
     def _on_plan_problems_changed(self) -> None:
-        """Run › Plan's warnings changed: the Problems panel lists them with the editor's."""
+        """Run › Plan's warnings or Run › Thermal's findings changed: the
+        Problems panel lists them with the editor's."""
         self._on_problems_changed(self.scenario_editor.problem_rows())
 
     def _on_problem_counts(self, errors: int, warnings: int) -> None:
@@ -1722,6 +1729,11 @@ class MainWindow(QMainWindow):
                 self.results_views.addTab(self.model_analyses_scroll, "Model Analyses")
         elif index >= 0:
             self.results_views.removeTab(index)
+
+    def _show_thermal_in_3d_view(self, case: str) -> None:
+        """Run › Thermal's "Show on 3D View": the 3D View, coloured by ``case``."""
+        self.mission_view_widget.show_temperatures(case)
+        self.show_view(self.mission_view_widget)
 
     def _show_thermal_monte_carlo(self, folder: str) -> None:
         """A thermal Monte Carlo saved from Run › Thermal: shown in the Monte Carlo view."""

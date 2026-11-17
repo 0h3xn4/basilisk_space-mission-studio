@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git push:*)",
+      "Bash(git tag:*)",
+      "Bash(python packaging/release_check.py:*)",
+      "mcp__github__actions_run_trigger"
+    ]
+  }
+}

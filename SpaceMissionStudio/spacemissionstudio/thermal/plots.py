@@ -15,12 +15,17 @@
 #
 #
 #
-"""The thermal analysis's plots as SVG text (decision T-31): the
+"""The thermal analysis's plots as SVG text (decisions T-31 and T-40): the
 temperatures of a case with a node's operating and survival bands, and a
-node's heat flows by kind. Plain SVG, written here, so the same picture is
+node's heat flows by kind. Plain SVG, written here, so the same content is
 on screen (Run › Thermal shows it), in an exported SVG and, rendered by Qt,
 in an exported PNG; no plotting library and no browser are needed, and the
-command line can write it too."""
+command line can write it too.
+
+The defaults (900 x 420, white, DejaVu Sans, :data:`COLOURS`) make the
+exported files. The screen copy passes its own size and a ``style``
+(:data:`STYLE_KEYS`; the GUI takes it from its theme), so the same plot is
+drawn at the view's size and in the theme's colours and fonts."""
 
 from __future__ import annotations
 
@@ -37,6 +42,13 @@ _SURVIVAL = "#D55E00"
 _FLOW_KINDS = ("solar", "albedo", "infrared", "emitted", "conduction", "heat pipes", "radiation", "dissipation",
                "heater")
 _FONT = "font-family='DejaVu Sans, Arial, sans-serif'"
+#: What a ``style`` gives: the background, the text, the secondary text
+#: (ticks and axis titles), the grid and the plot frame colours; the text
+#: and number font families; the text and title sizes [px] and the title's
+#: weight; the series colours in order; the operating and survival band
+#: colours.
+STYLE_KEYS = ("background", "text", "muted", "grid", "frame", "font", "mono", "size", "title_size", "title_weight",
+              "colours", "operating", "survival")
 
 
 def _ticks(low: float, high: float, count: int = 6) -> list[float]:
@@ -58,16 +70,28 @@ class _Axes:
     """A plot area, its scales and the SVG drawn into it."""
 
     def __init__(self, width: int, height: int, x: tuple[float, float], y: tuple[float, float], title: str,
-                 x_label: str, y_label: str, legend: int):
+                 x_label: str, y_label: str, legend: int, style: dict | None = None):
         self.width, self.height = width, height
         self.left, self.right, self.top = 64, 16 + (170 if legend else 0), 34
         self.bottom = 46
         self.x0, self.x1 = x
         self.y0, self.y1 = y
-        self.parts = [f"<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' "
-                      f"viewBox='0 0 {width} {height}' {_FONT} font-size='12'>",
-                      f"<rect width='{width}' height='{height}' fill='#ffffff'/>",
-                      f"<text x='{self.left}' y='20' font-size='14' font-weight='bold'>{escape(title)}</text>"]
+        self.style = style
+        if style is None:  # the exported files: exactly as before (T-31)
+            self.grid_colour, self.frame_colour, self.secondary = "#e3e3e3", "#555555", ""
+            self.parts = [f"<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' "
+                          f"viewBox='0 0 {width} {height}' {_FONT} font-size='12'>",
+                          f"<rect width='{width}' height='{height}' fill='#ffffff'/>",
+                          f"<text x='{self.left}' y='20' font-size='14' font-weight='bold'>{escape(title)}</text>"]
+        else:  # the screen copy, in the given style (T-40)
+            self.grid_colour, self.frame_colour = style["grid"], style["frame"]
+            self.secondary = f" fill='{style['muted']}'"
+            self.parts = [f"<svg xmlns='http://www.w3.org/2000/svg' width='{width}' height='{height}' "
+                          f"viewBox='0 0 {width} {height}' font-family='{escape(style['font'])}' "
+                          f"font-size='{style['size']}' fill='{style['text']}'>",
+                          f"<rect width='{width}' height='{height}' fill='{style['background']}'/>",
+                          f"<text x='{self.left}' y='20' font-size='{style['title_size']}' "
+                          f"font-weight='{style['title_weight']}'>{escape(title)}</text>"]
         self._grid(x_label, y_label)
         self._legend_y = self.top
 
@@ -87,21 +111,25 @@ class _Axes:
 
     def _grid(self, x_label: str, y_label: str) -> None:
         bottom = self.top + self.plot_height
+        grid, secondary = self.grid_colour, self.secondary
+        number = secondary if self.style is None else f" font-family='{escape(self.style['mono'])}'{secondary}"
         for tick in _ticks(self.x0, self.x1):
             x = self.px(tick)
-            self.parts.append(f"<line x1='{x:.1f}' y1='{self.top}' x2='{x:.1f}' y2='{bottom:.1f}' stroke='#e3e3e3'/>")
-            self.parts.append(f"<text x='{x:.1f}' y='{bottom + 16:.1f}' text-anchor='middle'>{_number(tick)}</text>")
+            self.parts.append(f"<line x1='{x:.1f}' y1='{self.top}' x2='{x:.1f}' y2='{bottom:.1f}' stroke='{grid}'/>")
+            self.parts.append(f"<text x='{x:.1f}' y='{bottom + 16:.1f}' text-anchor='middle'{number}>"
+                              f"{_number(tick)}</text>")
         for tick in _ticks(self.y0, self.y1):
             y = self.py(tick)
             self.parts.append(f"<line x1='{self.left}' y1='{y:.1f}' x2='{self.left + self.plot_width:.1f}' "
-                              f"y2='{y:.1f}' stroke='#e3e3e3'/>")
-            self.parts.append(f"<text x='{self.left - 6}' y='{y + 4:.1f}' text-anchor='end'>{_number(tick)}</text>")
+                              f"y2='{y:.1f}' stroke='{grid}'/>")
+            self.parts.append(f"<text x='{self.left - 6}' y='{y + 4:.1f}' text-anchor='end'{number}>"
+                              f"{_number(tick)}</text>")
         self.parts.append(f"<rect x='{self.left}' y='{self.top}' width='{self.plot_width:.1f}' "
-                          f"height='{self.plot_height:.1f}' fill='none' stroke='#555555'/>")
+                          f"height='{self.plot_height:.1f}' fill='none' stroke='{self.frame_colour}'/>")
         self.parts.append(f"<text x='{self.left + self.plot_width / 2:.1f}' y='{self.height - 8}' "
-                          f"text-anchor='middle'>{escape(x_label)}</text>")
+                          f"text-anchor='middle'{secondary}>{escape(x_label)}</text>")
         self.parts.append(f"<text transform='translate(16 {self.top + self.plot_height / 2:.1f}) rotate(-90)' "
-                          f"text-anchor='middle'>{escape(y_label)}</text>")
+                          f"text-anchor='middle'{secondary}>{escape(y_label)}</text>")
 
     def band(self, low: float, high: float, colour: str, opacity: float) -> None:
         low, high = max(low, self.y0), min(high, self.y1)
@@ -148,10 +176,11 @@ def _decimated(time_s: np.ndarray, values: np.ndarray, most: int = 1500) -> tupl
 
 
 def temperature_svg(case, nodes: list[str] | None = None, band_node: str | None = None, width: int = 900,
-                    height: int = 420, title: str | None = None) -> str:
+                    height: int = 420, title: str | None = None, style: dict | None = None) -> str:
     """The temperatures of ``case`` (a ``thermal.results.CaseResult``)
     against hours, one line per node of ``nodes`` (all by default), with
-    ``band_node``'s operating (green) and survival (orange) ranges."""
+    ``band_node``'s operating (green) and survival (orange) ranges.
+    ``style`` (:data:`STYLE_KEYS`) draws it in other colours and fonts."""
     names = nodes if nodes else list(case.network.names)
     hours = case.time_s / 3600.0
     columns = [case.temperature_c(n) for n in names]
@@ -167,25 +196,29 @@ def temperature_svg(case, nodes: list[str] | None = None, band_node: str | None 
     pad = max(2.0, 0.06 * (high - low))
     axes = _Axes(width, height, (float(hours[0]), float(hours[-1]) if hours[-1] > hours[0] else float(hours[0]) + 1),
                  (low - pad, high + pad), title or f"Temperatures, {case.name} case", "Time from the run's start [h]",
-                 "Temperature [°C]", legend=True)
+                 "Temperature [°C]", legend=True, style=style)
+    colours = COLOURS if style is None else style["colours"]
+    operating, survival = (_OPERATING, _SURVIVAL) if style is None else (style["operating"], style["survival"])
     if bands is not None:
         if bands.survival_c:
-            axes.band(*bands.survival_c, _SURVIVAL, 0.10)
-            axes.legend(f"{band_node} survival", _SURVIVAL, "band")
+            axes.band(*bands.survival_c, survival, 0.10)
+            axes.legend(f"{band_node} survival", survival, "band")
         if bands.operating_c:
-            axes.band(*bands.operating_c, _OPERATING, 0.18)
-            axes.legend(f"{band_node} operating", _OPERATING, "band")
+            axes.band(*bands.operating_c, operating, 0.18)
+            axes.legend(f"{band_node} operating", operating, "band")
     for index, (name, column) in enumerate(zip(names, columns, strict=True)):
-        colour = COLOURS[index % len(COLOURS)]
-        dash = "" if index < len(COLOURS) else "6 3"
+        colour = colours[index % len(colours)]
+        dash = "" if index < len(colours) else "6 3"
         axes.line(*_decimated(hours, column), colour, dash, 2.4 if name == band_node else 1.6)
         axes.legend(name, colour)
     return axes.text()
 
 
-def heat_flow_svg(case, node: str, width: int = 900, height: int = 420, title: str | None = None) -> str:
+def heat_flow_svg(case, node: str, width: int = 900, height: int = 420, title: str | None = None,
+                  style: dict | None = None) -> str:
     """The heat flows into ``node`` by kind against hours (positive in);
-    kinds that stay zero are left out."""
+    kinds that stay zero are left out. ``style`` as for
+    :func:`temperature_svg`."""
     flows = case.flows[node]
     hours = case.time_s / 3600.0
     kinds = [k for k in _FLOW_KINDS if k in flows and np.any(np.abs(flows[k]) > 1e-9)]
@@ -195,9 +228,11 @@ def heat_flow_svg(case, node: str, width: int = 900, height: int = 420, title: s
     pad = max(1.0, 0.06 * (high - low))
     axes = _Axes(width, height, (float(hours[0]), float(hours[-1]) if hours[-1] > hours[0] else float(hours[0]) + 1),
                  (low - pad, high + pad), title or f"Heat flows into {node}, {case.name} case",
-                 "Time from the run's start [h]", "Heat in [W]", legend=True)
+                 "Time from the run's start [h]", "Heat in [W]", legend=True, style=style)
+    colours = COLOURS if style is None else style["colours"]
     for index, kind in enumerate(kinds):
-        colour = COLOURS[index % len(COLOURS)]
-        axes.line(*_decimated(hours, flows[kind]), colour)
+        colour = colours[index % len(colours)]
+        dash = "" if index < len(colours) else "6 3"
+        axes.line(*_decimated(hours, flows[kind]), colour, dash)
         axes.legend(kind, colour)
     return axes.text()
