@@ -51,17 +51,17 @@ def categorical(mode: str) -> list[str]:
     """The categorical palette of ``mode``: a copy."""
     return list(CATEGORICAL[mode])
 
-# The application icon (gui/icons.py): a mission scene on a deep-space
-# tile. The Earth, its orbit, a satellite on the orbit with a link beam
-# to a ground station, and the Sun. One icon for both themes: the
-# taskbar's background is the platform's, not ours. The dark tile
-# separates it from light taskbars; on dark ones (Windows 10 and 11,
-# Ubuntu's dock) the navy is only 1.0-1.5:1, so a lighter rim outlines the
-# tile at 3.5:1 or more against each of them (tests/gui/test_icons.py).
+# The application icon (gui/icons.py): a mission scene on a dark
+# rounded-square plate with a light rim. The Earth, its orbit, a satellite
+# on the orbit with a link beam to a ground station, and the Sun. One icon
+# for both themes: the taskbar's background is the platform's, not ours.
+# The plate gives the icon 3 : 1 or more against light panels, the rim
+# against dark panels (Windows 10 and 11, Ubuntu's dock and top bar)
+# (docs/developer/windows-views-design.md, section 5; tests/gui/test_icons.py).
 APP_ICON = {
-    "tile_top": "#1A2C57",  # the tile's gradient, top
-    "tile_bottom": "#0A1128",  # the tile's gradient, bottom; the satellite's outline
-    "tile_rim": "#5B7FC7",  # the tile's outline, for dark taskbars
+    "plate": "#1A2C57",  # the plate: flat at the top, deepening to plate_bottom
+    "plate_bottom": "#0A1128",  # the plate's lower part; the satellite's outline
+    "rim": "#5B7FC7",  # the plate's rim
     "ocean": "#1A4FA6",  # the Earth when its texture is missing
     "atmosphere": "#9CC7FF",  # the Earth's limb
     "orbit": "#E8EEF8",  # the orbit track

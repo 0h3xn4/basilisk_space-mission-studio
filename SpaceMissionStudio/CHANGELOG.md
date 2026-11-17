@@ -10,21 +10,43 @@ fixes bugs.
 
 ## Unreleased
 
+### Added
+
+- **AppStream metadata in the `.deb`**
+  (`/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml`):
+  software centres such as the Ubuntu App Center now show the app's
+  description, licence (EUPL-1.2), four screenshots, age rating and its
+  newest releases. `packaging/metainfo.py` writes it from a template and
+  the CHANGELOG when the package is built. The app never reads it.
+- The `.deb` and `install.sh` install the app icon at every hicolor size
+  from 16 to 512 px and as a scalable SVG, not only at 256 px.
+- The Windows setup program, its shortcuts and its entry under Apps show
+  the app icon (`packaging/windows/spacemissionstudio.ico`, made by
+  `packaging/make_ico.py`), not Python's icon. `install.ps1`'s Start Menu
+  shortcut gets it too.
+- CI validates the desktop entry (`desktop-file-validate`) and the
+  AppStream metadata (`appstreamcli validate --no-net`), and the release
+  workflow checks the icons and the metadata in the built `.deb`.
+
 ### Changed
 
 - **A new app icon.** It shows a mission instead of a lone satellite: the
   real Earth (the 3D view's NASA Blue Marble texture), an orbit flown and
   predicted, a satellite on it with a link beam to a ground station, and
-  the Sun, on a deep-space tile. A light rim keeps the tile visible on
-  dark taskbars (Windows 10 and 11, Ubuntu's dock) and detail drops out
-  cleanly down to 16 px. The README banner shows the same icon.
-- **Windows shows the app icon.** The setup program's Start menu and
-  desktop shortcuts, the setup program itself and the entry in installed
-  apps use a new `spacemissionstudio.ico`, not Python's icon;
-  `install.ps1`'s shortcut too. The running app sets its own taskbar
-  identity, so its taskbar button is no longer grouped under Python.
-- **An upgrade on Linux replaces the icon** an earlier version installed
-  (`install.sh` used to keep the old file).
+  the Sun. Detail drops out cleanly down to 16 px. The README banner
+  shows the same icon.
+- **The Windows taskbar shows the app's own icon.** The running app sets
+  its own taskbar identity (AppUserModelID), so its taskbar button is no
+  longer grouped under Python.
+
+### Fixed
+
+- **The app icon was hard to see on Ubuntu's panels.** The glyph had no
+  background: its blue panels had 2.55 : 1 on the dark dock (#303030) and
+  its gold body 1.86 : 1 on light panels (#FAFAFA). The icon now sits on
+  a dark rounded plate with a light rim: 3.33 : 1 or more on the dark
+  panels and the Windows dark taskbars, 11.4 : 1 or more on the light
+  ones (`tests/gui/test_icons.py`).
 
 ## 2.11.0 (2026-11-17)
 

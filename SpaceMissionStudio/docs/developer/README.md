@@ -126,7 +126,8 @@ script; CI fails when a generated file is out of date.
 | A parameter declared in `spacemissionstudio/config/` | `python scripts/build_config_defaults.py` | `spacemissionstudio/config/defaults.yaml` (`tests/test_config.py` checks it) |
 | Code, tests or the schema | the five commands below | `compliance/docs/` (ICD schema, component map, test specifications) and `compliance/traceability_matrix.csv` |
 | A compliance assessment | `python compliance/tools/build_matrix.py` | `compliance/compliance_matrix.csv` |
-| What a screen looks like | `QT_QPA_PLATFORM=offscreen python scripts/capture_screenshots.py docs/images` (needs Basilisk and the reference data; the Monte Carlo batch takes the longest), then `python scripts/sync_help.py` | The screenshots in `docs/images/` |
+| The app icon (`spacemissionstudio/gui/icons.py`, `APP_ICON` in `gui/theme/palettes.py`) | `QT_QPA_PLATFORM=offscreen python packaging/make_ico.py --from-app packaging/windows/spacemissionstudio.ico` | `packaging/windows/spacemissionstudio.ico`, the Windows setup program's icon (`tests/gui/test_icons.py` checks it). The Linux icons are rendered when the `.deb` is built |
+| What a screen looks like | `QT_QPA_PLATFORM=offscreen python scripts/capture_screenshots.py docs/images` (needs Basilisk and the reference data; the Monte Carlo batch takes the longest), then `python scripts/sync_help.py` | The screenshots in `docs/images/`; four of them are also the AppStream screenshots (`packaging/linux/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml.in`; `tests/test_metainfo.py` checks the names and sizes) |
 
 The compliance documents. CI runs the first four commands and fails on a
 difference in `compliance/docs`; it regenerates `build_traceability.py`'s

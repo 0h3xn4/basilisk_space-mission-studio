@@ -18213,18 +18213,74 @@ saves them (version 4) with no message. The templates as the two
 versions save them differ only in their `schema_version` line, and the
 golden outputs of the 36 templates are unchanged.
 
-## A new app icon (2026-11-17)
+## Desktop integration: the icon and AppStream (2026-11-17)
+
+PR-4 of the 2.12.0 design (`docs/developer/windows-views-design.md`,
+sections 5 and 6). It changes no computation, file format or golden
+file.
+
+**The icon.** On Ubuntu the icon was hard to see. The glyph had no
+background, so its colours met the panel directly: the blue solar panels
+had 2.55 : 1 on the dark dock (#303030) and the gold body 1.86 : 1 on a
+light panel (#FAFAFA). The glyph and its colours stay. They now sit on a
+rounded-square plate `#0F172A` with a rim `#94A3B8`. Measured on the
+rendered pixels at every size from 16 to 512 px: the rim has 5.15 : 1 on
+#303030, 6.57 : 1 on #1D1D1D and 6.05 : 1 on #242424; the plate has
+17.10 : 1 on #FAFAFA and 14.98 : 1 on #EBEBEB. On the plate the panels
+have 3.45 : 1 and the body 9.18 : 1. The antenna was dark blue, which has
+1.6 : 1 on the plate, so it now takes the panel blue. A new test measures
+the rim and the plate at each size against the five panels.
+
+**The sizes.** `icons.write_icon_theme` writes a PNG of 16, 22, 24, 32,
+48, 64, 128, 256 and 512 px and an SVG (the same painter code through
+`QSvgGenerator`). The `.deb` and `install.sh` install them into the
+hicolor theme. Before, only the 256 px PNG was installed.
+
+**Windows.** No `.ico` existed, so the shortcuts showed Python's icon.
+`packaging/make_ico.py` (standard library) packs the icon into
+`packaging/windows/spacemissionstudio.ico`: 32-bit bitmaps with alpha
+from 16 to 128 px and the PNG at 256 px. The file is committed, because
+Inno Setup builds the setup program from the repository. The Inno Setup
+script uses it for the setup program, the shortcuts and the entry under
+Apps; `install.ps1` uses it for its Start Menu shortcut. A test compares
+each size of the file with a fresh render (no difference with Qt
+6.11.2). Inno Setup was not run here; the Windows installer workflow
+compiles the script on a push to `packaging/windows/`.
+
+**AppStream.** The `.deb` had no AppStream metadata, so the App Center
+showed no screenshots, details, licence or age rating.
+`packaging/metainfo.py` now writes
+`/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml`
+from a template when the package is built: the id of the owner's answer
+Q4, the summary, a description in a natural voice, the licence EUPL-1.2,
+the desktop entry it launches, four screenshots from `docs/images/` at
+the release's tag, the OARS rating with no content and the 5 newest
+CHANGELOG releases. appstreamcli 1.0.2 and desktop-file-validate 0.27
+(installed in this sandbox from Ubuntu 24.04) accept the rendered file,
+a staging tree built as `build_deb.sh` builds it and a `.deb` made from
+that tree. The only remarks are the pedantic one about capital letters
+in the id and a hint that the desktop entry names two main categories.
+CI now runs both tools in the test job, and the release workflow runs
+them on the built `.deb`. Not checked: how the App Center shows a
+downloaded `.deb` before it is installed. That needs Ubuntu 24.04 with a
+desktop.
+
+## A new app icon: the mission scene (2026-11-17)
 
 The owner found that the app icon, a satellite alone, did not show what
 the tool does. During the work they added two requests: the Earth must
 look like the Earth, not a blue ball, and the icon must be visible in
-dark mode on Ubuntu and Windows.
+dark mode on Ubuntu and Windows. The desktop-integration change above
+(#276) was merged while this one was open; it kept the satellite and put
+it on a plate. The owner chose this design for the icon, so the scene
+replaces the satellite and keeps #276's plate, rim, hicolor sizes, SVG,
+`.ico` and their tests.
 
-- **The design** (`gui/icons.py`): a mission scene on a navy tile. The
+- **The design** (`gui/icons.py`): a mission scene inside the plate. The
   Earth in the lower-left corner, an orbit around it (solid where the
   satellite has flown, dashed ahead), the satellite (gold body, blue
   panels) with a link beam to a ground station, and the Sun. The planet
-  is cut by the tile's corner and the orbit is an open arc, so the first
+  is cut by the plate's corner and the orbit is an open arc, so the first
   icon's problem (a disc in a ring reads as an eye) does not come back.
 - **The Earth** is the 3D view's bundled Blue Marble texture
   (`earth_day_2k.jpg`, public domain) in orthographic projection,
@@ -18235,33 +18291,28 @@ dark mode on Ubuntu and Windows.
   JPEG decoder load); `app_icon()` with all seven sizes about 33 ms warm.
   The first-time cost is above the 50 ms GUI-thread target and happens
   once, at start-up.
-- **Dark taskbars:** the navy tile alone has 1.0-1.5:1 contrast against
-  Windows 10 and 11 dark taskbars, Ubuntu's dark dock and black. A
-  `#5B7FC7` rim inside the tile's edge gives 3.5:1 or more against each
-  of them and against light taskbars. The tile and rim are snapped to
-  whole device pixels; without that, the 1 px rim at 16-32 px was
-  spread over two dim pixels.
+- **The plate's colours** are the scene's navy: `plate` `#1A2C57` (flat
+  across the top quarter, deepening to `#0A1128`) and `rim` `#5B7FC7`.
+  The rim has 3.33 : 1 or more on Ubuntu's dark panels (#303030 the
+  lowest) and on the Windows 10 and 11 dark taskbars, the plate 11.4 : 1
+  or more on the light panels; #276's tests measure them at every size,
+  and a new test adds the Windows taskbars.
+- **The SVG.** `QSvgGenerator` writes no clip paths, so the scene cuts
+  its own shapes to the plate (`QPainterPath.intersected`) and masks the
+  Earth image before drawing it. A test renders the SVG and checks that
+  nothing is drawn outside the plate.
 - **Small sizes:** below 48 px the orbit is one solid arc; below 32 px
   the Sun's glow and the limb are left out and the Sun and satellite are
   drawn larger; below 24 px the beam is left out. Checked by rendering
-  256 down to 16 px on six taskbar colours.
-- **Windows:** the shortcuts used Python's icon. `write_ico()` writes a
-  multi-size `.ico` (16 to 64 px as bitmaps, 256 px as PNG); the setup
-  program uses the committed `packaging/windows/spacemissionstudio.ico`
-  for its shortcuts, itself and its uninstall entry, and `install.ps1`
-  writes one for its shortcut. The app sets an AppUserModelID at
-  start-up, so the taskbar no longer groups it under `pythonw.exe`. The
-  ICO was read back by Qt, Pillow and `file`, and matches the direct
-  render pixel for pixel; it has not been seen on a real Windows machine
-  (no Windows in the session), nor the AppUserModelID call.
-- **Linux upgrades:** `install.sh` kept an existing icon file, so an
-  upgrade showed the old icon. `ensure_icon_file(..., overwrite=True)`
-  now replaces it (`install.sh`, `build_deb.sh`).
-- **Committed copies** (`scripts/build_app_icon_files.py`): the `.ico`,
-  `docs/images/app_icon.png`, and the README banner, which now embeds the
-  icon as a PNG (an SVG that links to an image does not show it on
-  GitHub).
-- **Tests** (`tests/gui/test_icons.py`, `test_app.py`): the rim's contrast
-  against the six taskbar colours, the rim at every size, land on the
-  Earth (not only ocean), the `.ico` read back size by size, the
-  committed files, the overwrite, and the app ID only on Windows.
+  512 down to 16 px on Windows and Ubuntu taskbar colours.
+- **Windows taskbar:** the app now sets an AppUserModelID at start-up, so
+  the taskbar does not group it under `pythonw.exe` with Python's icon.
+  Not seen on a real Windows machine (no Windows in the session).
+- **Committed copies:** `packaging/windows/spacemissionstudio.ico` made
+  again with `packaging/make_ico.py --from-app`;
+  `scripts/build_app_icon_files.py` writes `docs/images/app_icon.png` and
+  the README banner's icon (embedded as a PNG: an SVG that links to an
+  image does not show it on GitHub).
+- **Tests** (`tests/gui/test_icons.py`, `test_app.py`): land on the Earth
+  (not only ocean), the Windows taskbars, the SVG inside the plate, the
+  documentation files, and the app ID only on Windows.

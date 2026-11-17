@@ -129,134 +129,209 @@ def test_ensure_icon_file_does_not_overwrite_an_existing_file(qapp, tmp_path):
     assert target.read_bytes() == b"not a real png, just a marker"
 
 
-def _contrast(colour_a, colour_b):
-    """The WCAG 2.2 contrast ratio of two ``#RRGGBB`` colours."""
-
-    def luminance(colour):
-        channels = [int(colour[i:i + 2], 16) / 255 for i in (1, 3, 5)]
-        linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
-        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
-
-    high, low = sorted((luminance(colour_a), luminance(colour_b)), reverse=True)
-    return (high + 0.05) / (low + 0.05)
+# The panels an icon sits on: Ubuntu's dark dock and top bar (#303030,
+# #1D1D1D, #242424) and light panels (#FAFAFA, #EBEBEB)
+# (docs/developer/windows-views-design.md, section 5).
+_DARK_PANELS = ("#303030", "#1D1D1D", "#242424")
+_LIGHT_PANELS = ("#FAFAFA", "#EBEBEB")
 
 
-# Taskbar and dock backgrounds the icon is seen on: Windows 11 and 10 dark
-# taskbars, Ubuntu's dark dock and a black panel; Windows and Ubuntu light.
-_DARK_TASKBARS = ("#202020", "#101010", "#2C2C2C", "#000000")
-_LIGHT_TASKBARS = ("#F3F3F3", "#FAFAFA")
-
-
-def test_the_tile_stands_out_on_dark_and_light_taskbars():
-    """The tile's outline reaches the WCAG 3:1 for graphical objects on
-    every dark taskbar (the rim; the navy tile alone is 1.0-1.5:1 there),
-    and the tile itself on every light one."""
-    from spacemissionstudio.gui.theme.palettes import APP_ICON
-
-    for taskbar in _DARK_TASKBARS:
-        assert _contrast(APP_ICON["tile_rim"], taskbar) >= 3.0, taskbar
-    for taskbar in _LIGHT_TASKBARS:
-        assert _contrast(APP_ICON["tile_rim"], taskbar) >= 3.0, taskbar
-        assert _contrast(APP_ICON["tile_top"], taskbar) >= 3.0, taskbar
-
-
-def test_the_rim_is_drawn_at_every_size(qapp):
-    """The rim colour is on the tile's edge (the middle of its left side)
-    at every registered size, down to 16 px."""
+def _hex(image, x, y):
     from PySide6.QtGui import QColor
 
-    from spacemissionstudio.gui.icons import _render
+    colour = QColor(image.pixel(x, y))
+    assert colour.alpha() == 255, f"pixel ({x}, {y}) is not opaque"
+    return colour.name().upper()
+
+
+@pytest.mark.parametrize("size", [16, 22, 24, 32, 48, 64, 128, 256, 512])
+def test_the_icon_plate_and_rim_stand_out_on_dark_and_light_panels(qapp, size):
+    """2.12.0 defect: the plate-less glyph was barely visible on Ubuntu's
+    panels (the blue panels 2.55 : 1 on #303030, the gold body 1.86 : 1 on
+    #FAFAFA). The outline of the icon is its rim and the plate inside it:
+    against every dark and light panel one of the two has 3 : 1 or more
+    (WCAG 2.2 1.4.11, graphics), measured on the rendered pixels at each
+    size. The rim alone carries it on dark panels, the plate on light ones."""
+    from spacemissionstudio.gui.icons import plate_geometry, _render
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+    from spacemissionstudio.gui.theme.tokens import contrast
+
+    image = _render(size).toImage()
+    outer, rim, _radius = plate_geometry(size)
+    top = int(outer.top())
+    rim_colour = _hex(image, size // 2, top)  # the middle of the top edge
+    plate_colour = _hex(image, int(size * 0.3), top + int(rim) + 1)  # inside it, top left: no glyph there
+    assert (rim_colour, plate_colour) == (APP_ICON["rim"].upper(), APP_ICON["plate"].upper())
+    for panel in _DARK_PANELS:
+        assert contrast(rim_colour, panel) >= 3.0, (size, panel, contrast(rim_colour, panel))
+    for panel in _LIGHT_PANELS:
+        assert contrast(plate_colour, panel) >= 3.0, (size, panel, contrast(plate_colour, panel))
+    for panel in _DARK_PANELS + _LIGHT_PANELS:
+        assert max(contrast(rim_colour, panel), contrast(plate_colour, panel)) >= 3.0
+
+
+def test_the_glyph_stands_out_on_its_plate(qapp):
+    """The solar panels (and the antenna drawn in their colour) and the gold
+    body have 3 : 1 or more against the plate, and the panel grid lines,
+    drawn in the plate colour, 3 : 1 against the panels."""
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+    from spacemissionstudio.gui.theme.tokens import contrast
+
+    assert contrast(APP_ICON["panel"], APP_ICON["plate"]) >= 3.0
+    assert contrast(APP_ICON["body"], APP_ICON["plate"]) >= 3.0
+    assert contrast(APP_ICON["rim"], APP_ICON["plate"]) >= 3.0
+
+
+def test_the_icon_theme_has_every_hicolor_size_and_the_scalable_svg(qapp, tmp_path):
+    """write_icon_theme (the .deb and install.sh) writes a PNG of each size
+    from 16 to 512 px at that size, and scalable/apps/spacemissionstudio.svg,
+    an SVG of 512 user units that draws the same plate."""
+    import xml.etree.ElementTree as ET
+
+    from PySide6.QtGui import QImage
+
+    from spacemissionstudio.gui.icons import ICON_THEME_SIZES, write_icon_theme
     from spacemissionstudio.gui.theme.palettes import APP_ICON
 
-    rim = QColor(APP_ICON["tile_rim"])
-    for size in (16, 24, 32, 48, 64, 128, 256):
-        image = _render(size).toImage()
-        x = round(size * 12 / 256)  # the tile's left edge on the 256 grid
-        pixel = image.pixelColor(x, size // 2)
-        distance = abs(pixel.red() - rim.red()) + abs(pixel.green() - rim.green()) + abs(pixel.blue() - rim.blue())
-        assert pixel.alpha() == 255 and distance < 30, (size, pixel.name())
+    written = write_icon_theme(tmp_path / "hicolor")
+    assert ICON_THEME_SIZES[0] == 16 and ICON_THEME_SIZES[-1] == 512
+    assert {16, 22, 24, 32, 48, 64, 128, 256, 512} <= set(ICON_THEME_SIZES)
+    for size in ICON_THEME_SIZES:
+        path = tmp_path / "hicolor" / f"{size}x{size}" / "apps" / "spacemissionstudio.png"
+        assert path in written
+        image = QImage(str(path))
+        assert (image.width(), image.height()) == (size, size), path
+    svg = tmp_path / "hicolor" / "scalable" / "apps" / "spacemissionstudio.svg"
+    assert svg in written
+    root = ET.parse(svg).getroot()
+    assert root.tag == "{http://www.w3.org/2000/svg}svg"
+    assert (root.get("width"), root.get("height"), root.get("viewBox")) == ("512", "512", "0 0 512 512")
+    text = svg.read_text(encoding="utf-8").lower()
+    for colour in ("plate", "rim", "panel", "body"):
+        assert APP_ICON[colour].lower() in text, colour
+
+
+def test_write_icon_theme_replaces_an_older_icon(qapp, tmp_path):
+    """Unlike ensure_icon_file, the theme is written again: an install over
+    an older one (install.sh) gets the new icon."""
+    from spacemissionstudio.gui.icons import write_icon_theme
+
+    old = tmp_path / "256x256" / "apps" / "spacemissionstudio.png"
+    old.parent.mkdir(parents=True)
+    old.write_bytes(b"an older icon")
+    write_icon_theme(tmp_path)
+    assert old.read_bytes().startswith(b"\x89PNG")
+
+
+def test_the_windows_icon_file_is_the_current_icon(qapp):
+    """packaging/windows/spacemissionstudio.ico (the setup program, its
+    shortcuts, install.ps1) is generated from gui/icons.py and committed.
+    Each of its sizes must still match a fresh render; after a change to the
+    icon, run ``python packaging/make_ico.py --from-app
+    packaging/windows/spacemissionstudio.ico``."""
+    import importlib.util
+    from pathlib import Path
+
+    from PySide6.QtGui import QImage
+
+    from spacemissionstudio.gui.icons import _render
+
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location("make_ico", root / "packaging" / "make_ico.py")
+    make_ico = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(make_ico)
+
+    entries = make_ico.read_ico((root / "packaging" / "windows" / "spacemissionstudio.ico").read_bytes())
+    assert [size for size, _kind, _rgba in entries] == list(make_ico.ICO_SIZES)
+    for size, _kind, rgba in entries:
+        fresh = _render(size).toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+        expected = bytes(fresh.constBits())[:size * size * 4]
+        # Mean difference per channel: 0 when generated with the same Qt;
+        # a little room for another Qt version's anti-aliasing.
+        difference = sum(abs(a - b) for a, b in zip(rgba, expected)) / len(expected)
+        assert difference < 2.0, f"{size} px differs from the icon by {difference:.2f} on average"
+
+
+# Windows taskbars (11 and 10 dark, light), adding to the Ubuntu panels
+# above, and a black panel.
+_WINDOWS_DARK_TASKBARS = ("#202020", "#101010", "#000000")
+_WINDOWS_LIGHT_TASKBARS = ("#F3F3F3",)
+
+
+def test_the_icon_stands_out_on_windows_taskbars():
+    """The rim has 3 : 1 or more against the Windows 10 and 11 dark
+    taskbars and black, and the plate against the Windows light taskbar
+    (WCAG 2.2 1.4.11, graphics)."""
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+    from spacemissionstudio.gui.theme.tokens import contrast
+
+    for taskbar in _WINDOWS_DARK_TASKBARS:
+        assert contrast(APP_ICON["rim"], taskbar) >= 3.0, taskbar
+    for taskbar in _WINDOWS_LIGHT_TASKBARS:
+        assert contrast(APP_ICON["plate"], taskbar) >= 3.0, taskbar
 
 
 def test_the_earth_shows_land_not_only_ocean(qapp):
     """The Earth is the Blue Marble texture, not a plain blue disc: a
     good share of the Earth's pixels are land (red at least as strong as
-    blue: desert and vegetation), which no ocean or tile pixel is."""
+    blue: desert and vegetation), which no ocean or plate pixel is."""
+    from PySide6.QtCore import QPointF
     from PySide6.QtGui import QColor
 
     from spacemissionstudio.gui import icons
 
     assert icons._earth_layer() is not None, "the bundled Earth texture did not load"
-    image = icons._render(256).toImage()
+    size = 256
+    image = icons._render(size).toImage()
+    outer, rim, _radius = icons.plate_geometry(size)
+    inner = outer.adjusted(rim, rim, -rim, -rim)
+    scale = inner.width() / icons._SCENE.width()
+
+    def to_pixel(point: QPointF) -> tuple[float, float]:
+        return (inner.left() + (point.x() - icons._SCENE.left()) * scale,
+                inner.top() + (point.y() - icons._SCENE.top()) * scale)
+
+    cx, cy = to_pixel(icons._PLANET_CENTRE)
+    radius = (icons._PLANET_RADIUS - 6) * scale  # inside the limb
     land = earth = 0
-    for x in range(20, 180, 2):
-        for y in range(160, 240, 2):
-            if (x - 60) ** 2 + (y - 272) ** 2 > 130 ** 2:
-                continue  # outside the Earth's disc
+    for x in range(int(inner.left()) + 4, int(inner.right()) - 4, 2):
+        for y in range(int(inner.top()) + 4, int(inner.bottom()) - 4, 2):
+            if (x - cx) ** 2 + (y - cy) ** 2 > radius ** 2:
+                continue
             pixel = QColor(image.pixel(x, y))
             earth += 1
             land += pixel.red() >= pixel.blue() + 10
+    assert earth > 1000
     assert land / earth > 0.25, f"only {land} of {earth} Earth pixels look like land"
 
 
-def test_ensure_icon_file_overwrites_when_asked(qapp, tmp_path):
-    """With ``overwrite=True`` (the installers' call) an icon an earlier
-    version installed is replaced."""
-    from spacemissionstudio.gui.icons import ensure_icon_file
+def test_the_svg_keeps_the_scene_inside_the_plate(qapp):
+    """The SVG (QSvgGenerator leaves clip paths out) draws nothing outside
+    the rim: rendered on a transparent canvas, the four corners outside the
+    rounded plate stay empty, and the plate's inside is opaque."""
+    from PySide6.QtCore import QByteArray, Qt
+    from PySide6.QtGui import QImage, QPainter
+    from PySide6.QtSvg import QSvgRenderer
 
-    target = tmp_path / "spacemissionstudio.png"
-    target.write_bytes(b"the previous version's icon")
+    from spacemissionstudio.gui.icons import render_svg
 
-    ensure_icon_file(target, overwrite=True)
-
-    assert target.read_bytes().startswith(b"\x89PNG")
-
-
-def _ico_directory(data):
-    """The ``(size, offset, length)`` entries of an ICO file's directory."""
-    import struct
-
-    reserved, kind, count = struct.unpack_from("<HHH", data, 0)
-    assert (reserved, kind) == (0, 1), "not an icon file"
-    entries = []
-    for i in range(count):
-        width, height, _, _, planes, bits, length, offset = struct.unpack_from("<BBBBHHII", data, 6 + 16 * i)
-        assert width == height and planes == 1 and bits == 32
-        assert offset + length <= len(data)
-        entries.append((width or 256, offset, length))
-    return entries
+    renderer = QSvgRenderer(QByteArray(render_svg().encode("utf-8")))
+    image = QImage(512, 512, QImage.Format.Format_ARGB32)
+    image.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(image)
+    renderer.render(painter)
+    painter.end()
+    for x, y in ((2, 2), (509, 2), (2, 509), (509, 509), (20, 20), (20, 491), (491, 491)):
+        assert image.pixelColor(x, y).alpha() == 0, (x, y)
+    assert image.pixelColor(256, 256).alpha() == 255
 
 
-def test_write_ico_writes_every_size_readable_by_qt(qapp, tmp_path):
-    """write_ico writes a valid ICO with each of ICO_SIZES; Qt reads each
-    image back at its size, opaque in the middle and transparent in the
-    corner (the tile's rounded corner)."""
-    from PySide6.QtGui import QImageReader
-
-    from spacemissionstudio.gui.icons import ICO_SIZES, write_ico
-
-    path = write_ico(tmp_path / "app.ico")
-
-    assert sorted(size for size, _, _ in _ico_directory(path.read_bytes())) == sorted(ICO_SIZES)
-    reader = QImageReader(str(path))
-    assert reader.imageCount() == len(ICO_SIZES)
-    for index in range(reader.imageCount()):
-        reader.jumpToImage(index)
-        image = reader.read()
-        assert image.width() in ICO_SIZES
-        assert image.pixelColor(image.width() // 2, image.height() // 2).alpha() == 255
-        assert image.pixelColor(0, 0).alpha() == 0
-
-
-def test_the_committed_icon_files_are_valid():
+def test_the_committed_docs_icon_files_are_valid():
     """The files scripts/build_app_icon_files.py writes are in place: the
-    Windows setup program's .ico with 16 to 256 px, the 256 px PNG, and
-    the banner with the icon embedded between its markers."""
+    256 px PNG, and the banner with the icon embedded between its markers."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
-    ico = (root / "packaging" / "windows" / "spacemissionstudio.ico").read_bytes()
-    sizes = {size for size, _, _ in _ico_directory(ico)}
-    assert {16, 32, 48, 256} <= sizes
     assert (root / "docs" / "images" / "app_icon.png").read_bytes().startswith(b"\x89PNG")
     banner = (root / "docs" / "images" / "banner.svg").read_text(encoding="utf-8")
     assert '<!-- app-icon -->\n  <image x="46" y="16" width="128" height="128" href="data:image/png;base64,' in banner

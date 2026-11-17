@@ -18,13 +18,13 @@
 
 """The application icon, drawn in code with :class:`QPainter` rather
 than shipped as a bitmap, so there is no binary file to keep in sync
-with the palette and no extra packaging step. ``app.py`` uses it as the
-window icon; :func:`ensure_icon_file` saves it as a PNG for the Linux
-``.desktop`` entry, and :func:`write_ico` as the ``.ico`` of the Windows
-shortcuts; both need a real file.
+with the palette. ``app.py`` uses it as the window icon;
+:func:`write_icon_theme` writes every hicolor size and an SVG for Linux
+(``install.sh``, the ``.deb``), :func:`ensure_icon_file` one PNG, and
+``packaging/make_ico.py --from-app`` the Windows ``.ico``.
 
-**What it shows.** A mission scene on a deep-space tile, one element for
-each thing the tool analyses:
+**What it shows.** A mission scene on a dark rounded-square plate, one
+element for each thing the tool analyses:
 
 * the real Earth in the lower-left corner: the 3D view's Blue Marble
   texture (NASA) projected onto a lit globe, with Africa, the
@@ -46,41 +46,57 @@ makes it recognisable even at 16 px (a green and sand-coloured globe).
 **What it must not look like.** The first design, a disc inside a
 centred orbit ring with a dot on it, read as a cartoon eye at 16-32 px
 (pupil and iris), and tuning stroke widths made it worse. This design
-keeps that lesson: the planet sits off-centre and is cut by the tile's
+keeps that lesson: the planet sits off-centre and is cut by the plate's
 corner, and the orbit is an open arc, so there is no ring around a disc.
 
-**Small sizes.** Below 32 px the Sun's glow and the atmosphere rim are
+**The plate** (2.12.0, ``docs/developer/windows-views-design.md``,
+section 5): a rounded square with a light rim. The plate is far from
+every light panel, the rim from every dark one (Windows 10 and 11,
+Ubuntu's dock and top bar); ``tests/gui/test_icons.py`` measures both.
+The plate is flat at the top and deepens towards the bottom.
+
+**Small sizes.** Below 48 px the orbit is one solid arc (dashes blur
+into a grey line); below 32 px the Sun's glow and the atmosphere rim are
 left out, and the Sun and satellite are drawn larger; below 24 px the
-beam is left out; below 48 px the orbit is one solid arc (dashes blur
-into a grey line). Each threshold was found by rendering 256 down to
+beam is left out. Each threshold was found by rendering 512 down to
 16 px on light and dark backgrounds and comparing.
 
 **Colours** are ``theme.palettes.APP_ICON``; the Earth's come from its
-texture. The dark tile separates the icon from light taskbars, and a
-light rim around it from dark ones (Windows, Ubuntu); the body's gold is
-the gold foil (multi-layer insulation) of real satellites.
+texture. The body's gold is the gold foil (multi-layer insulation) of
+real satellites.
 """
 
 from __future__ import annotations
 
 import functools
 import math
-import struct
+import re
 from pathlib import Path
 
-from PySide6.QtCore import QBuffer, QIODevice, QPointF, QRectF, Qt
-from PySide6.QtGui import (QColor, QGuiApplication, QIcon, QImage, QLinearGradient, QPainter, QPainterPath, QPen,
-                           QPixmap, QRadialGradient)
+from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt
+from PySide6.QtGui import (QColor, QGuiApplication, QIcon, QImage, QLinearGradient, QPainter, QPainterPath,
+                           QPainterPathStroker, QPen, QPixmap, QRadialGradient)
 
 from .theme.palettes import APP_ICON
 
 _GOLD = APP_ICON["body"]  # satellite body -- see module docstring for why gold, not decorative
 
-# The design grid: 256 x 256 units, scaled to the requested size.
+ICON_NAME = "spacemissionstudio"
+
+# The hicolor icon theme sizes write_icon_theme writes (px).
+ICON_THEME_SIZES = (16, 22, 24, 32, 48, 64, 128, 256, 512)
+
+# The plate, as fractions of the icon's size: the margin around it (none
+# below 24 px), the rim's width and the corner radius.
+_PLATE_MARGIN = 2 / 64
+_RIM_WIDTH = 2 / 64
+_PLATE_RADIUS = 12 / 64
+_PLATE_FLAT = 0.25  # the plate's flat top, as a fraction of its height
+
+# The scene's design grid: 256 x 256 units; the square _SCENE is mapped
+# onto the inside of the plate.
 _GRID = 256.0
-_TILE = QRectF(12, 12, 232, 232)
-_TILE_RADIUS = 52
-_RIM_WIDTH = 5  # the tile's rim, at least one device pixel
+_SCENE = QRectF(12, 12, 232, 232)
 _PLANET_CENTRE = QPointF(60, 272)
 _PLANET_RADIUS = 136
 # The Earth's surface: the 3D view's Blue Marble texture (NASA, public
@@ -98,7 +114,8 @@ _EARTH_AMBIENT, _EARTH_GAIN = 0.15, 0.9  # [-]
 _ORBIT_A, _ORBIT_B, _ORBIT_TILT = 212, 186, -8
 _ORBIT_START, _ORBIT_END = 110, -40
 _SATELLITE_AT = 52
-_SUN_CENTRE, _SUN_RADIUS = QPointF(62, 58), 18
+_SUN_CENTRE, _SUN_RADIUS = QPointF(40, 56), 18  # clear of the plate's top edge and the orbit
+_SUN_GLOW = 40
 
 # Below these sizes (px) the detail is left out or simplified -- see the
 # module docstring.
@@ -123,6 +140,15 @@ def _ensure_application() -> None:
     """
     if QGuiApplication.instance() is None:
         QGuiApplication([])
+
+
+def plate_geometry(size: int) -> tuple[QRectF, float, float]:
+    """The plate's outer rectangle, its rim width and its corner radius,
+    in pixels, for an icon of ``size`` pixels."""
+    margin = 0.0 if size < 24 else round(size * _PLATE_MARGIN)
+    rim = max(1.0, size * _RIM_WIDTH)
+    outer = QRectF(margin, margin, size - 2 * margin, size - 2 * margin)
+    return outer, rim, size * _PLATE_RADIUS
 
 
 def _orbit_point(degrees: float) -> QPointF:
@@ -179,8 +205,8 @@ def _earth_layer() -> QImage | None:
     scale = res / _GRID
     # Only the part of the disc inside the tile is ever seen.
     top = max(0, math.floor((_PLANET_CENTRE.y() - _PLANET_RADIUS) * scale))
-    bottom = min(res, math.ceil(_TILE.bottom() * scale))
-    left = max(0, math.floor(_TILE.left() * scale))
+    bottom = min(res, math.ceil(_SCENE.bottom() * scale))
+    left = max(0, math.floor(_SCENE.left() * scale))
     right = min(res, math.ceil((_PLANET_CENTRE.x() + _PLANET_RADIUS) * scale))
     rows, cols = np.mgrid[top:bottom, left:right].astype(np.float64)
     x = ((cols + 0.5) / scale - _PLANET_CENTRE.x()) / _PLANET_RADIUS
@@ -215,66 +241,101 @@ def _earth_layer() -> QImage | None:
     return QImage(pixels.data, res, res, res * 4, QImage.Format.Format_RGBA8888).copy()
 
 
-def _draw_earth(painter: QPainter, size: int, unit_px: float, fine: bool) -> None:
-    """The Earth (see :func:`_earth_layer`) and, at fine sizes, its limb."""
+def _fill(painter: QPainter, path: QPainterPath, brush, clip: QPainterPath) -> None:
+    """Fills ``path`` cut to ``clip``. The scene cuts its shapes itself,
+    rather than with a clip path, because the SVG of
+    :func:`render_svg` (``QSvgGenerator``) leaves clip paths out."""
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(brush)
+    painter.drawPath(path.intersected(clip))
+
+
+def _stroke(painter: QPainter, path: QPainterPath, pen: QPen, clip: QPainterPath) -> None:
+    """Strokes ``path`` with ``pen`` (dashes included), cut to ``clip``."""
+    _fill(painter, QPainterPathStroker(pen).createStroke(path), pen.brush(), clip)
+
+
+def _ellipse(centre: QPointF, radius: float) -> QPainterPath:
+    path = QPainterPath()
+    path.addEllipse(centre, radius, radius)
+    return path
+
+
+def _draw_earth(painter: QPainter, device_px: int, unit_px: float, fine: bool, clip: QPainterPath) -> None:
+    """The Earth (see :func:`_earth_layer`) on the design grid, drawn at
+    ``device_px`` pixels for the grid's 256 units and masked to ``clip``,
+    and, at fine sizes, its limb."""
     layer = _earth_layer()
     if layer is not None:
-        scaled = layer.scaled(size, size, Qt.AspectRatioMode.IgnoreAspectRatio,
-                              Qt.TransformationMode.SmoothTransformation)
-        painter.drawImage(QRectF(0, 0, _GRID, _GRID), scaled)
+        image = layer.scaled(device_px, device_px, Qt.AspectRatioMode.IgnoreAspectRatio,
+                             Qt.TransformationMode.SmoothTransformation)
+        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        mask = QPainter(image)
+        mask.setRenderHint(QPainter.RenderHint.Antialiasing)
+        mask.scale(device_px / _GRID, device_px / _GRID)
+        outside = QPainterPath()
+        outside.addRect(QRectF(0, 0, _GRID, _GRID))
+        mask.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+        mask.fillPath(outside.subtracted(clip), QColor(0, 0, 0))
+        mask.end()
+        painter.drawImage(QRectF(0, 0, _GRID, _GRID), image)
     else:
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(_colour("ocean"))
-        painter.drawEllipse(_PLANET_CENTRE, _PLANET_RADIUS, _PLANET_RADIUS)
+        _fill(painter, _ellipse(_PLANET_CENTRE, _PLANET_RADIUS), _colour("ocean"), clip)
     if fine:
-        painter.setPen(QPen(_colour("atmosphere"), max(4.0, unit_px)))
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawEllipse(_PLANET_CENTRE, _PLANET_RADIUS, _PLANET_RADIUS)
+        _stroke(painter, _ellipse(_PLANET_CENTRE, _PLANET_RADIUS), QPen(_colour("atmosphere"), max(4.0, unit_px)), clip)
 
 
-def _render(size: int) -> QPixmap:
-    """The icon at ``size`` x ``size`` px. See the module docstring for
-    what each element means and why detail drops out at small sizes."""
-    _ensure_application()
-    pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.GlobalColor.transparent)
-
-    painter = QPainter(pixmap)
+def _paint(painter: QPainter, size: int, detail: int | None = None) -> None:
+    """Paints the icon at ``size`` pixels: the rim and the plate, then
+    the scene inside the plate. ``detail`` is the size whose detail is
+    drawn; by default ``size`` (the scalable SVG asks for full detail).
+    See the module docstring for what each element means."""
+    detail = size if detail is None else detail
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.scale(size / _GRID, size / _GRID)
-    unit_px = _GRID / size  # one device pixel in grid units
-    fine = size >= _FINE_MIN_SIZE
+    fine = detail >= _FINE_MIN_SIZE
 
-    # The tile and its rim on whole device pixels, so the rim stays crisp
-    # (not smeared over two half-lit pixels) at small sizes.
-    margin = round(_TILE.left() / unit_px) * unit_px
-    tile_rect = QRectF(margin, margin, _GRID - 2 * margin, _GRID - 2 * margin)
-    tile = QPainterPath()
-    tile.addRoundedRect(tile_rect, _TILE_RADIUS, _TILE_RADIUS)
-    tile_fill = QLinearGradient(0, tile_rect.top(), 0, tile_rect.bottom())
-    tile_fill.setColorAt(0, _colour("tile_top"))
-    tile_fill.setColorAt(1, _colour("tile_bottom"))
-    painter.fillPath(tile, tile_fill)
-    painter.setClipPath(tile)
+    # The plate: the rim colour as the outer rounded square, the plate
+    # inside it, flat at the top and deepening towards the bottom.
+    outer, rim, radius = plate_geometry(size)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(_colour("rim"))
+    painter.drawRoundedRect(outer, radius, radius)
+    inner = outer.adjusted(rim, rim, -rim, -rim)
+    inner_radius = max(0.0, radius - rim)
+    plate_fill = QLinearGradient(0, inner.top(), 0, inner.bottom())
+    plate_fill.setColorAt(0, _colour("plate"))
+    plate_fill.setColorAt(_PLATE_FLAT, _colour("plate"))
+    plate_fill.setColorAt(1, _colour("plate_bottom"))
+    plate = QPainterPath()
+    plate.addRoundedRect(inner, inner_radius, inner_radius)
+    painter.fillPath(plate, plate_fill)
+
+    # The scene, on its design grid mapped onto the plate's inside.
+    painter.save()
+    painter.setClipPath(plate)
+    scale = inner.width() / _SCENE.width()
+    painter.translate(inner.left(), inner.top())
+    painter.scale(scale, scale)
+    painter.translate(-_SCENE.left(), -_SCENE.top())
+    unit_px = 1.0 / scale  # one device pixel in grid units
+    clip = painter.transform().inverted()[0].map(plate)  # the plate's inside on the grid
     painter.setPen(Qt.PenStyle.NoPen)
 
     # The Sun, with a soft glow.
     if fine:
-        glow = QRadialGradient(_SUN_CENTRE, 48)
+        glow = QRadialGradient(_SUN_CENTRE, _SUN_GLOW)
         glow.setColorAt(0, _colour("sun", 80))
         glow.setColorAt(1, _colour("sun", 0))
-        painter.setBrush(glow)
-        painter.drawEllipse(_SUN_CENTRE, 48, 48)
-    sun_radius = _SUN_RADIUS if fine else 24
-    painter.setBrush(_colour("sun"))
-    painter.drawEllipse(_SUN_CENTRE, sun_radius, sun_radius)
+        _fill(painter, _ellipse(_SUN_CENTRE, _SUN_GLOW), glow, clip)
+    sun_radius = _SUN_RADIUS if fine else 20
+    _fill(painter, _ellipse(_SUN_CENTRE, sun_radius), _colour("sun"), clip)
 
-    _draw_earth(painter, size, unit_px, fine)
+    _draw_earth(painter, round(_GRID / unit_px), unit_px, fine, clip)
 
     satellite = _orbit_point(_SATELLITE_AT)
 
     # The link beam to a ground station straight below the satellite.
-    if size >= _BEAM_MIN_SIZE:
+    if detail >= _BEAM_MIN_SIZE:
         dx, dy = satellite.x() - _PLANET_CENTRE.x(), satellite.y() - _PLANET_CENTRE.y()
         length = math.hypot(dx, dy)
         ux, uy = dx / length, dy / length
@@ -287,32 +348,26 @@ def _render(size: int) -> QPixmap:
         beam_fill = QLinearGradient(satellite, station)
         beam_fill.setColorAt(0, _colour("beam", 40))
         beam_fill.setColorAt(1, _colour("beam", 150))
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(beam_fill)
-        painter.drawPath(beam)
-        painter.setBrush(_colour("station"))
-        painter.drawEllipse(station, 6, 6)
+        _fill(painter, beam, beam_fill, clip)
+        _fill(painter, _ellipse(station, 6), _colour("station"), clip)
 
     # The orbit: flown track solid, predicted track dashed.
     track = QPen(_colour("orbit"), max(9.0, 1.5 * unit_px))
     track.setCapStyle(Qt.PenCapStyle.RoundCap)
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    painter.setPen(track)
-    if size >= _DASH_MIN_SIZE:
-        painter.drawPath(_orbit_arc(_ORBIT_START, _SATELLITE_AT + 6))
+    if detail >= _DASH_MIN_SIZE:
+        _stroke(painter, _orbit_arc(_ORBIT_START, _SATELLITE_AT + 6), track, clip)
         track.setDashPattern([1.2, 2.0])
-        painter.setPen(track)
-        painter.drawPath(_orbit_arc(_SATELLITE_AT - 14, _ORBIT_END))
+        _stroke(painter, _orbit_arc(_SATELLITE_AT - 14, _ORBIT_END), track, clip)
     else:
-        painter.drawPath(_orbit_arc(_ORBIT_START, _ORBIT_END))
+        _stroke(painter, _orbit_arc(_ORBIT_START, _ORBIT_END), track, clip)
 
-    # The satellite, its panels along the track, outlined in the tile's
+    # The satellite, its panels along the track, outlined in the plate's
     # dark so it separates from the track under it.
     ahead, behind = _orbit_point(_SATELLITE_AT + 0.5), _orbit_point(_SATELLITE_AT - 0.5)
     painter.save()
     painter.translate(satellite)
     painter.rotate(math.degrees(math.atan2(behind.y() - ahead.y(), behind.x() - ahead.x())))
-    scale = 1.0 if size >= _DASH_MIN_SIZE else 1.3
+    scale = 1.0 if detail >= _DASH_MIN_SIZE else 1.3
     panel_w, panel_h, gap, body = 26 * scale, 40 * scale, 4 * scale, 24 * scale
     left_panel = QRectF(-body / 2 - gap - panel_w, -panel_h / 2, panel_w, panel_h)
     right_panel = QRectF(body / 2 + gap, -panel_h / 2, panel_w, panel_h)
@@ -321,7 +376,8 @@ def _render(size: int) -> QPixmap:
     outline.addRoundedRect(left_panel, 3, 3)
     outline.addRoundedRect(right_panel, 3, 3)
     outline.addRoundedRect(body_rect, 5, 5)
-    painter.setPen(QPen(_colour("tile_bottom"), max(8.0, 1.5 * unit_px)))
+    painter.setPen(QPen(_colour("plate_bottom"), max(8.0, 1.5 * unit_px)))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
     painter.drawPath(outline.simplified())
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(_colour("panel"))
@@ -331,17 +387,74 @@ def _render(size: int) -> QPixmap:
     painter.drawRoundedRect(body_rect, 5, 5)
     painter.restore()
 
-    # The rim, inside the tile's edge, so the tile stands out on dark
-    # taskbars (see palettes.APP_ICON).
-    painter.setClipping(False)
-    rim_width = max(1, round(_RIM_WIDTH / unit_px)) * unit_px
-    inset = rim_width / 2
-    painter.setPen(QPen(_colour("tile_rim"), rim_width))
-    painter.setBrush(Qt.BrushStyle.NoBrush)
-    painter.drawRoundedRect(tile_rect.adjusted(inset, inset, -inset, -inset), _TILE_RADIUS - inset, _TILE_RADIUS - inset)
+    painter.restore()
 
+
+def _render(size: int) -> QPixmap:
+    """The icon as a ``size`` x ``size`` pixmap on a transparent background."""
+    _ensure_application()
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    _paint(painter, size)
     painter.end()
     return pixmap
+
+
+_SVG_SIZE = 512
+
+
+def render_svg() -> str:
+    """The icon as SVG text (the same painter code through ``QSvgGenerator``),
+    512 x 512 user units with full detail: the hicolor theme's
+    ``scalable/apps`` icon, which software centres also show."""
+    from PySide6.QtCore import QBuffer, QByteArray, QIODevice
+    from PySide6.QtSvg import QSvgGenerator
+
+    _ensure_application()
+    data = QByteArray()
+    buffer = QBuffer(data)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    generator = QSvgGenerator()
+    generator.setOutputDevice(buffer)
+    generator.setSize(QSize(_SVG_SIZE, _SVG_SIZE))
+    generator.setViewBox(QRect(0, 0, _SVG_SIZE, _SVG_SIZE))
+    generator.setTitle("SpaceMissionStudio")
+    generator.setDescription("The SpaceMissionStudio application icon")
+    painter = QPainter(generator)
+    _paint(painter, _SVG_SIZE)
+    painter.end()
+    buffer.close()
+    text = bytes(data.data()).decode("utf-8")
+    # QSvgGenerator gives the size in millimetres from its resolution; an
+    # icon is sized in user units.
+    return re.sub(r'(<svg\b[^>]*?)\swidth="[^"]*"\s+height="[^"]*"', rf'\1 width="{_SVG_SIZE}" height="{_SVG_SIZE}"',
+                  text, count=1)
+
+
+def write_icon_theme(hicolor_dir: str | Path) -> list[Path]:
+    """Writes the icon into the hicolor icon theme folder ``hicolor_dir``
+    (for example ``/usr/share/icons/hicolor``): a PNG of each of
+    :data:`ICON_THEME_SIZES` in ``<n>x<n>/apps/`` and the SVG in
+    ``scalable/apps/``. Existing files are replaced. Returns the files
+    written.
+
+    Raises :class:`OSError` if a render or save fails (see
+    :func:`ensure_icon_file`).
+    """
+    root = Path(hicolor_dir)
+    written: list[Path] = []
+    for size in ICON_THEME_SIZES:
+        path = root / f"{size}x{size}" / "apps" / f"{ICON_NAME}.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not _render(size).save(str(path), "PNG"):
+            raise OSError(f"could not render/save the app icon to {path}")
+        written.append(path)
+    svg = root / "scalable" / "apps" / f"{ICON_NAME}.svg"
+    svg.parent.mkdir(parents=True, exist_ok=True)
+    svg.write_text(render_svg(), encoding="utf-8")
+    written.append(svg)
+    return written
 
 
 def app_icon() -> QIcon:
@@ -355,13 +468,11 @@ def app_icon() -> QIcon:
     return icon
 
 
-def ensure_icon_file(path: str | Path, size: int = 256, overwrite: bool = False) -> Path:
+def ensure_icon_file(path: str | Path, size: int = 256) -> Path:
     """Renders the icon to a PNG at ``path`` (creating parent directories
-    as needed) if it doesn't already exist, or always with ``overwrite``,
-    and returns the path. Used by ``packaging/`` for the ``.desktop``
-    entry's ``Icon=`` target, which needs a real file, not an in-memory
-    :class:`QIcon`. The installers pass ``overwrite=True``, so an upgrade
-    replaces the icon an earlier version installed.
+    as needed) if it doesn't already exist, and returns the path. Used by
+    ``packaging/`` for the ``.desktop`` entry's ``Icon=`` target, which
+    needs a real file, not an in-memory :class:`QIcon`.
 
     Raises :class:`OSError` if the render/save fails (e.g. no usable Qt
     platform plugin) -- ``QPixmap.save()`` only returns ``False`` on
@@ -370,60 +481,10 @@ def ensure_icon_file(path: str | Path, size: int = 256, overwrite: bool = False)
     written nothing, and its shell ``if`` guard report success anyway.
     """
     path = Path(path)
-    if overwrite or not path.exists():
+    if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         if not _render(size).save(str(path), "PNG"):
             raise OSError(f"could not render/save the app icon to {path}")
-    return path
-
-
-# The sizes of the Windows icon file: the shell's small and large icons
-# at 100-200 % display scaling, and 256 for the largest views.
-ICO_SIZES = (16, 20, 24, 32, 40, 48, 64, 256)
-
-
-def _ico_bitmap(image: QImage) -> bytes:
-    """``image`` as an ICO bitmap entry: a 32-bit BGRA DIB, rows bottom
-    up, followed by an all-zero AND mask (the alpha channel decides)."""
-    image = image.convertToFormat(QImage.Format.Format_ARGB32)
-    width, height = image.width(), image.height()
-    header = struct.pack("<IiiHHIIiiII", 40, width, 2 * height, 1, 32, 0, width * height * 4, 0, 0, 0, 0)
-    stride = image.bytesPerLine()
-    data = bytes(image.constBits())
-    rows = b"".join(data[y * stride:y * stride + width * 4] for y in reversed(range(height)))
-    mask_stride = ((width + 31) // 32) * 4
-    return header + rows + bytes(mask_stride * height)
-
-
-def write_ico(path: str | Path, sizes: tuple[int, ...] = ICO_SIZES) -> Path:
-    """Writes the icon as a Windows ``.ico`` file with ``sizes`` and
-    returns its path. A Windows shortcut (``.lnk``) and Inno Setup need a
-    real ``.ico``; a PNG does not work there. Sizes up to 64 are 32-bit
-    bitmaps and larger ones PNG, the layout every Windows version since
-    Vista and Inno Setup read.
-
-    Raises :class:`OSError` if an image cannot be encoded.
-    """
-    path = Path(path)
-    entries = []
-    for size in sizes:
-        image = _render(size).toImage()
-        if size > 64:
-            buffer = QBuffer()
-            buffer.open(QIODevice.OpenModeFlag.WriteOnly)
-            if not image.save(buffer, "PNG"):
-                raise OSError(f"could not encode the {size} px icon as PNG")
-            entries.append((size, bytes(buffer.data())))
-        else:
-            entries.append((size, _ico_bitmap(image)))
-    offset = 6 + 16 * len(entries)
-    directory = struct.pack("<HHH", 0, 1, len(entries))
-    for size, data in entries:
-        side = 0 if size >= 256 else size  # 0 means 256 in an ICO directory
-        directory += struct.pack("<BBBBHHII", side, side, 0, 0, 1, 32, len(data), offset)
-        offset += len(data)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(directory + b"".join(data for _, data in entries))
     return path
 
 

@@ -164,24 +164,15 @@ if (-not $NoShortcut) {
     $Shortcut.Arguments = "gui"
     $Shortcut.WorkingDirectory = $Prefix
     $Shortcut.Description = "Mission-analysis GUI built on the Basilisk astrodynamics framework"
-    # The app icon as a real .ico (a .lnk's IconLocation cannot use a
-    # PNG), written by gui/icons.py's write_ico(). Non-fatal: without it
-    # the shortcut shows spacemissionstudio.exe's own icon.
-    $IconPath = Join-Path $Prefix "spacemissionstudio.ico"
-    $IconWritten = $false
-    $env:QT_QPA_PLATFORM = "offscreen"
-    try {
-        & $VenvPython -c "import sys; from spacemissionstudio.gui.icons import write_ico; write_ico(sys.argv[1])" $IconPath 2>$null
-        $IconWritten = ($LASTEXITCODE -eq 0) -and (Test-Path $IconPath)
-    } catch {
-        $IconWritten = $false
-    } finally {
-        Remove-Item Env:\QT_QPA_PLATFORM -ErrorAction SilentlyContinue
-    }
-    if ($IconWritten) {
+    # The application icon as a Windows .ico (gui/icons.py, packed by
+    # packaging/make_ico.py; the setup program uses the same file). A .lnk's
+    # IconLocation needs an .ico/.exe/.dll, not a .png. Non-fatal: without
+    # the file the shortcut keeps the launcher's own icon.
+    $IconSource = Join-Path $ScriptDir "windows\spacemissionstudio.ico"
+    if (Test-Path $IconSource) {
+        $IconPath = Join-Path $Prefix "spacemissionstudio.ico"
+        Copy-Item -Force $IconSource $IconPath
         $Shortcut.IconLocation = "$IconPath,0"
-    } else {
-        Write-Host "Could not write the app icon (non-fatal) -- the shortcut uses a generic icon."
     }
     $Shortcut.Save()
     $ShortcutStatus = "Start Menu shortcut installed to $ShortcutPath"

@@ -158,6 +158,15 @@ jobs:
           python -m pip install -c packaging/constraints.txt -c packaging/constraints-dev.txt -e ".[dev,gui]" pip-audit
       - name: Lint (coding standard C-8)
         run: python -m ruff check spacemissionstudio tests scripts compliance/tools
+      # appstreamcli fails on a warning; installed before the tests, so
+      # tests/test_metainfo.py also runs it.
+      - name: The desktop entry and the AppStream metadata validate
+        run: |
+          sudo apt-get install -y --no-install-recommends appstream desktop-file-utils
+          desktop-file-validate packaging/deb/usr/share/applications/spacemissionstudio.desktop
+          metainfo="$RUNNER_TEMP/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml"
+          python packaging/metainfo.py --out "$metainfo"
+          appstreamcli validate --no-net --explain "$metainfo"
       - name: Documents complete against their DRDs and generated parts current (R14)
         run: |
           python compliance/tools/check_drds.py

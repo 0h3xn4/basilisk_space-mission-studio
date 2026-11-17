@@ -15,20 +15,20 @@
 #
 #
 #
-"""Write the app icon's committed files from ``gui/icons.py``.
+"""Write the app icon's committed documentation files from ``gui/icons.py``.
 
-The app draws its icon at run time; these copies are for places that
-need a file before the app runs:
+The app draws its icon at run time; these copies are for the
+documentation, which needs a file:
 
-* ``packaging/windows/spacemissionstudio.ico``: the Windows setup
-  program's shortcuts, its own icon and its uninstall entry;
 * ``docs/images/app_icon.png``: the icon at 256 px for the documentation;
 * ``docs/images/banner.svg``: the README banner, which carries the icon
   as an embedded PNG between its ``app-icon`` markers (an image the SVG
   links to would not show on GitHub).
 
 ``tests/gui/test_icons.py`` checks that the files exist and are valid.
-Run this script after a change to the icon.
+Run this script after a change to the icon, together with
+``packaging/make_ico.py --from-app packaging/windows/spacemissionstudio.ico``
+(the Windows ``.ico``).
 
 Usage::
 
@@ -47,9 +47,8 @@ sys.path.insert(0, str(ROOT))
 
 from PySide6.QtCore import QBuffer, QIODevice  # noqa: E402
 
-from spacemissionstudio.gui.icons import _render, write_ico  # noqa: E402
+from spacemissionstudio.gui.icons import _render  # noqa: E402
 
-ICO = ROOT / "packaging" / "windows" / "spacemissionstudio.ico"
 PNG = ROOT / "docs" / "images" / "app_icon.png"
 BANNER = ROOT / "docs" / "images" / "banner.svg"
 BANNER_ICON_PX = 256  # rendered size, shown at 128 for sharp high-DPI display
@@ -66,7 +65,6 @@ def png_bytes(size: int) -> bytes:
 
 
 def main() -> int:
-    write_ico(ICO)
     PNG.write_bytes(png_bytes(256))
     banner = BANNER.read_text(encoding="utf-8")
     if not BANNER_MARKERS.search(banner):
@@ -75,7 +73,7 @@ def main() -> int:
     image = f'<image x="46" y="16" width="128" height="128" href="data:image/png;base64,{data}"/>'
     BANNER.write_text(BANNER_MARKERS.sub(lambda m: f"{m.group(1)}\n  {image}\n  {m.group(2)}", banner),
                       encoding="utf-8")
-    for path in (ICO, PNG, BANNER):
+    for path in (PNG, BANNER):
         print(f"wrote {path.relative_to(ROOT)} ({path.stat().st_size} bytes)")
     return 0
 

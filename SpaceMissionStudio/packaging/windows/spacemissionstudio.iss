@@ -72,9 +72,8 @@ SolidCompression=yes
 LZMAUseSeparateProcess=yes
 LZMANumBlockThreads=4
 WizardStyle=modern
-; The app icon (gui/icons.py, written to this folder by
-; scripts/build_app_icon_files.py) for the setup program, the shortcuts and
-; the entry in Windows' installed apps.
+; The application icon (gui/icons.py, packed by packaging/make_ico.py) for
+; the setup program, its shortcuts and its entry under Apps.
 SetupIconFile=spacemissionstudio.ico
 UninstallDisplayIcon={app}\spacemissionstudio.ico
 ; Basilisk publishes wheels for Windows 10/11 (x86_64) specifically (see

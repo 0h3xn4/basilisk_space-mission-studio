@@ -110,6 +110,23 @@ jobs:
           assert len(fonts) == 5 and len(licences) == 2 and len(icons) >= 35, "assets missing from the wheel"
           assert any(n.endswith("/lucide/LICENSE") for n in names), "Lucide's licence missing"
           EOF
+      # What the .deb gives the desktop: the menu entry, the icon at every
+      # hicolor size and the AppStream metadata software centres show.
+      - name: The .deb's desktop entry, icons and AppStream metadata
+        run: |
+          sudo apt-get install -y --no-install-recommends appstream desktop-file-utils
+          tree="$RUNNER_TEMP/deb-tree"
+          dpkg-deb -x "dist/spacemissionstudio_${VERSION}_amd64.deb" "$tree"
+          for size in 16 22 24 32 48 64 128 256 512; do
+            test -s "$tree/usr/share/icons/hicolor/${size}x${size}/apps/spacemissionstudio.png" \
+              || { echo "::error::no ${size} px icon in the .deb"; exit 1; }
+          done
+          test -s "$tree/usr/share/icons/hicolor/scalable/apps/spacemissionstudio.svg" \
+            || { echo "::error::no scalable icon in the .deb"; exit 1; }
+          desktop-file-validate "$tree/usr/share/applications/spacemissionstudio.desktop"
+          appstreamcli validate --no-net --explain "$tree/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml"
+          appstreamcli validate-tree --no-net --explain "$tree"
+          rm -rf "$tree"
       # The system libraries it depends on come from apt (a desktop has
       # them); the package itself is then installed with no network.
       - name: Install the .deb with the network cut off

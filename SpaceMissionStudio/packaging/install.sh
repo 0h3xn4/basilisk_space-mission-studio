@@ -161,7 +161,8 @@ if [[ "$install_desktop_entry" -eq 1 ]] && [[ -n "${XDG_DATA_HOME:-${HOME:-}}" ]
 
     # Renders the app icon (gui/icons.py -- procedurally drawn via
     # QPainter, no bitmap asset shipped in the repo) into the standard
-    # XDG hicolor icon theme location, so Icon=spacemissionstudio in the
+    # XDG hicolor icon theme location, a PNG of each size from 16 to
+    # 512 px and the scalable SVG, so Icon=spacemissionstudio in the
     # .desktop entry above resolves to it instead of falling back to a
     # generic icon. Needs the 'gui' extra (PySide6, just installed above)
     # and a Qt platform plugin able to render off-screen, which the
@@ -169,13 +170,13 @@ if [[ "$install_desktop_entry" -eq 1 ]] && [[ -n "${XDG_DATA_HOME:-${HOME:-}}" ]
     # even on a headless install. Non-fatal: a failure here (e.g. no Qt
     # platform plugins at all) still leaves a working desktop entry, just
     # with the generic fallback icon.
-    icons_dir="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
-    mkdir -p "$icons_dir"
+    icons_dir="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor"
     if QT_QPA_PLATFORM=offscreen python3 -c "
-from spacemissionstudio.gui.icons import ensure_icon_file
-ensure_icon_file('$icons_dir/spacemissionstudio.png', overwrite=True)
-" 2>/dev/null; then
-        icon_status="App icon installed to $icons_dir/spacemissionstudio.png"
+import sys
+from spacemissionstudio.gui.icons import write_icon_theme
+write_icon_theme(sys.argv[1])
+" "$icons_dir" 2>/dev/null; then
+        icon_status="App icon installed to $icons_dir (16 to 512 px and scalable)"
     else
         icon_status="Could not render the app icon (non-fatal) -- the desktop entry will use a generic icon."
     fi
