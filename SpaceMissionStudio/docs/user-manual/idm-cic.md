@@ -276,6 +276,17 @@ name, or `average`), `--solar-panels +` or `-` and `--battery` do the
 same, and `idm-info` lists the system modes with their totals and the
 panels.
 
+`idm-import --budgets` also keeps the modes themselves, in the
+spacecraft's `budgets` section: one equipment item per imported unit
+that draws power, with the power modes its system modes use, and one
+system mode per system mode with its duty cycle. A unit a system mode
+does not cover is left out of it, so its power there is unknown (not
+0 W). The file gives no converter efficiency, distribution loss or
+margin: they are placeholders ("TBD") until you set them. `spacemissionstudio
+budgets` then prints the power budget of each mode
+([Equipment list and power budget](budgets.md)). The bus load is set as
+before.
+
 ## Values from your team's properties
 
 A team often keeps performance values in its IDM-CIC model as

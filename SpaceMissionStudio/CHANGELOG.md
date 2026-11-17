@@ -8,6 +8,36 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Added
+
+- **Equipment list and static power budget** (SRS-F-31, System Budget
+  Studio merge phase 1, part A). A spacecraft can have a `budgets`
+  section: an equipment list with a sourced mass and sourced powers per
+  power mode, system modes, power margins per maturity category, a
+  system margin, converter efficiencies and a distribution loss. A number
+  can be a placeholder ("TBD"); every result that needs it is then
+  unknown, never zero.
+- The static power budget per system mode, per subsystem and per bus:
+  System Budget Studio's calculation, checked against its reference
+  cases. The command `spacemissionstudio budgets` prints it, and
+  `api.power_budget` returns it.
+- The equipment list adds its items to the mass budget (Run › Design
+  Checks); a placeholder mass makes the budget incomplete, not lighter.
+- `idm-import --budgets` fills the section from an IDM-CIC model's power
+  modes and system modes, with placeholders for what the model does not
+  give.
+- Findings `budget.placeholder`, `budget.unit_not_in_mode`,
+  `budget.no_margin`, `budget.mode_duty_sum` and `budget.mass_unknown`.
+
+### Changed
+
+- The scenario file is at **schema version 5**. Every older file opens
+  as before. A file saved by this version does not open in 2.10.0 or
+  earlier. The templates' scenario hashes change with the version
+  (`docs/changes.md`); no computed result changes.
+
 ## 2.10.0 (2026-11-17)
 
 SpaceMissionStudio can now plan a mission's operations. Give a scenario

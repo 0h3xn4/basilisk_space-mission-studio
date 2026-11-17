@@ -20,7 +20,7 @@ Top-level scenario object (the JSON file's root).
 | `mission_sequence` | list | `[]` | list[Command] |
 | `fsw_exports` | list | `[]` | list[FswExportRecord], at most one per spacecraft |
 | `description` | str | `''` |  |
-| `schema_version` | int | `4` |  |
+| `schema_version` | int | `5` |  |
 | `config_file` | str / None | `None` |  |
 | `configuration` | object | `None` |  |
 | `value_marks` | list | `[]` | list[ValueMark] |
@@ -38,6 +38,66 @@ One actuator instance. ``kind`` is one of :data:`SUPPORTED_ACTUATOR_KINDS`. See 
 | `name` | str | `required` |  |
 | `params` | dict | `{}` |  |
 | `mount` | MountConfig / None | `None` | where it sits on the 3D model; written only when set |
+
+## BudgetBusConfig
+
+A power bus: its converter efficiency, the share of the bus load the source must deliver through the converter (absent: unknown).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `converter_efficiency` | SourcedValue / None | `None` | [-] ratio in (0, 1] |
+
+## BudgetEquipmentConfig
+
+An item of the equipment list (decision B-03): a functional ``subsystem`` (AOCS, DHS) that groups the power budget, an S-120 ``mass_column`` for its growth allowance (B-06), the bus it draws from, its maturity, a sourced mass and its power modes. ``mass_in_model`` says that the 3D model already holds its mass, so the mass budget adds no line for it. ``source_id`` is the IDM-CIC unit's ``fullId`` when an import made it.
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `subsystem` | str | `''` | the functional subsystem (AOCS, DHS, EPS...), free text; groups the power budget |
+| `mass_column` | str | `''` | "" or an S-120 column (MASS_COLUMNS): the growth allowance; "" the largest of the row |
+| `bus` | str | `''` | the name of an entry of buses; required for an item with power modes |
+| `maturity` | str | `''` | "" or a category of the spacecraft's mass policy: the growth allowance and power margin |
+| `mass_kg` | SourcedValue / None | `None` | [kg] at least 0; may be absent when mass_in_model |
+| `mass_in_model` | bool | `False` | the 3D model already holds this item's mass: no mass budget line |
+| `power_modes` | list | `[]` | list[BudgetPowerModeConfig] |
+| `source_id` | str | `''` | the IDM-CIC unit's fullId when an import made the item |
+
+## BudgetModeConfig
+
+A system mode: the power mode each equipment item is in (``units``, item name to power-mode name) and, optionally, the share of the time the spacecraft spends in it. An item with power modes that ``units`` does not list has an unknown power in this mode (decision B-09).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `duty_cycle` | float / None | `None` | [-] 0 to 1, the share of the time in this mode; absent: not stated |
+| `units` | dict | `{}` | {equipment item name: its power-mode name} |
+
+## BudgetPowerModeConfig
+
+One power mode of an equipment item: its average power while in the mode and switched on, its peak power (default: the average) and the share of the time it is switched on.
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `average_w` | SourcedValue | `required` | [W] at least 0 |
+| `peak_w` | SourcedValue / None | `None` | [W] at least the average; absent: the average |
+| `duty_cycle` | float | `1.0` | [-] 0 to 1, the share of the mode's time the item draws its average power |
+
+## BudgetsConfig
+
+A spacecraft's equipment list, system modes and power budget numbers (module docstring).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `version` | int | `1` |  |
+| `buses` | list | `[]` | list[BudgetBusConfig] |
+| `distribution_loss` | SourcedValue / None | `None` | [-] ratio in [0, 1), lost between source and loads |
+| `power_margins` | list | `[]` | list[PowerMarginConfig] |
+| `system_power_margin_percent` | SourcedValue / None | `None` | [%] 0 to 1000, on the sum of the margined loads |
+| `equipment` | list | `[]` | list[BudgetEquipmentConfig] |
+| `modes` | list | `[]` | list[BudgetModeConfig] |
 
 ## Command
 
@@ -525,6 +585,15 @@ A spacecraft's power budget: a body-fixed solar panel, a constant "bus" housekee
 | `battery_capacity_wh` | float | `100.0` | [W*hr] |
 | `battery_initial_soc` | float | `1.0` | [-] initial state of charge, fraction of capacity, 0 <= x <= 1 |
 
+## PowerMarginConfig
+
+The power margin of one maturity category of the mass policy (decision B-05).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `maturity` | str | `required` | a category of the spacecraft's mass policy ("estimated" ... "measured" for AIAA S-120) |
+| `percent` | SourcedValue | `required` | [%] the margin on an item's effective power, 0 to 1000 |
+
 ## PresetRecord
 
 A spacecraft made from one of SpaceMissionStudio's presets (**New from template...**, engine.spacecraft_templates; the transparency plan, Phase 5b): the preset's name and every number it gave the spacecraft as added (:func:`number_fields`, its name and orbit left out: the orbit is set after), so a value still as the preset gave it can be told from one changed since, whatever later versions do to the preset.
@@ -657,6 +726,15 @@ A deployed solar array that flexes: a rigid flat panel on a torsional spring-dam
 | `initial_rate_deg_s` | float | `0.0` | [deg/s] |
 | `generates_power` | bool | `True` |  |
 
+## SourcedValue
+
+A number and where it comes from. A placeholder when ``value`` is null or ``source`` is "TBD" (in any case): it gives "unknown" to every result that uses it (decision B-04).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `value` | float / None | `required` | the number, in the unit of the field that holds it; null for a placeholder |
+| `source` | str | `required` | where the number comes from (a data sheet, a rule); "TBD" marks a placeholder |
+
 ## SpaceWeatherConfig
 
 See engine/spaceweather.py and engine/service.py. Real data only (user requirement): ``source`` is ``"bundled"`` (the default: CelesTrak's SW-All file shipped with the app -- observed since 1957, a 45-day forecast, NOAA's monthly F10.7 forecast to 2041 -- or a newer one the startup prompt downloaded) or ``"local_file"`` (your own CelesTrak ``.txt``/``.csv`` file, used only when ``local_file_path`` is set). SpaceMissionStudio never accesses the network at runtime. The ``"synthetic"`` profile of schema versions 1-2 was removed; ``schema.migrations`` moves old files to ``"bundled"``.
@@ -717,6 +795,7 @@ See engine/spaceweather.py and engine/service.py. Real data only (user requireme
 | `model` | SpacecraftModelConfig / None | `None` |  |
 | `model_analyses` | ModelAnalysesConfig / None | `None` |  |
 | `thermal` | ThermalConfig / None | `None` | the thermal model on the 3D model (schema/thermal.py, SRS-F-29) |
+| `budgets` | BudgetsConfig / None | `None` | equipment list, system modes, power budget (schema/budgets.py, SRS-F-31) |
 
 ## SpacecraftModelConfig
 

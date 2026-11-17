@@ -13,6 +13,7 @@ do it, and what has been verified.
   - [3D spacecraft models](#3d-spacecraft-models)
   - [Analyses built on the 3D model](#analyses-built-on-the-3d-model)
   - [Thermal analysis](#thermal-analysis)
+  - [Equipment list and power budget](#equipment-list-and-power-budget)
   - [Operations planning](#operations-planning)
   - [Flight-software export](#flight-software-export)
   - [Software in the loop](#software-in-the-loop)
@@ -223,6 +224,30 @@ A lumped-parameter thermal model on the 3D model, solved after a run
 
 See templates 33 and 34, [Thermal analysis](../user-manual/thermal.md)
 and [the thermal model](../models/thermal.md).
+
+### Equipment list and power budget
+
+A spacecraft's `budgets` section (scenario schema version 5): an
+equipment list with a sourced mass and a sourced power per power mode,
+system modes that give each item a power mode, and sourced power margins
+per maturity category, a system margin, a converter efficiency per bus
+and a distribution loss. A placeholder ("TBD") makes every result that
+needs it unknown, never zero. From it:
+
+- **the static power budget per system mode** (`budgets`,
+  `api.power_budget`): per item, subsystem and bus, the load, the load
+  with unit and system margins, the power at the source and the peak, and
+  the duty-cycle average; System Budget Studio's calculation, checked
+  against its 17 reference cases and its 250 kg example;
+- **the mass budget**: each item whose mass the 3D model does not hold
+  is a line, with the S-120 growth allowance of its maturity (Run ›
+  Design Checks);
+- **the IDM-CIC import** fills it from the model's power modes and system
+  modes (`idm-import --budgets`);
+- **findings** for placeholders, items a mode leaves out, missing
+  margins, duty cycles that do not add up and unknown masses.
+
+No run uses it yet. See [Equipment list and power budget](../user-manual/budgets.md).
 
 ### Operations planning
 

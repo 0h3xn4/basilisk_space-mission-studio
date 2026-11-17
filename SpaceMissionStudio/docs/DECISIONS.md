@@ -3323,3 +3323,14 @@ The plan, its overlap table and its phases are in
   navigation rail; the "TBD" placeholder in the `budgets` section only;
   budget problems may show values; phase 1 builds on the IDM-CIC
   import's power modes. **Why:** the owner, 2026-11-17 (plan, section 7).
+
+## System Budget Studio merge, phase 1: the core (2026-11-17)
+
+- **Decision:** the choices of phase 1 are in the feature's own decisions
+  file, [`developer/system-budget-decisions.md`](developer/system-budget-decisions.md):
+  B-01 to B-14 from the design note, and B-15 to B-17 made while building
+  it (a read-only place for the section in the spacecraft editor, items
+  without power modes in the mass budget only, a placeholder with an
+  empty source). **Why:** CLAUDE.md asks for a decisions entry with each
+  engine or format change; the feature keeps its own, as thermal and
+  operations do.

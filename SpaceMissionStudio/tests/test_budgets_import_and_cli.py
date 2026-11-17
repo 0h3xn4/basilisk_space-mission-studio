@@ -273,3 +273,17 @@ def test_the_api_returns_the_engine_s_budget():
     scenario = fx.scenario(fx.sbs_clean_section())
     assert api.power_budget(scenario) == power_budget(scenario.spacecraft[0])
     assert api.power_budget(load_scenario(fx.STARTER)).modes == []
+
+
+def test_the_user_manual_page_s_example_is_valid_and_prints_as_shown(tmp_path, capsys):
+    """docs/user-manual/budgets.md: its section is a valid one, and the
+    command prints for it what the page shows."""
+    import re
+
+    page = (Path(__file__).resolve().parents[1] / "docs" / "user-manual" / "budgets.md").read_text(encoding="utf-8")
+    section = json.loads("{" + re.search(r"```json\n(.*?)```", page, re.S).group(1) + "}")["budgets"]
+    path = tmp_path / "scenario.json"
+    fx.scenario(section).save(path)
+    shown = re.search(r"```console\n\$ spacemissionstudio budgets scenario.json\n(.*?)```", page, re.S).group(1)
+    assert cli.main(["budgets", str(path)]) == 0
+    assert capsys.readouterr().out == shown

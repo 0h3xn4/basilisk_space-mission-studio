@@ -18101,3 +18101,42 @@ overhaul, with a rule for engine and format changes: a schema migration,
 unchanged golden files for the existing templates unless the owner
 decides otherwise, and a decisions entry. System Budget Studio's README
 says it is frozen at 2.15.1 and continues here.
+
+## System Budget Studio merge: phase 1, the core (2026-11-17)
+
+Phase 1's first pull request adds the equipment list and the static power
+budget without the window pages
+(`docs/developer/system-budget-phase1-design.md`, decisions B-01 to
+B-17).
+
+The scenario file goes to schema version 5 (B-01). The migration from 4
+only sets the version. Only the `schema_version` line of the 36
+templates changed, and `tests/data/scenario_hashes.json` was recorded
+again. A one-off check set the version of each new text back to 4 and
+got the old hashes, so the version is the only difference.
+
+`schema/budgets.py` is the section, per spacecraft (B-02), with sourced
+values: `{"value", "source"}`, a placeholder when the value is null or
+the source is "TBD" (B-04). `analyses/power_budget.py` re-implements
+System Budget Studio's static budget (its D-040). The port takes its 17
+reference cases with their numbers at 1e-12. Two cases changed with a
+decision: margins are in percent (B-07), and case 15 tests the file's
+order instead of the sorted ids (B-10). The SBS example
+`microsat_250kg_clean` became a fixture. A script compared the fixture
+with the example's YAML files, and SBS 2.15.1, run on the example, gives
+the five mode totals the test pins.
+
+The mass budget takes each item the 3D model does not hold. A check
+against the module before the change gave the same budget for all 47
+template spacecraft. The findings come from a check that returns nothing
+without a section, so the golden files are unchanged.
+
+Three choices were not in the design note (B-15 to B-17). The spacecraft
+editor dropped the section on every edit: it now keeps it, and its Power
+tab shows a read-only summary, because two GUI tests require a place for
+every spacecraft field. An item without power modes is in the mass
+budget only. A placeholder may have an empty source.
+
+The IDM-CIC import writes the section with `idm-import --budgets`
+(B-08). It matches items by `fullId` on a re-import and keeps the user's
+names, buses and maturities. The bus load is set as before.
