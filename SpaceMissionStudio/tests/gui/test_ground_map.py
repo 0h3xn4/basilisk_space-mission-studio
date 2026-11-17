@@ -301,7 +301,7 @@ def test_the_map_is_painted_in_a_worker_and_follows_the_playback(qtbot, monkeypa
     image, rect = gmap.image(), gmap.map_rect()
     ratio = gmap.canvas.devicePixelRatioF()
     assert image.width() == round(rect.width() * ratio) and image.height() == image.width() // 2
-    view.show_frame(150)
+    view.slider.setValue(150)  # as the user drags it: playback goes on from there
     assert gmap.frame == 150
     qtbot.waitUntil(gmap.is_up_to_date, timeout=10000)
     view.toggle_play()

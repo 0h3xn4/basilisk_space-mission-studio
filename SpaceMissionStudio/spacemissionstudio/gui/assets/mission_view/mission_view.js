@@ -28,7 +28,8 @@
  *
  * A lost WebGL context (the view moved to a window of its own, gui/breakout.py;
  * a driver reset) is recovered by the page itself: MV.recover makes a new
- * renderer and loads the same scene again, camera, view, frame and colours kept.
+ * renderer for the same scene (not loaded again), so the camera, view, frame,
+ * colours, ground tracks, station rings and glyphs stay as they were.
  *
  * Positions are kilometres in the run's inertial frame N (x, y, z of
  * three.js), held in double precision (JavaScript numbers). Every frame
