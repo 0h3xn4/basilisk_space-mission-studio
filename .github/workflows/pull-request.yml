@@ -115,7 +115,8 @@ jobs:
 
   build-windows:
     runs-on: windows-2025-vs2026
-    timeout-minutes: 105
+    # This fork: a build without a warm cache takes about 85 min before the tests.
+    timeout-minutes: 150
     needs: [pre-commit, clang-format]
     name: Windows (MAX Python)
     env:
@@ -167,6 +168,8 @@ jobs:
           if ($LastExitCode -ne 0) { exit $LastExitCode }
 
   build-macos:
+    # This fork gets no macos-26 runner: the job runs in upstream Basilisk only.
+    if: github.repository == 'AVSLab/basilisk'
     runs-on: macos-26
     timeout-minutes: 90
     needs: [pre-commit, clang-format]
@@ -222,7 +225,8 @@ jobs:
         run: ctest -C Release --output-on-failure
 
   docs:
-    runs-on: macos-26
+    # This fork: Ubuntu, as before the sync (the docs action installs with apt-get).
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/data-cache
