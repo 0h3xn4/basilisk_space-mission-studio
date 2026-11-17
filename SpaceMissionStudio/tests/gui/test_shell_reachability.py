@@ -170,7 +170,7 @@ _ROWS = {
         w, w.shell.page("results").buttons[w.clear_cursor_action], "results")),
     "**Analyses** › End of Life, Budget": lambda w: (_command(w, "analyses.end_of_life", "analyses.budget"),
                                                     _shown(w, w.lifetime_widget, "run"),
-                                                    _shown(w, w.budget_widget, "run")),
+                                                    _shown(w, w.budget_widget, "budgets")),  # Q3
     "**Tools** › 3D Model…": lambda w: (_command(w, "tools.model_3d"), _shown(
         w, w.shell.page("scenario").buttons[w.model_3d_action], "scenario")),
     "Tools › Flight Software": lambda w: (_command(w, "tools.flight_software"),
@@ -211,7 +211,7 @@ _ROWS = {
     "Scenario › JSON": lambda w: (_in_the_header(w, w.scenario_editor.json_button, "scenario"),
                                   _shown(w, w.scenario_editor.json_page, "scenario")),
     "Scenario › Analyses › End of Life, Budget": lambda w: (_shown(w, w.lifetime_widget, "run"),
-                                                           _shown(w, w.budget_widget, "run")),
+                                                           _shown(w, w.budget_widget, "budgets")),  # Q3
     "Scenario › Analyses › Flight Software": lambda w: _shown(w, w.flight_software_widget, "reports"),
     "Spacecraft › Budget (AD10) inputs": lambda w: _tree(
         w, f"Spacecraft > {_spacecraft_list(w).to_list()[0].name} > Budget (AD10)"),

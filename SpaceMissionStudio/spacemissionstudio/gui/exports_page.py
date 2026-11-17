@@ -68,7 +68,7 @@ EXPORTS = (
            "<file>.provenance.json beside it, with the batch's own (archive.provenance.json)"),
     Export("lifetime_json", "Lifetime estimate", "JSON", "Run › End of Life › Export JSON...", "lifetime.json",
            "In the file", "In the file: the inputs, rules, traces, decay curve, data files and the scenario's SHA-256"),
-    Export("budget_csv", "Budget", "CSV text", "Run › Budget › Copy as CSV", "Clipboard", "Its last lines",
+    Export("budget_csv", "Budget", "CSV text", "Budgets › Propellant › Copy as CSV", "Clipboard", "Its last lines",
            "Its last lines: the versions, the scenario's SHA-256 and the time"),
     Export("design_checks", "Design checks", "JSON, a CSV a table", "Run › Design Checks › Save...", "Folder chosen",
            "In the record; <file>.provenance.json", "In design_checks.json, and <file>.provenance.json beside each "

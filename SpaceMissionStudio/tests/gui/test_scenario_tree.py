@@ -182,4 +182,4 @@ def test_the_palette_goes_to_every_node(window):
     """The command palette lists each node of the scenario tree."""
     labels = [entry.label for entry in window.palette_entries()]
     assert "Go to > Scenario > Spacecraft > my-sat" in labels
-    assert "Go to > Run > Budget" in labels  # the analyses are pages of the Run area
+    assert "Go to > Budgets > Propellant" in labels  # the budgets are pages of the Budgets area (Q3)

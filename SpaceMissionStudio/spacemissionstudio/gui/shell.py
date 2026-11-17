@@ -161,6 +161,11 @@ class NavRail(QFrame):
         self.collapse_button.clicked.connect(lambda: self.set_collapsed(not self.collapsed))
         self._layout.addWidget(self.collapse_button, 0, Qt.AlignmentFlag.AlignHCenter)
         self.collapsed = False
+        # Icons only while the rail is too short for the names (a 720 px window with the Problems
+        # panel open: eight areas and their names need about 580 px). Not the user's choice:
+        # ``collapsed`` stays as it is, and the names come back when there is room.
+        self.squeezed = False
+        self._named_height = 0  # [px] the rail's height with the names, when it was squeezed
         self._show_collapse_state()
 
     def add_area(self, area: Area, keys: str = "", index: int = -1) -> QToolButton:
@@ -201,11 +206,35 @@ class NavRail(QFrame):
             self._show_label(area_id)
         self._show_collapse_state()
         self.collapsed_changed.emit(collapsed)
+        self._fit_names()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 -- Qt API name
+        super().resizeEvent(event)
+        self._fit_names()
+
+    def showEvent(self, event) -> None:  # noqa: N802 -- Qt API name
+        super().showEvent(event)
+        self._fit_names()
+
+    def _fit_names(self) -> None:
+        """Icons only while the names do not fit the rail's height (see
+        ``squeezed``); the names again once they fit."""
+        if self.collapsed or not self.isVisible() or not self.buttons:
+            return
+        needed = self._named_height if self.squeezed else self.sizeHint().height()
+        short = self.height() < needed
+        if short == self.squeezed:
+            return
+        if short:
+            self._named_height = needed
+        self.squeezed = short
+        for area_id in self.buttons:
+            self._show_label(area_id)
 
     def _show_label(self, area_id: str) -> None:
         button, label, keys = self.buttons[area_id], self._labels[area_id], self._keys[area_id]
         button.setText(label)
-        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly if self.collapsed
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly if self.collapsed or self.squeezed
                                   else Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         button.setToolTip(f"{label} ({keys})" if keys else label)
         button.setAccessibleName(label)

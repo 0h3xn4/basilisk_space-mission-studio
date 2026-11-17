@@ -88,6 +88,7 @@ from .problem_location import (GROUND_STATION, JSON_VIEW, MISSION_SEQUENCE, PROP
 from .run_worker import MonteCarloWorker, RunWorker
 from .scenario_editor import ScenarioEditorWidget
 from .budget_widget import BudgetWidget
+from .budgets_area import BudgetsViews
 from .design_checks_widget import DesignChecksWidget
 from .model_analyses_widget import ModelAnalysesWidget
 from .fsw_workbench_widget import FlightSoftwareWidget
@@ -114,6 +115,11 @@ from .compare_widget import CompareWidget
 from .workspace_panels import InspectorWidget, LogViewWidget, ProblemsWidget, install_log_view
 
 _FILE_FILTER = "SpaceMissionStudio scenario (*.json)"
+
+
+def _in_budgets(path: str) -> bool:
+    """Whether a spacecraft field's path is in its ``budgets`` section."""
+    return path == "budgets" or path.startswith(("budgets.", "budgets["))
 
 
 def _is_template(path: Path | None) -> bool:
@@ -406,12 +412,17 @@ class MainWindow(QMainWindow):
         self.run_page.enable_monte_carlo.connect(self._enable_monte_carlo)
         self.run_views.addTab(self.run_page, "Run")
         self.run_views.addTab(lifetime_scroll, "End of Life")
-        self.run_views.addTab(budget_scroll, "Budget")
         self.run_views.addTab(design_scroll, "Design Checks")
         self.run_views.addTab(self.thermal_scroll, "Thermal")
         self.run_views.addTab(self.plan_scroll, "Plan")
         self.run_views.addTab(self.history_view, "History")
         self.run_views.addTab(self.log_widget, "Log")
+        # The Budgets area (System Budget Studio merge, phase 1): the equipment list,
+        # the power and mass budgets, and the propellant budget, moved from Run › Budget (Q3).
+        self.budgets_views = BudgetsViews()
+        self.budgets_views.add_propellant(budget_scroll, self.budget_widget)
+        self.budgets_views.budgets_edited.connect(self._on_budgets_edited)
+        self.budgets_views.spacecraft_changed.connect(self._on_budgets_spacecraft_changed)
         # No run is listed until a scenario is open; then its own (U-33, landing page).
         self.results_widget.set_runs(self._listed_runs(), None)
         self._refresh_compare_tab()
@@ -716,8 +727,8 @@ class MainWindow(QMainWindow):
         for command_id, category, label, widget, area, tip in (
                 ("analyses.end_of_life", "Analyses", "&End of Life", self.lifetime_widget, "run",
                  "Re-entry and deorbit estimates."),
-                ("analyses.budget", "Analyses", "&Budget", self.budget_widget, "run",
-                 "Delta-V and propellant budgets."),
+                ("analyses.budget", "Analyses", "&Budget", self.budget_widget, "budgets",
+                 "Delta-V and propellant budgets: Budgets › Propellant."),
                 ("analyses.design_checks", "Analyses", "&Design Checks", self.design_checks_widget, "run",
                  "The 3D model's fields of view, thrusters, mass budget and launcher envelope."),
                 ("analyses.thermal", "Analyses", "&Thermal", self.thermal_widget, "run",
@@ -730,6 +741,18 @@ class MainWindow(QMainWindow):
                  "The data files, downloads and imports.")):
             # A bound method, not a lambda holding the window (see the status bar's).
             add(command_id, label, self._on_page_action, category=category, area=area, tip=tip).setData(widget)
+        # The Budgets area's commands: the Equipment page's and the area's own actions. Their
+        # shortcuts are the window's; Remove and Copy act on the page shown, else show it.
+        equipment = self.budgets_views.equipment_page
+        for command_id, action, tip in (
+                ("budgets.add_item", equipment.add_item_action,
+                 "Add an item to the equipment list of the spacecraft shown (Budgets › Equipment)."),
+                ("budgets.remove_item", equipment.remove_item_action,
+                 "Remove the item picked from the equipment list (Undo brings it back)."),
+                ("budgets.copy_csv", self.budgets_views.copy_action,
+                 "Copy the table of the Budgets page shown as CSV, with the scenario's provenance.")):
+            add(command_id, action.text(), self._on_budgets_command, category="Budgets", area="budgets",
+                action=action, tip=tip, keywords=("equipment list", "power budget", "mass budget"))
 
         # The inspector on the right, the Problems panel at the bottom, and
         # the layout back (U-05, M2b). Showing a panel from the keyboard
@@ -817,22 +840,25 @@ class MainWindow(QMainWindow):
 
     # -- areas: the navigation rail (gui.shell) ----------------------------------
     _AREAS = (("home", "house", "Home"), ("scenario", "file-text", "Scenario"), ("run", "play", "Run"),
-              ("results", "chart-line", "Results"), ("timeline", "chart-gantt", "Timeline"),
-              ("reports", "file-output", "Reports"))
+              ("results", "chart-line", "Results"), ("budgets", "calculator", "Budgets"),
+              ("timeline", "chart-gantt", "Timeline"), ("reports", "file-output", "Reports"))
+    # The palette's other words for an area (Go to > ...).
+    _AREA_KEYWORDS = {"timeline": ("events",), "budgets": ("equipment list", "power budget", "mass budget",
+                                                           "propellant")}
 
     def _build_areas(self) -> None:
         """The rail's areas, each hosting its screens unchanged (decision of
-        M2a), with the area's commands in its header; Ctrl+1 to Ctrl+6
-        open the six of the top."""
+        M2a), with the area's commands in its header; Ctrl+1 to Ctrl+7
+        open the seven of the top (Budgets is Ctrl+5: decision B-11)."""
         contents = {"home": self.load_scenario_widget, "scenario": self.scenario_editor, "run": self.run_views,
-                    "results": self.results_views, "timeline": self.event_timeline_widget,
-                    "reports": self.reports_views}
+                    "results": self.results_views, "budgets": self.budgets_views,
+                    "timeline": self.event_timeline_widget, "reports": self.reports_views}
         for order, (area_id, icon_name, label) in enumerate(self._AREAS):
             keys = f"Ctrl+{order + 1}"
             self.shell.register(area_id, icon_name, label, contents[area_id], order, keys=keys)
             action = self.commands.add(f"go.{area_id}", f"Go to {label}", None, category="Go", area=area_id,
                                        shortcut=keys, tip=f"Show the {label} area.",
-                                       keywords=("events",) if area_id == "timeline" else ())
+                                       keywords=self._AREA_KEYWORDS.get(area_id, ()))
             action.setData(area_id)
             action.triggered.connect(self._on_go_to_area)
         # While no scenario is open, the work areas say so, with the actions that open one.
@@ -870,15 +896,18 @@ class MainWindow(QMainWindow):
         self.shell.area_changed.connect(self._refresh_run_page)
         for area_id in ("results", "timeline"):
             self.shell.page(area_id).add_command(self.clear_cursor_action)
+        # Budgets: the spacecraft picker (shown when there are several) in the header.
+        self.shell.page("budgets").add_widget(self.budgets_views.selector)
 
         self.shell.area_changed.connect(self._on_area_changed)
+        self.shell.area_changed.connect(self.budgets_views.refresh_if_stale)  # computed when shown
         # Compare, refreshed when shown (M5a): its tab, or the Results area, chosen.
         self.shell.area_changed.connect(self._refresh_compare_if_shown)
         self.results_views.currentChanged.connect(self._refresh_compare_if_shown)
         self.shell.rail.collapsed_changed.connect(self.rail_collapse_action.setChecked)
         self.scenario_editor.page_tree.tree.currentItemChanged.connect(self._refresh_breadcrumbs)
         self.scenario_editor.mode_changed.connect(self._refresh_breadcrumbs)
-        for tabs in (self.results_views, self.run_views):
+        for tabs in (self.results_views, self.run_views, self.budgets_views):
             tabs.currentChanged.connect(self._refresh_breadcrumbs)
         # The menu bar: the same commands, by menu (gui.menu_bar).
         self.menus = build_menu_bar(self.menuBar(), self.commands, self._on_recent_menu)
@@ -887,13 +916,14 @@ class MainWindow(QMainWindow):
         self._on_run_mode_changed()  # the Run area's mode button has its text too
 
     # The areas that work on an open scenario: an empty state while none is.
-    _SCENARIO_AREAS = ("scenario", "run", "results", "timeline", "reports")
+    _SCENARIO_AREAS = ("scenario", "run", "results", "budgets", "timeline", "reports")
     # The commands that need an open scenario: disabled while none is (Settings, Help, New and Open stay).
     _SCENARIO_COMMANDS = ("file.save", "file.save_as", "file.change_history", "run.run", "run.mode.single",
                           "run.mode.monte_carlo", "run.mode.sil", "run.live_plot", "run.open_monte_carlo",
                           "run.clear_cursor", "tools.model_3d", "tools.ccsds_export",
                           "analyses.end_of_life", "analyses.budget", "analyses.design_checks",
-                          "tools.flight_software", "view.explain")
+                          "tools.flight_software", "view.explain", "budgets.add_item", "budgets.remove_item",
+                          "budgets.copy_csv")
 
     def _on_go_to_area(self) -> None:
         self.shell.show_area(self.sender().data())
@@ -1020,8 +1050,8 @@ class MainWindow(QMainWindow):
                 names.insert(0, item.text(0))
                 item = item.parent()
             parts += names
-        elif area_id in ("results", "run"):
-            tabs = self.results_views if area_id == "results" else self.run_views
+        elif area_id in ("results", "run", "budgets"):
+            tabs = {"results": self.results_views, "run": self.run_views, "budgets": self.budgets_views}[area_id]
             parts.append(tabs.tabText(tabs.currentIndex()).replace("&", ""))
         self.top_bar.set_breadcrumbs(parts)
 
@@ -1248,10 +1278,13 @@ class MainWindow(QMainWindow):
         Scenario Editor at the scenario's own field; the propagation setup,
         a spacecraft's or a ground station's editor at the field; a 3D
         model's problem that spacecraft's model editor."""
-        self._show_scenario_editor()
         editor = self.scenario_editor
         location = locate(text, [c.name for c in editor.spacecraft_list.to_list()],
                           [g.name for g in editor.ground_station_list.to_list()])
+        if location is not None and location.area == SPACECRAFT and _in_budgets(location.path):
+            self.show_budgets(location.name)  # the section's place is the Budgets area (B-15, PR B)
+            return
+        self._show_scenario_editor()
         if editor.json_mode and (location is None or location.area != JSON_VIEW) and not editor.set_json_mode(False):
             return  # a field of the form, but the JSON text does not apply: its banner says why (M4b)
         if editor.show_range_problem(text):
@@ -1278,6 +1311,31 @@ class MainWindow(QMainWindow):
             self._show_data_panel()
         else:
             self.show_view(widget)
+
+    def show_budgets(self, spacecraft: str = "") -> None:
+        """Budgets › Equipment, of the spacecraft named ``spacecraft`` when given."""
+        self.show_view(self.budgets_views.equipment_page)
+        if spacecraft:
+            self.budgets_views.show_spacecraft(spacecraft)
+
+    def _on_budgets_edited(self, spacecraft: str, section) -> None:
+        """An edit on Budgets › Equipment: into the scenario, as any edit
+        (saved, undone, checked: its problems are in the Problems panel)."""
+        self.scenario_editor.set_budgets(spacecraft, section)
+
+    def _on_budgets_spacecraft_changed(self, name: str) -> None:
+        """The Budgets header's spacecraft is Propellant's too."""
+        combo = self.budget_widget.spacecraft_combo
+        if combo.findText(name) >= 0:
+            combo.setCurrentText(name)
+
+    def _on_budgets_command(self) -> None:
+        """A Budgets command from the menu or the palette: its page in view
+        (Copy as CSV copies the page shown, so it keeps it)."""
+        if self.sender() is self.budgets_views.copy_action:
+            self.shell.show_area("budgets")
+        else:
+            self.show_view(self.budgets_views.equipment_page)
 
     def _show_scenario_editor(self) -> None:
         self.show_view(self.scenario_editor)
@@ -1497,7 +1555,7 @@ class MainWindow(QMainWindow):
             if area.id == "scenario":
                 continue  # its tree's paths below
             entries.append(PaletteEntry(f"Go to > {area.label}", lambda area_id=area.id: self.shell.show_area(area_id),
-                                        keywords="events" if area.id == "timeline" else ""))
+                                        keywords=" ".join(self._AREA_KEYWORDS.get(area.id, ()))))
         # With no scenario open, its pages and the run views are not offered: their areas show the empty state.
         scenario_pages = self.scenario_editor.page_tree.paths() if self._scenario_open else []
         for path, item in scenario_pages:
@@ -1505,7 +1563,7 @@ class MainWindow(QMainWindow):
         if self._scenario_open:
             entries.append(PaletteEntry("Go to > Scenario > JSON",
                                         lambda: self.show_view(self.scenario_editor.json_page), keywords="form text"))
-        view_tabs = (("Results", self.results_views), ("Run", self.run_views),
+        view_tabs = (("Results", self.results_views), ("Run", self.run_views), ("Budgets", self.budgets_views),
                      ("Reports", self.reports_views)) if self._scenario_open else ()
         for area_label, tabs in view_tabs:
             for index in range(tabs.count()):
@@ -1621,6 +1679,9 @@ class MainWindow(QMainWindow):
         self._refresh_top_bar()
         self.lifetime_widget.set_scenario(scenario)
         self.budget_widget.set_scenario(scenario)
+        # The Budgets area edits the section of a scenario that does not validate too.
+        self.budgets_views.set_scenario(scenario, scenario if scenario is not None
+                                        else self.scenario_editor.draft_scenario())
         self.design_checks_widget.set_scenario(scenario, self._current_path.parent if self._current_path else None)
         self.lifetime_widget.reentry_section.set_scenario(
             scenario, self._current_path.parent if self._current_path else None)
