@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata of SpaceMissionStudio: what software centres (the
+  Ubuntu App Center, GNOME Software, KDE Discover) show about the app.
+  packaging/metainfo.py fills @VERSION@ and @RELEASES@ from the version
+  and CHANGELOG.md when packaging/build_deb.sh builds the .deb, which
+  installs the result to /usr/share/metainfo/. The app never reads it.
+  This file is licensed CC0-1.0, as AppStream asks of metadata.
+-->
+<component type="desktop-application">
+  <id>io.github._0h3xn4.SpaceMissionStudio</id>
+  <name>SpaceMissionStudio</name>
+  <summary>Design and analyse spacecraft missions with Basilisk</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>EUPL-1.2</project_license>
+  <developer id="io.github._0h3xn4">
+    <name>SpaceMissionStudio contributors</name>
+  </developer>
+
+  <description>
+    <p>
+      SpaceMissionStudio is a desktop app for planning and simulating satellite
+      missions. You describe a mission in forms, run it and read the results,
+      all without writing a line of code. The numbers come from Basilisk, the
+      astrodynamics framework of the AVS Lab at the University of Colorado
+      Boulder; SpaceMissionStudio adds the windows, the scenario files, the
+      plots and the checks around it.
+    </p>
+    <p>
+      Start from one of the template missions, from a single orbit to a
+      complete small satellite with power and a radio link, or build your own.
+      Then look at what the mission does:
+    </p>
+    <ul>
+      <li>orbits, ground passes and eclipses on a timeline and in 3D</li>
+      <li>attitude, pointing, battery charge and link margin</li>
+      <li>propellant, lifetime and the end-of-life disposal</li>
+      <li>power and mass budgets for the equipment list</li>
+      <li>Monte Carlo batches that show how far the results spread</li>
+    </ul>
+    <p>
+      The package carries its own Python, Basilisk and reference data, so it
+      runs offline. There is no telemetry and no update check.
+    </p>
+    <p>
+      SpaceMissionStudio was written by Claude, Anthropic's AI model, through
+      Claude Code. A person reviewed the work and decided what to build, but
+      did not write the code.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">spacemissionstudio.desktop</launchable>
+  <provides>
+    <binary>spacemissionstudio</binary>
+  </provides>
+
+  <url type="homepage">https://github.com/0h3xn4/basilisk_space-mission-studio</url>
+  <url type="bugtracker">https://github.com/0h3xn4/basilisk_space-mission-studio/issues</url>
+  <url type="vcs-browser">https://github.com/0h3xn4/basilisk_space-mission-studio</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Home: start a mission from a template</caption>
+      <image type="source" width="1600" height="900">https://raw.githubusercontent.com/0h3xn4/basilisk_space-mission-studio/spacemissionstudio-v@VERSION@/SpaceMissionStudio/docs/images/load_scenario_tab.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A mission described in forms</caption>
+      <image type="source" width="1600" height="900">https://raw.githubusercontent.com/0h3xn4/basilisk_space-mission-studio/spacemissionstudio-v@VERSION@/SpaceMissionStudio/docs/images/scenario_editor_tab.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Ground passes and eclipses on the timeline</caption>
+      <image type="source" width="1600" height="900">https://raw.githubusercontent.com/0h3xn4/basilisk_space-mission-studio/spacemissionstudio-v@VERSION@/SpaceMissionStudio/docs/images/events_tab.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The spread of a Monte Carlo batch</caption>
+      <image type="source" width="1600" height="900">https://raw.githubusercontent.com/0h3xn4/basilisk_space-mission-studio/spacemissionstudio-v@VERSION@/SpaceMissionStudio/docs/images/monte_carlo_tab.png</image>
+    </screenshot>
+  </screenshots>
+
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+@RELEASES@
+  </releases>
+</component>

@@ -8,6 +8,35 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Added
+
+- **AppStream metadata in the `.deb`**
+  (`/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml`):
+  software centres such as the Ubuntu App Center now show the app's
+  description, licence (EUPL-1.2), four screenshots, age rating and its
+  newest releases. `packaging/metainfo.py` writes it from a template and
+  the CHANGELOG when the package is built. The app never reads it.
+- The `.deb` and `install.sh` install the app icon at every hicolor size
+  from 16 to 512 px and as a scalable SVG, not only at 256 px.
+- The Windows setup program, its shortcuts and its entry under Apps show
+  the app icon (`packaging/windows/spacemissionstudio.ico`, made by
+  `packaging/make_ico.py`), not Python's icon. `install.ps1`'s Start Menu
+  shortcut gets it too.
+- CI validates the desktop entry (`desktop-file-validate`) and the
+  AppStream metadata (`appstreamcli validate --no-net`), and the release
+  workflow checks the icons and the metadata in the built `.deb`.
+
+### Fixed
+
+- **The app icon was hard to see on Ubuntu's panels.** The glyph had no
+  background: its blue panels had 2.55 : 1 on the dark dock (#303030) and
+  its gold body 1.86 : 1 on light panels (#FAFAFA). The same glyph now
+  sits on a dark rounded plate with a light rim: 5.15 : 1 or more on the
+  dark panels, 15.0 : 1 or more on the light ones
+  (`tests/gui/test_icons.py`).
+
 ## 2.11.0 (2026-11-17)
 
 SpaceMissionStudio now keeps a spacecraft's equipment list and works out
