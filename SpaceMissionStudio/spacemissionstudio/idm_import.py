@@ -111,6 +111,7 @@ class ImportSummary:
     power_average_w: float | None = None  # [W] duty-cycle average, when the duty cycles add up to one
     panels: tuple = ()  # (solar array panels, total area [m^2], normal lines, the largest group's (+) normal)
     power_set: list = field(default_factory=list)  # what the import set in the power budget, as text
+    budgets_set: list = field(default_factory=list)  # what the import wrote in the budgets section, as text
     properties: list = field(default_factory=list)  # (name, value type, kind labels, values) on the devices found
     origin: str = ""  # one of ORIGINS, set by merge
     origin_m: list = field(default_factory=list)  # [m] the origin (B) in the body element's frame, set by merge
@@ -175,6 +176,8 @@ class ImportSummary:
                        + f"; normal line {normal} in the body frame (+), or its opposite (-)")
         for text in self.power_set:
             out.append(f"  power budget: {text}")
+        for text in self.budgets_set:
+            out.append(f"  budgets: {text}")
         if self.properties:
             out.append(f"  properties of the devices found ({len(self.properties)}): "
                        + "; ".join(f"{name} ({value_type}) on {', '.join(kinds)}: "
@@ -277,12 +280,16 @@ class PowerPlan:
     imported units in each system mode (``idm.power.ModePower``), the
     duty-cycle average [W] (None unless the duty cycles add up to one), and
     the solar array panels (``idm.power.Panel``) and their groups by normal
-    line (``idm.power.panel_groups``, largest area first)."""
+    line (``idm.power.panel_groups``, largest area first). ``units`` are
+    the imported units that draw power (their equipment has power modes,
+    or a system mode maps them), for the ``budgets`` section."""
 
     modes: list
     average_w: float | None
     panels: list
     groups: list
+    units: list = field(default_factory=list)  # idm.model.PlacedUnit
+    own_modes: dict = field(default_factory=dict)  # {unit fullId: [(power-mode name, power [W])]} of its equipment
 
 
 @dataclass
@@ -293,16 +300,25 @@ class PowerChoice:
     panel area and normal from the largest group of panels; ``normal_sign``
     +1 or -1, which side of the group's normal line carries the cells (the
     file does not say); ``battery`` whether to set the battery capacity from
-    the batteries' mapped capacity property (:func:`set_mappings`)."""
+    the batteries' mapped capacity property (:func:`set_mappings`);
+    ``budgets`` whether to write the spacecraft's ``budgets`` section: the
+    equipment list and the system modes (:func:`apply_budgets`, decision
+    B-08)."""
 
     bus_load: str = ""
     panels: bool = False
     normal_sign: int = 1
     battery: bool = False
+    budgets: bool = False
+
+    @property
+    def power(self) -> bool:
+        """Whether it sets anything in the power budget (``PowerConfig``)."""
+        return bool(self.bus_load) or self.panels or self.battery
 
     @property
     def any(self) -> bool:
-        return bool(self.bus_load) or self.panels or self.battery
+        return self.power or self.budgets
 
 
 #: Of a power budget an import creates (the panel area set, none there):
@@ -599,7 +615,10 @@ def _power_plan(model: IdmModel, placement: Placement, body: str, mounted: dict,
     modes = power.mode_powers(model, units)
     arrays = {d.source_id for d in devices if d.kind == "solar_array"}
     found = power.panels(placement, placement.element_frames[body], [u for u in units if u.full_id in arrays])
-    return PowerPlan(modes, power.duty_cycle_average(modes), found, power.panel_groups(found))
+    mapped = {full_id for mode in modes for full_id in mode.by_unit}
+    drawing = [u for u in units if u.full_id in mapped or power.has_power_modes(model, u)]
+    own = {u.full_id: power.equipment_power_modes(model, u) for u in drawing}
+    return PowerPlan(modes, power.duty_cycle_average(modes), found, power.panel_groups(found), drawing, own)
 
 
 def power_values(the_plan: Plan, choice: PowerChoice) -> dict:
@@ -695,7 +714,9 @@ def apply_power(scenario, spacecraft: str, the_plan: Plan, choice: PowerChoice, 
     sc = next((s for s in scenario.spacecraft if s.name == spacecraft), None)
     if sc is None:
         raise IdmError(f"no spacecraft {spacecraft!r} in the scenario")
-    if not choice.any:
+    if choice.budgets:
+        apply_budgets(scenario, spacecraft, the_plan, author, summary)
+    if not choice.power:
         return {}
     values = power_values(the_plan, choice)
     details = power_details(the_plan, choice)
@@ -733,6 +754,159 @@ def apply_power(scenario, spacecraft: str, the_plan: Plan, choice: PowerChoice, 
     if summary is not None:
         summary.power_set.extend(lines)
     return values
+
+
+#: The bus an import puts every item on (the file names none).
+BUDGETS_BUS = "main"
+
+
+def _budget_name(text: str, fallback: str) -> str:
+    """``text`` as a name of the ``budgets`` section (no '.', ']' or
+    surrounding spaces; schema.budgets)."""
+    cleaned = " ".join(str(text or "").replace(".", "_").replace("]", ")").split())
+    return cleaned or fallback
+
+
+def _unit_mass_kg(unit) -> float:
+    """[kg] A placed unit's dry mass as the model import takes it: its
+    manual mass, else its shapes' masses."""
+    eq = unit.equipment
+    if eq.manual:
+        return _tidy(max(0.0, eq.manual_mass_kg))
+    return _tidy(sum(max(0.0, float(shape.mass_kg)) for shape in eq.shapes))
+
+
+def _held_by_model(sc, unit) -> bool:
+    """Whether the spacecraft's 3D model holds a part or point mass of
+    ``unit`` (by the source ids the model import gives them)."""
+    if sc.model is None:
+        return False
+    ids = {unit.full_id, *unit.shape_ids.values(), *(f"{unit.full_id}_sh.{shape.id}" for shape in unit.equipment.shapes)}
+    return any(item.source_id in ids for item in [*sc.model.parts, *sc.model.equipment])
+
+
+def apply_budgets(scenario, spacecraft: str, the_plan: Plan, author: str = "",
+                  summary: ImportSummary | None = None) -> int:
+    """Write the equipment list and the system modes of ``the_plan`` into
+    spacecraft ``spacecraft``'s ``budgets`` section (decision B-08;
+    ``docs/developer/system-budget-phase1-design.md``, section 7), and
+    record it (an import record of target "budgets"). Returns the number of
+    items written.
+
+    One item per imported unit that draws power, ``source_id`` its
+    ``fullId``, ``subsystem`` its IDM subsystem, ``mass_in_model`` when the
+    3D model holds its shapes, else its mass; one power mode per power mode
+    of its equipment a system mode uses (a custom power is "custom
+    <system mode>"), average and peak both the file's power (all of the
+    equipment's power modes when no system mode maps the unit); one system
+    mode per system mode, with its duty cycle, listing the units it maps (a
+    unit it does not map is not listed: its power there is unknown, B-09);
+    one bus, "main". The file gives no converter efficiency, distribution
+    loss or margin: they are placeholders ("TBD"), never guessed.
+
+    A re-import matches the items by ``source_id``: their power modes,
+    mass and subsystem are the file's again; their name, bus, maturity and
+    mass column stay as the user set them. Items the file no longer has,
+    the user's own items and modes, and the numbers already given stay."""
+    from .schema import budgets as budgets_schema
+    from .schema.budgets import (BudgetBusConfig, BudgetEquipmentConfig, BudgetModeConfig, BudgetPowerModeConfig,
+                                 BudgetsConfig, SourcedValue)
+
+    sc = next((s for s in scenario.spacecraft if s.name == spacecraft), None)
+    if sc is None:
+        raise IdmError(f"no spacecraft {spacecraft!r} in the scenario")
+    power_plan = the_plan.power
+    if power_plan is None or not power_plan.units:
+        if summary is not None:
+            summary.budgets_set.append("not written: no imported unit has power modes")
+        return 0
+    source = f"IDM-CIC file {Path(the_plan.summary.source).name}"
+
+    def tbd() -> SourcedValue:
+        return SourcedValue(None, budgets_schema.PLACEHOLDER_SOURCE)
+
+    def sourced(power_w: float) -> SourcedValue:
+        if power_w < 0.0:  # a power the budget cannot take: a placeholder that says why
+            return SourcedValue(None, f"{source}: a negative power, {power_w:g} W, not taken")
+        return SourcedValue(_tidy(power_w), source)
+
+    made = sc.budgets is None
+    section = sc.budgets if sc.budgets is not None else BudgetsConfig()
+    if not any(bus.name == BUDGETS_BUS for bus in section.buses):
+        section.buses.append(BudgetBusConfig(BUDGETS_BUS, tbd()))
+    if section.distribution_loss is None:
+        section.distribution_loss = tbd()
+    if section.system_power_margin_percent is None:
+        section.system_power_margin_percent = tbd()
+    by_source = {item.source_id: item for item in section.equipment if item.source_id}
+    taken = {item.name for item in section.equipment}
+    names: dict = {}  # unit fullId -> item name
+    chosen: dict = {}  # (unit fullId, system mode fullId) -> power-mode name
+    added = updated = 0
+    for unit in power_plan.units:
+        modes: dict = {}  # power-mode name -> power [W]
+        for mode_power in power_plan.modes:
+            found = mode_power.by_unit.get(unit.full_id)
+            if found is None:
+                continue
+            power_w, how = found
+            name = _budget_name(f"custom {mode_power.mode.name}" if how == "custom" else how, "mode")
+            if name in modes and modes[name] != power_w:
+                name = unique_name(name, set(modes))
+            modes.setdefault(name, power_w)
+            chosen[(unit.full_id, mode_power.mode.full_id)] = name
+        if not modes:  # no system mode maps it: its own power modes, so the modes say it is unstated
+            for name, power_w in power_plan.own_modes.get(unit.full_id, []):
+                modes.setdefault(unique_name(_budget_name(name, "mode"), set(modes)), power_w)
+        held = _held_by_model(sc, unit)
+        item = by_source.get(unit.full_id)
+        if item is None:
+            item = BudgetEquipmentConfig(unique_name(_budget_name(unit.equipment.name, "unit"), taken),
+                                         bus=BUDGETS_BUS, source_id=unit.full_id)
+            section.equipment.append(item)
+            added += 1
+        else:
+            updated += 1
+        item.subsystem = unit.subsystem
+        item.power_modes = [BudgetPowerModeConfig(name, sourced(power_w), sourced(power_w))
+                            for name, power_w in modes.items()]
+        item.mass_in_model = held
+        item.mass_kg = None if held else SourcedValue(_unit_mass_kg(unit), source)
+        item.bus = item.bus or BUDGETS_BUS
+        names[unit.full_id] = item.name
+    imported = set(names.values())
+    mode_names: set = set()
+    for mode_power in power_plan.modes:
+        name = unique_name(_budget_name(mode_power.mode.name, "mode"), mode_names)
+        duty = mode_power.mode.duty_cycle
+        duty = float(duty) if 0.0 <= duty <= 1.0 else None
+        units = {names[full_id]: chosen[(full_id, mode_power.mode.full_id)] for full_id in mode_power.by_unit
+                 if full_id in names}
+        mode = next((m for m in section.modes if m.name == name), None)
+        if mode is None:
+            section.modes.append(BudgetModeConfig(name, duty, units))
+        else:
+            mode.duty_cycle = duty
+            mode.units = {k: v for k, v in mode.units.items() if k not in imported} | units
+    sc.budgets = section
+    placeholders = [what for what, value in (("converter efficiency (bus main)",
+                                              next(b for b in section.buses if b.name == BUDGETS_BUS)
+                                              .converter_efficiency),
+                                             ("distribution loss", section.distribution_loss),
+                                             ("system power margin", section.system_power_margin_percent))
+                    if value is None or value.placeholder]
+    details = {"units": f"{len(names)} imported unit(s) that draw power; {len(power_plan.modes)} system mode(s)"}
+    if placeholders:
+        details["placeholders"] = ", ".join(placeholders)
+    put_import(scenario, ImportRecord(spacecraft, "budgets", FORMAT, the_plan.summary.source, the_plan.summary.sha256,
+                                      budgets_schema.import_values(sc),
+                                      datetime.now(UTC).replace(microsecond=0).isoformat(), author, details))
+    if summary is not None:
+        summary.budgets_set.append(
+            f"{'made' if made else 'updated'}: {added} item(s) added, {updated} updated, {len(power_plan.modes)} "
+            "system mode(s)" + (f"; not in the file, so placeholders (TBD) to set: {', '.join(placeholders)}"
+                                if placeholders else ""))
+    return len(names)
 
 
 def unset_power(scenario) -> list[tuple[str, list]]:

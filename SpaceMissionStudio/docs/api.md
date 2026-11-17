@@ -18,7 +18,7 @@ return are the engine's own (`Scenario`, `ResultSet`, `EndOfLife`,
 whose names start with `_` are not.
 
 Without Basilisk, `template`, `load`, `validate`, `assumptions`,
-`compare` and `design_checks` work; the others need it.
+`compare`, `design_checks` and `power_budget` work; the others need it.
 
 ## The functions
 
@@ -37,6 +37,7 @@ Without Basilisk, `template`, `load`, `validate`, `assumptions`,
 | `monte_carlo(scenario, archive_dir, allow_scripts=False, overwrite=False)` | `MonteCarloBatch` | The scenario's Monte Carlo batch, archived with its provenance; raises `MonteCarloError` when it has none; `overwrite=True` replaces an earlier batch in `archive_dir` |
 | `compare(a_scenario, a_result, b_scenario, b_result)` | `Comparison` | Two runs side by side (Results > Compare) |
 | `design_checks(scenario, spacecraft=None, samples=None, base_dir=None)` | `DesignReport` | The 3D model's design checks: field-of-view obstruction, thruster authority and plumes, mass budget, launcher envelope, and their `findings()` |
+| `power_budget(scenario, spacecraft=None)` | `PowerBudget` | The static power budget of the spacecraft's `budgets` section per system mode: each mode's items, subsystems, buses and totals (load, with margins, at the source; `None` for unknown), the numbers used with their sources, the findings and `duty_cycle_average()` |
 | `model_analyses(scenario, result, spacecraft=None, base_dir=None)` | `RunReport` | A run's model analyses: the disturbance-torque budget, blinding, antenna obstruction, array shading, exposure and brightness; `base_dir` resolves the model's relative mesh paths (default: the scenario file's folder) |
 | `reentry(scenario, spacecraft=None, population_density_per_km2=None, base_dir=None)` | `ReentryEstimate` | The preliminary re-entry casualty estimate from the 3D model |
 | `thermal(scenario, result, spacecraft=None, cases=None, base_dir=None, size_heaters=True)` | `ThermalAnalysis` | The thermal analysis after a run, for a spacecraft with a `thermal` section: per case the node temperatures, heat flows, the summary against the limits, heaters with their sized power, radiators, limit events and the energy balance |
@@ -114,6 +115,13 @@ first spacecraft's 3D model and returns a `DesignReport`. Its `fov`,
 report)` the record `spacemissionstudio check-design --out` writes.
 Pass `base_dir` (the scenario file's folder) when the model reads mesh
 files by relative path.
+
+`api.power_budget(scenario)` needs no run and no Basilisk either. It
+returns the static power budget of the first spacecraft's `budgets`
+section (the equipment list and the system modes): for each mode, the
+load, the load with the margins and the power at the source, with `None`
+where a number is unknown. `findings` says what is unknown and why; the
+same numbers as `spacemissionstudio budgets` prints.
 
 `api.model_analyses(scenario, result)` reads a run's model analyses (set
 in the spacecraft's `model_analyses`) from the run `api.run` returned, and
