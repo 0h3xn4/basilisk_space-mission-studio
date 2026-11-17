@@ -62,3 +62,21 @@ def test_a_problem_in_the_section_has_a_place_in_the_editor(qtbot):
     plain = SpacecraftEditorDialog(config=load_scenario(fx.STARTER).spacecraft[0])
     qtbot.addWidget(plain)
     assert plain.budgets_group.isHidden()
+
+
+def test_the_design_checks_page_shows_an_unknown_mass(qtbot, tmp_path):
+    """Run › Design Checks shows the equipment list's lines; a placeholder
+    mass reads "unknown" and the page saves its tables."""
+    from spacemissionstudio.gui.design_checks_widget import DesignChecksWidget
+
+    page = DesignChecksWidget()
+    qtbot.addWidget(page)
+    page.set_scenario(fx.scenario(), fx.TEMPLATES)
+    page.check()
+    qtbot.waitUntil(lambda: page.report is not None and page._worker is None, timeout=30000)
+    cells = [[page.mass_table.cell(r, c) for c in range(6)] for r in range(page.mass_table.row_count())]
+    assert [row[0] for row in cells] == ["OBC", "camera", "harness"]
+    assert cells[2][3] == "unknown" and cells[2][5] == "unknown" and cells[0][3] == "1.20"
+    assert page.mass_sheet.value("Basic dry mass") == "4.20"
+    assert "1 line(s) of unknown mass" in page.notes_label.text()
+    assert "mass_budget.csv" in {p.name for p in page.save(tmp_path)}

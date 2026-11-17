@@ -729,7 +729,8 @@ def cmd_check_design(args: argparse.Namespace) -> int:
     print(f"  mass budget ({mass.policy}): basic dry {mass.basic_dry_kg:.2f} kg, growth {mass.growth_kg:.2f} kg, "
           f"system margin {mass.system_margin_kg:.2f} kg, propellant {mass.propellant_kg:.2f} kg, launch "
           f"{mass.launch_mass_kg:.2f} kg"
-          + ("" if mass.mass_limit_kg is None else f" against {mass.mass_limit_kg:g} kg ({mass.limit_source})"))
+          + ("" if mass.mass_limit_kg is None else f" against {mass.mass_limit_kg:g} kg ({mass.limit_source})")
+          + (f"; incomplete: {len(mass.unknown)} line(s) of unknown mass" if mass.unknown else ""))
     if report.launcher is not None:
         check = report.launcher
         print(f"  launcher ({check.envelope}, {check.configuration}): "

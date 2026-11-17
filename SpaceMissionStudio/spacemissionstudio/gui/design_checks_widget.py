@@ -67,6 +67,12 @@ class _Worker(QThread):
             self.failed.emit(f"{type(exc).__name__}: {exc}")
 
 
+def _kg(value) -> str:
+    """A mass in a table cell; "unknown" for a line whose mass is a
+    placeholder of the equipment list (analyses.mass_budget)."""
+    return "unknown" if value is None else f"{value:.2f}"
+
+
 def _group(title: str, table: DataTable) -> QGroupBox:
     group = QGroupBox(title)
     QVBoxLayout(group).addWidget(table)
@@ -201,8 +207,8 @@ class DesignChecksWidget(QWidget):
         self.plume_group.setVisible(bool(report.plumes))
         mass = report.mass
         self.mass_table.set_table(("Item", "Subsystem", "Maturity", "Basic [kg]", "Growth [%]", "Growth [kg]"),
-                                  [Row((r["item"], r["subsystem"], r["maturity"], f"{r['basic_mass_kg']:.2f}",
-                                        f"{r['growth_percent']:g}", f"{r['growth_kg']:.2f}"),
+                                  [Row((r["item"], r["subsystem"], r["maturity"], _kg(r["basic_mass_kg"]),
+                                        f"{r['growth_percent']:g}", _kg(r["growth_kg"])),
                                        tooltips={4: r["column"]}) for r in mass.rows()], numeric=(3, 4, 5), stretch=0)
         self.mass_group.setVisible(True)
         self.mass_group.setTitle(f"Mass budget ({mass.policy})")
