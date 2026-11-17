@@ -203,6 +203,9 @@ def test_the_debian_copyright_file_names_each_bundled_part_and_its_licence():
     site = "opt/spacemissionstudio/python/lib/python3.14/site-packages/"
     expected = {
         "usr/bin/spacemissionstudio": "EUPL-1.2",
+        "usr/share/icons/hicolor/256x256/apps/spacemissionstudio.png": "EUPL-1.2",
+        "usr/share/icons/hicolor/scalable/apps/spacemissionstudio.svg": "EUPL-1.2",
+        "usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml": "CC0-1.0",
         site + "spacemissionstudio/cli.py": "EUPL-1.2",
         site + "spacemissionstudio/gui/assets/fonts/inter/Inter-Regular.ttf": "OFL-1.1",
         site + "spacemissionstudio/gui/assets/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf": "OFL-1.1",

@@ -12,6 +12,21 @@ fixes bugs.
 
 ### Added
 
+- **AppStream metadata in the `.deb`**
+  (`/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml`):
+  software centres such as the Ubuntu App Center now show the app's
+  description, licence (EUPL-1.2), four screenshots, age rating and its
+  newest releases. `packaging/metainfo.py` writes it from a template and
+  the CHANGELOG when the package is built. The app never reads it.
+- The `.deb` and `install.sh` install the app icon at every hicolor size
+  from 16 to 512 px and as a scalable SVG, not only at 256 px.
+- The Windows setup program, its shortcuts and its entry under Apps show
+  the app icon (`packaging/windows/spacemissionstudio.ico`, made by
+  `packaging/make_ico.py`), not Python's icon. `install.ps1`'s Start Menu
+  shortcut gets it too.
+- CI validates the desktop entry (`desktop-file-validate`) and the
+  AppStream metadata (`appstreamcli validate --no-net`), and the release
+  workflow checks the icons and the metadata in the built `.deb`.
 - **Temperatures on Results › 3D View.** After Run › Thermal solves the
   run shown, the 3D View's new **Colours** list offers each thermal case.
   Pick one, and each part of the spacecraft takes its thermal node's
@@ -33,6 +48,12 @@ fixes bugs.
 
 ### Fixed
 
+- **The app icon was hard to see on Ubuntu's panels.** The glyph had no
+  background: its blue panels had 2.55 : 1 on the dark dock (#303030) and
+  its gold body 1.86 : 1 on light panels (#FAFAFA). The same glyph now
+  sits on a dark rounded plate with a light rim: 5.15 : 1 or more on the
+  dark panels, 15.0 : 1 or more on the light ones
+  (`tests/gui/test_icons.py`).
 - **The thermal plots on Run › Thermal were stretched and cramped** (the
   owner's report): the title and the legend were up to 1.7 times too wide
   when the window was wide. A plot now fills its tab at its own aspect

@@ -80,12 +80,19 @@ install -m 644 "$script_dir/../LICENSE" "$staging/usr/share/doc/spacemissionstud
 install -m 644 "$script_dir/../LICENSE.de" "$staging/usr/share/doc/spacemissionstudio/LICENSE.de"
 
 # The menu icon (gui/icons.py draws it; no bitmap in the repository),
-# rendered now so it is a package file.
+# rendered now so it is a package file: a PNG of each hicolor size from
+# 16 to 512 px and the scalable SVG (postinst updates the icon cache).
 QT_QPA_PLATFORM=offscreen "$bundled_python" -I -c "
 import sys
-from spacemissionstudio.gui.icons import ensure_icon_file
-ensure_icon_file(sys.argv[1])
-" "$staging/usr/share/icons/hicolor/256x256/apps/spacemissionstudio.png"
+from spacemissionstudio.gui.icons import write_icon_theme
+write_icon_theme(sys.argv[1])
+" "$staging/usr/share/icons/hicolor"
+
+# The AppStream metadata software centres show (packaging/metainfo.py:
+# the screenshots of this release's tag and the newest CHANGELOG sections).
+metainfo="$staging/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml"
+python3 "$script_dir/metainfo.py" --version "$version" --out "$metainfo"
+chmod 644 "$metainfo"
 
 installed_size=$(du -sk --exclude=DEBIAN "$staging" | cut -f1)
 sed -e "s/@VERSION@/${version}/" -e "s/@INSTALLED_SIZE@/${installed_size}/" \

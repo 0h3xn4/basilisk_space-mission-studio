@@ -57,21 +57,40 @@ fix for a real contrast bug the first gold-free attempt had: this
 module's original near-black body color is nearly invisible against a
 dark-mode taskbar, where a gold body stays clearly visible against both
 light and dark surfaces.
+
+2.12.0: the glyph alone was still barely visible on Ubuntu's panels
+(measured: 86 % of it below 3 : 1 on #303030 at 64 px, the gold body
+1.6 to 1.9 on light panels). The same glyph and colours now sit on a
+dark rounded-square plate with a light rim
+(``docs/developer/windows-views-design.md``, section 5): the plate is
+far from every light panel, the rim from every dark one, and the glyph
+fills about 80 % of the plate. ``tests/gui/test_icons.py`` measures it.
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QGuiApplication, QIcon, QPainter, QPen, QPixmap
 
 from .theme.palettes import APP_ICON
 
 _ACCENT = APP_ICON["panel"]  # solar panels
-_ACCENT_DARK = APP_ICON["panel_line"]  # antenna + panel grid lines
+_ACCENT_DARK = APP_ICON["panel_line"]  # antenna
 _GOLD = APP_ICON["body"]  # satellite body -- see module docstring for why gold, not decorative
 _GOLD_DARK = APP_ICON["body_line"]  # body centerline detail
+_PLATE = APP_ICON["plate"]  # the plate behind the glyph, and the panel grid lines
+_RIM = APP_ICON["rim"]  # the plate's rim
+
+#: The file name (without suffix) of the icon in an icon theme: the
+#: ``Icon=`` key of the ``.desktop`` entries.
+ICON_NAME = "spacemissionstudio"
+
+#: The bitmap sizes installed into the hicolor icon theme (``packaging/build_deb.sh``,
+#: ``packaging/install.sh``), next to ``scalable/apps/spacemissionstudio.svg``.
+ICON_THEME_SIZES = (16, 22, 24, 32, 48, 64, 128, 256, 512)
 
 # Below these sizes the corresponding detail is omitted entirely rather
 # than drawn illegibly thin -- confirmed by rendering both thresholds
@@ -79,6 +98,20 @@ _GOLD_DARK = APP_ICON["body_line"]  # body centerline detail
 # the panel grid lines by 40px), not guessed.
 _ANTENNA_MIN_SIZE = 40
 _GRID_MIN_SIZE = 56
+
+# The plate, on a 64-unit grid: a margin of 2 (none below 24 px, where
+# half a pixel only blurs the edge), a rim of 2 (at least 1 px) and a
+# corner radius of 12. The glyph's turned outline (200 x 175 units of the
+# 256 design grid; the antenna stays inside it) fills _GLYPH_FILL of the
+# width inside the rim; more at 32 px and below, where every pixel of shape
+# counts (chosen by rendering 0.80 to 1.0 side by side at 16 to 48 px).
+_PLATE_MARGIN = 2 / 64
+_RIM_WIDTH = 2 / 64
+_PLATE_RADIUS = 12 / 64
+_GLYPH_EXTENT = 200.0
+_GLYPH_FILL = 0.85
+_GLYPH_FILL_SMALL = 0.95
+_SMALL_SIZE = 32
 
 
 def _ensure_application() -> None:
@@ -99,8 +132,21 @@ def _ensure_application() -> None:
         QGuiApplication([])
 
 
-def _render(size: int) -> QPixmap:
-    """See module docstring for why this is a satellite glyph (body +
+def plate_geometry(size: int) -> tuple[QRectF, float, float]:
+    """The plate's outer rectangle, its rim width and its corner radius,
+    in pixels, for an icon of ``size`` pixels."""
+    margin = 0.0 if size < 24 else round(size * _PLATE_MARGIN)
+    rim = max(1.0, size * _RIM_WIDTH)
+    outer = QRectF(margin, margin, size - 2 * margin, size - 2 * margin)
+    return outer, rim, size * _PLATE_RADIUS
+
+
+def _paint(painter: QPainter, size: int, detail: int | None = None) -> None:
+    """Paints the icon at ``size`` pixels: the plate, then the glyph.
+    ``detail`` is the size whose detail (antenna, grid lines) is drawn;
+    by default ``size`` (the scalable SVG asks for full detail).
+
+    See module docstring for why this is a satellite glyph (body +
     two solar panels + an antenna at larger sizes) and not the earlier
     orbit-ellipse design. ``scale``/rotation/proportions below were
     tuned by rendering actual candidates side by side at 256 down to
@@ -109,22 +155,26 @@ def _render(size: int) -> QPixmap:
     size made it read MORE like an eye, not less, which is why this is
     a different silhouette entirely rather than a parameter change.
     """
-    _ensure_application()
-    pixmap = QPixmap(size, size)
-    pixmap.fill(Qt.GlobalColor.transparent)
-
-    painter = QPainter(pixmap)
+    detail = size if detail is None else detail
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    # The plate: the rim colour as the outer rounded square, the plate
+    # colour inside it.
+    outer, rim, radius = plate_geometry(size)
+    painter.setPen(Qt.PenStyle.NoPen)
+    painter.setBrush(QColor(_RIM))
+    painter.drawRoundedRect(outer, radius, radius)
+    inner = outer.adjusted(rim, rim, -rim, -rim)
+    painter.setBrush(QColor(_PLATE))
+    painter.drawRoundedRect(inner, max(0.0, radius - rim), max(0.0, radius - rim))
 
     painter.translate(size / 2.0, size / 2.0)
     painter.rotate(-32.0)
 
-    # s: a 256px design grid, scaled to the actual requested size, with
-    # an extra 1.22x so the glyph fills more of the icon's canvas than a
-    # literal 256-grid mapping would -- confirmed by rendering both and
-    # comparing that the larger one reads better at 16-24px, where every
-    # extra pixel of actual shape matters.
-    s = (size / 256.0) * 1.22
+    # s: the 256px design grid, scaled so the glyph's turned outline fills
+    # its share of the plate's inside.
+    fill = _GLYPH_FILL_SMALL if size <= _SMALL_SIZE else _GLYPH_FILL
+    s = inner.width() * fill / _GLYPH_EXTENT
 
     panel_w, panel_h = 58 * s, 96 * s
     gap = 7 * s
@@ -136,8 +186,8 @@ def _render(size: int) -> QPixmap:
     painter.drawRoundedRect(left_panel, 5 * s, 5 * s)
     painter.drawRoundedRect(right_panel, 5 * s, 5 * s)
 
-    if size >= _GRID_MIN_SIZE:
-        grid_pen = QPen(QColor(_ACCENT_DARK))
+    if detail >= _GRID_MIN_SIZE:
+        grid_pen = QPen(QColor(_PLATE))
         grid_pen.setWidthF(max(1.0, 1.5 * s))
         painter.setPen(grid_pen)
         for panel in (left_panel, right_panel):
@@ -149,25 +199,89 @@ def _render(size: int) -> QPixmap:
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QColor(_GOLD))
     painter.drawRoundedRect(body_rect, 9 * s, 9 * s)
-    if size >= _GRID_MIN_SIZE:
+    if detail >= _GRID_MIN_SIZE:
         centerline_pen = QPen(QColor(_GOLD_DARK))
         centerline_pen.setWidthF(max(1.0, 1.4 * s))
         painter.setPen(centerline_pen)
         painter.drawLine(QPointF(-body_w / 2 + 3 * s, 0), QPointF(body_w / 2 - 3 * s, 0))
 
-    if size >= _ANTENNA_MIN_SIZE:
-        antenna_pen = QPen(QColor(_ACCENT_DARK))
+    if detail >= _ANTENNA_MIN_SIZE:
+        antenna_pen = QPen(QColor(_ACCENT))
         antenna_pen.setWidthF(max(4 * s, 1.8))
         antenna_pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(antenna_pen)
         antenna_tip = QPointF(0, -body_h / 2 - 22 * s)
         painter.drawLine(QPointF(0, -body_h / 2), antenna_tip)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QColor(_ACCENT_DARK))
+        painter.setBrush(QColor(_ACCENT))
         painter.drawEllipse(antenna_tip, max(5 * s, 2.2), max(5 * s, 2.2))
 
+
+def _render(size: int) -> QPixmap:
+    """The icon as a ``size`` x ``size`` pixmap on a transparent background."""
+    _ensure_application()
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    _paint(painter, size)
     painter.end()
     return pixmap
+
+
+_SVG_SIZE = 512
+
+
+def render_svg() -> str:
+    """The icon as SVG text (the same painter code through ``QSvgGenerator``),
+    512 x 512 user units with full detail: the hicolor theme's
+    ``scalable/apps`` icon, which software centres also show."""
+    from PySide6.QtCore import QBuffer, QByteArray, QIODevice
+    from PySide6.QtSvg import QSvgGenerator
+
+    _ensure_application()
+    data = QByteArray()
+    buffer = QBuffer(data)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
+    generator = QSvgGenerator()
+    generator.setOutputDevice(buffer)
+    generator.setSize(QSize(_SVG_SIZE, _SVG_SIZE))
+    generator.setViewBox(QRect(0, 0, _SVG_SIZE, _SVG_SIZE))
+    generator.setTitle("SpaceMissionStudio")
+    generator.setDescription("The SpaceMissionStudio application icon")
+    painter = QPainter(generator)
+    _paint(painter, _SVG_SIZE)
+    painter.end()
+    buffer.close()
+    text = bytes(data.data()).decode("utf-8")
+    # QSvgGenerator gives the size in millimetres from its resolution; an
+    # icon is sized in user units.
+    return re.sub(r'(<svg\b[^>]*?)\swidth="[^"]*"\s+height="[^"]*"', rf'\1 width="{_SVG_SIZE}" height="{_SVG_SIZE}"',
+                  text, count=1)
+
+
+def write_icon_theme(hicolor_dir: str | Path) -> list[Path]:
+    """Writes the icon into the hicolor icon theme folder ``hicolor_dir``
+    (for example ``/usr/share/icons/hicolor``): a PNG of each of
+    :data:`ICON_THEME_SIZES` in ``<n>x<n>/apps/`` and the SVG in
+    ``scalable/apps/``. Existing files are replaced. Returns the files
+    written.
+
+    Raises :class:`OSError` if a render or save fails (see
+    :func:`ensure_icon_file`).
+    """
+    root = Path(hicolor_dir)
+    written: list[Path] = []
+    for size in ICON_THEME_SIZES:
+        path = root / f"{size}x{size}" / "apps" / f"{ICON_NAME}.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if not _render(size).save(str(path), "PNG"):
+            raise OSError(f"could not render/save the app icon to {path}")
+        written.append(path)
+    svg = root / "scalable" / "apps" / f"{ICON_NAME}.svg"
+    svg.parent.mkdir(parents=True, exist_ok=True)
+    svg.write_text(render_svg(), encoding="utf-8")
+    written.append(svg)
+    return written
 
 
 def app_icon() -> QIcon:
