@@ -178,6 +178,21 @@ overlays (the time panel and the labels) are floating panels on
 `bg.raised` with `text.primary`, 8 px radius, JetBrains Mono for the
 time, and restyle with the theme.
 
+**Temperatures on a 3D model** (Run › Thermal's 3D model tab, Results ›
+3D View's Colours list) take `palettes.TEMPERATURE_STOPS`: ColorBrewer's
+diverging RdBu, reversed, cold blue to hot red, the same in both themes;
+a part in no thermal node is `palettes.NO_TEMPERATURE_COLOUR` grey. Each
+view shows a colour bar with the values and the unit (thermal decision
+T-42).
+
+**The thermal plots** are SVG made by the app (thermal decisions T-31,
+T-40). On screen, `svg_plot.SvgPlotView` draws them at their own aspect
+ratio, never stretched, and a worker makes them at the view's size in
+`theme/svg_plot_style.py`'s look: `bg.surface`, the text tokens, Inter
+with JetBrains Mono for the numbers, the categorical palette, the bands
+in `status.normal` and `status.caution`, each named in the legend. The
+exported files keep their fixed 900 x 420 look.
+
 **Plots** take the Plotly template from the tokens
 (`theme/plotly_template.py`): Inter, transparent backgrounds over
 `bg.surface`, gridlines in `border.subtle`, axis text in
@@ -425,6 +440,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Value table | `value_sheet.ValueTable(title, headers, rows, numeric=)` | A matrix (an inertia tensor) or a few rows with several columns (principal axes); a long or sortable list is a `DataTable` |
 | Note list | `value_sheet.NoteList(kind, notes, empty=, fold_after=4)` | Notes (`"note"`, info icon, secondary text), warnings (`"warning"`, caution triangle) or findings (`"finding"`): one row each, the icon then the wrapped text; past `fold_after`, "Show n more". `text()` gives the lines behind a mark for copying. Never a block of dash-led lines |
 | Elided label | `app_shell.ElidedLabel` | One line that ends in "..." rather than widening the window; the whole text is its tooltip |
+| SVG plot | `svg_plot.SvgPlotView`: `set_image(svg, image)`, `load(svg)`, `target_rect()`, `size_settled`; `svg_plot.render_image` in a worker | A plot made as SVG (the thermal plots): drawn at its own aspect ratio, made again at the view's size once a resize ends |
 | Event table | `EventTimelineWidget.table`, a `DataTable` over `event_timeline_widget._EventRows` | Events, sortable; Ctrl+C copies the selection as TSV |
 
 ## Patterns

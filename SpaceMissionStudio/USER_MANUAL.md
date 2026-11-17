@@ -1023,16 +1023,19 @@ case (NASA/TM-2001-211221), or the cases you define, from the run's
 orbit, attitude and eclipses: sunlight, the planet's albedo (Basilisk's
 `albedo` module) and its infrared on every face.
 
-It shows each node's temperatures with their limits, the heat flows, the
-heaters' duty and sized power, the heat the radiators reject, and limit
-violations on the Timeline; the checks (including faces that other parts
-can shade, which the model does not account for) are in the Problems
-panel. Everything exports with its provenance.
+It shows, on one tab each, each node's temperatures with their limits,
+the heat flows, the summary, the heaters' duty and sized power and the
+heat the radiators reject; limit violations go to the Timeline, and the
+findings and checks (including faces that other parts can shade, which
+the model does not account for) to the Problems panel. The plots fill
+their tab and follow the theme. Everything exports with its provenance.
 
 On the same run, without running Basilisk again, you can sweep any
 parameter, rank the parameters by their effect (a one-at-a-time
 sensitivity), and run a seeded thermal Monte Carlo that opens in the
-Monte Carlo view. The 3D model can be coloured by temperature. Flexible
+Monte Carlo view. The 3D model can be coloured by temperature, and
+**Results › 3D View** can colour the spacecraft by a case's temperatures
+as it plays the run back. Flexible
 solar arrays are nodes whose faces turn with their hinge, and a node's
 specific heat or a conductor's conductivity can follow a table of
 temperature. Templates 33 and 34 show it; see

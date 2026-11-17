@@ -149,6 +149,16 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   - documentation: the model, the user guide, capabilities,
     limitations, USER_MANUAL, CHANGELOG.
 
+- 2.12.0, results presentation (the windows-and-views design, section 1
+  and 4; thermal gap analysis phase 1, items 1, 2 and 5):
+  - the screen plot at the view's size and in the theme, made in a
+    worker, never stretched; the files unchanged (T-40;
+    `gui/svg_plot.py`, `tests/test_thermal_plot_style.py`);
+  - Run › Thermal as tabs, the findings in the Problems panel (T-41);
+  - temperatures on Results › 3D View that follow the playback and the
+    time cursor, with a colour bar (T-42;
+    `tests/gui/test_thermal_views.py`).
+
 ## Next
 
 Final checks: the full suite with coverage, lint, the document and

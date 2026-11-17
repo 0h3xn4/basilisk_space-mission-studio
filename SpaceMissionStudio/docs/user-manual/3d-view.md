@@ -23,6 +23,10 @@ sent anywhere.
   than they are; the note says by how much), **Follow** a spacecraft (true
   size), **Earth-fixed** (the camera turns with the Earth), or **From** a
   spacecraft along a body axis or an instrument, with its field of view.
+- **Colours**: the 3D model's own colours, or, after Run › Thermal has
+  solved this run, **Temperature: <case>**: each part in its thermal
+  node's temperature at the time shown, with a colour bar in °C
+  ([Thermal analysis](thermal.md#see-the-temperatures-as-the-run-plays-back)).
 - **Show** switches each part on or off, remembered for next time, and
   **Reduced quality** (chosen by itself without a graphics card, or when
   frames are slow; your own choice is kept).
