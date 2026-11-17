@@ -82,7 +82,7 @@ from PySide6.QtWidgets import (
 from .. import constants
 from ..schema.scenario import Scenario, SimSettings
 from .theme import set_role
-from .widgets import PreciseDoubleSpinBox, style_number
+from .widgets import PreciseDoubleSpinBox, RowHeightDelegate, style_number
 from .wizard_settings import build_all_settings_pages, setting_paths, get_setting
 
 # SpacecraftConfig.orbit.semi_major_axis_km (OrbitIC, "classical_elements")
@@ -2047,6 +2047,7 @@ class _WizardFieldPage(QFrame):
         self._initial: list = []
         self._rows: list = []  # (field row index, help row index or None) per field
         self._group_rows: list = []  # (heading row index, group name)
+        self._labels: list[QLabel] = []  # each field row's label (the dialog gives them one width)
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(12, 10, 12, 10)
@@ -2100,6 +2101,7 @@ class _WizardFieldPage(QFrame):
             box.setToolTip(field_spec.help_text)
             label = QLabel(field_spec.label)
             label.setToolTip(field_spec.help_text)
+            self._labels.append(label)
             # The form puts a label at the top of its row; with a box-tall
             # label and the box pinned to the top too, the label's text lines
             # up with the value instead of sitting above it.
@@ -2144,6 +2146,10 @@ class _WizardFieldPage(QFrame):
 
     def title(self) -> str:
         return self._title
+
+    def labels(self) -> list[QLabel]:
+        """The labels of the field rows (not the group headings)."""
+        return list(self._labels)
 
     def filter(self, text: str) -> int:
         """Show only fields whose label or device group (or the section
@@ -2231,6 +2237,7 @@ class TemplateCustomizeWizard(QDialog):
         generated = build_all_settings_pages(self._scenario, exclude=_paths_set_by(spec, self._scenario))
         self._sections = QListWidget()
         self._sections.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._sections.setItemDelegate(RowHeightDelegate(self._sections))  # the theme's row height (UI-47)
         self._list_rows: list[int] = []  # list row of each section, in section order
         self._groups: list[tuple] = []  # (heading row, [section indices]) for each heading
         self._headings: list[QLabel] = []  # heading label above each group's first card
@@ -2275,6 +2282,11 @@ class TemplateCustomizeWizard(QDialog):
                 group = heading
             add_section(page_spec, text[:1].upper() + text[1:])
         self._sections_layout.addStretch(1)
+        # One label width on the whole page, so the fields of every section line up (UI audit UI-47).
+        labels = [label for page in self._field_pages for label in page.labels()]
+        label_width = max((label.sizeHint().width() for label in labels), default=0)
+        for label in labels:
+            label.setMinimumWidth(label_width)
 
         self._scroll = QScrollArea()
         self._scroll.setWidgetResizable(True)

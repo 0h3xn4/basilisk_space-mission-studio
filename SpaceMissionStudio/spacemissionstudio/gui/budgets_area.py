@@ -56,7 +56,7 @@ from dataclasses import dataclass, fields, is_dataclass
 from PySide6.QtCore import QAbstractTableModel, Qt, Signal
 from PySide6.QtGui import QAction, QGuiApplication, QKeySequence, QValidator
 from PySide6.QtWidgets import (QAbstractItemView, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
-                               QPushButton, QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStyledItemDelegate, QTableView,
+                               QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStyledItemDelegate, QTableView,
                                QToolButton, QVBoxLayout, QWidget)
 
 from .. import output_provenance
@@ -68,7 +68,7 @@ from .data_table import DataTable, Row
 from .feedback import show_toast
 from .theme import ROW_HEIGHT, SPACE, icon, numeric_font, set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, TabWidget, exact_number_text
+from .widgets import ComboBox, EmptyState, TabWidget, exact_number_text
 
 PLACEHOLDER_TEXT = "TBD"  # what a placeholder reads in a table cell
 UNKNOWN_TEXT = "unknown"  # a result a placeholder or a missing number leaves unknown
@@ -312,41 +312,6 @@ def grid_tsv(model: GridModel, rows: Sequence[int] = ()) -> str:
     lines = ["\t".join(column.header for column in model.columns)]
     lines += ["\t".join(model.text(row, c) for c in range(len(model.columns))) for row in rows]
     return "\n".join(lines)
-
-
-class EmptyState(QWidget):
-    """What an empty list says, with its action when it has one."""
-
-    def __init__(self, title: str, text: str = "", action: str | None = None, primary: bool = False,
-                 parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["lg"], SPACE["lg"])
-        layout.setSpacing(SPACE["sm"])
-        layout.addStretch(1)
-        self.title_label = set_role(QLabel(title), role="heading")
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title_label.setWordWrap(True)
-        layout.addWidget(self.title_label)
-        self.text_label = set_role(QLabel(text), tone="secondary")
-        self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.text_label.setWordWrap(True)
-        self.text_label.setVisible(bool(text))
-        layout.addWidget(self.text_label)
-        self.button = QPushButton(action or "")
-        if primary:
-            set_role(self.button, variant="primary")
-        self.button.setVisible(action is not None)
-        layout.addWidget(self.button, 0, Qt.AlignmentFlag.AlignHCenter)
-        layout.addStretch(1)
-
-    def set_text(self, title: str, text: str = "", action: str | None = None) -> None:
-        self.title_label.setText(title)
-        self.text_label.setText(text)
-        self.text_label.setVisible(bool(text))
-        if action is not None:
-            self.button.setText(action)
-        self.button.setVisible(action is not None)
 
 
 def _icon_button(action: QAction) -> QToolButton:
