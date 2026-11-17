@@ -443,7 +443,7 @@
   "mission_sequence": [],
   "fsw_exports": [],
   "description": "A week of operations for the 150 kg imager: twenty targets around the world, stations at 78 N, 52 N and 33 S, a daily star-tracker calibration and 40 min of contacts a day. Run > Plan makes the week's plan in about a minute.\n\nWhat to look at:\n- Run > Plan: about 18 of the 23 images wanted, 7 calibrations and 37 contacts, most over Svalbard.\n- The memory chart climbs to 2.6 of 3 Gbit by the end: the booked contacts cannot empty it.\n- Requests not placed: Rotterdam's second image loses to the passes over Europe; Kilimanjaro and the Danube delta have no lit window within 30 deg off nadir.\n- Fly and verify flies the plan in the simulation and compares it with the plan.\n\nTry changing:\n- The daily contact time (operations, spacecraft, max_contact_s_per_day) to 3600 s.\n- Lose a Svalbard pass (select a contact, Lose this pass) and see what the replan moves.",
-  "schema_version": 4,
+  "schema_version": 5,
   "operations": {
     "version": 1,
     "horizon": {

@@ -77,7 +77,7 @@ from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence
 
-CURRENT_SCHEMA_VERSION = 4
+CURRENT_SCHEMA_VERSION = 5
 
 # Limits on what a scenario may ask for (audit R9): far above any template
 # (at most 6 spacecraft, 27 kB) and the editor's own ranges, so that a shared

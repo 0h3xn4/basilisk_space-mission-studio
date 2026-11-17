@@ -74,7 +74,7 @@ Changed values are in bold; **Changed values only** lists just those.
 
    ```console
    $ spacemissionstudio validate scenario.json
-   OK: 'my mission' -- 1 spacecraft, schema version 4, epoch 2030-01-01T00:00:00
+   OK: 'my mission' -- 1 spacecraft, schema version 5, epoch 2030-01-01T00:00:00
    CONFIG: project.yaml changes 1 parameter(s); ...
    $ spacemissionstudio assumptions scenario.json --changed
    Configuration: project.yaml (SHA-256 ...)

@@ -925,5 +925,5 @@
   "mission_sequence": [],
   "fsw_exports": [],
   "description": "The 150 kg microsatellite as a 3D model with a thermal model: MLI on the bus, two arrays, a radiator on the anti-Sun face, the battery with two heaters and the avionics inside. Run > Thermal solves four cases: nominal, hot, cold, and cold in safe mode.\n\nWhat to look at:\n- The avionics dissipate the power budget's 60 W bus load; a heat pipe takes most of it to the radiator.\n- Run > Thermal, Solve: the bus at 11 to 14 degC in the first three cases, and the radiator rejecting about 37 W.\n- The cold safe-mode case: with the avionics down to 15 W the bus falls to about -22 degC and heater A runs all the time (sized at about 7.6 W).\n- In that case the avionics leave their -20 degC limit: the Timeline and the Problems panel show it.\n\nTry changing:\n- Heater A's power, or its setpoints (Spacecraft > 3D model > Thermal model > Heaters).\n- The safe-mode case's avionics power (Cases): at 20 W they stay in range.",
-  "schema_version": 4
+  "schema_version": 5
 }
