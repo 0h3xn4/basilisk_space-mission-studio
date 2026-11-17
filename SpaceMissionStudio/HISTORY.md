@@ -18069,3 +18069,19 @@ an `operations` section open and validate in 2.9.0 with no message;
 2.9.0 refuses templates 35 and 36 by name ("unexpected field
 'operations', not one this version knows"). The schema version stays 4,
 and the golden outputs of the 34 earlier templates are unchanged.
+
+## System Budget Studio merge: phase 0 (2026-11-17)
+
+The owner decided that System Budget Studio becomes a feature of
+SpaceMissionStudio. The plan (#270,
+`docs/developer/system-budget-merge-design.md`) was reviewed with the
+owner, who answered its six open questions and one raised in review: the
+IDM-CIC import already reads power modes and duty cycles, so phase 1
+builds the equipment list and the power modes on it.
+
+Phase 0 records the decisions in `docs/DECISIONS.md` and replaces
+CLAUDE.md's "UI only during the overhaul" rule, written for the 1.3.0
+overhaul, with a rule for engine and format changes: a schema migration,
+unchanged golden files for the existing templates unless the owner
+decides otherwise, and a decisions entry. System Budget Studio's README
+says it is frozen at 2.15.1 and continues here.
