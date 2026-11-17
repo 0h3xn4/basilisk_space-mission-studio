@@ -441,7 +441,9 @@ def _lose_context(qtbot, view):
 
 def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     """webglcontextlost stops drawing; webglcontextrestored makes a new
-    renderer and loads the same scene, camera and frame kept."""
+    renderer for the same scene: the scene's objects, materials and
+    textures are the same objects (not loaded again), camera and frame
+    kept, and the overlay still shows the frame's time."""
     from spacemissionstudio.gui.mission_view_widget import MissionViewWidget
 
     view = MissionViewWidget()
@@ -452,7 +454,9 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     _drawn(qtbot, view)
     view.slider.setValue(77)
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 77, timeout=10000)
-    _js(qtbot, view, "MV.camera.position.set(9000, 1000, 2000); MV.dirty = true; 1")
+    _js(qtbot, view, "MV.camera.position.set(9000, 1000, 2000); MV.dirty = true; "
+                     "window.KEEP = [MV.scene, MV.body, MV.body.material, MV.body.material.map, MV.crafts[0].mesh]; 1")
+    clock = _js(qtbot, view, "document.getElementById('hud-time').textContent")
     _lose_context(qtbot, view)
     _js(qtbot, view, "LOSE.restoreContext(); 1")
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == 1, timeout=10000)
@@ -462,6 +466,10 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     np.testing.assert_allclose(json.loads(_js(qtbot, view, "JSON.stringify(MV.camera.position.toArray())")),
                                [9000, 1000, 2000])
     assert _js(qtbot, view, "MV.renderer.domElement !== CANVAS && !document.body.contains(CANVAS)") is True
+    assert _js(qtbot, view, "MV.scene === KEEP[0] && MV.body === KEEP[1] && MV.body.material === KEEP[2] "
+                            "&& MV.body.material.map === KEEP[3] && MV.crafts[0].mesh === KEEP[4]") is True
+    assert _js(qtbot, view, "document.getElementById('hud-time').textContent") \
+        == clock
     view.slider.setValue(120)  # it draws again
     qtbot.waitUntil(lambda: _state(qtbot, view)["frame"] == 120, timeout=10000)
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.dirty") is False, timeout=10000)

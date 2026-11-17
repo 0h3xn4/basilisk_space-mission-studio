@@ -178,19 +178,29 @@ MV.onContextRestored = function () {
   MV.recover();
 };
 
-// A new renderer, and the same scene loaded into it: the camera, the view,
-// the frame and a thermal case's colours as they were.
+// A new renderer for the same scene. The scene is not loaded again: its
+// objects, materials and textures do not belong to a WebGL context, and the
+// new renderer uploads them on its first frame. So the camera, the view,
+// the frame, the time shown, the live state, the theme's materials and a
+// thermal case's colours stay as they were. (Loading the scene again reset
+// them; a software renderer on Windows loses and restores its context
+// during normal use.)
 MV.recover = function () {
   clearTimeout(MV.recoverTimer);
   MV.recoverTimer = null;
   if (!MV.contextLost) return;
   MV.contextLost = false;
   MV.makeRenderer();
-  if (MV.data) {
-    const frame = MV.frame, temperatures = MV.temperatures;
-    MV.load(MV.data, {keepCamera: true});
-    MV.frame = Math.min(frame, MV.data.times.length - 1);
-    if (temperatures) MV.setTemperatures(temperatures);
+  if (MV.scene) {
+    MV.scene.traverse(function (object) {
+      const materials = !object.material ? [] : (Array.isArray(object.material) ? object.material : [object.material]);
+      materials.forEach(function (material) {
+        ['map', 'emissiveMap', 'normalMap', 'bumpMap', 'alphaMap'].forEach(function (key) {
+          if (material[key]) material[key].needsUpdate = true;
+        });
+        material.needsUpdate = true;
+      });
+    });
   }
   MV.resize();
   MV.recoveries += 1;
