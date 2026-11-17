@@ -90,4 +90,3 @@ must print nothing (or only `README.md`, SpaceMissionStudio section).
   removal path; the geometry adds about 12 s per spacecraft-week.
 - The flown plan is checked on the Plan page and not shown as a run in
   Results (O-24); the plan's dashboard is the status at the time cursor.
-

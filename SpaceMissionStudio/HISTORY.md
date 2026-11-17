@@ -18015,4 +18015,3 @@ What flying the templates found, and what was done about it:
 - The scenario editor dropped the `operations` section on save (it had
   no form for it); it now keeps it, and a renamed spacecraft or station
   is renamed in it.
-

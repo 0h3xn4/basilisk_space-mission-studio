@@ -153,13 +153,14 @@ def passes_ics(plan: Plan, opportunities, timebase, all_passes: bool = False) ->
         start = row["contact_start_utc"] or row["aos_utc"]
         end = row["contact_end_utc"] or row["los_utc"]
         what = "contact" if row["contact"] else "pass"
+        summary = f"{row['spacecraft']} {what} {row['station']}"
         uid = f"{digest}-{row['station']}-{row['spacecraft']}-{_ics_time(row['aos_utc'])}@spacemissionstudio.invalid"
         description = (f"{row['spacecraft']} over {row['station']}: AOS {row['aos_utc']}, LOS {row['los_utc']}, "
                        f"maximum elevation {row['max_elevation_deg']:.1f} deg at {row['max_elevation_utc']}"
                        + (f"; planned contact {row['contact']}" if row["contact"] else "")
                        + ". A planning product, not a flight command load.")
         lines += ["BEGIN:VEVENT", f"UID:{uid}", f"DTSTAMP:{stamp}", f"DTSTART:{_ics_time(start)}",
-                  f"DTEND:{_ics_time(end)}", f"SUMMARY:{_ics_text(f'{row['spacecraft']} {what} {row['station']}')}",
+                  f"DTEND:{_ics_time(end)}", f"SUMMARY:{_ics_text(summary)}",
                   f"DESCRIPTION:{_ics_text(description)}", f"LOCATION:{_ics_text(row['station'])}", "END:VEVENT"]
     lines.append("END:VCALENDAR")
     return "\r\n".join(_fold(line) for line in lines) + "\r\n"
