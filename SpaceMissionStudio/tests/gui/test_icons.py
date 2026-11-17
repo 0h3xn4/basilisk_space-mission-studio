@@ -127,3 +127,126 @@ def test_ensure_icon_file_does_not_overwrite_an_existing_file(qapp, tmp_path):
 
     assert result == target
     assert target.read_bytes() == b"not a real png, just a marker"
+
+
+# The panels an icon sits on: Ubuntu's dark dock and top bar (#303030,
+# #1D1D1D, #242424) and light panels (#FAFAFA, #EBEBEB)
+# (docs/developer/windows-views-design.md, section 5).
+_DARK_PANELS = ("#303030", "#1D1D1D", "#242424")
+_LIGHT_PANELS = ("#FAFAFA", "#EBEBEB")
+
+
+def _hex(image, x, y):
+    from PySide6.QtGui import QColor
+
+    colour = QColor(image.pixel(x, y))
+    assert colour.alpha() == 255, f"pixel ({x}, {y}) is not opaque"
+    return colour.name().upper()
+
+
+@pytest.mark.parametrize("size", [16, 22, 24, 32, 48, 64, 128, 256, 512])
+def test_the_icon_plate_and_rim_stand_out_on_dark_and_light_panels(qapp, size):
+    """2.12.0 defect: the plate-less glyph was barely visible on Ubuntu's
+    panels (the blue panels 2.55 : 1 on #303030, the gold body 1.86 : 1 on
+    #FAFAFA). The outline of the icon is its rim and the plate inside it:
+    against every dark and light panel one of the two has 3 : 1 or more
+    (WCAG 2.2 1.4.11, graphics), measured on the rendered pixels at each
+    size. The rim alone carries it on dark panels, the plate on light ones."""
+    from spacemissionstudio.gui.icons import plate_geometry, _render
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+    from spacemissionstudio.gui.theme.tokens import contrast
+
+    image = _render(size).toImage()
+    outer, rim, _radius = plate_geometry(size)
+    top = int(outer.top())
+    rim_colour = _hex(image, size // 2, top)  # the middle of the top edge
+    plate_colour = _hex(image, int(size * 0.3), top + int(rim) + 1)  # inside it, top left: no glyph there
+    assert (rim_colour, plate_colour) == (APP_ICON["rim"].upper(), APP_ICON["plate"].upper())
+    for panel in _DARK_PANELS:
+        assert contrast(rim_colour, panel) >= 3.0, (size, panel, contrast(rim_colour, panel))
+    for panel in _LIGHT_PANELS:
+        assert contrast(plate_colour, panel) >= 3.0, (size, panel, contrast(plate_colour, panel))
+    for panel in _DARK_PANELS + _LIGHT_PANELS:
+        assert max(contrast(rim_colour, panel), contrast(plate_colour, panel)) >= 3.0
+
+
+def test_the_glyph_stands_out_on_its_plate(qapp):
+    """The solar panels (and the antenna drawn in their colour) and the gold
+    body have 3 : 1 or more against the plate, and the panel grid lines,
+    drawn in the plate colour, 3 : 1 against the panels."""
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+    from spacemissionstudio.gui.theme.tokens import contrast
+
+    assert contrast(APP_ICON["panel"], APP_ICON["plate"]) >= 3.0
+    assert contrast(APP_ICON["body"], APP_ICON["plate"]) >= 3.0
+    assert contrast(APP_ICON["rim"], APP_ICON["plate"]) >= 3.0
+
+
+def test_the_icon_theme_has_every_hicolor_size_and_the_scalable_svg(qapp, tmp_path):
+    """write_icon_theme (the .deb and install.sh) writes a PNG of each size
+    from 16 to 512 px at that size, and scalable/apps/spacemissionstudio.svg,
+    an SVG of 512 user units that draws the same plate."""
+    import xml.etree.ElementTree as ET
+
+    from PySide6.QtGui import QImage
+
+    from spacemissionstudio.gui.icons import ICON_THEME_SIZES, write_icon_theme
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+
+    written = write_icon_theme(tmp_path / "hicolor")
+    assert ICON_THEME_SIZES[0] == 16 and ICON_THEME_SIZES[-1] == 512
+    assert {16, 22, 24, 32, 48, 64, 128, 256, 512} <= set(ICON_THEME_SIZES)
+    for size in ICON_THEME_SIZES:
+        path = tmp_path / "hicolor" / f"{size}x{size}" / "apps" / "spacemissionstudio.png"
+        assert path in written
+        image = QImage(str(path))
+        assert (image.width(), image.height()) == (size, size), path
+    svg = tmp_path / "hicolor" / "scalable" / "apps" / "spacemissionstudio.svg"
+    assert svg in written
+    root = ET.parse(svg).getroot()
+    assert root.tag == "{http://www.w3.org/2000/svg}svg"
+    assert (root.get("width"), root.get("height"), root.get("viewBox")) == ("512", "512", "0 0 512 512")
+    text = svg.read_text(encoding="utf-8").lower()
+    for colour in ("plate", "rim", "panel", "body"):
+        assert APP_ICON[colour].lower() in text, colour
+
+
+def test_write_icon_theme_replaces_an_older_icon(qapp, tmp_path):
+    """Unlike ensure_icon_file, the theme is written again: an install over
+    an older one (install.sh) gets the new icon."""
+    from spacemissionstudio.gui.icons import write_icon_theme
+
+    old = tmp_path / "256x256" / "apps" / "spacemissionstudio.png"
+    old.parent.mkdir(parents=True)
+    old.write_bytes(b"an older icon")
+    write_icon_theme(tmp_path)
+    assert old.read_bytes().startswith(b"\x89PNG")
+
+
+def test_the_windows_icon_file_is_the_current_icon(qapp):
+    """packaging/windows/spacemissionstudio.ico (the setup program, its
+    shortcuts, install.ps1) is generated from gui/icons.py and committed.
+    Each of its sizes must still match a fresh render; after a change to the
+    icon, run ``python packaging/make_ico.py --from-app
+    packaging/windows/spacemissionstudio.ico``."""
+    import importlib.util
+    from pathlib import Path
+
+    from PySide6.QtGui import QImage
+
+    from spacemissionstudio.gui.icons import _render
+
+    root = Path(__file__).resolve().parents[2]
+    spec = importlib.util.spec_from_file_location("make_ico", root / "packaging" / "make_ico.py")
+    make_ico = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(make_ico)
+
+    entries = make_ico.read_ico((root / "packaging" / "windows" / "spacemissionstudio.ico").read_bytes())
+    assert [size for size, _kind, _rgba in entries] == list(make_ico.ICO_SIZES)
+    for size, _kind, rgba in entries:
+        fresh = _render(size).toImage().convertToFormat(QImage.Format.Format_RGBA8888)
+        expected = bytes(fresh.constBits())[:size * size * 4]
+        # Mean difference per channel: 0 when generated with the same Qt;
+        # a little room for another Qt version's anti-aliasing.
+        difference = sum(abs(a - b) for a, b in zip(rgba, expected)) / len(expected)
+        assert difference < 2.0, f"{size} px differs from the icon by {difference:.2f} on average"
