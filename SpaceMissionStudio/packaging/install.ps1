@@ -164,13 +164,25 @@ if (-not $NoShortcut) {
     $Shortcut.Arguments = "gui"
     $Shortcut.WorkingDirectory = $Prefix
     $Shortcut.Description = "Mission-analysis GUI built on the Basilisk astrodynamics framework"
-    # No custom icon set: gui/icons.py's ensure_icon_file() (used by
-    # install.sh for the Linux .desktop entry) always saves PNG data --
-    # see that function's own docstring -- and a Windows .lnk's
-    # IconLocation needs a real .ico/.exe/.dll, not a bare .png. Rather
-    # than ship an icon file that wouldn't actually resolve, the shortcut
-    # falls back to spacemissionstudio.exe's own embedded icon. Non-fatal
-    # either way, same as install.sh's own icon-render step.
+    # The app icon as a real .ico (a .lnk's IconLocation cannot use a
+    # PNG), written by gui/icons.py's write_ico(). Non-fatal: without it
+    # the shortcut shows spacemissionstudio.exe's own icon.
+    $IconPath = Join-Path $Prefix "spacemissionstudio.ico"
+    $IconWritten = $false
+    $env:QT_QPA_PLATFORM = "offscreen"
+    try {
+        & $VenvPython -c "import sys; from spacemissionstudio.gui.icons import write_ico; write_ico(sys.argv[1])" $IconPath 2>$null
+        $IconWritten = ($LASTEXITCODE -eq 0) -and (Test-Path $IconPath)
+    } catch {
+        $IconWritten = $false
+    } finally {
+        Remove-Item Env:\QT_QPA_PLATFORM -ErrorAction SilentlyContinue
+    }
+    if ($IconWritten) {
+        $Shortcut.IconLocation = "$IconPath,0"
+    } else {
+        Write-Host "Could not write the app icon (non-fatal) -- the shortcut uses a generic icon."
+    }
     $Shortcut.Save()
     $ShortcutStatus = "Start Menu shortcut installed to $ShortcutPath"
 } else {

@@ -8,6 +8,7 @@ earth_day_4k.jpg, earth_day_2k.jpg
   bluemarble-east-4096.png, joined and resized.
   Credit: NASA Goddard Space Flight Center Scientific Visualization Studio.
   The Blue Marble data is courtesy of Reto Stockli (NASA/GSFC).
+  earth_day_2k.jpg is also the Earth of the app icon (gui/icons.py).
 
 stars_4k.jpg, stars_2k.jpg
   From "Deep Star Maps 2020", NASA Goddard Space Flight Center Scientific

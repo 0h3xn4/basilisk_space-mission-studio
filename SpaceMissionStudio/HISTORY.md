@@ -18212,3 +18212,56 @@ The other way, this code opens and validates the 36 templates as 2.10.0
 saves them (version 4) with no message. The templates as the two
 versions save them differ only in their `schema_version` line, and the
 golden outputs of the 36 templates are unchanged.
+
+## A new app icon (2026-11-17)
+
+The owner found that the app icon, a satellite alone, did not show what
+the tool does. During the work they added two requests: the Earth must
+look like the Earth, not a blue ball, and the icon must be visible in
+dark mode on Ubuntu and Windows.
+
+- **The design** (`gui/icons.py`): a mission scene on a navy tile. The
+  Earth in the lower-left corner, an orbit around it (solid where the
+  satellite has flown, dashed ahead), the satellite (gold body, blue
+  panels) with a link beam to a ground station, and the Sun. The planet
+  is cut by the tile's corner and the orbit is an open arc, so the first
+  icon's problem (a disc in a ring reads as an eye) does not come back.
+- **The Earth** is the 3D view's bundled Blue Marble texture
+  (`earth_day_2k.jpg`, public domain) in orthographic projection,
+  centred at 20 deg E, 20 deg S so Africa, the Mediterranean and Europe
+  fill the visible cap, and lit from the Sun's side. A first try with
+  drawn continents still read as a blue ball. The layer is made once per
+  process: about 22 ms warm, about 100 ms the first time (numpy and the
+  JPEG decoder load); `app_icon()` with all seven sizes about 33 ms warm.
+  The first-time cost is above the 50 ms GUI-thread target and happens
+  once, at start-up.
+- **Dark taskbars:** the navy tile alone has 1.0-1.5:1 contrast against
+  Windows 10 and 11 dark taskbars, Ubuntu's dark dock and black. A
+  `#5B7FC7` rim inside the tile's edge gives 3.5:1 or more against each
+  of them and against light taskbars. The tile and rim are snapped to
+  whole device pixels; without that, the 1 px rim at 16-32 px was
+  spread over two dim pixels.
+- **Small sizes:** below 48 px the orbit is one solid arc; below 32 px
+  the Sun's glow and the limb are left out and the Sun and satellite are
+  drawn larger; below 24 px the beam is left out. Checked by rendering
+  256 down to 16 px on six taskbar colours.
+- **Windows:** the shortcuts used Python's icon. `write_ico()` writes a
+  multi-size `.ico` (16 to 64 px as bitmaps, 256 px as PNG); the setup
+  program uses the committed `packaging/windows/spacemissionstudio.ico`
+  for its shortcuts, itself and its uninstall entry, and `install.ps1`
+  writes one for its shortcut. The app sets an AppUserModelID at
+  start-up, so the taskbar no longer groups it under `pythonw.exe`. The
+  ICO was read back by Qt, Pillow and `file`, and matches the direct
+  render pixel for pixel; it has not been seen on a real Windows machine
+  (no Windows in the session), nor the AppUserModelID call.
+- **Linux upgrades:** `install.sh` kept an existing icon file, so an
+  upgrade showed the old icon. `ensure_icon_file(..., overwrite=True)`
+  now replaces it (`install.sh`, `build_deb.sh`).
+- **Committed copies** (`scripts/build_app_icon_files.py`): the `.ico`,
+  `docs/images/app_icon.png`, and the README banner, which now embeds the
+  icon as a PNG (an SVG that links to an image does not show it on
+  GitHub).
+- **Tests** (`tests/gui/test_icons.py`, `test_app.py`): the rim's contrast
+  against the six taskbar colours, the rim at every size, land on the
+  Earth (not only ocean), the `.ico` read back size by size, the
+  committed files, the overwrite, and the app ID only on Windows.

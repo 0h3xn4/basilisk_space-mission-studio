@@ -146,8 +146,8 @@ in `packaging/` needed to change for it.
 * **`spacemissionstudio.desktop.in`** -- the desktop-entry template `install.sh`
   fills in (`@INSTALL_PREFIX@` -> the venv's parent directory).
   `Icon=spacemissionstudio` now resolves to a real icon: `install.sh` renders
-  `gui/icons.py`'s procedurally-drawn app icon (QPainter, no bitmap asset
-  in the repo -- see that module's docstring) to
+  `gui/icons.py`'s app icon (drawn in code -- see that module's docstring),
+  replacing one an earlier version installed, to
   `$XDG_DATA_HOME/icons/hicolor/256x256/apps/spacemissionstudio.png` (the
   standard hicolor icon theme location) right after writing the desktop
   entry, using the `offscreen` Qt platform plugin so no display is needed
@@ -357,12 +357,11 @@ already-verified logic (matched step-for-step), and reviewed for syntax
 by hand since no `pwsh`/`powershell.exe` was available in this sandbox
 to actually execute them either -- but "written carefully" is not the
 same claim as "run and confirmed working" that the rest of this
-directory makes for the Linux scripts. One specific, known gap: the
-Start Menu shortcut does not get a custom icon (`gui/icons.py`'s
-`ensure_icon_file()` always writes PNG data -- see that function's own
-docstring -- and a `.lnk`'s `IconLocation` needs a real `.ico`/`.exe`/
-`.dll`; rather than ship an icon file that wouldn't actually resolve,
-the shortcut just uses `spacemissionstudio.exe`'s own embedded icon). If you
+directory makes for the Linux scripts. The
+Start Menu shortcut gets the app icon from `gui/icons.py`'s `write_ico()`,
+written next to the launcher (a `.lnk`'s `IconLocation` needs a real
+`.ico`); if that step fails, the shortcut keeps
+`spacemissionstudio.exe`'s own icon. If you
 run these on a real Windows 11 machine, please report anything that
 doesn't work as documented here.
 

@@ -5,6 +5,41 @@ Choices made where the brief (`docs/ui/UI_OVERHAUL.md`) or the plan
 The user's own answers to the plan's questions are in the plan's §9.
 Newest milestone first.
 
+## The app icon shows a mission (2026-11-17)
+
+The owner's request: the icon did not show what the tool does; the Earth
+must look like the Earth; the icon must be visible in dark mode on Ubuntu
+and Windows.
+
+- **A scene, not an object:** the Earth, an orbit (solid where flown,
+  dashed ahead), a satellite with a beam to a ground station, the Sun.
+  Why: each stands for something the tool analyses (orbits, pointing and
+  power, passes and links, eclipses); a lone satellite showed hardware
+  only.
+- **The Earth is the bundled Blue Marble texture**, projected onto a lit
+  globe once (about 22 ms warm, 100 ms the first time in a process with
+  the JPEG decoder and numpy still to load) and scaled for every size.
+  Why: drawn blob continents read as a blue ball; the texture is already
+  bundled and public domain, so no new asset or dependency.
+- **Africa, the Mediterranean and Europe in view** (centre 20 deg E,
+  20 deg S). Why: the most recognisable outline in the visible cap.
+- **No eye shape:** the planet is cut by the tile's corner and the orbit
+  is an open arc. Why: the first icon, a disc in a centred ring, read as
+  an eye at 16-32 px.
+- **A navy tile with a `#5B7FC7` rim.** Measured contrast of the navy
+  alone against dark taskbars: 1.0-1.5:1 (Windows 11 `#202020`, Windows
+  10 `#101010`, Ubuntu dock `#2C2C2C`, black). The rim: 3.5:1 or more
+  against each of them and against light ones (`tests/gui/test_icons.py`).
+  The tile and rim sit on whole device pixels, so the rim stays crisp at
+  16 px.
+- **A committed `.ico` for the Windows setup program,** written by
+  `scripts/build_app_icon_files.py`. Why: Inno Setup needs the file at
+  compile time; rendering it in CI would need Qt on the build step before
+  the bundle exists. Sizes up to 64 px are bitmaps, 256 px is PNG, which
+  every Windows since Vista reads.
+- **An AppUserModelID at start-up on Windows.** Why: without it the
+  taskbar groups the window under `pythonw.exe` with Python's icon.
+
 ## The 3D View live (2026-11-10)
 
 The owner's request: the 3D View must also work as a live renderer. This

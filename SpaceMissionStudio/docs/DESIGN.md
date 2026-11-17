@@ -394,7 +394,12 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
   has an icon, the run-mode drop-downs aside
   (`tests/gui/test_theme.py::test_every_command_button_has_an_icon`): Run
   in the accent, Cancel in critical, the rest in `text.secondary`.
-- **App icon:** drawn in code (`gui/icons.py`) in `palettes.APP_ICON`.
+- **App icon:** drawn in code (`gui/icons.py`) in `palettes.APP_ICON`: the
+  Earth (the 3D view's Blue Marble texture), an orbit, a satellite with a
+  link beam to a ground station, and the Sun, on a navy tile with a light
+  rim for dark taskbars. `scripts/build_app_icon_files.py` writes the
+  committed copies (the Windows `.ico`, `docs/images/app_icon.png`, the
+  banner's icon); run it after a change to the icon.
 
 ## Components
 

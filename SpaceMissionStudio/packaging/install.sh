@@ -173,7 +173,7 @@ if [[ "$install_desktop_entry" -eq 1 ]] && [[ -n "${XDG_DATA_HOME:-${HOME:-}}" ]
     mkdir -p "$icons_dir"
     if QT_QPA_PLATFORM=offscreen python3 -c "
 from spacemissionstudio.gui.icons import ensure_icon_file
-ensure_icon_file('$icons_dir/spacemissionstudio.png')
+ensure_icon_file('$icons_dir/spacemissionstudio.png', overwrite=True)
 " 2>/dev/null; then
         icon_status="App icon installed to $icons_dir/spacemissionstudio.png"
     else

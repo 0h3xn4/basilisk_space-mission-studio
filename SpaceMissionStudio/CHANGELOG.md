@@ -8,6 +8,24 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Changed
+
+- **A new app icon.** It shows a mission instead of a lone satellite: the
+  real Earth (the 3D view's NASA Blue Marble texture), an orbit flown and
+  predicted, a satellite on it with a link beam to a ground station, and
+  the Sun, on a deep-space tile. A light rim keeps the tile visible on
+  dark taskbars (Windows 10 and 11, Ubuntu's dock) and detail drops out
+  cleanly down to 16 px. The README banner shows the same icon.
+- **Windows shows the app icon.** The setup program's Start menu and
+  desktop shortcuts, the setup program itself and the entry in installed
+  apps use a new `spacemissionstudio.ico`, not Python's icon;
+  `install.ps1`'s shortcut too. The running app sets its own taskbar
+  identity, so its taskbar button is no longer grouped under Python.
+- **An upgrade on Linux replaces the icon** an earlier version installed
+  (`install.sh` used to keep the old file).
+
 ## 2.11.0 (2026-11-17)
 
 SpaceMissionStudio now keeps a spacecraft's equipment list and works out

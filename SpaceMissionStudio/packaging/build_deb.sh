@@ -79,12 +79,12 @@ install -D -m 644 "$staging$install_dir/python/THIRD_PARTY_NOTICES.txt" \
 install -m 644 "$script_dir/../LICENSE" "$staging/usr/share/doc/spacemissionstudio/LICENSE"
 install -m 644 "$script_dir/../LICENSE.de" "$staging/usr/share/doc/spacemissionstudio/LICENSE.de"
 
-# The menu icon (gui/icons.py draws it; no bitmap in the repository),
+# The menu icon (gui/icons.py draws it),
 # rendered now so it is a package file.
 QT_QPA_PLATFORM=offscreen "$bundled_python" -I -c "
 import sys
 from spacemissionstudio.gui.icons import ensure_icon_file
-ensure_icon_file(sys.argv[1])
+ensure_icon_file(sys.argv[1], overwrite=True)
 " "$staging/usr/share/icons/hicolor/256x256/apps/spacemissionstudio.png"
 
 installed_size=$(du -sk --exclude=DEBIAN "$staging" | cut -f1)

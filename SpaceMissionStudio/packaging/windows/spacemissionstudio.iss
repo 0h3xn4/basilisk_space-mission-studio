@@ -72,6 +72,11 @@ SolidCompression=yes
 LZMAUseSeparateProcess=yes
 LZMANumBlockThreads=4
 WizardStyle=modern
+; The app icon (gui/icons.py, written to this folder by
+; scripts/build_app_icon_files.py) for the setup program, the shortcuts and
+; the entry in Windows' installed apps.
+SetupIconFile=spacemissionstudio.ico
+UninstallDisplayIcon={app}\spacemissionstudio.ico
 ; Basilisk publishes wheels for Windows 10/11 (x86_64) specifically (see
 ; ../../docs/source/Install.rst's "Prebuilt wheel availability" table) --
 ; this installer targets the same.
@@ -86,6 +91,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 [Files]
 ; The bundled Python (packaging\bundle_python.py), copied as it is.
 Source: "{#PythonDir}\*"; DestDir: "{app}\python"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "spacemissionstudio.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
 ; A fresh copy on every install or upgrade, and what setups up to 1.1.0
@@ -100,9 +106,9 @@ Type: files; Name: "{app}\constraints.txt"
 [Icons]
 ; pythonw.exe, the windowless interpreter, so no console window opens;
 ; -I isolates it from any PYTHONPATH or user site-packages.
-Name: "{group}\SpaceMissionStudio"; Filename: "{app}\python\pythonw.exe"; Parameters: "-I -m spacemissionstudio.cli gui"; WorkingDir: "{app}"; IconFilename: "{app}\python\python.exe"
+Name: "{group}\SpaceMissionStudio"; Filename: "{app}\python\pythonw.exe"; Parameters: "-I -m spacemissionstudio.cli gui"; WorkingDir: "{app}"; IconFilename: "{app}\spacemissionstudio.ico"
 Name: "{group}\Uninstall SpaceMissionStudio"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\SpaceMissionStudio"; Filename: "{app}\python\pythonw.exe"; Parameters: "-I -m spacemissionstudio.cli gui"; WorkingDir: "{app}"; IconFilename: "{app}\python\python.exe"; Tasks: desktopicon
+Name: "{autodesktop}\SpaceMissionStudio"; Filename: "{app}\python\pythonw.exe"; Parameters: "-I -m spacemissionstudio.cli gui"; WorkingDir: "{app}"; IconFilename: "{app}\spacemissionstudio.ico"; Tasks: desktopicon
 
 [Run]
 ; Bytecode for the folder chosen here, so tracebacks name the installed

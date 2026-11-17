@@ -51,14 +51,25 @@ def categorical(mode: str) -> list[str]:
     """The categorical palette of ``mode``: a copy."""
     return list(CATEGORICAL[mode])
 
-# The application icon (gui/icons.py): blue solar panels in the light
-# theme's accent, a gold (multi-layer insulation) body. One icon for both
-# themes: the taskbar's background is the platform's, not ours.
+# The application icon (gui/icons.py): a mission scene on a deep-space
+# tile. The Earth, its orbit, a satellite on the orbit with a link beam
+# to a ground station, and the Sun. One icon for both themes: the
+# taskbar's background is the platform's, not ours. The dark tile
+# separates it from light taskbars; on dark ones (Windows 10 and 11,
+# Ubuntu's dock) the navy is only 1.0-1.5:1, so a lighter rim outlines the
+# tile at 3.5:1 or more against each of them (tests/gui/test_icons.py).
 APP_ICON = {
-    "panel": "#2563EB",  # the light accent
-    "panel_line": "#1E3A8A",  # antenna and panel grid lines
-    "body": "#CFB87C",
-    "body_line": "#A88F53",  # the body's centre line
+    "tile_top": "#1A2C57",  # the tile's gradient, top
+    "tile_bottom": "#0A1128",  # the tile's gradient, bottom; the satellite's outline
+    "tile_rim": "#5B7FC7",  # the tile's outline, for dark taskbars
+    "ocean": "#1A4FA6",  # the Earth when its texture is missing
+    "atmosphere": "#9CC7FF",  # the Earth's limb
+    "orbit": "#E8EEF8",  # the orbit track
+    "sun": "#F2B705",  # the Sun (SUN_COLOUR of the 3D view)
+    "panel": "#60A5FA",  # solar panels
+    "body": "#CFB87C",  # the satellite's body: gold multi-layer insulation
+    "beam": "#5BD27A",  # the link beam (LINE_OF_SIGHT_COLOUR of the 3D view)
+    "station": "#F4F5F7",  # the ground station (STATION_COLOUR of the 3D view)
 }
 
 # The axes of the 3D model view: x, y, z in the red, green, blue order
