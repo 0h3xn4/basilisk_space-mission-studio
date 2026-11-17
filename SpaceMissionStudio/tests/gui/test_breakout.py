@@ -436,14 +436,18 @@ def test_a_theme_change_reaches_the_window(window, qtbot, restored_theme):
 
 # -- the 3D View's WebGL context ---------------------------------------------------------------------------
 
-def _lose_context(qtbot, view):
+def _lose_context(qtbot, view) -> int:
+    """Take the 3D View's WebGL context away; the recoveries counted before."""
     # A live context first: a GPU process can lose and give back every context by itself (Windows CI's D3D
-    # backend does), and a lost context has no WEBGL_lose_context extension to call.
+    # backend does), and a lost context has no WEBGL_lose_context extension to call. For the same reason the
+    # tests count recoveries from here, not from zero.
     qtbot.waitUntil(lambda: _js(qtbot, view, "Boolean(MV.renderer) && !MV.contextLost && "
                                              "!MV.renderer.getContext().isContextLost()") is True, timeout=10000)
+    before = _js(qtbot, view, "MV.recoveries")
     _js(qtbot, view, "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
                      "window.CANVAS = MV.renderer.domElement; LOSE.loseContext(); 1")
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.contextLost") is True, timeout=10000)
+    return before
 
 
 def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
@@ -465,9 +469,9 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     _js(qtbot, view, "MV.camera.position.set(9000, 1000, 2000); MV.dirty = true; "
                      "window.KEEP = [MV.scene, MV.body, MV.body.material, MV.body.material.map, MV.crafts[0].mesh]; 1")
     clock = _js(qtbot, view, "document.getElementById('hud-time').textContent")
-    _lose_context(qtbot, view)
+    before = _lose_context(qtbot, view)
     _js(qtbot, view, "LOSE.restoreContext(); 1")
-    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == 1, timeout=10000)
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=10000)
     state = _state(qtbot, view)
     assert state["contextLost"] is False and state["contextAlive"] is True and state["ready"] is True
     assert state["frame"] == 77 and state["frames"] == 300 and state["webgl"] is True
@@ -496,8 +500,7 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     view.show()
     view.set_run(*_run())
     _drawn(qtbot, view)
-    _lose_context(qtbot, view)
-    assert _js(qtbot, view, "MV.recoveries") == 0
+    before = _lose_context(qtbot, view)
     # The page's own timer waits while the overlay is checked (a slow runner can take RECOVER_AFTER_MS for it).
     _js(qtbot, view, "clearTimeout(MV.recoverTimer); 1")
     shown = _js(qtbot, view, "document.getElementById('hud-time').textContent").split("\n")[0]
@@ -505,9 +508,10 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 120, timeout=10000)
     qtbot.waitUntil(lambda: _js(qtbot, view, "document.getElementById('hud-time').textContent")
                     .split("\n")[0] != shown, timeout=10000)
-    assert _js(qtbot, view, "MV.contextLost && MV.recoveries === 0") is True  # still lost: drawn without a context
+    # Still lost: the overlay was drawn without a context.
+    assert _js(qtbot, view, "MV.contextLost") is True and _js(qtbot, view, "MV.recoveries") == before
     _js(qtbot, view, "MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS); 1")  # as onContextLost set it
-    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == 1, timeout=15000)
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=15000)
     state = _state(qtbot, view)
     assert state["contextAlive"] is True and state["ready"] is True and state["frames"] == 300
     assert _js(qtbot, view, "JSON.stringify(MV_ERRORS)") == "[]"
