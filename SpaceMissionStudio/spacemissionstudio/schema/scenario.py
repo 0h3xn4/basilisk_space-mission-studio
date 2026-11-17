@@ -71,8 +71,11 @@ from typing import Any
 
 from ..engine.findings import Finding
 from .epochs import parse_epoch_utc
+from . import budgets as budgets_schema
 from . import operations as operations_schema
 from . import thermal as thermal_schema
+from .budgets import BudgetsConfig
+from .budgets import SourcedValue  # noqa: F401 -- the section's type hints resolve in this module's namespace
 from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence
@@ -2312,6 +2315,10 @@ class SpacecraftConfig:
     # The thermal model built on the 3D model (schema.thermal.ThermalConfig;
     # docs/developer/thermal-design.md); None, as every scenario before it.
     thermal: ThermalConfig | None = None  # the thermal model on the 3D model (schema/thermal.py, SRS-F-29)
+    # The equipment list, system modes and static power budget
+    # (schema.budgets.BudgetsConfig; docs/developer/system-budget-phase1-design.md);
+    # None, as every scenario before schema version 5. No run uses it yet (B-14).
+    budgets: BudgetsConfig | None = None  # equipment list, system modes, power budget (schema/budgets.py, SRS-F-31)
 
     def mounted_definitions(self) -> list:
         """``(where, mount)`` for every sensor, actuator and RF antenna with
@@ -2388,6 +2395,9 @@ class SpacecraftConfig:
         if self.thermal is not None:
             _require(isinstance(self.thermal, ThermalConfig), f"{self.name}: thermal must be an object")
             self.thermal.validate(self.name, thermal_schema.context_for(self))
+        if self.budgets is not None:
+            _require(isinstance(self.budgets, BudgetsConfig), f"{self.name}: budgets must be an object")
+            self.budgets.validate(self.name, self)
         _require(len(self.sigma_bn_init) == 3, f"{self.name}: sigma_bn_init must have 3 elements")
         _require(len(self.omega_bn_b_init_rad_s) == 3, f"{self.name}: omega_bn_b_init_rad_s must have 3 elements")
         # drag_coeff/drag_area_m2/srp_coeff/srp_area_m2 feed straight into
@@ -3266,11 +3276,11 @@ def number_fields(record, prefix: str = "") -> dict:
 
 
 # What an import record says was read from a file, and the formats (Phase 8c).
-IMPORT_TARGETS = ("orbit", "model", "devices", "power")
+IMPORT_TARGETS = ("orbit", "model", "devices", "power", "budgets")
 IMPORT_FORMATS = ("ccsds_opm", "ccsds_omm", "idm_cic")
 #: The formats each target is read from.
 IMPORT_TARGET_FORMATS = {"orbit": ("ccsds_opm", "ccsds_omm"), "model": ("idm_cic",), "devices": ("idm_cic",),
-                         "power": ("idm_cic",)}
+                         "power": ("idm_cic",), "budgets": ("idm_cic",)}
 IMPORT_SOURCE_STATES = ("unchanged", "changed", "missing")
 
 
@@ -3330,6 +3340,8 @@ def imported_values(config, target: str) -> dict:
         return device_import_values(config)
     if target == "power":  # the power budget values an IDM-CIC import set (idm_import.apply_power)
         return power_import_values(config)
+    if target == "budgets":  # the equipment list and system modes an IDM-CIC import made (idm_import.apply_budgets)
+        return budgets_schema.import_values(config)
     if target != "orbit":
         raise ValueError(f"no import target {target!r}")
     if config.orbit is None:
@@ -4113,6 +4125,9 @@ class Scenario:
             if sc.get("thermal") is not None:
                 sc["thermal"] = thermal_schema.from_dict(sc["thermal"], f"{where}.thermal", _record, _records,
                                                          _fields_of)
+            if sc.get("budgets") is not None:
+                sc["budgets"] = budgets_schema.from_dict(sc["budgets"], f"{where}.budgets", _record, _records,
+                                                         _fields_of)
             if sc.get("data_handling") is not None:
                 handling = _fields_of(sc["data_handling"], f"{where}.data_handling")
                 handling["instruments"] = _records(InstrumentConfig, handling.pop("instruments", []),
@@ -4221,6 +4236,10 @@ def _drop_unset_model_analyses(sc: dict) -> None:
         sc.pop("thermal", None)
     else:
         sc["thermal"] = thermal_schema.compact(sc["thermal"])
+    if sc.get("budgets") is None:
+        sc.pop("budgets", None)
+    else:
+        sc["budgets"] = budgets_schema.compact(sc["budgets"])
     model = sc.get("model")
     if model is None:
         return

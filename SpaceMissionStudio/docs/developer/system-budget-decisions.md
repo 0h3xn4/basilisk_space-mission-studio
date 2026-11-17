@@ -132,3 +132,41 @@ stay the run's inputs. The Mass page notes the difference between the
 budget's dry mass and `dry_mass_kg`. **Alternatives:** feed the budget
 into the run now. **Why:** phase 2 makes the power modes a Basilisk sink;
 the golden files must not change in phase 1.
+
+## B-15 A read-only place for the section in the spacecraft editor (2026-11-17)
+
+**Chosen:** the spacecraft editor keeps the `budgets` section unchanged
+through an edit. Its Power tab shows a read-only group, "Equipment list
+and power modes", with the number of items, system modes and buses. The
+group is visible only when the spacecraft has a section. A problem in the
+section opens this group. **Alternatives:** no place until PR B; leave
+the section out of the two GUI tests that need a place for every
+spacecraft field. **Why:** without the copy, an edit of the spacecraft
+in the window deleted the section. The tests
+`test_every_spacecraft_field_has_a_place` and
+`test_every_numeric_spacecraft_field_has_a_title` require a place for
+each field, and the hard rule does not let PR A change what they check.
+PR B can move the place to the Budgets area.
+
+## B-16 An item without power modes is in the mass budget only (2026-11-17)
+
+**Chosen:** an equipment item with no power mode (a structure, a
+harness) is not in the power budget. A system mode that does not list it
+gives no finding, and it needs no bus. An item with power modes must
+name a bus. **Alternatives:** an unknown power in every mode, as B-09
+gives an item a mode does not list. **Why:** in SBS each unit has at
+least one power mode, and a unit that draws nothing has a 0 W mode. Here
+the equipment list also holds mass-only items. To call their power
+"unknown" would mark every budget with such an item incomplete without a
+reason.
+
+## B-17 A placeholder may have an empty source (2026-11-17)
+
+**Chosen:** a sourced value with a null `value` may have an empty
+`source`. A number with an empty source is refused, as the design note
+says. **Alternatives:** SBS refuses an empty source on every sourced
+value. **Why:** the design note refuses only a number without a source,
+and an empty cell of the Equipment grid (PR B) is then a valid
+placeholder. The design note's example has `"mass_column": "avionics"`,
+which is not an S-120 column; the rule of section 3 applies, so the
+example is not a valid file in that one field.

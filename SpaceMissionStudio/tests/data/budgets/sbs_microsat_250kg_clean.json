@@ -1,0 +1,1125 @@
+{
+ "version": 1,
+ "buses": [
+  {
+   "name": "main",
+   "converter_efficiency": {
+    "value": 0.9,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   }
+  },
+  {
+   "name": "payload",
+   "converter_efficiency": {
+    "value": 0.9,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   }
+  }
+ ],
+ "distribution_loss": {
+  "value": 0.03,
+  "source": "Synthetic example value; not from a data sheet or a standard."
+ },
+ "power_margins": [
+  {
+   "maturity": "existing",
+   "percent": {
+    "value": 5,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   }
+  },
+  {
+   "maturity": "released",
+   "percent": {
+    "value": 10,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   }
+  },
+  {
+   "maturity": "estimated",
+   "percent": {
+    "value": 20,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   }
+  }
+ ],
+ "system_power_margin_percent": {
+  "value": 10,
+  "source": "Synthetic example value; not from a data sheet or a standard."
+ },
+ "equipment": [
+  {
+   "name": "adapter",
+   "subsystem": "STRUCT",
+   "bus": "main",
+   "maturity": "existing",
+   "mass_kg": {
+    "value": 4.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "adcs",
+   "subsystem": "ADCS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 3.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 4.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 7.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 10.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 5.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 7.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "battery",
+   "subsystem": "EPS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 14.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "camera",
+   "subsystem": "PL",
+   "bus": "payload",
+   "maturity": "estimated",
+   "mass_kg": {
+    "value": 38.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 60.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 80.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.6
+    }
+   ]
+  },
+  {
+   "name": "eps",
+   "subsystem": "EPS",
+   "bus": "main",
+   "maturity": "existing",
+   "mass_kg": {
+    "value": 10.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 10.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 14.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 20.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "gnss",
+   "subsystem": "ADCS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 0.9,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 1.2,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 1.8,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 1.2,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 1.8,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 1.2,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 1.8,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 1.2,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 1.8,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "harness",
+   "subsystem": "STRUCT",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 6.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "heaters",
+   "subsystem": "THERM",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 1.5,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.5
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.3
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 4.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.25
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.3
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.3
+    }
+   ]
+  },
+  {
+   "name": "magnetorquers",
+   "subsystem": "ADCS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 4.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 1.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 3.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.3
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 1.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 3.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.2
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 1.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 3.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.2
+    }
+   ]
+  },
+  {
+   "name": "obc",
+   "subsystem": "DH",
+   "bus": "main",
+   "maturity": "existing",
+   "mass_kg": {
+    "value": 3.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 10.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 14.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 16.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 11.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 15.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "pdu_data",
+   "subsystem": "DH",
+   "bus": "payload",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 6.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 4.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 9.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 14.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 9.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 14.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 4.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "radio",
+   "subsystem": "TTC",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 4.5,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 6.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 8.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 28.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 40.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "reaction_wheels",
+   "subsystem": "ADCS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 14.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 2.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.5
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 30.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.6
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 18.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 40.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.7
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 30.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.6
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 12.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 30.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "duty_cycle": 0.6
+    }
+   ]
+  },
+  {
+   "name": "solar_array",
+   "subsystem": "EPS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 26.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "star_tracker",
+   "subsystem": "ADCS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 2.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 3.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 5.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 3.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 5.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 3.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 5.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 3.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 5.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "structure",
+   "subsystem": "STRUCT",
+   "bus": "main",
+   "maturity": "existing",
+   "mass_kg": {
+    "value": 100.5,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "sun_sensors",
+   "subsystem": "ADCS",
+   "bus": "main",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 0.6,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "safe",
+     "average_w": {
+      "value": 0.4,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "nominal",
+     "average_w": {
+      "value": 0.4,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "imaging",
+     "average_w": {
+      "value": 0.4,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 0.4,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "charging",
+     "average_w": {
+      "value": 0.4,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.5,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  },
+  {
+   "name": "xband_tx",
+   "subsystem": "PL",
+   "bus": "payload",
+   "maturity": "released",
+   "mass_kg": {
+    "value": 7.0,
+    "source": "Synthetic example value; not from a data sheet or a standard."
+   },
+   "power_modes": [
+    {
+     "name": "off",
+     "average_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 0.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    },
+    {
+     "name": "downlink",
+     "average_w": {
+      "value": 55.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     },
+     "peak_w": {
+      "value": 70.0,
+      "source": "Synthetic example value; not from a data sheet or a standard."
+     }
+    }
+   ]
+  }
+ ],
+ "modes": [
+  {
+   "name": "charging",
+   "units": {
+    "adapter": "off",
+    "adcs": "charging",
+    "battery": "off",
+    "camera": "off",
+    "eps": "charging",
+    "gnss": "charging",
+    "harness": "off",
+    "heaters": "charging",
+    "magnetorquers": "charging",
+    "obc": "charging",
+    "pdu_data": "charging",
+    "radio": "charging",
+    "reaction_wheels": "charging",
+    "solar_array": "off",
+    "star_tracker": "charging",
+    "structure": "off",
+    "sun_sensors": "charging",
+    "xband_tx": "off"
+   }
+  },
+  {
+   "name": "downlink",
+   "units": {
+    "adapter": "off",
+    "adcs": "downlink",
+    "battery": "off",
+    "camera": "off",
+    "eps": "downlink",
+    "gnss": "downlink",
+    "harness": "off",
+    "heaters": "downlink",
+    "magnetorquers": "off",
+    "obc": "downlink",
+    "pdu_data": "downlink",
+    "radio": "downlink",
+    "reaction_wheels": "downlink",
+    "solar_array": "off",
+    "star_tracker": "downlink",
+    "structure": "off",
+    "sun_sensors": "downlink",
+    "xband_tx": "downlink"
+   }
+  },
+  {
+   "name": "imaging",
+   "units": {
+    "adapter": "off",
+    "adcs": "imaging",
+    "battery": "off",
+    "camera": "imaging",
+    "eps": "imaging",
+    "gnss": "imaging",
+    "harness": "off",
+    "heaters": "imaging",
+    "magnetorquers": "off",
+    "obc": "imaging",
+    "pdu_data": "imaging",
+    "radio": "imaging",
+    "reaction_wheels": "imaging",
+    "solar_array": "off",
+    "star_tracker": "imaging",
+    "structure": "off",
+    "sun_sensors": "imaging",
+    "xband_tx": "off"
+   }
+  },
+  {
+   "name": "nominal",
+   "units": {
+    "adapter": "off",
+    "adcs": "nominal",
+    "battery": "off",
+    "camera": "off",
+    "eps": "nominal",
+    "gnss": "nominal",
+    "harness": "off",
+    "heaters": "nominal",
+    "magnetorquers": "nominal",
+    "obc": "nominal",
+    "pdu_data": "nominal",
+    "radio": "nominal",
+    "reaction_wheels": "nominal",
+    "solar_array": "off",
+    "star_tracker": "nominal",
+    "structure": "off",
+    "sun_sensors": "nominal",
+    "xband_tx": "off"
+   }
+  },
+  {
+   "name": "safe",
+   "units": {
+    "adapter": "off",
+    "adcs": "safe",
+    "battery": "off",
+    "camera": "off",
+    "eps": "safe",
+    "gnss": "off",
+    "harness": "off",
+    "heaters": "safe",
+    "magnetorquers": "safe",
+    "obc": "safe",
+    "pdu_data": "off",
+    "radio": "safe",
+    "reaction_wheels": "safe",
+    "solar_array": "off",
+    "star_tracker": "off",
+    "structure": "off",
+    "sun_sensors": "safe",
+    "xband_tx": "off"
+   }
+  }
+ ]
+}
