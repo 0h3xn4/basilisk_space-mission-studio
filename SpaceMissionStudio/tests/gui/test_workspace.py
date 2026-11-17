@@ -78,11 +78,12 @@ def test_the_areas_and_what_they_hold(window):
     screens. Home is the Templates; Scenario the scenario tree (U-01) with
     the scenario's own nodes, one per spacecraft (one under it per tab of
     its editor) and ground station; Run the analyses and the log; Results
-    the run's plots, 3D view, dashboard, output and Compare; Timeline the events;
-    Reports the flight software. Help opens the manual; Explain is the
+    the run's plots, 3D view, dashboard, output and Compare; Budgets the
+    equipment list and the power, mass and propellant budgets (Q3); Timeline
+    the events; Reports the flight software. Help opens the manual; Explain is the
     Scenario tree's first node, Overview (M4b)."""
     assert [area.label for area in window.shell.page_areas()] == [
-        "Home", "Scenario", "Run", "Results", "Timeline", "Reports", "Settings"]
+        "Home", "Scenario", "Run", "Results", "Budgets", "Timeline", "Reports", "Settings"]
     assert window.shell.areas["help"].page is None and window.shell.areas["help"].action is window.manual_action
     assert window.shell.page("home").content is window.load_scenario_widget
     assert [path for path, _page in window.scenario_editor.page_tree.paths()] == [
@@ -93,8 +94,8 @@ def test_the_areas_and_what_they_hold(window):
         "Ground stations > berlin-gs", "Mission sequence", "Monte Carlo", "Assumptions"]  # Assumptions: Phase 3d
     assert window.shell.page("scenario").header.isAncestorOf(window.scenario_editor.mode_toggle)  # Form · JSON
     # History: M5a; Run: M5b; Design Checks: model analyses; Thermal: SRS-F-29; Plan: SRS-F-30
-    assert _tab_texts(window.run_views) == ["Run", "End of Life", "Budget", "Design Checks", "Thermal", "Plan", "History",
-                                            "Log"]
+    # Budget moved to the Budgets area as Propellant (owner decision Q3, 2026-11-17)
+    assert _tab_texts(window.run_views) == ["Run", "End of Life", "Design Checks", "Thermal", "Plan", "History", "Log"]
     assert _tab_texts(window.results_views) == ["Overview", "Plots", "3D View", "Dashboard", "Output", "Compare"]  # Overview: M6a; 3D View: SRS-F-16
     assert window.shell.page("timeline").content is window.event_timeline_widget
     assert window.shell.page("reports").content is window.reports_views  # M8: Exports, then Flight Software

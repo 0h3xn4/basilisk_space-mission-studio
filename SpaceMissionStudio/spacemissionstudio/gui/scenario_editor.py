@@ -970,6 +970,23 @@ class ScenarioEditorWidget(QWidget):
         """The operations section as edited (a copy; None when the scenario has none)."""
         return copy.deepcopy(self._operations)
 
+    def set_budgets(self, spacecraft: str, section) -> bool:
+        """Replaces the ``budgets`` section of the spacecraft named
+        ``spacecraft`` (the Budgets area's Equipment page; None removes it).
+        The spacecraft's form has no field for it: its page is built again
+        from the new config, as after an edit of its 3D model. The edit is
+        checked, saved and undone as any other. False when there is no
+        such spacecraft."""
+        self.flush_forms()  # an edit still waiting in the spacecraft's form goes in first
+        configs = self.spacecraft_list.to_list()
+        row = next((index for index, config in enumerate(configs) if config.name == spacecraft), None)
+        if row is None:
+            return False
+        config = copy.copy(configs[row])
+        config.budgets = copy.deepcopy(section)
+        self.spacecraft_list.replace_config(row, config)
+        return True
+
     def _expected_series_names(self) -> list[str]:
         try:
             return expected_series_names(self._draft_scenario())

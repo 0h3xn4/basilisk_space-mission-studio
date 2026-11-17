@@ -2135,3 +2135,26 @@ read the value from the sheet, and every check is kept. New tests are in
 | `test_budget_widget.py::test_the_budget_tab_shows_the_table` | `totals_label` starts with "Total: " | `totals_sheet` has a delta-V and a propellant value | the totals are a sheet |
 | `test_design_checks_page.py::test_the_page_shows_each_check_and_its_findings` | "launch 300.00 kg" in `mass_label` | `mass_sheet`'s "= Launch mass" is "300.00" | the mass sum is a sheet under its table |
 | `test_model_analyses_pages.py::test_the_model_analyses_tab_shows_a_runs_analyses` | "Momentum" in `summary_label` | `momentum_table` is shown, its first row "Needed ..." with x, y, z | the momentum per axis is a table |
+
+## System Budget Studio merge, phase 1 (Budgets area)
+
+The Budgets area comes after Results in the navigation rail (`Ctrl+5`;
+Timeline and Reports move to `Ctrl+6` and `Ctrl+7`, decision B-11). The
+Budget tab of the Run area moved to it as **Propellant**. The tests below
+changed only as far as this move needs: the expected area list, tab
+list, breadcrumb, palette label and `Ctrl+N`. Every behavioural
+assertion is kept; none is removed or weakened. No test outside
+`tests/gui/` changed, and no golden file. The rows of
+`docs/ui/UI_OVERHAUL_PLAN.md` §5.2 are a record and are not edited; the
+Budgets area's own reachability is tested in
+`tests/gui/test_budgets_area.py` (new, 23 tests).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_workspace.py::test_the_areas_and_what_they_hold` | areas Home, Scenario, Run, Results, Timeline, Reports, Settings; Run tabs Run, End of Life, Budget, Design Checks, Thermal, Plan, History, Log | areas with Budgets after Results; Run tabs without Budget; the docstring names the Budgets area | the Budget tab moved to the Budgets area, owner decision Q3, 2026-11-17 |
+| `test_shell.py::test_the_breadcrumbs_say_where_the_window_is` | `show_view(budget_widget)` gives "Run › Budget" | it gives "Budgets › Propellant"; the docstring names Budgets | the same |
+| `test_shell.py::test_the_rail_follows_the_area_shown_and_keys_switch_areas` | docstring "Ctrl+1 to Ctrl+6 ... the six top areas" | "Ctrl+1 to Ctrl+7 ... the seven top areas"; the loop over `_AREAS` is unchanged | the same (wording only) |
+| `test_keyboard_walk.py::test_tab_reaches_every_control_of_the_area` | areas home to reports with Timeline `Ctrl+5`, Reports `Ctrl+6` | Budgets added as a case (`Ctrl+5`); Timeline `Ctrl+6`, Reports `Ctrl+7` | the same; B-11 sets the keys |
+| `test_scenario_tree.py::test_the_palette_goes_to_every_node` | "Go to > Run > Budget" in the palette | "Go to > Budgets > Propellant" | the same |
+| `test_shell_reachability.py` rows "**Analyses** › End of Life, Budget" and "Scenario › Analyses › End of Life, Budget" | `_shown(w, w.budget_widget, "run")` | `_shown(w, w.budget_widget, "budgets")` | the same; the plan's row texts are unchanged |
+| `test_panels.py::test_a_keyboard_only_walk_of_the_shell` | docstring "Ctrl+1 to Ctrl+6 reach the areas" | "Ctrl+1 to Ctrl+7"; the loop over `_AREAS` is unchanged | the same (wording only) |

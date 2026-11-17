@@ -409,7 +409,7 @@ def test_a_project_layout_outlives_the_window(qtbot, monkeypatch, tmp_path):
 # -- a keyboard-only walk -----------------------------------------------------------
 
 def test_a_keyboard_only_walk_of_the_shell(shown, qtbot, monkeypatch):
-    """Every part of the shell without the mouse: Ctrl+1 to Ctrl+6 reach the
+    """Every part of the shell without the mouse: Ctrl+1 to Ctrl+7 reach the
     areas, the arrow keys move along the rail and Enter opens an area, Ctrl+K
     the command palette, Ctrl+I and Ctrl+J the panels; Tab goes round the
     whole window (top bar, rail, area, panels, status bar) and back, never

@@ -94,14 +94,14 @@ def _takes_tab(widget: QWidget, root: QWidget) -> bool:
     return True
 
 
-@pytest.mark.parametrize("area", ["home", "scenario", "run", "results", "timeline", "reports", "settings"])
+@pytest.mark.parametrize("area", ["home", "scenario", "run", "results", "budgets", "timeline", "reports", "settings"])
 def test_tab_reaches_every_control_of_the_area(window, qtbot, area):
     """The area by its shortcut (Settings from the palette's command),
     then Tab: every control of the area is reached, focus is never on a
     hidden widget, and the focus shows (the style sheet's focus ring)."""
     from spacemissionstudio.gui.theme import TOKENS, stylesheet
 
-    keys = {"home": "1", "scenario": "2", "run": "3", "results": "4", "timeline": "5", "reports": "6"}
+    keys = {"home": "1", "scenario": "2", "run": "3", "results": "4", "budgets": "5", "timeline": "6", "reports": "7"}
     if area in keys:
         qtbot.keyClick(window, getattr(Qt.Key, f"Key_{keys[area]}"), Qt.KeyboardModifier.ControlModifier)
     else:

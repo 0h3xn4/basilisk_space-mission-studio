@@ -213,9 +213,12 @@ units. The time cursor is drawn in the accent: it is a selection.
 The app shell (`gui/shell.py`, `gui/app_shell.py`; M2a), with no menu
 bar and no toolbar:
 
-- **Navigation rail:** Home, Scenario, Run, Results, Timeline and
-  Reports (Ctrl+1 to Ctrl+6), Settings and Help at the bottom; icon and
-  label, or icons only (its last button).
+- **Navigation rail:** Home, Scenario, Run, Results, Budgets, Timeline
+  and Reports (Ctrl+1 to Ctrl+7), Settings and Help at the bottom; icon
+  and label, or icons only (its last button). A rail too short for the
+  names (a 720 px window with the Problems panel open) shows icons only
+  until there is room again; the tooltips and accessible names keep the
+  names (decision B-19).
 - **Area header:** the area's title and its commands as buttons (Run's
   run controls, Scenario's 3D Model...).
 - **Top bar:**
@@ -528,10 +531,16 @@ Time Cursor commands are under Go > Time Cursor).
 | Go > Go to Scenario | Ctrl+2 | - |
 | Go > Go to Run | Ctrl+3 | - |
 | Go > Go to Results | Ctrl+4 | - |
-| Go > Go to Timeline | Ctrl+5 | - |
-| Go > Go to Reports | Ctrl+6 | - |
+| Go > Go to Budgets | Ctrl+5 | - |
+| Go > Go to Timeline | Ctrl+6 | - |
+| Go > Go to Reports | Ctrl+7 | - |
+| Budgets > Add Equipment Item | Ctrl+Shift+N | - |
+| Budgets > Remove Equipment Item | Ctrl+Del | - |
+| Budgets > Copy as CSV | Ctrl+Shift+C | - |
 
-The Time Cursor commands work while Results has the focus. The table is
+The Time Cursor commands work while Results has the focus. Remove
+Equipment Item and Copy as CSV act on the Budgets page shown; from
+another area they show the Budgets area first. The table is
 checked against the registry by `tests/gui/test_design_rules.py`; a
 standard key is checked against the running platform's binding.
 

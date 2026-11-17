@@ -139,8 +139,8 @@ def test_a_later_area_slots_into_its_place_on_the_rail(qtbot):
 
 
 def test_the_rail_follows_the_area_shown_and_keys_switch_areas(window):
-    """Showing a view checks its area's rail button; Ctrl+1 to Ctrl+6 are
-    the Go commands of the six top areas, named in the buttons' tooltips."""
+    """Showing a view checks its area's rail button; Ctrl+1 to Ctrl+7 are
+    the Go commands of the seven top areas, named in the buttons' tooltips."""
     window.show_view(window.compare_widget)
     assert window.shell.rail.current() == "results"
     for number, (area_id, _icon, label) in enumerate(window._AREAS, start=1):
@@ -180,7 +180,7 @@ def test_a_new_window_opens_on_home_and_a_template_opens_the_scenario(unopened_w
 # -- the top bar -------------------------------------------------------------------
 
 def test_the_breadcrumbs_say_where_the_window_is(unopened_window):
-    """Area › page: the Scenario tree's path, or the tab of Run and Results."""
+    """Area › page: the Scenario tree's path, or the tab of Run, Results and Budgets."""
     from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
 
     window = unopened_window
@@ -190,8 +190,8 @@ def test_the_breadcrumbs_say_where_the_window_is(unopened_window):
     assert window.top_bar.breadcrumb_label.text() == "Scenario › Environment"
     window.show_view(window.compare_widget)
     assert window.top_bar.breadcrumb_label.text() == "Results › Compare"
-    window.show_view(window.budget_widget)
-    assert window.top_bar.breadcrumb_label.text() == "Run › Budget"
+    window.show_view(window.budget_widget)  # moved from Run › Budget (owner decision Q3, 2026-11-17)
+    assert window.top_bar.breadcrumb_label.text() == "Budgets › Propellant"
 
 
 def test_the_save_button_shows_the_save_state_and_saves(window, monkeypatch):

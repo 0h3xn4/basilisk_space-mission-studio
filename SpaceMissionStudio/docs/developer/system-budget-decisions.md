@@ -170,3 +170,97 @@ and an empty cell of the Equipment grid (PR B) is then a valid
 placeholder. The design note's example has `"mass_column": "avionics"`,
 which is not an S-120 column; the rule of section 3 applies, so the
 example is not a valid file in that one field.
+
+## B-18 The Equipment grid holds the item fields; the power modes have their own table (2026-11-17)
+
+**Chosen:** the grid of Budgets › Equipment has one column per item
+field: name, subsystem, mass column, bus, maturity, mass, mass source and
+"mass in model". The power modes of the item picked are a second table
+(name, average and peak with their sources, duty cycle). The system
+modes are a third table (name, duty cycle, the power mode of each item).
+The section's numbers (distribution loss, system margin, efficiency per
+bus, margin per maturity) are a fourth, "Power settings". **Alternatives:**
+the design note's section 8: the power of each mode as more columns of
+the grid. **Why:** an item has any number of power modes, each with two
+sourced values and a duty cycle. As columns they make a grid with a
+varying shape that does not fit 1280 px. The owner's task for PR B asked
+for the item fields in the grid and the power modes in a details table.
+The editable grids keep the file's order (B-10), so they do not sort;
+`Ctrl+C` copies their rows as TSV, as `DataTable` does.
+
+## B-19 The rail shows icons only when it is too short for the names (2026-11-17)
+
+**Chosen:** the navigation rail shows icons only while its height is
+less than it needs with the names. The names come back when there is
+room. It is not the user's "icons only" choice: that stays as it was.
+Each button keeps its tooltip ("Budgets (Ctrl+5)") and its accessible
+name. **Alternatives:** smaller rail buttons for everyone; a scrolling
+rail. **Why:** with Budgets, the rail has eight areas. At 1280 x 720
+with the Problems panel open, the rail is 510 px high and needs 578 px
+with the names: Settings and Help lost their labels (measured). Before
+Budgets it needed 519 px.
+
+## B-20 The Budgets area's icon is Lucide's "calculator" (2026-11-17)
+
+**Chosen:** `calculator.svg` from the same `lucide-static` 1.52.0
+archive (SHA-256 checked against `docs/THIRD_PARTY_ASSETS.md`), copied
+unchanged. **Alternatives:** the design note's "budget" (Lucide has no
+icon of that name); an icon already bundled. **Why:** a budget sums
+numbers; no bundled icon says that, and the rail's icons are all
+different.
+
+## B-21 The Budgets commands are window commands (2026-11-17)
+
+**Chosen:** Budgets › Add Equipment Item (`Ctrl+Shift+N`), Remove
+Equipment Item (`Ctrl+Del`) and Copy as CSV (`Ctrl+Shift+C`) are
+commands of the registry, in **Tools > Budgets** and the palette. Their
+shortcuts are the window's. Remove and Copy act only on the Budgets page
+shown; from another area they show the area and change nothing.
+**Alternatives:** shortcuts that work only inside the area, as the time
+cursor's do in Results. **Why:** `test_shell_reachability.py` requires
+every command except the time cursor's to be on the window, and a GUI
+test may not change what it checks. Acting only on the page shown keeps
+`Ctrl+Del` from removing an item the user does not see.
+
+## B-22 Add makes placeholders, never a number (2026-11-17)
+
+**Chosen:** a new item has the mass `{"value": null, "source": "TBD"}`;
+a new power mode the average `{"value": null, "source": "TBD"}`; a new
+bus a placeholder efficiency. **Add Budgets Section** makes one bus,
+"main", and placeholders for its efficiency, the distribution loss and
+the system margin, as the IDM-CIC import does (B-08). An item that gets
+its first power mode takes the bus when the section has only one, since
+an item with power modes must name a bus. **Alternatives:** zeros; an
+empty section. **Why:** never guess a number; a placeholder is visible
+("TBD" and a finding) and does not stop a run, where an empty source
+would.
+
+## B-23 The budgets are computed on the GUI thread, for the page shown (2026-11-17)
+
+**Chosen:** the Budgets pages compute on the GUI thread, only the page
+shown, only while the area is shown, and only when the spacecraft
+changed. **Alternatives:** a worker thread, as Design Checks. **Why:**
+the calculation is small. Measured offscreen, without painting: with
+the 18 items of the SBS `microsat_250kg_clean` example, at most 20 ms;
+with 180 items, at most 31 ms for a page and 0.5 ms when nothing
+changed. A worker would add a waiting state to a page that is ready at
+once.
+
+## B-24 A problem in the section opens Budgets › Equipment (2026-11-17)
+
+**Chosen:** a problem or finding whose field is in the `budgets`
+section opens Budgets › Equipment of its spacecraft. The spacecraft
+editor's read-only group (B-15) stays, so the two GUI tests that need a
+place for every spacecraft field are unchanged; its text now points to
+the Budgets area. **Alternatives:** the group in the spacecraft editor,
+as in PR A. **Why:** the section is edited in the Budgets area.
+
+## B-25 Power and Mass CSV are not rows of Reports › Exports (2026-11-17)
+
+**Chosen:** Copy as CSV on Equipment, Power and Mass copies to the
+clipboard with the scenario's provenance, as the propellant budget does.
+They are not new rows of Reports › Exports; the Budget row's "Made in"
+now says Budgets › Propellant › Copy as CSV. **Alternatives:** three new
+rows. **Why:** `test_reports_and_settings.py` pins the list of exports,
+and Q3 moved a tab; it did not add exports. A later version can add the
+rows with their test.

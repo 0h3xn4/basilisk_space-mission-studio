@@ -30,9 +30,23 @@ fixes bugs.
   give.
 - Findings `budget.placeholder`, `budget.unit_not_in_mode`,
   `budget.no_margin`, `budget.mode_duty_sum` and `budget.mass_unknown`.
+- **The Budgets area** (System Budget Studio merge phase 1, part B), after
+  Results in the navigation rail (`Ctrl+5`). **Equipment** edits the
+  equipment list, the power modes, the system modes and the power
+  settings in tables; a placeholder reads "TBD" behind a caution icon,
+  and every change can be undone and is checked in the Problems panel.
+  **Power** shows the power budget per system mode, per subsystem and per
+  bus, with the duty-cycle average; **Mass** the mass budget with the
+  equipment list. Each page has **Copy as CSV** (`Ctrl+Shift+C`).
+  `Ctrl+Shift+N` adds an item, `Ctrl+Del` removes the item picked.
 
 ### Changed
 
+- **Run › Budget is now Budgets › Propellant.** The delta-V and
+  propellant budget works as before. Timeline is now `Ctrl+6` and
+  Reports `Ctrl+7`.
+- The navigation rail shows only its icons when the window is too short
+  for the area names; the names come back when there is room.
 - The scenario file is at **schema version 5**. Every older file opens
   as before. A file saved by this version does not open in 2.10.0 or
   earlier. The templates' scenario hashes change with the version

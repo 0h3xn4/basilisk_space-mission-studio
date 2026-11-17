@@ -487,7 +487,7 @@ estimate agrees with full Basilisk decay runs to within ~3% in seconds
 
 ### Propellant budgets (ESA AD10 style)
 
-A **Budget** page (**Run > Budget**) and
+A **Propellant** page (**Budgets > Propellant**; **Run > Budget** until 2.10.0) and
 `spacemissionstudio budget`: delta-V and propellant per mission phase with
 the guideline's margins, residuals and iteration (each contributor's
 propellant from the mass before its burn, `m * (1 - exp(-dV / Ve))`), simulated orbit control

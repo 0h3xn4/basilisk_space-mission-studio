@@ -178,7 +178,7 @@ Reference data** downloads later). Home looks like this:
 A few things to notice right away:
 
 * The **navigation rail** on the left holds the app's areas, top to
-  bottom (`Ctrl+1` to `Ctrl+6`):
+  bottom (`Ctrl+1` to `Ctrl+7`):
   * **Home**: where you start. **Start from scratch** (**New blank
     scenario**), **Open a scenario file...** and your **Recent
     scenarios** on the left; a card per template in the middle; the
@@ -204,8 +204,8 @@ A few things to notice right away:
     **Show in 3D View while running** with its pace for a single run,
     the archive folder for a Monte
     Carlo batch, the spacecraft and program for a SIL run; each applies
-    as you change it), **End of Life** and **Budget** (re-entry
-    and delta-V estimates, Section 11), **History** (every run: its
+    as you change it), **End of Life** (the re-entry estimates,
+    Section 11), **History** (every run: its
     status, mode, start, how long it took and whether it is saved; see
     Section 7, Compare) and the **Log** (what the app logged in this
     session: each run's start, end, warnings and where it is saved, in a
@@ -218,6 +218,13 @@ A few things to notice right away:
     differences, the inputs that differ, the events and overlaid plots),
     and, last, a **Monte Carlo** view when the scenario has Monte Carlo
     on or a batch is open (Section 10).
+  * **Budgets** (`Ctrl+5`): the budgets of a spacecraft, without a run.
+    **Equipment** edits its equipment list, its power modes, its system
+    modes and its power settings in tables; **Power** gives its power
+    budget per system mode; **Mass** its mass budget; **Propellant** its
+    delta-V and propellant budget (Section 11; until 2.10.0 this was
+    **Run > Budget**). With several spacecraft, pick one at the top
+    ([Equipment list and power budget](docs/user-manual/budgets.md)).
   * **Timeline**: passes, eclipses, burns and mode changes (Section 7).
   * **Reports**: **Exports** and **Flight Software** (export the
     attitude flight software and run it in the loop, Section 6).
@@ -257,8 +264,9 @@ A few things to notice right away:
   * **Help**, at the bottom: this manual (`F1`). The rail's last button
     shows the areas as icons only, or with their names.
 
-  In this manual, a path such as **Run > Budget** is an area of the rail
-  and its page.
+  In this manual, a path such as **Budgets > Propellant** is an area of
+  the rail and its page. When the window is too short for the area names,
+  the rail shows only the icons; point at one for its name.
 * **Fields show their unit after the number**: "550.0 km", "97.59°",
   "1.000 m²"; a field with no unit is a plain number (a coefficient, a
   fraction). This manual and the app's messages name a field with its
@@ -274,11 +282,12 @@ A few things to notice right away:
   * **View**: the Inspector, Calculation and Problems panels, Explain, the
     menu bar itself, the rail as icons only, the theme, Reset Layout and
     the command palette.
-  * **Go**: the six areas (`Ctrl+1` to `Ctrl+6`) and the **Time Cursor**
+  * **Go**: the seven areas (`Ctrl+1` to `Ctrl+7`) and the **Time Cursor**
     moves of Results.
   * **Run**: Run, Cancel Run, the run mode, Live plot, End of Life,
     Budget, Design Checks and Open Monte Carlo Results....
-  * **Tools**: 3D Model..., Flight Software, Check a CCSDS File...,
+  * **Tools**: 3D Model..., Flight Software, **Budgets** (Add Equipment
+    Item, Remove Equipment Item, Copy as CSV), Check a CCSDS File...,
     Reference Data... and Check Reference Data.
   * **Help**: this manual, Keyboard Shortcuts, Third-Party Licences... and
     About.
@@ -323,7 +332,7 @@ A few things to notice right away:
   spacecraft, a name over 64 characters) shows its rule the same way
   ([The scenario file's limits](docs/models/scenario-limits.md)).
 * The **Calculation** panel, a tab beside the Inspector: how a computed
-  number was reached. **Show calculation** on the **Budget** and **End of
+  number was reached. **Show calculation** on the **Propellant** and **End of
   Life** pages, and beside the link budget on the Dashboard, opens it, and
   so does a card of the run's **Overview**. It
   gives the result, the equation and the standard it comes from, then
@@ -589,7 +598,7 @@ fixed:
   run on held values. Set the Duration to cover the whole sequence.
   A `maneuver` or `lambert_transfer` burn is an
   instant change of velocity only: it uses no propellant and leaves the
-  mass unchanged. For propellant, use the **Budget** page (Section 11)
+  mass unchanged. For propellant, use the **Budgets > Propellant** page (Section 11)
   or a fuel tank with station-keeping or constant thrust.
 * **Monte Carlo** -- see Section 10.
 * **Assumptions** -- the rules and margins the analyses use, each with
@@ -1442,7 +1451,7 @@ to a report or a quantity; **Export CSV...** always writes every report
 in SI units. Without a Mission Sequence you can ignore this view.
 
 The tables of Results (Output, the Monte Carlo runs, Compare's summary,
-inputs and events) and Budget work the same way: `Ctrl+C` copies the
+inputs and events) and the Budgets pages work the same way: `Ctrl+C` copies the
 selected rows, or every row shown, as tab-separated text with the
 headings, ready to paste into a spreadsheet; right-click a heading to
 show or hide its column; numbers are right-aligned, each column's unit in
@@ -1784,8 +1793,8 @@ operations value.
 **You need a delta-V and propellant budget.** Fill in the spacecraft's
 **Budget (AD10)** page, run the mission (ideally its whole
 length, with Solar activity at Conservative (95th) and Cd 3.0 for an ESA AD10
-budget), then press **Compute budget** on the **Budget** page (**Run >
-Budget**). It lists
+budget), then press **Compute budget** on the **Propellant** page
+(**Budgets > Propellant**). It lists
 each contributor per mission phase with its margin, the total, and notes
 on anything that departs from the guideline. **Copy as CSV** puts the
 table on the clipboard. **Show calculation** opens how the selected

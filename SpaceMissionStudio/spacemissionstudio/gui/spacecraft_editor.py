@@ -1754,7 +1754,7 @@ class SpacecraftEditorDialog(QDialog):
         """A read-only summary of the spacecraft's ``budgets`` section (the
         equipment list, the system modes; schema.budgets), shown only when
         it has one: the place a problem in the section opens (decision
-        B-15). The JSON page edits the section."""
+        B-15). Budgets › Equipment edits the section."""
         budgets = config.budgets if config is not None else None
         self.budgets_group = QGroupBox("Equipment list and power modes")
         form = QFormLayout(self.budgets_group)
@@ -1766,7 +1766,7 @@ class SpacecraftEditorDialog(QDialog):
         form.addRow("System modes", self.budgets_modes)
         form.addRow("Buses", self.budgets_buses)
         form.addRow("Section version", self.budgets_version)
-        form.addRow(set_role(QLabel("Edit the section on the JSON page. The run does not use it."),
+        form.addRow(set_role(QLabel("Edit the section in the Budgets area (Ctrl+5). The run does not use it."),
                              tone="secondary"))
         self.budgets_group.setVisible(budgets is not None)
         layout.addWidget(self.budgets_group)
