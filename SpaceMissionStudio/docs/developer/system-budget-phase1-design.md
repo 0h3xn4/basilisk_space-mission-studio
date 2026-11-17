@@ -75,7 +75,7 @@ without it hashes as before, apart from the schema version.
     {
       "name": "OBC",
       "subsystem": "DHS",
-      "mass_column": "avionics",
+      "mass_column": "electronics",
       "bus": "main",
       "maturity": "existing",
       "mass_kg": {"value": 1.2, "source": "data sheet rev B"},
