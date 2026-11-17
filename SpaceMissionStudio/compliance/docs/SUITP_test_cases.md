@@ -376,7 +376,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_closing_the_window_brings_the_view_back` | Closing the Thermal window puts the page back in Run › Thermal, with what it held. | - | integration |
 | `test_the_main_window_never_jumps_to_a_detached_view` | Showing a view in its own window (a command, the palette, a live run) brings its window to the front; the main window keeps its area. | - | integration |
 | `test_closing_the_scenario_and_quitting_bring_every_view_back` | No scenario open: the views are back, in their areas' empty state. | - | integration |
-| `test_the_geometry_is_kept_per_view_and_used_again` | Written to layout.ini (by a worker) when the view comes back, and the window opens there again; on quit too, and read at start. | - | integration |
+| `test_the_geometry_is_kept_per_view_and_used_again` | Kept when the view comes back, and the window opens there again; written to layout.ini on quit (no move writes the file: a write stops the GUI thread), and read at start. | - | integration |
 | `test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window` | A rectangle no screen shows (a monitor unplugged): its size, centred on the main window. | - | integration |
 | `test_on_wayland_only_the_size_is_used` | Wayland ignores a window's position: the saved size is kept, the compositor places the window. | - | integration |
 | `test_ctrl_shift_d_moves_the_view_shown_from_either_window` | In the main window it opens the view shown in its own window; in that window it brings it back. | - | integration |

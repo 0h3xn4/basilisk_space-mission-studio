@@ -3431,14 +3431,18 @@ window".
   the window it was pressed in.
 - **Decision:** the window's geometry is kept per view in `layout.ini`
   (keys `breakout/<id>/geometry` and `breakout/<id>/maximized`). It is
-  read with the layout at start, written by a worker when the view comes
-  back, and written with the layout at quit. It is used again only when
-  the top of the window is on a screen that still exists; otherwise the
-  window takes the saved size, centred on the main window. On Wayland,
-  which ignores a window's position, only the size is used. **Why:** a
-  write of the file on the GUI thread measured 50 to 220 ms here (the
-  file lock and `sync`), and file I/O belongs in a worker ("Never
-  freeze").
+  read with the layout at start, kept in memory while the app runs, and
+  written with the layout at quit. It is used again only when the top of
+  the window is on a screen that still exists; otherwise the window takes
+  the saved size, centred on the main window. On Wayland, which ignores a
+  window's position, only the size is used. **Why:** a write of the file
+  on the GUI thread measured 50 to 220 ms here (the file lock and `sync`).
+  The first version wrote it from a worker when the view came back. That
+  still stopped the GUI thread: `QSettings.sync` keeps the interpreter
+  lock while it writes (a 30 ms sync stopped a Python loop on the GUI
+  thread for 36 ms), and CI measured one move at 146 ms. A crash now
+  loses the windows' places since the start, as it loses the rest of the
+  layout.
 - **Decision:** every view opens docked at start, and no window opens by
   itself. When no scenario is open, and before the layout is saved at
   quit, every view comes back. Showing a view in its own window (a

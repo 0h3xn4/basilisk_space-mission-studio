@@ -2192,3 +2192,14 @@ row), so `test_menu_bar.py`, `test_shell_reachability.py` and
 that `test_workspace.py::test_the_view_analyses_and_tools_commands` pins
 stays as it is. No existing test changed, and no
 golden file. The new tests are in `tests/gui/test_breakout.py` (19).
+
+After the first CI run, one test of this PR changed (its own test, not an
+older one): the window's geometry is no longer written to `layout.ini` by
+a worker when the view comes back, because `QSettings.sync` keeps the
+interpreter lock and stopped the GUI thread (CI measured one move at
+146 ms, so `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+failed; that test is unchanged).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_breakout.py::test_the_geometry_is_kept_per_view_and_used_again` | after `attach`, waited for the worker and read the key from `layout.ini` | after `attach`, reads `breakouts.saved_geometry` and asserts that the file has no key yet; after quit it asserts the file and the key, as before; "used again" and "read at start" are unchanged | no move writes the file now (decision "Breakout windows", geometry) |

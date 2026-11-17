@@ -280,8 +280,9 @@ def test_closing_the_scenario_and_quitting_bring_every_view_back(window, qtbot, 
 # -- geometry ---------------------------------------------------------------------------------------------
 
 def test_the_geometry_is_kept_per_view_and_used_again(window):
-    """Written to layout.ini (by a worker) when the view comes back, and
-    the window opens there again; on quit too, and read at start."""
+    """Kept when the view comes back, and the window opens there again;
+    written to layout.ini on quit (no move writes the file: a write stops
+    the GUI thread), and read at start."""
     from PySide6.QtCore import QRect
 
     from spacemissionstudio.gui.breakout import settings_key
@@ -290,14 +291,14 @@ def test_the_geometry_is_kept_per_view_and_used_again(window):
     view = window.breakouts.detach("budgets")
     view.setGeometry(rect)
     window.breakouts.attach("budgets")
-    window.breakouts.wait()  # a worker writes the file
-    assert window._layout_settings().value(settings_key("budgets")) == rect
-    assert (Path.home() / ".spacemissionstudio" / "layout.ini").is_file()
+    assert window.breakouts.saved_geometry("budgets") == (rect, False)
+    assert window._layout_settings().value(settings_key("budgets")) is None  # not written by the move
     window.breakouts.detach("budgets")
     assert view.geometry() == rect
     moved = QRect(60, 80, 600, 400)  # [px]
     view.setGeometry(moved)
     window.close()  # quitting
+    assert (Path.home() / ".spacemissionstudio" / "layout.ini").is_file()
     assert window._layout_settings().value(settings_key("budgets")) == moved
     assert window._layout_settings().value(settings_key("3d_view")) is None  # never opened: nothing kept
     from spacemissionstudio.gui.main_window import MainWindow

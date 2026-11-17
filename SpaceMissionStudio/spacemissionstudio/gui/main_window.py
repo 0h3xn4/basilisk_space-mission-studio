@@ -229,7 +229,7 @@ class MainWindow(QMainWindow):
         self._current_path: Path | None = None
         self._dirty = False
         # The views that can open in a window of their own (gui.breakout), registered below.
-        self.breakouts = Breakouts(self, settings=self._layout_settings, actions=self._breakout_actions)
+        self.breakouts = Breakouts(self, actions=self._breakout_actions)
         # The landing page (owner's decision of 2026-11-10): the window starts
         # with no scenario open, on Home; the editor keeps its blank default
         # inside, but every area, command and run list behaves as if nothing

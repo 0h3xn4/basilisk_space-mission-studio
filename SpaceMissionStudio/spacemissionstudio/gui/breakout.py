@@ -48,10 +48,11 @@ another tab being shown in between.
 
 The window's geometry is kept per view in the main window's layout file
 (``layout.ini``, key ``breakout/<view id>/geometry``): read with the layout
-at start (:meth:`Breakouts.read_geometry`), written by a worker when the
-view comes back (file I/O is not for the GUI thread: one write measured 50
-to 220 ms here) and with the layout when the app quits
-(:meth:`Breakouts.write_geometry`). It is used again only when it is on a
+at start (:meth:`Breakouts.read_geometry`), kept in memory while the app
+runs, and written with the layout when the app quits
+(:meth:`Breakouts.write_geometry`). No move writes the file: on the GUI
+thread one write measured 50 to 220 ms, and from a worker it still stopped
+the GUI thread, because ``QSettings.sync`` keeps the interpreter lock. It is used again only when it is on a
 screen that still exists; otherwise the window is centred on the main
 window. Wayland ignores a window's position, so there only the size is
 used. Every view opens docked at start ("Calm by default"); no window opens
@@ -59,7 +60,7 @@ by itself.
 
 Usage (the live 2D map of PR-3 is one more registration)::
 
-    breakouts = Breakouts(main_window, settings=main_window._layout_settings,
+    breakouts = Breakouts(main_window,
                           actions=main_window._breakout_actions)
     breakouts.register("3d_view", mission_view_widget, "3D View")
     mission_view_widget.add_tool_button(breakouts.button("3d_view"))
@@ -72,7 +73,7 @@ import weakref
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt, QThreadPool, Signal
+from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLayout, QPushButton, QStackedWidget, QTabWidget,
                                QToolButton, QWidget)
@@ -277,18 +278,17 @@ class Breakouts(QObject):
 
     changed = Signal(str, bool)
 
-    def __init__(self, owner: QWidget, settings: Callable | None = None, actions: Callable | None = None) -> None:
-        """``settings()`` gives the layout file (a ``QSettings``);
-        ``actions(view_id)`` the commands the view's window carries."""
+    def __init__(self, owner: QWidget, actions: Callable | None = None) -> None:
+        """``actions(view_id)`` gives the commands the view's window carries.
+        The windows' geometry is read from the layout file at start
+        (:meth:`read_geometry`) and written to it at quit
+        (:meth:`write_geometry`), with the rest of the layout."""
         super().__init__(owner)
         self._owner = weakref.ref(owner)
-        self._settings = _weak(settings)
         self._actions = _weak(actions)
         self._views: dict[str, _View] = {}
         self._document = ""  # the scenario named in the windows' titles
         self._geometry: dict[str, tuple[QRect, bool]] = {}  # view id -> (window rectangle, maximised), as kept
-        self._writer = QThreadPool(self)  # writes the layout file off the GUI thread, one write after another
-        self._writer.setMaxThreadCount(1)
 
     # -- registration ---------------------------------------------------------------------------------------
     def register(self, view_id: str, widget: QWidget, title: str) -> None:
@@ -458,8 +458,7 @@ class Breakouts(QObject):
 
     def write_geometry(self, settings) -> None:
         """The windows' geometry into ``settings`` (the caller syncs it): on
-        quit, with the layout, after the writes still going."""
-        self.wait()
+        quit, with the layout."""
         for view_id, (rect, maximized) in self._geometry.items():
             settings.setValue(settings_key(view_id), rect)
             settings.setValue(_maximized_key(view_id), maximized)
@@ -469,31 +468,17 @@ class Breakouts(QObject):
         rect, maximized = self._geometry.get(view_id, (None, False))
         return (QRect(rect) if rect is not None else None), maximized
 
-    def wait(self) -> None:
-        """Until the layout file writes still going are done."""
-        self._writer.waitForDone()
-
     def _remember(self, view: _View) -> None:
-        """The window's place and size, kept, and written to the layout file
-        by a worker."""
+        """The window's place and size, kept in memory. The layout file gets
+        them at quit (:meth:`write_geometry`). Writing it here, even from a
+        worker, stopped the GUI thread: ``QSettings.sync`` keeps the
+        interpreter lock while it writes, and a move took up to 168 ms."""
         window = view.widget
         if not window.isVisible():
             return
         maximized = window.isMaximized()
         rect = window.normalGeometry() if maximized and window.normalGeometry().isValid() else window.geometry()
         self._geometry[view.id] = (QRect(rect), maximized)
-        settings_of = self._settings()
-        if settings_of is None:
-            return
-        key, value, flag_key = settings_key(view.id), QRect(rect), _maximized_key(view.id)
-
-        def write() -> None:
-            settings = settings_of()
-            settings.setValue(key, value)
-            settings.setValue(flag_key, maximized)
-            settings.sync()
-
-        self._writer.start(write)
 
     def _place(self, view: _View, docked_size: QSize) -> None:
         """A saved rectangle on a screen that exists; else the saved (or the

@@ -18430,3 +18430,19 @@ window, the button and the menu, a theme switch, the two context losses,
 Budgets counted as shown, the timing, and a live run in the detached 3D
 View). No existing test changed. No golden file, no file format and no
 engine change.
+
+**After the first CI run: no file write when a view comes back.** CI
+failed `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`: one
+move of the Budgets area took 146 ms (the others 4 to 29 ms). Here it
+took 168 ms once in three runs, always when a view came back. No garbage
+collection ran during that move. The profile showed the cause: each
+`attach` started a worker that wrote the window's geometry to
+`layout.ini` with `QSettings.sync`, and `sync` keeps the interpreter lock
+while it writes. A probe showed this alone: a 30 ms `sync` in a thread
+stopped a Python loop on the GUI thread for 36 ms. While the worker wrote,
+the Budgets area's own Python code in `show()` (its header and flow
+layout callbacks) waited for the lock. The geometry is now kept in memory
+and written with the rest of the layout at quit, which already happened.
+A crash loses the windows' places since the start, as it loses the rest
+of the layout. The geometry test now checks that a move writes nothing
+and that quitting writes the key (`docs/ui/TEST_CHANGES.md`).
