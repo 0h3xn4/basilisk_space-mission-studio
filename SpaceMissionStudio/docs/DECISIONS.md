@@ -5,6 +5,43 @@ Choices made where the brief (`docs/ui/UI_OVERHAUL.md`) or the plan
 The user's own answers to the plan's questions are in the plan's §9.
 Newest milestone first.
 
+## The app icon shows a mission (2026-11-17)
+
+The owner's request: the icon did not show what the tool does; the Earth
+must look like the Earth; the icon must be visible in dark mode on Ubuntu
+and Windows.
+
+- **A scene, not an object:** the Earth, an orbit (solid where flown,
+  dashed ahead), a satellite with a beam to a ground station, the Sun.
+  Why: each stands for something the tool analyses (orbits, pointing and
+  power, passes and links, eclipses); a lone satellite showed hardware
+  only.
+- **The Earth is the bundled Blue Marble texture**, projected onto a lit
+  globe once (about 22 ms warm, 100 ms the first time in a process with
+  the JPEG decoder and numpy still to load) and scaled for every size.
+  Why: drawn blob continents read as a blue ball; the texture is already
+  bundled and public domain, so no new asset or dependency.
+- **Africa, the Mediterranean and Europe in view** (centre 20 deg E,
+  20 deg S). Why: the most recognisable outline in the visible cap.
+- **No eye shape:** the planet is cut by the plate's corner and the orbit
+  is an open arc. Why: the first icon, a disc in a centred ring, read as
+  an eye at 16-32 px.
+- **The scene replaces the satellite on #276's plate.** #276 (merged while
+  this was open) kept the satellite and added the plate, the rim, every
+  hicolor size, the SVG and the `.ico`. The owner chose the scene ("I want
+  your new design"). Why: the plate, its tests and the packaging carry
+  any drawing; only the drawing changes.
+- **The plate and rim in the scene's navy:** `plate` `#1A2C57`, flat at
+  the top and deepening to `#0A1128`, `rim` `#5B7FC7`. Why: the scene's
+  colours; they still meet #276's measured 3 : 1 on every dark and light
+  panel (the rim 3.33 : 1 on #303030, the lowest) and on the Windows dark
+  taskbars.
+- **The scene cuts its own shapes to the plate,** not with a clip path.
+  Why: `QSvgGenerator` writes no clip paths, so the SVG showed the orbit
+  and the Earth outside the rim.
+- **An AppUserModelID at start-up on Windows.** Why: without it the
+  taskbar groups the window under `pythonw.exe` with Python's icon.
+
 ## The 3D View live (2026-11-10)
 
 The owner's request: the 3D View must also work as a live renderer. This

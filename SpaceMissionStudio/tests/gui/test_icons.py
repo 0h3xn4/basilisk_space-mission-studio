@@ -250,3 +250,88 @@ def test_the_windows_icon_file_is_the_current_icon(qapp):
         # a little room for another Qt version's anti-aliasing.
         difference = sum(abs(a - b) for a, b in zip(rgba, expected)) / len(expected)
         assert difference < 2.0, f"{size} px differs from the icon by {difference:.2f} on average"
+
+
+# Windows taskbars (11 and 10 dark, light), adding to the Ubuntu panels
+# above, and a black panel.
+_WINDOWS_DARK_TASKBARS = ("#202020", "#101010", "#000000")
+_WINDOWS_LIGHT_TASKBARS = ("#F3F3F3",)
+
+
+def test_the_icon_stands_out_on_windows_taskbars():
+    """The rim has 3 : 1 or more against the Windows 10 and 11 dark
+    taskbars and black, and the plate against the Windows light taskbar
+    (WCAG 2.2 1.4.11, graphics)."""
+    from spacemissionstudio.gui.theme.palettes import APP_ICON
+    from spacemissionstudio.gui.theme.tokens import contrast
+
+    for taskbar in _WINDOWS_DARK_TASKBARS:
+        assert contrast(APP_ICON["rim"], taskbar) >= 3.0, taskbar
+    for taskbar in _WINDOWS_LIGHT_TASKBARS:
+        assert contrast(APP_ICON["plate"], taskbar) >= 3.0, taskbar
+
+
+def test_the_earth_shows_land_not_only_ocean(qapp):
+    """The Earth is the Blue Marble texture, not a plain blue disc: a
+    good share of the Earth's pixels are land (red at least as strong as
+    blue: desert and vegetation), which no ocean or plate pixel is."""
+    from PySide6.QtCore import QPointF
+    from PySide6.QtGui import QColor
+
+    from spacemissionstudio.gui import icons
+
+    assert icons._earth_layer() is not None, "the bundled Earth texture did not load"
+    size = 256
+    image = icons._render(size).toImage()
+    outer, rim, _radius = icons.plate_geometry(size)
+    inner = outer.adjusted(rim, rim, -rim, -rim)
+    scale = inner.width() / icons._SCENE.width()
+
+    def to_pixel(point: QPointF) -> tuple[float, float]:
+        return (inner.left() + (point.x() - icons._SCENE.left()) * scale,
+                inner.top() + (point.y() - icons._SCENE.top()) * scale)
+
+    cx, cy = to_pixel(icons._PLANET_CENTRE)
+    radius = (icons._PLANET_RADIUS - 6) * scale  # inside the limb
+    land = earth = 0
+    for x in range(int(inner.left()) + 4, int(inner.right()) - 4, 2):
+        for y in range(int(inner.top()) + 4, int(inner.bottom()) - 4, 2):
+            if (x - cx) ** 2 + (y - cy) ** 2 > radius ** 2:
+                continue
+            pixel = QColor(image.pixel(x, y))
+            earth += 1
+            land += pixel.red() >= pixel.blue() + 10
+    assert earth > 1000
+    assert land / earth > 0.25, f"only {land} of {earth} Earth pixels look like land"
+
+
+def test_the_svg_keeps_the_scene_inside_the_plate(qapp):
+    """The SVG (QSvgGenerator leaves clip paths out) draws nothing outside
+    the rim: rendered on a transparent canvas, the four corners outside the
+    rounded plate stay empty, and the plate's inside is opaque."""
+    from PySide6.QtCore import QByteArray, Qt
+    from PySide6.QtGui import QImage, QPainter
+    from PySide6.QtSvg import QSvgRenderer
+
+    from spacemissionstudio.gui.icons import render_svg
+
+    renderer = QSvgRenderer(QByteArray(render_svg().encode("utf-8")))
+    image = QImage(512, 512, QImage.Format.Format_ARGB32)
+    image.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(image)
+    renderer.render(painter)
+    painter.end()
+    for x, y in ((2, 2), (509, 2), (2, 509), (509, 509), (20, 20), (20, 491), (491, 491)):
+        assert image.pixelColor(x, y).alpha() == 0, (x, y)
+    assert image.pixelColor(256, 256).alpha() == 255
+
+
+def test_the_committed_docs_icon_files_are_valid():
+    """The files scripts/build_app_icon_files.py writes are in place: the
+    256 px PNG, and the banner with the icon embedded between its markers."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    assert (root / "docs" / "images" / "app_icon.png").read_bytes().startswith(b"\x89PNG")
+    banner = (root / "docs" / "images" / "banner.svg").read_text(encoding="utf-8")
+    assert '<!-- app-icon -->\n  <image x="46" y="16" width="128" height="128" href="data:image/png;base64,' in banner

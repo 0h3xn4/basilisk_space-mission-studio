@@ -18423,6 +18423,58 @@ Screenshots taken offscreen at 1280 x 720 show OK and Cancel in view in
 both blocker dialogs, the part form without a sideways scroll bar and
 the Equipment tab's empty state.
 
+## A new app icon: the mission scene (2026-11-17)
+
+The owner found that the app icon, a satellite alone, did not show what
+the tool does. During the work they added two requests: the Earth must
+look like the Earth, not a blue ball, and the icon must be visible in
+dark mode on Ubuntu and Windows. The desktop-integration change above
+(#276) was merged while this one was open; it kept the satellite and put
+it on a plate. The owner chose this design for the icon, so the scene
+replaces the satellite and keeps #276's plate, rim, hicolor sizes, SVG,
+`.ico` and their tests.
+
+- **The design** (`gui/icons.py`): a mission scene inside the plate. The
+  Earth in the lower-left corner, an orbit around it (solid where the
+  satellite has flown, dashed ahead), the satellite (gold body, blue
+  panels) with a link beam to a ground station, and the Sun. The planet
+  is cut by the plate's corner and the orbit is an open arc, so the first
+  icon's problem (a disc in a ring reads as an eye) does not come back.
+- **The Earth** is the 3D view's bundled Blue Marble texture
+  (`earth_day_2k.jpg`, public domain) in orthographic projection,
+  centred at 20 deg E, 20 deg S so Africa, the Mediterranean and Europe
+  fill the visible cap, and lit from the Sun's side. A first try with
+  drawn continents still read as a blue ball. The layer is made once per
+  process: about 22 ms warm, about 100 ms the first time (numpy and the
+  JPEG decoder load); `app_icon()` with all seven sizes about 33 ms warm.
+  The first-time cost is above the 50 ms GUI-thread target and happens
+  once, at start-up.
+- **The plate's colours** are the scene's navy: `plate` `#1A2C57` (flat
+  across the top quarter, deepening to `#0A1128`) and `rim` `#5B7FC7`.
+  The rim has 3.33 : 1 or more on Ubuntu's dark panels (#303030 the
+  lowest) and on the Windows 10 and 11 dark taskbars, the plate 11.4 : 1
+  or more on the light panels; #276's tests measure them at every size,
+  and a new test adds the Windows taskbars.
+- **The SVG.** `QSvgGenerator` writes no clip paths, so the scene cuts
+  its own shapes to the plate (`QPainterPath.intersected`) and masks the
+  Earth image before drawing it. A test renders the SVG and checks that
+  nothing is drawn outside the plate.
+- **Small sizes:** below 48 px the orbit is one solid arc; below 32 px
+  the Sun's glow and the limb are left out and the Sun and satellite are
+  drawn larger; below 24 px the beam is left out. Checked by rendering
+  512 down to 16 px on Windows and Ubuntu taskbar colours.
+- **Windows taskbar:** the app now sets an AppUserModelID at start-up, so
+  the taskbar does not group it under `pythonw.exe` with Python's icon.
+  Not seen on a real Windows machine (no Windows in the session).
+- **Committed copies:** `packaging/windows/spacemissionstudio.ico` made
+  again with `packaging/make_ico.py --from-app`;
+  `scripts/build_app_icon_files.py` writes `docs/images/app_icon.png` and
+  the README banner's icon (embedded as a PNG: an SVG that links to an
+  image does not show it on GitHub).
+- **Tests** (`tests/gui/test_icons.py`, `test_app.py`): land on the Earth
+  (not only ocean), the Windows taskbars, the SVG inside the plate, the
+  documentation files, and the app ID only on Windows.
+
 ## 2.12.0 windows and views: breakout windows (2026-11-17)
 
 The second part of 2.12.0 (`docs/developer/windows-views-design.md`,

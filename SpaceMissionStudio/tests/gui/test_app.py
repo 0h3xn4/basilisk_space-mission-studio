@@ -98,3 +98,12 @@ def test_desktop_file_name_matches_the_desktop_entries_own_basename():
             f"{desktop_file.name} is installed under a basename that doesn't match "
             f"setDesktopFileName({desktop_file_name!r})"
         )
+
+
+def test_the_windows_app_id_is_set_only_on_windows():
+    """set_windows_app_id changes nothing outside Windows (the taskbar
+    grouping it fixes is Windows-only)."""
+    from spacemissionstudio.gui.app import set_windows_app_id
+
+    assert set_windows_app_id("linux") is False
+    assert set_windows_app_id("darwin") is False
