@@ -130,6 +130,15 @@ An unattended run (a scheduled task) follows this procedure. Paths are
 relative to `SpaceMissionStudio/` unless they start with `.github/`.
 
 - **The backlog** is the items under `## Next release` in `BACKLOG.md`.
+- **Stop at once**, change nothing and report it in one short message,
+  in each of these cases. Check them before any other work:
+  - `## Next release` has no items (an empty backlog is a finished run,
+    not a failure);
+  - the GitHub tools (`mcp__github__*`) are missing, so the release
+    cannot be published;
+  - the tests cannot run in this container: Basilisk is missing and
+    `pip install -c packaging/constraints.txt bsk==2.12.0` fails, or the
+    Qt libraries for the GUI tests are missing.
 - **Branch.** Find the default branch with
   `git symbolic-ref refs/remotes/origin/HEAD` (today it is `develop`).
   Never assume it is called `main`. Work on that branch and push to it.
@@ -158,8 +167,10 @@ relative to `SpaceMissionStudio/` unless they start with `.github/`.
   and note them in the commit message.
 - **Semver:** a breaking change is a major step, a new feature a minor
   step, anything else a patch.
-- **Release** (only when `## Next release` is empty and `## Done` has
-  items since the last release), by `docs/developer/releasing.md`
+- **No release without done items.** If every item of this run went to
+  `## Needs human`, push the moves, publish nothing and report it.
+- **Release** (only when `## Next release` is empty and this run moved
+  at least one item to `## Done`), by `docs/developer/releasing.md`
   sections 2 to 4:
   1. Set the version in `pyproject.toml`, `spacemissionstudio/__init__.py`
      and `packaging/windows/spacemissionstudio.iss`.
