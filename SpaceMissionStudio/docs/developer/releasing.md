@@ -491,6 +491,20 @@ workflow ([run 44060591211](https://github.com/0h3xn4/basilisk_space-mission-stu
 and checked every file, attached the eleven and published the release 38
 minutes later. It was never a public release without files.
 
+2.11.0 was prepared on 2026-11-17 by this checklist: phase 1 of the
+System Budget Studio merge, the equipment list and the static power
+budget (#273) and the Budgets area in the window (#274), with the merge
+plan (#270), phase 0 (#272) and the 2.10.0 publication record (#271); a
+minor release because it adds features and a scenario section
+(`budgets`). The scenario file moves to schema version 5, so 2.10.0 and
+earlier refuse every file 2.11.0 saves, by its version (checked with
+2.10.0's code on the 36 templates as 2.11.0 saves them and a file with a
+`budgets` section: all refused, "scenario file is schema_version 5, but
+this build of SpaceMissionStudio only understands up to version 4");
+2.11.0 opens the files 2.10.0 saves (the 36 templates, with no message).
+The space weather was not refreshed: CelesTrak reset the connection, so
+2.11.0 carries 2.8.0's file (observations to 2026-11-14).
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

@@ -5,7 +5,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-[![Version 2.10.0](https://img.shields.io/badge/version-2.10.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.10.0)
+[![Version 2.11.0](https://img.shields.io/badge/version-2.11.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.11.0)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -153,8 +153,14 @@ Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capab
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.10.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.10.0),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): mission operations planning: which targets each
+- **Version:** 2.11.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.11.0),
+  [changelog](SpaceMissionStudio/CHANGELOG.md)): equipment list and power budget: each unit's
+  mass and its power in each mode, every number with its source or
+  marked "TBD", the power budget per system mode, subsystem and bus, and
+  the units in the mass budget, in a new Budgets area; the first part of
+  System Budget Studio's merge, at scenario format version 5, which
+  2.10.0 and earlier cannot open. 2.10.0 added mission operations
+  planning: which targets each
   spacecraft images and when, which passes send the data down, all within
   its battery, memory, slews and the stations it shares; the plan flown
   in the simulation and checked, exported as operations products, and
