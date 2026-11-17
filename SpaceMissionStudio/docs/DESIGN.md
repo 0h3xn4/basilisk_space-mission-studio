@@ -416,10 +416,14 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
   (`tests/gui/test_theme.py::test_every_command_button_has_an_icon`): Run
   in the accent, Cancel in critical, the rest in `text.secondary`.
 - **App icon:** drawn in code (`gui/icons.py`) in `palettes.APP_ICON`: the
-  satellite glyph on a dark rounded-square plate with a light rim, so it
-  has 3 : 1 or more on dark and light desktop panels
-  (`tests/gui/test_icons.py`). The installers use the same drawing: the
-  hicolor PNGs and SVG of the `.deb`, the `.ico` of the Windows setup.
+  Earth (the 3D view's Blue Marble texture), an orbit, a satellite with a
+  link beam to a ground station, and the Sun, on a dark rounded-square
+  plate with a light rim, so it has 3 : 1 or more on dark and light
+  desktop panels (`tests/gui/test_icons.py`). The installers use the same
+  drawing: the hicolor PNGs and SVG of the `.deb`, the `.ico` of the
+  Windows setup (`packaging/make_ico.py --from-app`).
+  `scripts/build_app_icon_files.py` writes the documentation copies
+  (`docs/images/app_icon.png`, the banner's icon).
 
 ## Components
 
