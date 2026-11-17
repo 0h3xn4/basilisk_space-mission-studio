@@ -17959,6 +17959,22 @@ tolerance of 1e-5 (`AMPLIFIED_SERIES`), about ten times the measured
 difference, as its other floors are set; no other series or template is
 loosened, and a test holds that.
 
+## Release 2.9.0 published (2026-11-16)
+
+#266 was merged once CI was green, at 17:46 UTC, and CI passed on
+`develop`'s merge commit `8646823` by 18:16. As the owner asked, the
+assistant started the tag workflow at 18:36 with version 2.9.0, ref
+`develop` and **publish** on. The release check passed and the workflow
+tagged `8646823` at 18:37
+([run 43930553885](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930553885)). The release workflow
+it started ([run 43930715195](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/43930715195)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+19:03:35, so it was never public without its files. The digests of the
+`.deb` and the setup program equal the checksums in its notes. SRelD
+issue 38, the SDP, H05 and `releasing.md` record the tag, the runs and
+the files' digests.
+
 ## Operations planning (2026-11-16)
 
 Requirement SRS-F-30, on branch `feature/operations-planning`. The brief
