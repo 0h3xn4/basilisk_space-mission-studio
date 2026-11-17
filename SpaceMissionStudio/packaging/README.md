@@ -147,11 +147,12 @@ in `packaging/` needed to change for it.
   fills in (`@INSTALL_PREFIX@` -> the venv's parent directory).
   `Icon=spacemissionstudio` now resolves to a real icon: `install.sh` renders
   `gui/icons.py`'s procedurally-drawn app icon (QPainter, no bitmap asset
-  in the repo -- see that module's docstring) to
-  `$XDG_DATA_HOME/icons/hicolor/256x256/apps/spacemissionstudio.png` (the
-  standard hicolor icon theme location) right after writing the desktop
-  entry, using the `offscreen` Qt platform plugin so no display is needed
-  even on a headless install. Non-fatal if it fails (e.g. no Qt platform
+  in the repo -- see that module's docstring) into
+  `$XDG_DATA_HOME/icons/hicolor/` (the standard hicolor icon theme
+  location): a PNG of each size from 16 to 512 px and
+  `scalable/apps/spacemissionstudio.svg` (`icons.write_icon_theme`), right
+  after writing the desktop entry, using the `offscreen` Qt platform
+  plugin so no display is needed even on a headless install. Non-fatal if it fails (e.g. no Qt platform
   plugins present at all) -- the desktop entry still installs, just with
   the icon theme's generic fallback.
 
@@ -166,7 +167,7 @@ tag (its `tests` job runs `spacemissionstudio.yml`):
 
 | Platform | Files | Installed and run in the workflow |
 |---|---|---|
-| Linux (x86_64, `ubuntu-24.04`) | wheel, sdist, `.deb`, `SHA256SUMS-linux` | `dpkg -i` of the `.deb` with the network cut off (`unshare --net`), then as the runner's user, still offline and with an empty support-data cache: `--version`, `kernels-status`, every template validated, template 01 run from the bundled kernels, the Earth orientation files found, the main window opened in Inter |
+| Linux (x86_64, `ubuntu-24.04`) | wheel, sdist, `.deb`, `SHA256SUMS-linux` | the `.deb`'s desktop entry (`desktop-file-validate`), icon sizes and AppStream metadata (`appstreamcli validate --no-net`, `validate-tree`); `dpkg -i` of the `.deb` with the network cut off (`unshare --net`), then as the runner's user, still offline and with an empty support-data cache: `--version`, `kernels-status`, every template validated, template 01 run from the bundled kernels, the Earth orientation files found, the main window opened in Inter |
 | Windows (x64, `windows-latest`) | the setup program (the bundled Python with that wheel), `SHA256SUMS-windows` | silent install (`/VERYSILENT /CURRENTUSER`); with an empty support-data cache, the same checks with one template |
 
 macOS is not supported (removed on 2026-10-21 by the user's decision). The workflow's files are
@@ -188,7 +189,15 @@ self-contained Debian/Ubuntu package:
 - `/usr/bin/spacemissionstudio`: a launcher that runs that Python
   isolated (`-I -m spacemissionstudio.cli`);
 - the desktop entry, and the menu icon, rendered from `gui/icons.py` when
-  the package is built.
+  the package is built: a PNG of each hicolor size from 16 to 512 px and
+  the scalable SVG in `/usr/share/icons/hicolor/`;
+- `/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml`:
+  the AppStream metadata software centres show (name, summary,
+  description, licence, screenshots, age rating, the newest releases).
+  `metainfo.py` writes it from `linux/<id>.metainfo.xml.in` and the
+  CHANGELOG; the screenshot addresses point at the release's tag on
+  raw.githubusercontent.com, so they show only for a tagged release of
+  the public repository. The app never reads the file.
 
 Every file is a package file, so dpkg removes them all. `postinst` only
 removes the virtual environment packages up to 1.1.0 created and updates
@@ -299,6 +308,16 @@ pointed at it. An upgrade first removes the previous `python` folder and
 what setups up to 1.1.0 left (`venv`, `dist`, `bootstrap_env.ps1`,
 `constraints.txt`); uninstalling removes `{app}\python`.
 
+The setup program, its shortcuts and its entry under Apps show the app
+icon from `windows/spacemissionstudio.ico` (since 2.12.0; before, the
+shortcuts showed Python's icon). The file is generated from
+`gui/icons.py` by `make_ico.py` (bitmaps with alpha from 16 to 128 px,
+the 256 px PNG) and committed, because the setup program is built from
+the repository on Windows. After a change to the icon:
+`QT_QPA_PLATFORM=offscreen python packaging/make_ico.py --from-app
+packaging/windows/spacemissionstudio.ico`; `tests/gui/test_icons.py`
+fails while the file and the icon differ.
+
 Building it (on Windows, with Inno Setup 6 and Python 3.14 or later
 installed, and internet access):
 
@@ -357,12 +376,10 @@ already-verified logic (matched step-for-step), and reviewed for syntax
 by hand since no `pwsh`/`powershell.exe` was available in this sandbox
 to actually execute them either -- but "written carefully" is not the
 same claim as "run and confirmed working" that the rest of this
-directory makes for the Linux scripts. One specific, known gap: the
-Start Menu shortcut does not get a custom icon (`gui/icons.py`'s
-`ensure_icon_file()` always writes PNG data -- see that function's own
-docstring -- and a `.lnk`'s `IconLocation` needs a real `.ico`/`.exe`/
-`.dll`; rather than ship an icon file that wouldn't actually resolve,
-the shortcut just uses `spacemissionstudio.exe`'s own embedded icon). If you
+directory makes for the Linux scripts. The Start Menu shortcut gets the app icon
+from `windows/spacemissionstudio.ico` (since 2.12.0; a `.lnk`'s
+`IconLocation` needs an `.ico`, not a `.png`), copied next to the
+launcher. If you
 run these on a real Windows 11 machine, please report anything that
 doesn't work as documented here.
 

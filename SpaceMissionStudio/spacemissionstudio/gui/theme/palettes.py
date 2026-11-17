@@ -52,13 +52,18 @@ def categorical(mode: str) -> list[str]:
     return list(CATEGORICAL[mode])
 
 # The application icon (gui/icons.py): blue solar panels in the light
-# theme's accent, a gold (multi-layer insulation) body. One icon for both
-# themes: the taskbar's background is the platform's, not ours.
+# theme's accent, a gold (multi-layer insulation) body, on a dark
+# rounded-square plate with a light rim. One icon for both themes: the
+# taskbar's background is the platform's, not ours. The plate gives the
+# icon 3 : 1 or more against light panels, the rim against dark panels
+# (docs/developer/windows-views-design.md, section 5; tests/gui/test_icons.py).
 APP_ICON = {
     "panel": "#2563EB",  # the light accent
-    "panel_line": "#1E3A8A",  # antenna and panel grid lines
+    "panel_line": "#1E3A8A",  # the antenna
     "body": "#CFB87C",
     "body_line": "#A88F53",  # the body's centre line
+    "plate": "#0F172A",  # the plate, and the panel grid lines
+    "rim": "#94A3B8",  # the plate's rim
 }
 
 # The axes of the 3D model view: x, y, z in the red, green, blue order
