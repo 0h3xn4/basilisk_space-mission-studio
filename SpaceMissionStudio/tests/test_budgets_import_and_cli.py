@@ -177,6 +177,11 @@ def test_a_re_import_keeps_the_users_choices(tmp_path):
     section.modes[0].units["heater"] = "on"
     section.item(_WHEEL).power_modes[0].average_w.value = 2.5
     section.modes[0].duty_cycle = 0.5
+    from spacemissionstudio.schema.budgets import BudgetModeConfig
+
+    gyro.power_modes[1].name = "Standby"  # the user's name for the file's Off
+    section.modes[1].units["gyro"] = "Standby"
+    section.modes.append(BudgetModeConfig("eclipse", units={"gyro": "Standby", "heater": "on"}))
     sc.validate()
     summary = plan.summary
     summary.budgets_set.clear()
@@ -189,6 +194,7 @@ def test_a_re_import_keeps_the_users_choices(tmp_path):
     assert section.distribution_loss.value == 0.02 and [b.name for b in section.buses] == ["main", "aux"]
     assert section.modes[0].duty_cycle == 0.8
     assert section.modes[0].units == {"heater": "on", _ST: "On", _WHEEL: "Idle", "gyro": "On"}
+    assert section.modes[2].units == {"heater": "on"}  # Standby is gone with the file's power modes: unstated
     assert summary.budgets_set[0].startswith("updated: 0 item(s) added, 3 updated, 2 system mode(s)")
     assert "distribution loss" not in summary.budgets_set[0]
 

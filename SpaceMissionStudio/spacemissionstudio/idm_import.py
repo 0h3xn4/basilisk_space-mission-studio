@@ -888,6 +888,8 @@ def apply_budgets(scenario, spacecraft: str, the_plan: Plan, author: str = "",
         else:
             mode.duty_cycle = duty
             mode.units = {k: v for k, v in mode.units.items() if k not in imported} | units
+    for mode in section.modes:  # the user's own modes: a power mode the file no longer gives is unstated now
+        mode.units = {k: v for k, v in mode.units.items() if k not in imported or section.item(k).mode(v) is not None}
     sc.budgets = section
     placeholders = [what for what, value in (("converter efficiency (bus main)",
                                               next(b for b in section.buses if b.name == BUDGETS_BUS)
