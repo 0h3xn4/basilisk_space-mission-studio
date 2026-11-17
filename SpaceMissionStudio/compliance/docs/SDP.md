@@ -62,7 +62,7 @@ The objectives, in order:
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
 signed (decision 11). The current release is 2.10.0, mission
-operations planning (prepared 2026-11-17); before it 2.9.0, spacecraft
+operations planning (published 2026-11-17); before it 2.9.0, spacecraft
 thermal analysis on the 3D model with NASA's November 2026 solar-cycle
 prediction (published 2026-11-16), 2.8.0, a calmer window
 that is easier to read (a menu bar, a quieter Home and status bar,

@@ -1,10 +1,10 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 39, 2026-11-17. Remediation R14.
+Document: SMS-SRelD, issue 40, 2026-11-17. Remediation R14.
 
-**Status:** release **2.10.0**, prepared 2026-11-17, to be tagged with
-the tag workflow: mission operations planning (#268, SRS-F-30), with
+**Status:** release **2.10.0**, published 2026-11-17 (10:37 UTC):
+mission operations planning (#268, SRS-F-30), with
 the upstream Basilisk sync (#258) and the 2.9.0 publication recorded
 (#267). A scenario can carry an optional `operations` section (schema
 version still 4): targets as points or polygons (also from CSV or
@@ -31,7 +31,40 @@ reset the connection). The feature changed nothing in Basilisk and
 nothing outside `SpaceMissionStudio/` but the front-page `README.md`'s
 SpaceMissionStudio part; the upstream sync (#258) brought upstream
 Basilisk's `develop` into the repository, which the installers do not
-use (section 4).
+use (section 4). The release pull request (#269) was merged once CI was
+green; at the owner's request the assistant tagged and published it with
+the tag workflow.
+- CI ("SpaceMissionStudio") passed on `develop`'s head `b074260` at
+  09:56 UTC ([run 44054252128](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44054252128)). The tag
+  workflow ([run 44060467004](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44060467004)), started at
+  09:58 UTC with publish on, ran the release check on that commit and
+  passed.
+- Tagged `spacemissionstudio-v2.10.0` (annotated, not signed, D-13) on
+  commit `b074260` (`b074260f6b05f1b4f176ec1c7960857d35e05e0f`), the
+  merge of #269 into `develop`, by the tag workflow (github-actions) at
+  09:59 UTC. GitHub release "SpaceMissionStudio 2.10.0", published by
+  the release workflow at 10:37:39 UTC, after it had counted its eleven
+  files attached, with the notes written from the CHANGELOG
+  (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.10.0>); it was never public
+  without its files.
+- Its eleven files were built, installed, checked and attached by the
+  release workflow
+  ([run 44060591211](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44060591211)) at 10:37. GitHub's
+  SHA-256 digests: `.deb` (`spacemissionstudio_2.10.0_amd64.deb`,
+  440 095 796 bytes) `7bedbeee...8c2d`, setup program
+  (`spacemissionstudio-2.10.0-setup.exe`, 386 352 223 bytes)
+  `dd882645...ec9f`, wheel (8 848 074 bytes) `8a6098ad...0c58`, sdist
+  (9 117 174 bytes) `2fc5ce94...bf7a`, the `.deb`'s bill of materials
+  (`spacemissionstudio_2.10.0_amd64.cdx.json`, 35 359 bytes)
+  `37e049a1...df17`, the setup program's
+  (`spacemissionstudio-2.10.0-setup.cdx.json`, 36 459 bytes)
+  `feab839c...fd9b`, `SHA256SUMS-linux` `e9a9925e...2d53`,
+  `SHA256SUMS-windows` `4ed9fd82...99b2`, and the LGPL sources, the same
+  as 2.9.0's: `qt-everywhere-src-6.11.2.tar.xz` (1 019 661 552 bytes)
+  `6dcfbca2...6f33`, `pyside-setup-everywhere-src-6.11.2.tar.xz`
+  (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
+  `1301daba...e6f6`. The `.deb`'s and the setup program's digests equal
+  the checksums in the release notes.
 
 **Previous release:** 2.9.0, published 2026-11-16 (19:03 UTC):
 spacecraft thermal analysis (#265, SRS-F-29), with
@@ -685,7 +718,7 @@ This SRelD describes release 2.10.0 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.10.0 release pull request (the changes of #258, #267 and #268 and the release's records), to be tagged `spacemissionstudio-v2.10.0` with the tag workflow. Previous release: 2.9.0, commit `8646823` (`86468233e3d83c7e6564f09b4b60113f8893b3c0`), tagged `spacemissionstudio-v2.9.0`. |
+| Baseline | `develop` after the 2.10.0 release pull request (the changes of #258, #267 and #268 and the release's records), tagged `spacemissionstudio-v2.10.0` on `b074260` (`b074260f6b05f1b4f176ec1c7960857d35e05e0f`) by the tag workflow. Previous release: 2.9.0, commit `8646823` (`86468233e3d83c7e6564f09b4b60113f8893b3c0`), tagged `spacemissionstudio-v2.9.0`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 44 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
 | Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.10.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.10.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.10.0_amd64.cdx.json`, `spacemissionstudio-2.10.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
