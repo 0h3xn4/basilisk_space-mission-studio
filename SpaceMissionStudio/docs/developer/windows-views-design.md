@@ -165,6 +165,12 @@ Measured: plate on #FAFAFA 17.1, on #EBEBEB 15.0; rim on #303030 5.15, on #1D1D1
 plate 3.45, body on plate 9.18. Add `APP_ICON["plate"]`/`["rim"]` and a contrast test in
 `test_icons.py` (3 : 1 or more against all four panels). `test_icons.py:55-78` still passes.
 
+**Later (2026-11-17).** The owner chose a new drawing: a mission scene (the Earth from the Blue
+Marble texture, an orbit, a satellite with a link beam, the Sun) inside the same plate, in the
+scene's navy: plate `#1A2C57`, rim `#5B7FC7` (rim on #303030 3.33, on #1D1D1D 4.26; plate on
+#FAFAFA 13.05, on #EBEBEB 11.43). The plate's geometry, the sizes, the SVG, the `.ico` and the
+tests stay. See `docs/DECISIONS.md`, "The app icon shows a mission".
+
 **Sizes.** Install hicolor 16 to 512 PNGs and `scalable/apps/spacemissionstudio.svg` (same painter
 code through `QSvgGenerator`) from the `.deb` and `install.sh`. Software centres want 128 px or
 scalable. `postinst` already updates the icon cache. **Windows**: no `.ico` exists; the shortcuts

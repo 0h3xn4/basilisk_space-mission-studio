@@ -28,14 +28,25 @@ fixes bugs.
   AppStream metadata (`appstreamcli validate --no-net`), and the release
   workflow checks the icons and the metadata in the built `.deb`.
 
+### Changed
+
+- **A new app icon.** It shows a mission instead of a lone satellite: the
+  real Earth (the 3D view's NASA Blue Marble texture), an orbit flown and
+  predicted, a satellite on it with a link beam to a ground station, and
+  the Sun. Detail drops out cleanly down to 16 px. The README banner
+  shows the same icon.
+- **The Windows taskbar shows the app's own icon.** The running app sets
+  its own taskbar identity (AppUserModelID), so its taskbar button is no
+  longer grouped under Python.
+
 ### Fixed
 
 - **The app icon was hard to see on Ubuntu's panels.** The glyph had no
   background: its blue panels had 2.55 : 1 on the dark dock (#303030) and
-  its gold body 1.86 : 1 on light panels (#FAFAFA). The same glyph now
-  sits on a dark rounded plate with a light rim: 5.15 : 1 or more on the
-  dark panels, 15.0 : 1 or more on the light ones
-  (`tests/gui/test_icons.py`).
+  its gold body 1.86 : 1 on light panels (#FAFAFA). The icon now sits on
+  a dark rounded plate with a light rim: 3.33 : 1 or more on the dark
+  panels and the Windows dark taskbars, 11.4 : 1 or more on the light
+  ones (`tests/gui/test_icons.py`).
 
 ## 2.11.0 (2026-11-17)
 
