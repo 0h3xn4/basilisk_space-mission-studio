@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QFormLayout, QHBoxLayout
 from ..config import materials as library
 from ..schema.scenario import EQUIPMENT_KINDS, MountConfig, MountedEquipmentConfig, PartPoseConfig, name_error
 from .theme import set_role
-from .widgets import ComboBox, NumberField
+from .widgets import ComboBox, EmptyState, NumberField
 
 _BODY_FRAME = "Body frame (no part)"
 _DEVICE_SOURCES = (("sensors", "sensor"), ("actuators", "actuator"))
@@ -228,6 +228,11 @@ class EquipmentTab(QWidget):
         self.form_widget = QWidget()
         self.form_widget.setLayout(right)
         layout.addWidget(self.form_widget, 2)
+        # With nothing to select, the tab says so instead of showing a disabled form (UI audit UI-29).
+        self.empty_state = EmptyState("No equipment", "Add puts an item of equipment on the model: a camera, a "
+                                      "nozzle, solar cells or a unit with a mass.", "Add equipment")
+        self.empty_state.button.setMenu(menu)
+        layout.addWidget(self.empty_state, 2)
         self.refresh()
 
     # -- rows ------------------------------------------------------------------------------------------------
@@ -351,14 +356,15 @@ class EquipmentTab(QWidget):
         self.mount_button.setEnabled(row is not None and not equipment)
         self.mount_button.setText("Remove the mount" if mount is not None and not equipment else "Mount on the model")
         self.form_widget.setEnabled(mount is not None)
+        self.form_widget.setVisible(row is not None)
+        self.empty_state.setVisible(row is None)
         for widget in (self.name_edit, self.kind_combo, self.mass, self.thrust, self.maturity, self.subsystem):
             self.form_rows.setRowVisible(widget, equipment or row is None)
         self.position.set_optional(not equipment)
         self.boresight.set_optional(not equipment)
         self.problem.setText("")
         if row is None:
-            self.note.setText("Nothing is mounted yet: Add puts an item of equipment on the model."
-                              if self._devices is not None else "Add puts an item of equipment on the model.")
+            self.note.setText("")
             return
         if equipment:
             self.note.setText("")

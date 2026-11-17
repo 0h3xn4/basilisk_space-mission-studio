@@ -31,7 +31,7 @@ from pathlib import Path
 from PySide6.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout, QHBoxLayout, QLabel,
                                QLineEdit, QPushButton, QVBoxLayout, QWidget)
 
-from .theme import set_role
+from .theme import SPACE, set_role
 from .widgets import ComboBox, DoubleSpinBox
 
 _TRANSPORTS = (("Automatic (Unix socket, TCP on Windows)", "auto"), ("Unix-domain socket", "unix"),
@@ -65,6 +65,10 @@ class SilRunDialog(QDialog):
         path_row = QHBoxLayout()
         self.path_edit = QLineEdit()
         self.path_edit.setPlaceholderText("fsw_host or fsw_adapter_host from a built export")
+        self.path_edit.ensurePolished()  # the style sheet's font
+        # The whole placeholder in view (UI audit UI-46), with room for the field's padding.
+        self.path_edit.setMinimumWidth(self.path_edit.fontMetrics().horizontalAdvance(
+            self.path_edit.placeholderText()) + 2 * SPACE["xl"])
         self.path_edit.textChanged.connect(self._on_path_changed)
         browse = QPushButton("Browse...")
         browse.clicked.connect(self._on_browse)
@@ -75,6 +79,7 @@ class SilRunDialog(QDialog):
         self.hash_label.setWordWrap(True)
         set_role(self.hash_label, role="mono", tone="secondary")
         form.addRow("SHA-256", self.hash_label)
+        self._form = form
         self.transport_combo = ComboBox()
         for text, value in _TRANSPORTS:
             self.transport_combo.addItem(text, value)
@@ -127,9 +132,9 @@ class SilRunDialog(QDialog):
         self._sha256 = None
         self.consent_check.setChecked(False)  # a new program needs a new consent
         text = self.path_edit.text().strip()
-        if not text:
+        if not text:  # nothing typed or chosen yet: Run SIL stays off, and nothing is wrong (UI audit UI-46)
             self.hash_label.setText("")
-            self.problem_label.setText("Choose the program to run.")
+            self.problem_label.setText("")
         else:
             try:
                 path = check_binary(text)
@@ -141,6 +146,8 @@ class SilRunDialog(QDialog):
                 self.hash_label.setText(self._sha256)
                 self.hash_label.setToolTip(str(path))
                 self.problem_label.setText("")
+        self._form.setRowVisible(self.hash_label, bool(self.hash_label.text()))  # no empty SHA-256 row
+        self.problem_label.setVisible(bool(self.problem_label.text()))
         self._update_ok()
 
     def _update_ok(self) -> None:

@@ -122,7 +122,8 @@ def _row(*widgets) -> QWidget:
         if isinstance(widget, PreciseDoubleSpinBox):
             widget.setMinimumWidth(70)  # [px] three to a row must fit the form column
             widget.setButtonSymbols(PreciseDoubleSpinBox.ButtonSymbols.NoButtons)
-        layout.addWidget(widget, 1)
+        # A tick box keeps its own width, so its text is never cut (UI audit UI-28: "Shov").
+        layout.addWidget(widget, 0 if isinstance(widget, QCheckBox) else 1)
     return holder
 
 
@@ -278,6 +279,10 @@ class ModelEditorDialog(QDialog):
         vertical.addWidget(splitter)
         vertical.addWidget(self._build_bottom_tabs())
         vertical.setSizes([560, 240])
+        # On a small screen the parts, the form (it scrolls) and the view give up the height, and the tabs
+        # below keep theirs (UI audit UI-01).
+        vertical.setStretchFactor(0, 1)
+        vertical.setStretchFactor(1, 0)
         outer.addWidget(vertical)
 
         self.messages = NoteList("warning")  # each problem on its own row
