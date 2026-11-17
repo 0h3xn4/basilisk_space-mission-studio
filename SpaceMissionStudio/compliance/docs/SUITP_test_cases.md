@@ -388,7 +388,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_the_3d_view_recovers_a_webgl_context_never_given_back` | A context the browser does not give back: a new renderer of its own after RECOVER_AFTER_MS. | - | integration |
 | `test_the_3d_view_tries_again_while_no_new_context_can_start` | No new WebGL context yet (the GPU process starting again, as on Windows after a move to another window): the view tries again RECOVER_AFTER_MS later instead of saying that WebGL is gone. | - | integration |
 | `test_budgets_in_its_own_window_counts_as_shown` | B-21 with the windows design's Q2: a detached Budgets area is shown. | - | integration |
-| `test_detach_and_attach_take_under_50_ms_on_the_gui_thread` | The view keeps its parent and becomes a window: no restyle of its widgets (a new parent took 50 to 70 ms for Budgets). | - | integration |
+| `test_detach_and_attach_take_under_50_ms_on_the_gui_thread` | The view keeps its parent and becomes a window: no restyle of its widgets (a new parent took 50 to 70 ms for Budgets) and no file write (a layout write held the interpreter lock, 146 ms in CI). | - | integration |
 | `test_a_live_run_goes_on_in_the_3d_view_s_own_window` | The detached 3D View receives the live run (the same widget: no second consumer of the feed); starting the run brings its window to the front and leaves the main window where it was; the result replaces the live frames t | - | integration |
 
 ### `tests/gui/test_budget_widget.py`

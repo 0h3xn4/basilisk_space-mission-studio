@@ -2211,3 +2211,5 @@ failed; that test is unchanged).
 Also: before they read the overlay's time, the two recovery tests wait until the page has drawn the frame (`MV.dirty` false). The overlay follows `MV.frame` on the next animation frame, and on the Windows runner the test read it before that frame (it saw frame 0's time).
 
 New in the second round: `test_breakout.py::test_the_3d_view_tries_again_while_no_new_context_can_start` (the first new context is refused; the second try draws, with no error).
+
+| `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` | every move under 50 ms | every move under 50 ms, or under twice the view's own show time (hidden and shown in place, measured in the test) plus 10 ms where that is larger; the failure message lists the slowest move, the limit and the show time per view | the Windows runner takes 50 to 81 ms to move the Budgets area because it takes about as long to show it at all (here: 9 ms to show, 10 ms to move); the move adds nothing, which is what the test guards. On Linux the limit stays 50 ms for every view, and a 60 ms stall in `attach` still fails it for all three views |
