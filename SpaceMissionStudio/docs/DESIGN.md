@@ -362,6 +362,12 @@ bar and no toolbar:
   layout needs at its width (`gui/theme/dialogs.py`, applied by the
   application style), so a wrapped line or a button is never cut off,
   whatever size the window manager gives it.
+- **Dialogs fit the screen:** a dialog is never taller than the screen's
+  free area less 64 px for the title bar, and one opened taller shrinks
+  to it (`gui/theme/dialogs.py`). Tall content goes in a scroll area
+  (`widgets.ScrollBody` for a dialog's body), so OK and Cancel stay in
+  view. `tests/gui/test_dialogs_fit_the_screen.py` opens every dialog on
+  a 1280 x 720 screen; a new dialog class gets an entry there.
 - **Drop-down lists:** every combo box's list opens below the field,
   12 rows high with a scroll bar, at least as wide as its longest entry,
   with control-height rows, a hover mark and the current entry selected.

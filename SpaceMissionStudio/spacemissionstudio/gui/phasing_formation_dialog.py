@@ -45,6 +45,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QVBoxLayout,
+    QWidget,
 )
 
 from ..engine.constellation import CENTRAL_BODY_EQUATORIAL_RADIUS_KM
@@ -52,7 +53,7 @@ from ..engine.formation import PhasingFormationRequest
 from ..schema.scenario import ScenarioValidationError, SpacecraftConfig, StationKeepingConfig
 from .feedback import show_dialog_error
 from .field_text import attribute_title, labelled
-from .widgets import ComboBox, PreciseDoubleSpinBox, finish_form
+from .widgets import ComboBox, PreciseDoubleSpinBox, ScrollBody, finish_form
 
 
 def _form_group(title: str) -> tuple[QGroupBox, QFormLayout]:
@@ -288,7 +289,10 @@ class PhasingFormationDialog(QDialog):
         right_column.addStretch(1)
         columns.addLayout(left_column, 1)
         columns.addLayout(right_column, 1)
-        layout.addLayout(columns)
+        body = QWidget()
+        body.setLayout(columns)
+        columns.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(ScrollBody(body), 1)  # the groups scroll on a small screen; the buttons stay (UI-01)
 
         self.chief_combo.currentIndexChanged.connect(self._load_chief_station_keeping)
         self._load_chief_station_keeping()

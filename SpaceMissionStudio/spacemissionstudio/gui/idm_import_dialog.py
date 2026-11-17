@@ -67,6 +67,9 @@ CREDIT = ("Reads IDM-CIC models (IDM-CIC is © CNES) with SpaceMissionStudio's o
 _DEFAULT = ""  # the combo data for "the default values" / "chosen" / "none"
 
 
+_PREVIEW_LINES = 6  # [-] lines of the preview in view
+
+
 class _Worker(QThread):
     """Reads the file (when no model is given) and plans the import."""
 
@@ -156,9 +159,14 @@ class IdmImportDialog(QDialog):
         self.preview = QPlainTextEdit()
         self.preview.setReadOnly(True)
         self.preview.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-        layout.addWidget(self.preview, 1)
+        # A few lines high; it scrolls for more, so the tables below and the buttons stay on a small screen
+        # (UI audit UI-02).
+        self.preview.ensurePolished()  # the style sheet's font and frame
+        margin = int(2 * (self.preview.frameWidth() + self.preview.document().documentMargin()))
+        self.preview.setMaximumHeight(_PREVIEW_LINES * self.preview.fontMetrics().lineSpacing() + margin)
+        layout.addWidget(self.preview)
         self.tabs = QTabWidget()
-        layout.addWidget(self.tabs, 2)
+        layout.addWidget(self.tabs, 1)
         devices_page = QWidget()
         devices_layout = QVBoxLayout(devices_page)
         self.tabs.addTab(devices_page, "Devices found")

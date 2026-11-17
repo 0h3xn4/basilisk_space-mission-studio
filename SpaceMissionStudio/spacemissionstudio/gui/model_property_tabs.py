@@ -34,7 +34,7 @@ Each edits the model it is given in place and emits ``changed``.
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton,
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QListWidget, QPushButton,
                                QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
 from ..config import envelopes as envelope_library
@@ -46,6 +46,9 @@ from .theme import set_role
 from .widgets import ComboBox
 
 _NO_MATERIAL = "(none)"
+# [-] characters a material drop-down is sized for: the longest entry (a name and its description) made the
+# 3D model editor's part form 750 px wide and scroll sideways (UI audit UI-28). The open list shows it all.
+_MATERIAL_CHARS = 20
 _PART_VALUE = "(the part's)"
 # The material fields' labels and the ranges their fields take (the schema checks >= 0, and <= 1 for the two).
 _MATERIAL_LABELS = {"density_kg_m3": ("Density", "kg/m³", 1.0e5, 1), "melting_temperature_k": ("Melting point", "K",
@@ -67,7 +70,10 @@ def material_names(model) -> list[str]:
 
 def fill_material_combo(combo: ComboBox, model, current: str, empty_label: str = _NO_MATERIAL) -> None:
     """``combo`` with no material, the library's and the model's own,
-    ``current`` selected."""
+    ``current`` selected. The box is as wide as :data:`_MATERIAL_CHARS`
+    characters, not as its longest entry."""
+    combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+    combo.setMinimumContentsLength(_MATERIAL_CHARS)
     blocked = combo.blockSignals(True)
     combo.clear()
     combo.addItem(empty_label, "")
