@@ -48,6 +48,24 @@ fixes bugs.
 
 ### Fixed
 
+- **Dialogs fit a 1280 x 720 screen** (UI audit batch B1). The 3D model
+  editor asked for a minimum height of 967 px and the IDM-CIC import for
+  820 px, so OK and Cancel were off the screen. A dialog is now never
+  taller than the screen less 64 px for the title bar (656 px on a
+  720 px screen), and tall content scrolls. The generate-phasing-formation
+  dialog (886 px) now scrolls its groups. A test opens every dialog of
+  the GUI on a 1280 x 720 screen.
+- The 3D model editor's part form fits its column: all three Position
+  and Rotation fields, the whole "Shown" label and every face's label are
+  in view, with no sideways scrolling. A long material name made the form
+  750 px wide.
+- The 3D model editor's Equipment tab says "No equipment", with Add,
+  when there is nothing to select, instead of a disabled form.
+- The SIL dialog shows no error before you choose a program, no empty
+  SHA-256 row, and its whole placeholder text.
+- The Customize dialog: the contents list has 26 px rows and shows its
+  first heading in full, and the labels of every section have one width,
+  so the fields line up.
 - **The app icon was hard to see on Ubuntu's panels.** The glyph had no
   background: its blue panels had 2.55 : 1 on the dark dock (#303030) and
   its gold body 1.86 : 1 on light panels (#FAFAFA). The same glyph now

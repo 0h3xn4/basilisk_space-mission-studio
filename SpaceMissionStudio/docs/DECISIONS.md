@@ -3380,3 +3380,32 @@ The plan, its overlap table and its phases are in
 - **Decision:** the metadata file is CC0-1.0, with its own stanza in the
   Debian copyright file. **Why:** AppStream asks for a permissive
   metadata licence; the rest of the package keeps its own.
+
+## Dialogs fit the screen (UI audit B1, 2026-11-17)
+
+- **Decision:** `gui/theme/dialogs.py` limits a dialog's minimum height
+  to the screen's available height less 64 px (`TITLE_BAR_ROOM`, two
+  32 px steps of the grid), and shrinks a dialog that opens taller. Only
+  the layout's own minimum can make it taller. **Why:** the audit's
+  blockers UI-01 and UI-02; the available area excludes the desktop's
+  panels but not the window's title bar, which is about 30 to 40 px.
+- **Decision:** the screen limits the height only; a dialog keeps the
+  width its code gave it. **Why:** the window manager places a wide
+  window, and the Customize dialog is laid out for its width; narrowing
+  it to an 800 px test screen made its cards scroll sideways with large
+  fonts (`test_wizard_fits_without_sideways_scrolling_with_large_fonts`).
+- **Decision:** `widgets.ScrollBody` is a frameless scroll area that asks
+  for its content's whole size but has a small minimum height. **Why:** a
+  dialog opens as large as before on a large screen and scrolls on a
+  small one; the phasing-formation dialog (886 px) uses it.
+- **Decision:** `EmptyState` moves from `budgets_area.py` to
+  `widgets.py`; `budgets_area` imports it from there. **Why:** the model
+  editor's Equipment tab needs it too (UI-29), and the repository has no
+  `gui/components/` package.
+- **Decision:** a material drop-down is 20 characters wide
+  (`model_property_tabs.fill_material_combo`); its open list still shows
+  each entry in full. **Why:** the longest entry made the part form
+  750 px wide (UI-28).
+- **Decision:** the Customize dialog gives every field label one width,
+  the widest label's, on its one scrolling page (UI-47). **Why:** the
+  audit asked for one label width per page; the dialog has one page.

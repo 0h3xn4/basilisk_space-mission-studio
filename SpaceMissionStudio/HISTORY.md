@@ -18353,3 +18353,72 @@ thread for a case, a node, a resize, a cursor move and a playback tick).
 One existing test changed how it reaches a widget: it selects the 3D
 model tab before it reads the web view (`docs/ui/TEST_CHANGES.md`). No
 golden file and no file format changed.
+
+## UI audit batch B1: dialogs fit the screen (2026-11-17)
+
+The UI audit of 2026-11-17 opened every screen and dialog at 1280 x 720
+and 1920 x 1080. Batch B1 fixes the six defects in dialogs.
+
+**The two blockers (UI-01, UI-02).** On a 1280 x 720 screen the 3D model
+editor had a minimum height of 967 px and the IDM-CIC import one of
+820 px, so OK and Cancel were off the screen. The cause was
+`gui/theme/dialogs.py`: `fit()` set a dialog's minimum height to its
+layout's height for its width, with no upper limit. That height is the
+preferred height of every tab, table and text box, not the minimum.
+`fit()` now stops at `room()`: the screen's available height less 64 px
+for the title bar (656 px on a 720 px screen). Only the layout's own
+minimum can make a dialog taller. A dialog that its code made taller
+than the screen (the model editor asks for 820 px) shrinks to it when it
+is shown. The width stays as the code set it: narrowing the Customize
+dialog to the 800 px test screen made its cards scroll sideways with
+large fonts, and a window manager places a wide window anyway. Measured
+with the audit's screen file: the model editor now has a minimum of
+680 x 656 px (its layout needs 355 px), the IDM-CIC import 587 x 656 px
+(582 px). The import's preview is six lines high and scrolls, so the
+tables get the height. In the model editor the parts, the form and the
+3D view give up height on a small screen, and the tabs below keep
+theirs.
+
+**Every dialog.** A new test, `tests/gui/test_dialogs_fit_the_screen.py`,
+finds every `QDialog` class in `spacemissionstudio.gui` (25 today), opens
+each on a 1280 x 720 screen and checks its minimum size and its size. A
+dialog class without an entry fails the test. It found one more dialog
+that did not fit: the generate-phasing-formation dialog needed 886 px.
+Its groups now sit in `widgets.ScrollBody`, a scroll area that asks for
+the whole size of its content but has a small minimum height. Before the
+fix the test failed for the model editor, the IDM-CIC import, the
+phasing and ROE formation dialogs and the user manual.
+
+**The part form (UI-28).** The form was 768 px wide in a 470 px column,
+so it scrolled sideways, and the third Position and Rotation fields, the
+end of "Shown" and the label of the fourth face were out of view. The
+material drop-down was the cause: its longest entry, a name with its
+description, made it 726 px wide. `fill_material_combo` now sizes the
+box for 20 characters; the open list still shows each entry in full. A
+tick box in a row of the form keeps its own width.
+
+**The Equipment tab (UI-29).** With nothing to select, the tab showed a
+disabled form with "camera" in it. It now shows an `EmptyState`, "No
+equipment", whose Add equipment button opens the same menu as Add.
+`EmptyState` moved from `budgets_area.py` to `widgets.py` for this.
+
+**The SIL dialog (UI-46).** It said "Choose the program to run." in red
+before the user did anything, showed an empty SHA-256 row and cut its
+placeholder. An empty field is now no error (Run SIL stays off), the
+SHA-256 row shows only with a hash, and the field is as wide as its
+placeholder.
+
+**The Customize dialog (UI-47).** The contents list now draws its rows
+at least 26 px high (`widgets.RowHeightDelegate`), and its first heading
+is in full. Every field label on the page has the width of the widest
+one, so the fields of all sections line up.
+
+Tests: the new file has 31 tests. Before the fixes, 10 failed: five
+dialogs (the model editor, the IDM-CIC import, the phasing and ROE
+formation dialogs, and the user manual, which opened 760 px high) and the
+five checks of UI-28, UI-29, UI-46 and UI-47. After the fixes, the
+whole GUI suite passed (1974 tests) and the rest of the suite passed
+(3470 tests).
+Screenshots taken offscreen at 1280 x 720 show OK and Cancel in view in
+both blocker dialogs, the part form without a sideways scroll bar and
+the Equipment tab's empty state.
