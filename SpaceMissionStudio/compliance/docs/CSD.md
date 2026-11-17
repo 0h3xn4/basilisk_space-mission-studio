@@ -20,7 +20,7 @@ for the tool's inputs, results and exchanged data.
 
 It was prepared during the ECSS/CCSDS audit (remediation R02 implemented
 the frame and time layer; R14 wrote this document). It applies to versions
-1.1.0 to 2.9.0 of the tool (1.1.1 changes only the packaging, 1.2.0,
+1.1.0 to 2.10.0 of the tool (1.1.1 changes only the packaging, 1.2.0,
 1.3.0 and 1.3.1 only the GUI, 2.1.0 adds analyses in the body frame and
 no frame or time conversion, 2.1.1 only fixes the GUI and the IDM-CIC
 import, 2.2.0 makes the CCSDS files the command line already wrote and
@@ -39,7 +39,15 @@ track and the stations' lines of sight by the same angle, for display
 only, with none either, 2.8.0 only the GUI, 2.9.0 a thermal analysis
 that turns the run's Sun and planet directions into the body frame by
 the attitude the run recorded, as the model analyses do, with no new
-frame or time conversion; 2.0.0 computes the Earth's rotation angle
+frame or time conversion, 2.10.0 an operations planner whose geometry
+comes from the run's recorded frames, or, without a run, turns the
+Earth by ERFA's IAU 2006/2000A matrix `c2t06a` (with the IERS polar
+motion and UT1 - UTC when the files cover the horizon; about 13 m from
+the run's ITRF93 on the ground), keeps UTC in its files and simulation
+time inside (`docs/developer/operations-planning-decisions.md` O-04,
+O-05), and writes OEM and AEM 2.0 in EME2000 with UTC epochs, the
+AEM's quaternions from EME2000 to the body frame, scalar last (O-20);
+2.0.0 computes the Earth's rotation angle
 of the pass predictions and GEO elements with the leap seconds of the
 date, as the simulation already did, and takes the physical constants
 from one set, Basilisk's: `docs/changes.md`, 2026-10-30).
