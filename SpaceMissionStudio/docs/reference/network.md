@@ -98,6 +98,12 @@ downloaded nothing leaves no line.
   [Python API](../api.md)) is not guarded unless it calls
   `spacemissionstudio.network.install_guard()`; offline mode still applies
   to the tool's downloads.
+- **The software centre's page.** The `.deb` installs AppStream metadata
+  (`/usr/share/metainfo/io.github._0h3xn4.SpaceMissionStudio.metainfo.xml`)
+  with the addresses of four screenshots on raw.githubusercontent.com. A
+  software centre (Ubuntu App Center, GNOME Software, KDE Discover) may
+  fetch them when it shows the app's page. SpaceMissionStudio itself never
+  reads the file and fetches nothing for it.
 - **Not a sandbox.** The policy file controls the tool, not the
   computer: someone who can run their own programs can reach the network
   with them. Where the network must be closed, close it at the operating

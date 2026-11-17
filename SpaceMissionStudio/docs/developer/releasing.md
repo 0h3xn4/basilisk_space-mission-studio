@@ -47,7 +47,9 @@ The `.deb` reads `spacemissionstudio.__version__`, so it needs no change.
   this section (section 5), so write it for someone deciding whether to
   download:
   - start with one or two paragraphs that say what the release is for:
-    they become the notes' summary;
+    they become the notes' summary. The first paragraph is also the
+    release's text in software centres (the `.deb`'s AppStream metadata,
+    `packaging/metainfo.py`), so it must stand alone;
   - then the list of changes, which becomes "What's new";
   - optionally, after the list, `### Who should update` and
     `### Known limits` (each runs to the next `###` heading): they get a
@@ -87,7 +89,10 @@ release"). On GitHub's runners it:
   Windows and pip-audit on every pinned package. Nothing is attached
   unless it passes;
 - builds the wheel, sdist and the self-contained `.deb` (the bundled
-  Python of `packaging/bundle_python.py`) on Linux, installs the `.deb`
+  Python of `packaging/bundle_python.py`) on Linux; checks what the `.deb`
+  gives the desktop: the desktop entry (`desktop-file-validate`), the icon
+  at every hicolor size and the AppStream metadata (`appstreamcli validate
+  --no-net`, which fails on a warning); installs the `.deb`
   with the network cut off and runs the installed tool offline: version,
   support data, every template validated, template 01 run from the
   bundled kernels, the Earth orientation files found and the main window
