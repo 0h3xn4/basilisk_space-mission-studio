@@ -483,6 +483,13 @@ code on the 36 templates as 2.10.0 saves them: 34 open with no message,
 the connection, so 2.10.0 carries 2.8.0's file (observations to
 2026-11-14). The sync changed upstream Basilisk's files in the
 repository, not the Basilisk 2.12.0 the installers carry.
+It was published on 2026-11-17 at 10:37 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 40): the tag workflow
+([run 44060467004](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44060467004)) passed the release
+check on `b074260`, #269's merge, and tagged it at 09:59; the release
+workflow ([run 44060591211](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44060591211)) built, installed
+and checked every file, attached the eleven and published the release 38
+minutes later. It was never a public release without files.
 
 ---
 
