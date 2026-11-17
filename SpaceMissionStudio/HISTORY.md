@@ -17974,3 +17974,44 @@ installers, attached the eleven files and published the release at
 `.deb` and the setup program equal the checksums in its notes. SRelD
 issue 38, the SDP, H05 and `releasing.md` record the tag, the runs and
 the files' digests.
+
+## Operations planning (2026-11-16)
+
+Requirement SRS-F-30, on branch `feature/operations-planning`. The brief
+set one rule above all others: never change the Basilisk framework. The
+planner therefore uses Basilisk as it is (an orbit-only propagation,
+`groundLocation`, the guidance modes, the data and power nodes, `C2EP`)
+and flies a plan through two SysModels of its own, `PlanWriter` and
+`PlanArbitrator`; `git diff --name-only develop...HEAD` lists nothing
+outside `SpaceMissionStudio/` at any commit.
+
+The design, the decisions (O-01 to O-26) and the progress are in
+`docs/developer/operations-planning-*.md`; the checks in
+`compliance/validation/operations-vv.md`.
+
+What flying the templates found, and what was done about it:
+
+- The one-axis slew model left two of template 35's slews 0.7 to 0.9 deg
+  beyond the 5 deg convergence threshold at the activity's start. The
+  planner now settles slews to half the threshold (O-25); the same six
+  hours then start every activity 1.0 to 3.1 deg off.
+- The plan file labelled each resource value with the start of its step,
+  while the value is the state at its end; with a 30 s step and a 40
+  Mbit/s camera the planned memory led the flown one by half an image.
+  The label is now the step's end (O-26), and the verification compares
+  only where the run flew (it compared the whole horizon after a shorter
+  flight, which showed an 87 % memory difference that was not there).
+- Template 35's window over the Alps sits at the 30 deg off-nadir limit:
+  with the Earth orientation files (ITRF93) it holds an image, without
+  them (IAU_EARTH, about 10 km apart, as in the test runs) it is too
+  short. The template's claims accept both, and the limitation is
+  documented.
+- Scheduling a week took minutes: removing an activity rebuilt the
+  spacecraft's arrays one activity at a time, each over the whole
+  horizon, and `point_axis` spent most of its time in NumPy's per-call
+  cost on 3-vectors. A one-pass rebuild, a cached default-attitude panel
+  cosine and plain-float vector maths bring a week of one spacecraft to
+  9 s without the improvement step and 31 s with 20 steps.
+- The scenario editor dropped the `operations` section on save (it had
+  no form for it); it now keeps it, and a renamed spacecraft or station
+  is renamed in it.

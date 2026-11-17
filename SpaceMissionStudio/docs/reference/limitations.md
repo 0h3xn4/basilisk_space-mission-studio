@@ -384,6 +384,49 @@ From the [changelog](../../CHANGELOG.md):
 * **Python 3.14 only:** 3.11 to 3.13 are no longer supported, and
   Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet.
 
+## Operations planning
+
+The operations planner ([docs/models/operations.md](../models/operations.md))
+is a planning tool for preliminary mission and operations design. Its
+models are simpler than the simulation it flies in:
+
+* **Slews** come from a one-axis model of the attitude controller (the
+  largest principal inertia), settled to half the convergence threshold
+  as a margin. The three-axis motion, the wheels' stored momentum and a
+  moving target are not modelled; Fly and verify shows how far that
+  matters.
+* **Power and memory** are evaluated at the geometry's step (10 s unless
+  set) with the panel's angle from the planned attitude: what happens
+  within a step is averaged.
+* **The Earth's orientation** in the planning geometry is the run's:
+  ITRF93 with the Earth orientation files, IAU_EARTH without them, about
+  10 km apart on the ground. A window at the edge of an off-nadir limit
+  can be held with one and too short with the other (template 35's
+  window over the Alps).
+* **The analytic geometry** (mean elements with J2) is within about 7 km
+  of a propagation over a day, and drifts beyond; use it for a first look.
+* **The scheduler** is a heuristic (a priority-driven constructive pass
+  and a seeded large-neighbourhood search): it is not proven optimal. On
+  small instances it is within one acquisition of a brute-force optimum.
+  A week of one spacecraft takes seconds to half a minute; many
+  spacecraft over long horizons take longer.
+* **Flying a long plan** takes the full simulation's time (about ten
+  minutes for template 35's week).
+
+Out of scope:
+
+* **Changes to Basilisk.** The planner uses Basilisk as it is and adds
+  its own `SysModel`s; nothing in the framework is modified.
+* **The network.** The planner works offline; it fetches nothing.
+* **Real commanding**: no binary telecommands, telemetry, XTCE, SCOS or
+  YAMCS databases. The command schedule uses the Packet Utilization
+  Standard's terms but is a planning product.
+* **Weather and clouds** at targets or stations.
+* **Conjunction assessment** and collision avoidance.
+* **Exact optimal scheduling** (integer programming, constraint solvers).
+* **Ground networks' costs and booking**: a station's availability is
+  its outages and capacity only.
+
 ## Thermal analysis
 
 The thermal model ([docs/models/thermal.md](../models/thermal.md)) is a

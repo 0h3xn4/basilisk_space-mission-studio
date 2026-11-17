@@ -605,3 +605,65 @@ def test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery
     assert len(batch.runs) == 20 and not batch.failed and int(warm.sum()) == 4
     assert np.array_equal(api.thermal_monte_carlo(scenario, result).temperatures_c["battery"],
                           batch.temperatures_c["battery"])
+
+
+def test_35_a_week_of_operations_fills_the_memory_faster_than_the_contacts_empty_it():
+    """Template 35's week (SRS-F-30): about 18 of the 23 images wanted, one
+    calibration a day and 37 contacts, never more than the 40 min a day the
+    ground segment books; the memory climbs to about 2.6 of its 3 Gbit and
+    is that full at the end; Rotterdam's second image loses to the passes
+    over Europe; Kilimanjaro and the Danube delta have no lit window within
+    30 deg off nadir. The first six hours of the plan, flown in the
+    simulation, keep within the verification's tolerances.
+
+    The Alps' window sits at the 30 deg limit: with the Earth orientation
+    files (ITRF93) it holds an image, without them (IAU_EARTH, about 10 km
+    apart on the ground, as in this test run) it is too short. Both are
+    accepted here."""
+    from collections import Counter
+
+    from spacemissionstudio.operations import analysis, verify
+    from spacemissionstudio.operations.plan import Plan
+
+    scenario = _template("35")
+    planning = analysis.plan(scenario)
+    plan = planning.plan
+    kinds = Counter(a.kind for a in plan.activities)
+    assert kinds["calibration"] == 7 and kinds["contact"] == 37 and kinds["acquisition"] in (17, 18)
+    wanted = sum(t.acquisitions for t in scenario.operations.targets)
+    assert wanted == 23
+    per_day = Counter(int((a.start_s - plan.start_s) // 86400.0) for a in plan.activities if a.kind == "contact"
+                      for _ in range(int(a.duration_s)))
+    assert max(per_day.values()) <= 2400
+    assert Counter(a.station for a in plan.activities if a.kind == "contact")["svalbard-gs"] > 30
+    resources = plan.resources["eo-micro"]
+    assert 2.5e9 < resources["max_memory_bit"] <= 3.0e9 and resources["memory_bit"][-1] > 2.5e9
+    assert resources["lost_bit"] == 0.0 and resources["min_soc"] > 0.8
+    reasons = {u.request: u.reason for u in plan.unscheduled if u.kind != "contact"}
+    assert reasons["rotterdam-port"] == "conflict" and reasons["alps-glacier"] in ("conflict", "too_short")
+    assert reasons["kilimanjaro"] == reasons["danube-delta"] == "no_opportunity"
+    first = [a for a in plan.activities if a.end_s <= plan.start_s + 6 * 3600.0]
+    assert len(first) >= 4
+    six_hours = Plan(plan.epoch_utc, plan.start_s, plan.start_s + 6 * 3600.0, plan.start_utc,
+                     planning.timebase.text(plan.start_s + 6 * 3600.0), first, resources=plan.resources)
+    checked = verify.check(scenario, six_hours, analysis.fly(scenario, six_hours))
+    assert all(a.flown and a.slew_done for a in checked.activities) and checked.flags == []
+
+
+def test_36_three_imagers_share_the_contested_passes():
+    """Template 36 (SRS-F-30): the three spacecraft reach the pole together,
+    so 33 passes are wanted by two or three of them; with equal priorities
+    each gets 11 contacts; a station never serves two at once; passes are
+    lost to a busy station."""
+    from collections import Counter
+
+    from spacemissionstudio.operations import analysis
+
+    plan = analysis.plan(_template("36")).plan
+    assert len(plan.contention) == 33 and all(len(c["wanted_by"]) >= 2 for c in plan.contention)
+    assert Counter(a.spacecraft for a in plan.activities if a.kind == "contact") == {"eo-a": 11, "eo-b": 11,
+                                                                                    "eo-c": 11}
+    for station in ("svalbard-gs", "berlin-gs"):
+        spans = sorted((a.start_s, a.end_s) for a in plan.activities if a.station == station)
+        assert all(later[0] >= earlier[1] for earlier, later in zip(spans, spans[1:]))
+    assert Counter(u.reason for u in plan.unscheduled if u.kind == "contact")["station_busy"] > 20

@@ -595,4 +595,33 @@ conduct less.
 Try changing:
 - The isolators' conductance (Conductors), then run the Monte Carlo again.
 - A wing's first mode (Spacecraft > Solar arrays): a softer hinge swings further.""",
+    "35": """\
+A week of operations for the 150 kg imager: twenty targets around the world, stations at 78 N, \
+52 N and 33 S, a daily star-tracker calibration and 40 min of contacts a day. Run > Plan makes \
+the week's plan in about a minute.
+
+What to look at:
+- Run > Plan: about 18 of the 23 images wanted, 7 calibrations and 37 contacts, most over Svalbard.
+- The memory chart climbs to 2.6 of 3 Gbit by the end: the booked contacts cannot empty it.
+- Requests not placed: Rotterdam's second image loses to the passes over Europe; Kilimanjaro \
+and the Danube delta have no lit window within 30 deg off nadir.
+- Fly and verify flies the plan in the simulation and compares it with the plan.
+
+Try changing:
+- The daily contact time (operations, spacecraft, max_contact_s_per_day) to 3600 s.
+- Lose a Svalbard pass (select a contact, Lose this pass) and see what the replan moves.""",
+    "36": """\
+Three of template 35's imagers in Sun-synchronous planes 30 deg apart, reaching the pole \
+together, sharing a Svalbard and a Berlin station that serve one spacecraft at a time, for two \
+days. Any of them may take a target.
+
+What to look at:
+- Run > Plan: 33 passes are wanted by two or three spacecraft; each spacecraft gets 11 contacts.
+- The station rows of the chart: whose contact each pass holds.
+- Requests not placed: passes lost to a busy station, and the European targets that conflict \
+with contacts.
+
+Try changing:
+- One spacecraft's contact priority to 1 and the others' to 2: it takes the contested passes.
+- The stations' capacity to 2: two spacecraft at a time.""",
 }

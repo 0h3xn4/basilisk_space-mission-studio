@@ -34,7 +34,10 @@ and records:
 - for a Monte Carlo template, a batch of :data:`MONTE_CARLO_RUNS` runs;
 - for spacecraft with a thermal model, its analysis on the run: every
   case's node temperatures, heaters (with their sized power), radiators and
-  orbit-average heat flows (``thermal.records.tables``).
+  orbit-average heat flows (``thermal.records.tables``);
+- for a scenario with an ``operations`` section, its plan (SRS-F-30): every
+  activity, the requests not placed and why, the resource figures and the
+  contested passes.
 
 :func:`compare` reports every difference beyond what two computers can
 disagree on (see "How numbers are compared" below).
@@ -382,7 +385,27 @@ def _capture(path: Path) -> dict:
         fingerprint["monte_carlo"] = _monte_carlo(scenario)
     if any(sc.thermal is not None for sc in run.spacecraft):
         fingerprint["thermal"] = _thermal(run, result, path.parent)
+    if getattr(scenario, "operations", None) is not None:
+        fingerprint["operations"] = _operations(scenario)
     return fingerprint
+
+
+def _operations(scenario) -> dict:
+    """The operations plan of the template as shipped (its own geometry,
+    the whole horizon): every activity, the requests not placed and why,
+    each spacecraft's resource figures, the contested passes."""
+    from spacemissionstudio.operations import analysis
+
+    plan = analysis.plan(scenario).plan
+    return _plain({
+        "activities": [[a.id, a.spacecraft, a.type, a.start_s, a.end_s, a.target or a.station or a.request]
+                       for a in plan.activities],
+        "unscheduled": [[u.request, u.spacecraft, u.reason, u.placed, u.needed] for u in plan.unscheduled],
+        "resources": {name: {key: r[key] for key in ("min_soc", "max_memory_bit", "lost_bit", "downlinked_bit")}
+                      for name, r in plan.resources.items()},
+        "contested_passes": len(plan.contention),
+        "score": plan.score.get("value"),
+    })
 
 
 def _thermal(scenario, result, base_dir) -> dict:

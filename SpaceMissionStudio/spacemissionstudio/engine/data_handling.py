@@ -175,9 +175,13 @@ class _DataLedger(sysModel.SysModel):
     """Generated, lost and downlinked bits of one storage unit; see the module docstring."""
 
     def __init__(self, config: DataHandlingConfig, capacity_bits: int, initial_bits: int,
-                 transmitter_sink, transmitter_power_w: float, record_interval_s: float):
+                 transmitter_sink, transmitter_power_w: float, record_interval_s: float, switched=()):
         super().__init__()
         self.rates = [instrument.data_rate_bps for instrument in config.instruments]  # [bit/s]
+        # Instruments a plan switches (operations.execution): their node's
+        # data rate this step (0 when off) is read instead of assumed.
+        self.switchedInMsgs = {index: messaging.DataNodeUsageMsgReader() for index, instrument
+                               in enumerate(config.instruments) if instrument.name in switched}
         self.capacityBits = capacity_bits  # [bit]
         self.storageInMsg = messaging.DataStorageStatusMsgReader()
         self.transmitterInMsg = messaging.DataNodeUsageMsgReader()
@@ -206,7 +210,10 @@ class _DataLedger(sysModel.SysModel):
         if self.previousT is not None and t > self.previousT:
             dt = t - self.previousT  # [s]
             total = self.previousLevel  # [bit]
-            for rate in self.rates:
+            for index, rate in enumerate(self.rates):
+                reader = self.switchedInMsgs.get(index)
+                if reader is not None:
+                    rate = float(reader().baudRate)  # [bit/s] 0 while the plan has it off
                 delta = float(np.round(rate * dt))  # [bit] DataStorageUnitBase::computeDataDelta
                 self.generated += delta
                 if total + delta <= self.capacityBits:
@@ -265,12 +272,19 @@ def build_link_gate(scSim, task_name: str, tag: str, sc_config, sc_object, stati
 
 def build_data_handling(scSim, task_name: str, tag: str, config: DataHandlingConfig,
                         gate: _DownlinkGate | None, downlink_rate_bps: float, battery,
-                        record, record_interval_s: float, scenario=None) -> DataHandlingHandle:
+                        record, record_interval_s: float, scenario=None,
+                        device_status: dict | None = None) -> DataHandlingHandle:
     """Builds one spacecraft's instruments, storage and (with ``gate``)
     transmitter. ``battery`` (or None) receives the instruments' and the
     transmitter's power sinks; ``record(msg)`` makes a recorder;
-    ``scenario`` gives the packet size (config.parameters)."""
+    ``scenario`` gives the packet size (config.parameters).
+    ``device_status``: a flown plan's ``(DeviceCmdMsg, DeviceStatusMsg)``
+    per instrument name and ``"transmitter"`` (operations.execution,
+    decision O-15): the data nodes read the command, their power sinks the
+    status; those devices are on only when the plan says so."""
+    device_status = device_status or {}
     handle = DataHandlingHandle(instrument_names=[i.name for i in config.instruments])
+    nodes = {}
     capacity_bits = int(round(config.storage_capacity_gbit * BITS_PER_GBIT))  # [bit]
 
     storage = partitionedStorageUnit.PartitionedStorageUnit()
@@ -281,6 +295,9 @@ def build_data_handling(scSim, task_name: str, tag: str, config: DataHandlingCon
         node.ModelTag = f"{tag}Instrument_{instrument.name}"
         node.nodeBaudRate = instrument.data_rate_bps  # [bit/s]
         node.nodeDataName = instrument.name
+        if instrument.name in device_status:
+            node.nodeStatusInMsg.subscribeTo(device_status[instrument.name][0])
+        nodes[instrument.name] = node
         scSim.AddModelToTask(task_name, node)
         storage.addDataNodeToModel(node.nodeDataOutMsg)
         handle.keep_alive.append(node)
@@ -292,6 +309,8 @@ def build_data_handling(scSim, task_name: str, tag: str, config: DataHandlingCon
         transmitter.nodeBaudRate = -downlink_rate_bps  # [bit/s] negative: removes data
         transmitter.packetSize = -registry.value("data_handling.packet_size_bits", scenario)  # [bit]
         transmitter.numBuffers = len(config.instruments)
+        if "transmitter" in device_status:
+            transmitter.nodeStatusInMsg.subscribeTo(device_status["transmitter"][0])
         for access_msg in gate.accessOutMsgs:
             transmitter.addAccessMsgToTransmitter(access_msg)
         scSim.AddModelToTask(task_name, transmitter)
@@ -309,7 +328,16 @@ def build_data_handling(scSim, task_name: str, tag: str, config: DataHandlingCon
 
     transmitter_sink = None
     if battery is not None:
-        instruments_w = sum(i.power_w for i in config.instruments)  # [W]
+        for instrument in config.instruments:  # a plan's switched instruments: a sink each, switched with them
+            if instrument.name in device_status and instrument.power_w > 0:
+                sink = simplePowerSink.SimplePowerSink()
+                sink.ModelTag = f"{tag}InstrumentPowerSink_{instrument.name}"
+                sink.nodePowerOut = -instrument.power_w  # [W] while on
+                sink.nodeStatusInMsg.subscribeTo(device_status[instrument.name][1])
+                scSim.AddModelToTask(task_name, sink, _PRIORITY_SINKS)
+                battery.addPowerNodeToModel(sink.nodePowerOutMsg)
+                handle.keep_alive.append(sink)
+        instruments_w = sum(i.power_w for i in config.instruments if i.name not in device_status)  # [W]
         if instruments_w > 0:
             sink = simplePowerSink.SimplePowerSink()
             sink.ModelTag = f"{tag}InstrumentsPowerSink"
@@ -326,8 +354,10 @@ def build_data_handling(scSim, task_name: str, tag: str, config: DataHandlingCon
             handle.keep_alive.append(transmitter_sink)
 
     ledger = _DataLedger(config, capacity_bits, sum(initial), transmitter_sink, config.transmitter_power_w,
-                         record_interval_s)
+                         record_interval_s, switched=set(device_status))
     ledger.ModelTag = f"{tag}DataLedger"
+    for index, reader in ledger.switchedInMsgs.items():
+        reader.subscribeTo(nodes[config.instruments[index].name].nodeDataOutMsg)
     ledger.storageInMsg.subscribeTo(storage.storageUnitDataOutMsg)
     if transmitter is not None:
         ledger.transmitterInMsg.subscribeTo(transmitter.nodeDataOutMsg)

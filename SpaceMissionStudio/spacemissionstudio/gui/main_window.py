@@ -32,6 +32,7 @@ with a different UI toolkit entirely without touching
 from __future__ import annotations
 
 import dataclasses
+import functools
 import hashlib
 import logging
 from datetime import datetime, UTC
@@ -92,6 +93,7 @@ from .model_analyses_widget import ModelAnalysesWidget
 from .fsw_workbench_widget import FlightSoftwareWidget
 from .lifetime_widget import LifetimeWidget
 from .thermal_widget import ThermalWidget
+from .plan_widget import PlanWidget
 from .scenario_explainer_widget import ScenarioExplainerWidget
 from .settings_page import SettingsPage
 from .shell import AreaPage, AreaStack, Shell
@@ -290,6 +292,7 @@ class MainWindow(QMainWindow):
         self.budget_widget = BudgetWidget()
         self.design_checks_widget = DesignChecksWidget()  # the 3D model's design checks (model analyses)
         self.thermal_widget = ThermalWidget()  # the thermal analysis of the last run (SRS-F-29)
+        self.plan_widget = PlanWidget()  # the operations plan of the scenario (SRS-F-30)
         self.flight_software_widget = FlightSoftwareWidget()
         self.flight_software_widget.exports_changed.connect(self.scenario_editor.set_fsw_exports)
         # Reports (M8): every export in one table, then the flight software.
@@ -329,6 +332,17 @@ class MainWindow(QMainWindow):
         self.thermal_scroll.setWidget(self.thermal_widget)
         self.thermal_widget.events_changed.connect(self.event_timeline_widget.set_extra_events)
         self.thermal_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
+        self.plan_scroll = QScrollArea()
+        self.plan_scroll.setWidgetResizable(True)
+        self.plan_scroll.setWidget(self.plan_widget)
+        # partial of the Timeline's method, not a lambda holding the window (test_a_closed_window_is_freed)
+        self.plan_widget.events_changed.connect(functools.partial(self.event_timeline_widget.set_extra_events,
+                                                                  source="plan"))
+        self.plan_widget.operations_changed.connect(self.scenario_editor.set_operations)
+        self.plan_widget.problems_changed.connect(self._on_plan_problems_changed)
+        self.plan_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
+        self.plan_widget.set_scenario_provider(self.scenario_editor.to_scenario)
+        self.plan_widget.set_time_cursor(self.time_cursor)
         self.scenario_editor.navigate_requested.connect(self._on_guide_navigate)
 
         # Results: the run's overview, the plots, the dashboard, the mission
@@ -395,6 +409,7 @@ class MainWindow(QMainWindow):
         self.run_views.addTab(budget_scroll, "Budget")
         self.run_views.addTab(design_scroll, "Design Checks")
         self.run_views.addTab(self.thermal_scroll, "Thermal")
+        self.run_views.addTab(self.plan_scroll, "Plan")
         self.run_views.addTab(self.history_view, "History")
         self.run_views.addTab(self.log_widget, "Log")
         # No run is listed until a scenario is open; then its own (U-33, landing page).
@@ -707,6 +722,8 @@ class MainWindow(QMainWindow):
                  "The 3D model's fields of view, thrusters, mass budget and launcher envelope."),
                 ("analyses.thermal", "Analyses", "&Thermal", self.thermal_widget, "run",
                  "Solve the spacecraft's thermal model on the last run: temperatures, heat flows, heaters."),
+                ("analyses.plan", "Analyses", "&Plan", self.plan_widget, "run",
+                 "Plan the scenario's operations: activities, passes, resources; fly, verify and export the plan."),
                 ("tools.flight_software", "Tools", "&Flight Software", self.flight_software_widget, "reports",
                  "Export the flight software, run SIL."),
                 ("tools.reference_data", "Tools", "&Reference Data...", self.data_panel_widget, "settings",
@@ -1194,6 +1211,7 @@ class MainWindow(QMainWindow):
                  "monte_carlo_csv": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
                  "design_checks": self.design_checks_widget, "reentry_json": self.lifetime_widget,
                  "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_scroll,
+                 "plan": self.plan_scroll, "operations": self.plan_scroll, "operations_robustness": self.plan_scroll,
                  "fsw_project": self.flight_software_widget, "sil_report": self.flight_software_widget}
         self.show_view(views.get(key, self.results_widget))  # the plot exports: Results › Plots
 
@@ -1269,9 +1287,16 @@ class MainWindow(QMainWindow):
         (none while no scenario is open)."""
         if not self._scenario_open:
             rows = []
+        else:
+            plan = getattr(self, "plan_widget", None)  # made after the editor, which reports at once
+            rows = list(rows) + (plan.problem_rows() if plan is not None else [])  # its unplaced requests, flags
         editor = self.scenario_editor
         self.problems_widget.set_problems(rows, [c.name for c in editor.spacecraft_list.to_list()],
                                           [g.name for g in editor.ground_station_list.to_list()])
+
+    def _on_plan_problems_changed(self) -> None:
+        """Run › Plan's warnings changed: the Problems panel lists them with the editor's."""
+        self._on_problems_changed(self.scenario_editor.problem_rows())
 
     def _on_problem_counts(self, errors: int, warnings: int) -> None:
         """The counts on the panel's title, in the status bar and the top
@@ -1719,6 +1744,7 @@ class MainWindow(QMainWindow):
             self._recall_archive_dir()  # this scenario's Monte Carlo archive folder (M5b)
         self._begin_scenario(info.scenario.name)  # restoring opens it, with its runs
         self._clear_run_views()
+        self.plan_widget.clear()  # another scenario: its plan goes too
         self._set_scenario_open(True)
         self._refresh_history()
         self._mark_dirty()
@@ -1996,6 +2022,7 @@ class MainWindow(QMainWindow):
             self._recall_archive_dir()  # this scenario's Monte Carlo archive folder (M5b)
         self._begin_scenario(None)  # a new scenario has no earlier runs
         self._clear_run_views()
+        self.plan_widget.clear()  # another scenario: its plan goes too
         self._mark_clean()
         self._set_scenario_open(True)
         self._refresh_history()
@@ -2089,6 +2116,7 @@ class MainWindow(QMainWindow):
         self._restore_project_layout()
         self._begin_scenario(scenario.name)  # its earlier runs are listed, and only its
         self._clear_run_views()
+        self.plan_widget.clear()  # another scenario: its plan goes too
         self._mark_clean()
         self._set_scenario_open(True)
         self._refresh_history()
@@ -2556,6 +2584,7 @@ class MainWindow(QMainWindow):
             self.budget_widget.set_last_run(self._last_run_scenario, result)
             self._set_model_analyses_tab(self._last_run_scenario, result)
             self.thermal_widget.set_run(self._last_run_scenario, result, self._scenario_dir())
+            self.plan_widget.set_run(self._last_run_scenario, result, self._scenario_dir())
 
         def shown() -> None:
             if stay_in_3d:
@@ -2853,6 +2882,7 @@ class MainWindow(QMainWindow):
             self.budget_widget.wait_for_worker()
             self.design_checks_widget.wait_for_worker()
             self.thermal_widget.wait_for_worker()
+            self.plan_widget.wait_for_worker()
             self.flight_software_widget.wait_for_worker()
             self.data_panel_widget.wait_for_reader()  # the start-up read of the reference data files
             self.results_widget.wait_for_export()  # an export's files are finished, not cut off

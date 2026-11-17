@@ -44,6 +44,15 @@ Without Basilisk, `template`, `load`, `validate`, `assumptions`,
 | `thermal_sweep(scenario, result, path, values, spacecraft=None, case="nominal", base_dir=None)` | list of `SweepPoint` | A thermal case at each value of one parameter (`faces[radiator].absorptance`...), with every node's summary |
 | `thermal_sensitivity(scenario, result, paths=None, relative=0.1, spacecraft=None, case="nominal", base_dir=None)` | `(rows, notes)` | One-at-a-time sensitivity: each parameter up and down by `relative`, the change of every node's extremes, ranked |
 | `thermal_monte_carlo(scenario, result, spacecraft=None, folder=None, base_dir=None)` | `MonteCarloBatch` | The thermal Monte Carlo of `thermal.monte_carlo` (seeded), saved in `folder` for the Monte Carlo view |
+| `plan_opportunities(scenario, result=None)` | `Planning` | The geometry and the opportunities of the scenario's `operations` section: target windows, station passes (AOS, LOS, predicted margin), eclipses; from `result` when given, else as `geometry.source` says |
+| `plan_schedule(scenario, result=None)` | `Planning` | A plan (`planning.plan`): the activities, the requests not placed with their reasons, the resource profiles, the score and the provenance; the same inputs and seed give the same plan |
+| `plan_fly(scenario, plan)` | `ResultSet` | Flies the plan in the simulation, with the plan executor switching pointing and devices; adds the `<spacecraft>.plan.*` series |
+| `plan_verify(scenario, plan, result=None)` | `(Verification, ResultSet)` | The plan against the simulation (pointing at each activity's start, geometry, state of charge, memory) and its flags; flies the plan first unless `result` flew it |
+| `plan_export(planning, folder, verification=None)` | list of `Path` | Every operations product: passes (CSV, iCalendar), activities (CSV, JSON), the command schedule, pointing predictions, OEM and AEM per spacecraft, the report |
+| `plan_load(path)` | `Plan` | A plan file (`spacemissionstudio-plan` JSON) |
+| `plan_replan(scenario, plan, from_utc, events=None, result=None)` | `Planning` | Plans again from `from_utc`: activities started before it are kept, the `what_if` events (or `events`) applied |
+| `plan_robustness(scenario, plan, runs=20, seed=0, result=None, **settings)` | `(draws, MonteCarloBatch)` | A seeded robustness batch: lost passes, link margin offset, slew time factor, initial state of charge |
+| `plan_compare(a, b)` | `dict` | Two plans side by side: the requests each holds, and per spacecraft the activities, contact time, lowest state of charge and data lost |
 | `record(scenario, analysis, spacecraft=None, result=None)` | `dict` | A lifetime's, budget's, sweep's, trade's, design report's, model analyses' or re-entry estimate's JSON record, as `--out` writes it; `result` is the run the analysis took its inputs from |
 | `write(path, data)` | `Path` | Writes a record as JSON |
 

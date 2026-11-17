@@ -580,6 +580,7 @@ class _SpacecraftHandle:
     comms_veh_config_msg: object | None = None
     comms_power_sink: object | None = None  # the simplePowerSink.SimplePowerSink() itself, or None
     comms_pointing_arbitrator: object | None = None  # set once the deferred pass runs; owns tLog/modeLog/pointingErrorDegLog
+    plan_executor: object | None = None  # operations.execution.ExecutorHandle when the run flies a plan
     # engine.data_handling: the live link gate (rf_link with data_handling or
     # an antenna pattern) and the data chain (data_handling), both built in
     # a deferred pass once the access messages exist.
@@ -600,8 +601,16 @@ class SimulationService:
     """
 
     def __init__(self, scenario: Scenario, simulation_class: type | None = None,
-                 model_base_dir: str | None = None):
+                 model_base_dir: str | None = None, record_orientation: bool = False, plan=None):
         self.scenario = scenario
+        # A plan to fly (operations.plan.Plan; operations.execution builds its
+        # executor in place of each planned spacecraft's fsw_mode guidance).
+        self.plan = plan
+        self._plan_keep_alive: list = []
+        # Record the central body's and the Sun's positions and the central
+        # body's orientation even when no thermal model or operations
+        # section asks (the operations planner's propagation, O-03/O-04).
+        self.record_orientation = record_orientation
         # The folder a 3D model's relative mesh paths are read from (the
         # app's or the command line's scenario folder); None: the scenario
         # file's own (see _model_base_dir).
@@ -965,7 +974,10 @@ class SimulationService:
         analyses = any(_runs_model_analyses(sc) for sc in scenario.spacecraft)
         # The thermal analysis after the run (thermal/): the central body's and the Sun's
         # positions, and the central body's orientation (decision T-16).
-        self._records_orientation = any(sc.thermal is not None for sc in scenario.spacecraft)
+        # The operations planner (operations/) takes the same from a run (decision O-04).
+        self._records_orientation = (any(sc.thermal is not None for sc in scenario.spacecraft)
+                                     or getattr(scenario, "operations", None) is not None
+                                     or self.record_orientation)
         if analyses or self._records_orientation:
             sources = {f"ephemeris.{body}": self._planet_state_out_msgs[body]
                        for body in dict.fromkeys((gravity.central_body, "sun", "moon"))
@@ -1616,6 +1628,13 @@ class SimulationService:
                 except fsw.FswError as exc:
                     raise SimulationServiceError(str(exc)) from exc
 
+                if self._flies_plan(sc_config):
+                    from ..operations import execution
+
+                    handle.plan_executor = execution.build(self, dyn_task_name, sc_config, nav, mu, self.plan,
+                                                           handle.battery_module)
+                    guid_msg = handle.plan_executor.arbitrator.attGuidOutMsg
+
                 rw_actuators = [a for a in sc_config.actuators if a.kind == "reaction_wheel"]
                 if rw_actuators:
                     rw_factory, rw_state_effector, rw_config_msg = fsw.build_reaction_wheels(
@@ -1976,7 +1995,12 @@ class SimulationService:
                     self.scSim, dyn_task_name, sc_config.name, sc_config.data_handling, gate,
                     sc_config.rf_link.data_rate_bps if sc_config.rf_link is not None else 0.0,
                     handle.battery_module, self._record, scenario.sim_settings.record_interval_s, scenario,
+                    device_status=handle.plan_executor.device_msgs if handle.plan_executor is not None else None,
                 )
+                if handle.plan_executor is not None:
+                    from ..operations import execution
+
+                    execution.attach(handle.plan_executor, handle.data_handling)
 
         # Every controller's own Python-side telemetry thins to the same
         # sim_settings.record_interval_s as the Basilisk recorders above.
@@ -1984,13 +2008,20 @@ class SimulationService:
             for controller in (handle.station_keeping_controller, handle.geo_station_keeping_controller,
                                handle.phasing_keeping_controller, handle.roe_formation_controller,
                                handle.constant_thrust_controller,
-                               handle.comms_pointing_arbitrator):
+                               handle.comms_pointing_arbitrator,
+                               handle.plan_executor.arbitrator if handle.plan_executor is not None else None):
                 if controller is not None:
                     controller.logThinner.intervalS = sim_settings.record_interval_s
 
         self.dyn_task_name = dyn_task_name
         if initialize:
             self.initialize()
+
+    def _flies_plan(self, sc_config) -> bool:
+        """Whether this run flies a plan for ``sc_config``."""
+        section = getattr(self.scenario, "operations", None)
+        return (self.plan is not None and section is not None and section.planned(sc_config.name) is not None
+                and sc_config.fsw_mode is not None)
 
     def _build_truth_nav(self, handle, sc_config, sc_object, nav, dyn_task_name: str) -> None:
         """With navigation errors on, a second, error-free simpleNav right
@@ -2675,6 +2706,11 @@ class SimulationService:
                 result.add(TimeSeries(f"{name}.constant_thrust.delta_v", ct_t_s, ("cumulative_delta_v",),
                                        np.asarray(ct_controller.deltaVLog), units="m/s"))
 
+            if handle.plan_executor is not None:
+                from ..operations import execution
+
+                for series in execution.result_series(handle.plan_executor, name):
+                    result.add(series)
             if handle.comms_pointing_arbitrator is not None:
                 arbitrator = handle.comms_pointing_arbitrator
                 cp_t_s = np.asarray(arbitrator.tLog)

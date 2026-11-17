@@ -38,6 +38,10 @@ New to the app? Do [Getting started](../getting-started.md) first.
 | Check fields of view, thrusters, mass and launcher fit on my 3D model, and analyse disturbances, blinding, shading, exposure, brightness and re-entry? | [Analyses built on the 3D model](model-analyses.md) |
 | Model power, the radio link and data? | [Power, link and data](power-link-and-data.md) |
 | Build a thermal model on my 3D model and find its temperatures, heater power and radiator heat? | [Thermal analysis](thermal.md) |
+| Plan a week of operations: images, passes, calibrations, against the battery and the memory? | [Plan a week of operations](operations.md#plan-a-week-of-operations) |
+| Fly a plan in the simulation and check it against the plan? | [Fly and verify a plan](operations.md#fly-and-verify-a-plan) |
+| Export the pass schedule, activities, command schedule, OEM and AEM? | [Export operations products](operations.md#export-operations-products) |
+| Plan again after a pass is lost? | [Replan after a lost pass](operations.md#replan-after-a-lost-pass) |
 | Run many variations at once? | [Monte Carlo](monte-carlo.md) |
 | Know when it comes down, and how much propellant it needs? | [Lifetime and propellant budget](lifetime-and-budget.md) |
 | See it in 3D? | [3D View](3d-view.md) |

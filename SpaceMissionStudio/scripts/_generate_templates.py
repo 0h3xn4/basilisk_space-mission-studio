@@ -2018,6 +2018,146 @@ def build_31_eros_landmark_navigation() -> Scenario:
     )
 
 
+# Operations planning (SRS-F-30): ground stations at three latitudes. The
+# coordinates are of the places named; the masks are illustrative terrain
+# (mission values, not defaults).
+def _station(name: str, latitude_deg: float, longitude_deg: float, altitude_m: float,
+             min_elevation_deg: float) -> GroundStationConfig:
+    return _berlin_ground_station(name=name, latitude_deg=latitude_deg, longitude_deg=longitude_deg,
+                                  altitude_m=altitude_m, min_elevation_deg=min_elevation_deg,
+                                  rx_antenna_gain_dbi=35.0, system_noise_temp_k=150.0)
+
+
+_OPS_STATIONS = (  # name, latitude [deg], longitude [deg], altitude [m], lowest elevation [deg]
+    ("svalbard-gs", 78.23, 15.41, 480.0, 5.0),  # Platåberget above Longyearbyen
+    ("berlin-gs", 52.52, 13.405, 34.0, 10.0),  # the templates' Berlin station
+    ("santiago-gs", -33.45, -70.66, 570.0, 10.0),  # Santiago de Chile
+)
+_OPS_STATION_PLANNING = {  # azimuth masks [[azimuth deg, lowest elevation deg], ...] and setup [s]
+    "svalbard-gs": {"azimuth_mask": [[0.0, 5.0], [90.0, 8.0], [200.0, 12.0], [300.0, 5.0]], "setup_s": 120.0},
+    "berlin-gs": {"setup_s": 120.0},
+    "santiago-gs": {"azimuth_mask": [[0.0, 10.0], [45.0, 20.0], [135.0, 10.0]], "setup_s": 120.0},
+}
+_OPS_TARGETS = (  # name, latitude [deg], longitude [deg], priority (1 highest), acquisitions wanted
+    ("rotterdam-port", 51.95, 4.14, 1, 2), ("rhine-delta", 51.85, 4.60, 2, 1), ("alps-glacier", 46.50, 8.00, 1, 2),
+    ("po-valley", 45.10, 10.00, 2, 1), ("danube-delta", 45.20, 29.50, 2, 1), ("lisbon", 38.72, -9.14, 3, 1),
+    ("madrid", 40.42, -3.70, 3, 1), ("etna", 37.75, 14.99, 1, 1), ("nile-delta", 31.00, 31.00, 2, 1),
+    ("lake-chad", 13.30, 14.10, 3, 1), ("kilimanjaro", -3.07, 37.35, 3, 1), ("amazon-manaus", -3.10, -60.00, 2, 1),
+    ("atacama", -24.50, -69.25, 2, 1), ("patagonia-icefield", -49.00, -73.30, 1, 1),
+    ("iceland-vatnajokull", 64.40, -16.80, 2, 1), ("greenland-jakobshavn", 69.20, -49.80, 1, 2),
+    ("aral-sea", 45.00, 59.50, 3, 1), ("ganges-delta", 22.00, 89.00, 3, 1), ("tokyo-bay", 35.50, 139.80, 3, 1),
+    ("mississippi-delta", 29.20, -89.30, 2, 1),
+)
+_OPS_EPOCH_UTC = "2030-06-03T08:30:00"  # northern summer: the high-latitude targets are lit
+
+
+def _ops_activity_types() -> list[dict]:
+    """The camera's image, the S-band downlink and a star-tracker
+    calibration; the camera and the patch antenna sit on the -x face."""
+    return [
+        {"name": "image", "kind": "acquisition", "pointing": "target", "duration_s": 20.0, "setup_s": 15.0,
+         "boresight_b": [-1.0, 0.0, 0.0], "instruments": ["camera"]},
+        {"name": "downlink", "kind": "contact", "pointing": "station", "min_duration_s": 180.0, "setup_s": 30.0,
+         "boresight_b": [-1.0, 0.0, 0.0], "transmitter": True},
+        {"name": "star cal", "kind": "calibration", "pointing": "inertial", "duration_s": 600.0,
+         "sigma_rn": [0.0, 0.0, 0.0]},
+    ]
+
+
+def _ops_spacecraft(name: str, raan_offset_deg: float = 0.0):
+    """Template 26's microsatellite as an imager flown by a plan: a camera
+    that sends 40 Mbit/s while it images (25 W), a 3 Gbit memory, stiffer
+    attitude gains so a 30 deg slew settles in about half a minute."""
+    spacecraft = build_26_earth_observation_data_downlink().spacecraft[0]
+    spacecraft.name = name
+    spacecraft.comms_pointing = None  # the plan points the spacecraft
+    spacecraft.orbit.raan_deg = (spacecraft.orbit.raan_deg + raan_offset_deg) % 360.0  # [deg]
+    spacecraft.control_params = {"K": 1.0, "P": 8.0}  # [N*m], [N*m*s] an agile imager
+    camera = spacecraft.data_handling.instruments[0]
+    camera.data_rate_bps, camera.power_w = 40.0e6, 25.0  # [bit/s] while imaging, [W]
+    return spacecraft
+
+
+def _with_operations(scenario: Scenario, section: dict) -> Scenario:
+    data = scenario.to_dict()
+    data["operations"] = section
+    return Scenario.from_dict(data)
+
+
+def build_35_eo_operations_week() -> Scenario:
+    # A week of operations for the 150 kg imager: twenty targets around the
+    # world, three stations at 78 N, 52 N and 33 S, a daily star-tracker
+    # calibration, and a ground segment that books 40 min of contacts a
+    # day. The tension: the camera fills the 3 Gbit memory faster than the
+    # booked contacts empty it, and the passes over Europe compete with
+    # the European targets.
+    scenario = Scenario(
+        name="35 - Operations: a week of an Earth observation microsatellite",
+        description=DESCRIPTIONS["35"],
+        epoch_utc=_OPS_EPOCH_UTC,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=7.0, dynamics_task_rate_s=1.0, integrator="rkf78",
+                                 record_interval_s=10.0),  # [day], [s], [s]
+        space_weather=_real_space_weather(),
+        ground_stations=[_station(*item) for item in _OPS_STATIONS],
+        spacecraft=[_ops_spacecraft("eo-micro")],
+    )
+    section = {
+        "version": 1,
+        "horizon": {"start_utc": "2030-06-03T08:30:00Z", "end_utc": "2030-06-10T08:30:00Z"},
+        "geometry": {"source": "propagation", "step_s": 30.0},
+        "targets": [{"name": name, "priority": priority, "activity": "image", "max_off_nadir_deg": 30.0,
+                     "latitude_deg": lat, "longitude_deg": lon, "sun_elevation_deg": [15.0, 90.0],
+                     "acquisitions": wanted} for name, lat, lon, priority, wanted in _OPS_TARGETS],
+        "activity_types": _ops_activity_types(),
+        "requests": [{"name": "daily-cal", "activity": "star cal", "spacecraft": "eo-micro", "priority": 2,
+                      "count": 1, "per": "day"}],
+        "stations": [{"station": name, **_OPS_STATION_PLANNING[name]} for name, *_rest in _OPS_STATIONS],
+        "spacecraft": [{"spacecraft": "eo-micro", "contact_activity": "downlink", "min_soc": 0.4,
+                        "max_activities_per_orbit": 4, "max_contact_s_per_day": 2400.0}],
+        "scheduler": {"seed": 1, "improvement_iterations": 20},
+    }
+    return _with_operations(scenario, section)
+
+
+def build_36_constellation_operations() -> Scenario:
+    # Three of template 35's imagers in Sun-synchronous planes 30 deg of
+    # RAAN apart (2 h of local time), each at the same point of its orbit:
+    # they reach the pole together, so the two stations, which serve one
+    # spacecraft at a time, are contested on most passes, while their
+    # ground tracks differ. Any of them may take a target. The plan says
+    # who gets each pass, and why.
+    scenario = Scenario(
+        name="36 - Operations: three imagers sharing two stations",
+        description=DESCRIPTIONS["36"],
+        epoch_utc=_OPS_EPOCH_UTC,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=2.0, dynamics_task_rate_s=1.0, integrator="rkf78",
+                                 record_interval_s=10.0),  # [day], [s], [s]
+        space_weather=_real_space_weather(),
+        ground_stations=[_station(*item) for item in _OPS_STATIONS[:2]],
+        spacecraft=[_ops_spacecraft(f"eo-{letter}", offset)
+                    for letter, offset in (("a", 0.0), ("b", 30.0), ("c", 60.0))],
+    )
+    names = [sc.name for sc in scenario.spacecraft]
+    section = {
+        "version": 1,
+        "horizon": {"start_utc": "2030-06-03T08:30:00Z", "end_utc": "2030-06-05T08:30:00Z"},
+        "geometry": {"source": "propagation", "step_s": 30.0},
+        "targets": [{"name": name, "priority": priority, "activity": "image", "max_off_nadir_deg": 30.0,
+                     "latitude_deg": lat, "longitude_deg": lon, "sun_elevation_deg": [15.0, 90.0],
+                     "acquisitions": wanted} for name, lat, lon, priority, wanted in _OPS_TARGETS[:10]],
+        "activity_types": _ops_activity_types(),
+        "stations": [{"station": name, **_OPS_STATION_PLANNING[name]} for name, *_rest in _OPS_STATIONS[:2]],
+        "spacecraft": [{"spacecraft": name, "contact_activity": "downlink", "min_soc": 0.4,
+                        "max_activities_per_orbit": 4, "max_contact_s_per_day": 2400.0} for name in names],
+        "scheduler": {"seed": 1, "improvement_iterations": 10},
+    }
+    return _with_operations(scenario, section)
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     _save(build_01_two_body_circular_orbit(), "01_two_body_circular_orbit.json")
@@ -2055,6 +2195,8 @@ def main() -> None:
     _save(build_32_smallsat_design_checks(), "32_smallsat_design_checks.json")
     _save(build_33_microsat_thermal(), "33_microsat_thermal.json")
     _save(build_34_microsat_flexible_thermal(), "34_microsat_flexible_thermal.json")
+    _save(build_35_eo_operations_week(), "35_eo_operations_week.json")
+    _save(build_36_constellation_operations(), "36_constellation_operations.json")
 
 
 if __name__ == "__main__":

@@ -453,6 +453,7 @@ path, each step building on the one before:
 | 8. Uncertainty | 09, 25 | Monte Carlo batches: mass, orbit insertion, drag |
 | 9. Navigation | 30, 31 | Estimating an orbit around Mars from camera images of the planet; flying around asteroid Eros with its shape's gravity and navigating from its landmarks |
 | 10. The spacecraft as designed | 28, 32 | A 3D model with its equipment mounted: fields of view, a plume, the mass budget and the launcher envelope checked without a run; the disturbance torques and the arrays' shading in a run |
+| 11. Operations | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
 
 **Starting your own mission?** Open **22** (a realistic satellite, orbit
 only) or **23** (a complete small satellite with hardware, a radio link
@@ -1028,6 +1029,41 @@ specific heat or a conductor's conductivity can follow a table of
 temperature. Templates 33 and 34 show it; see
 [Thermal analysis](docs/user-manual/thermal.md) and the method in
 `docs/models/thermal.md`. On the command line: `thermal`.
+
+### Operations planning
+
+A scenario can carry an `operations` section (edit it in **Scenario ›
+JSON**): a planning horizon, targets to image (points, or polygons, also
+read from CSV or GeoJSON) with their priorities and limits, the kinds of
+activity (acquisitions, contacts, calibrations, maneuvers, ...), the
+ground stations' masks and capacity, and each spacecraft's limits (the
+lowest planned state of charge, activities per orbit and per day,
+contact time per day, exclusion windows).
+
+**Run › Plan** finds the target windows, the passes and the eclipses,
+and schedules the horizon. It respects the slews (from a model of the
+attitude controller), the battery, the memory, the limits and the
+stations shared between spacecraft. Every request it could not place is
+listed with the reason. The plan is shown as a chart per spacecraft and
+station, with the state of charge and the memory. Its status at the time
+cursor shows the activity in progress, the next one, the mode, the
+resources and the progress. Its activities are on the Timeline and its
+problems in the Problems panel.
+
+You can lock, move (within its window) or delete an activity. **Fly and
+verify** flies the plan in the simulation and compares the flight with
+the plan. **Export...** writes the pass schedule (CSV, iCalendar), the
+activity timeline, a time-tagged command schedule, pointing predictions,
+CCSDS OEM and AEM and a report. **Lose this pass** and **Replan** plan
+again from a time. **Robustness** runs a seeded batch of lost passes,
+link margins, slew times and initial charge. **Compare with...** sets two
+plans side by side. A plan is a planning product, never a command load.
+
+Templates 35 and 36 show it; see
+[Operations planning](docs/user-manual/operations.md) and the method in
+[the operations model](docs/models/operations.md). On the command line:
+`plan` (`plan schedule`, `verify`, `export`, `replan`, `robustness`,
+`compare`).
 
 ### Flexible solar arrays
 
@@ -1815,6 +1851,14 @@ anyone who hasn't worked with spacecraft before:
   tracked satellites' orbits are published in (e.g. by
   [celestrak.org](https://celestrak.org)) -- a second way to describe a
   starting orbit, if you already have one.
+* **Operations plan** -- the activities each spacecraft does over a
+  horizon (images, contacts with ground stations, calibrations), with
+  their times, checked against the battery, the memory and the slews.
+  **Run › Plan** makes one. An *opportunity* is a time an activity can
+  happen: a target *window* (the target is in reach and lit) or a
+  station *pass* (the station sees the spacecraft). A *contact* is a
+  pass the plan uses to send data down. *Replanning* keeps what has
+  already happened and plans the rest again.
 * **Attitude** -- which way a spacecraft is *pointing* (as opposed to
   where it *is*). "Attitude control" is keeping a spacecraft pointed at
   a target (the ground, the Sun, a planet, ...).
@@ -1906,7 +1950,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-four built-in templates teaches, in
+  describes what each of the thirty-six built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

@@ -134,5 +134,13 @@
  "34_microsat_flexible_thermal": {
   "saved_text_sha256": "47a218627e7d7868d2fe33bb0d0b6c3c39e68bf67fe9e9b0df764a3df97e8b03",
   "scenario_sha256": "7c884b63801f4bb4dadc3decd63f2f48422f2b49728ca5c1583f9d5decfef119"
+ },
+ "35_eo_operations_week": {
+  "saved_text_sha256": "3089a48c29d2288240f1091e1bb38fdfe9427de99ffb1043431fb7b5ffc5a718",
+  "scenario_sha256": "fa4f28ac63d21cd8a3f7353363afedb0fed05222dace09f48e9f1d000acc13bb"
+ },
+ "36_constellation_operations": {
+  "saved_text_sha256": "d55efbdb118d3dcccdf6c1e2167cfe382d088beea1d0b83ebb30e415771c78d0",
+  "scenario_sha256": "151ebfa29dc8af5cc85a5616f0dd771767e5ab6876c9ca33b13d0882ee3eea64"
  }
 }

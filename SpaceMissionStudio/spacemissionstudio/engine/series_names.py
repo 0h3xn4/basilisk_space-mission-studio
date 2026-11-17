@@ -179,7 +179,8 @@ def _model_analyses_series(scenario: Scenario) -> list[str]:
 
     asking = [sc for sc in scenario.spacecraft if sc.model_analyses is not None
               and any(getattr(sc.model_analyses, name) for name in MODEL_RUN_ANALYSES)]
-    thermal = any(sc.thermal is not None for sc in scenario.spacecraft)
+    thermal = (any(sc.thermal is not None for sc in scenario.spacecraft)
+               or getattr(scenario, "operations", None) is not None)  # the operations planner too (O-04)
     if not asking and not thermal:
         return []
     gravity = scenario.gravity

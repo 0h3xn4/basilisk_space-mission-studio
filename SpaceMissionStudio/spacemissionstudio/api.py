@@ -48,7 +48,9 @@ API_VERSION = 1
 
 __all__ = ["API_VERSION", "template", "load", "validate", "assumptions", "run", "summary", "lifetime", "budget",
            "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "model_analyses", "reentry",
-           "thermal", "thermal_model", "thermal_sweep", "thermal_sensitivity", "thermal_monte_carlo", "record",
+           "thermal", "thermal_model", "thermal_sweep", "thermal_sensitivity", "thermal_monte_carlo",
+           "plan_opportunities", "plan_schedule", "plan_fly", "plan_verify", "plan_export", "plan_load",
+           "plan_replan", "plan_robustness", "plan_compare", "record",
            "write"]
 
 
@@ -316,6 +318,91 @@ def thermal_monte_carlo(scenario, result, spacecraft: str | None = None, folder=
     if folder is not None:
         monte_carlo_results.save(batch, folder)
     return batch
+
+
+def plan_opportunities(scenario, result=None):
+    """The geometry and the opportunities of the scenario's ``operations``
+    section: ``operations.analysis.Planning`` with ``geometry`` and
+    ``opportunities`` (target windows with their geometry, station passes
+    with AOS/LOS and predicted margin, eclipses). From ``result`` when a
+    run is given, else as the section's ``geometry.source`` says."""
+    from .operations import analysis
+
+    return analysis.prepare(scenario, result)
+
+
+def plan_schedule(scenario, result=None):
+    """A plan for the scenario's ``operations`` section: the
+    ``operations.analysis.Planning`` with its ``plan``
+    (``operations.plan.Plan``: activities, unscheduled requests with their
+    reasons, resource profiles, score, provenance). The same inputs and
+    seed give the same plan."""
+    from .operations import analysis
+
+    return analysis.plan(scenario, result)
+
+
+def plan_fly(scenario, plan):
+    """Fly ``plan`` in the simulation (the plan executor in place of each
+    planned spacecraft's guidance): the run's ``ResultSet``, with the
+    ``<spacecraft>.plan.*`` series."""
+    from .operations import analysis
+
+    return analysis.fly(scenario, plan)
+
+
+def plan_verify(scenario, plan, result=None):
+    """The plan against the simulation: ``(operations.verify.Verification,
+    result)``; flies the plan first unless ``result`` is a run that flew
+    it."""
+    from .operations import analysis, verify
+
+    result = analysis.fly(scenario, plan) if result is None else result
+    return verify.check(scenario, plan, result), result
+
+
+def plan_export(planning, folder, verification=None) -> list:
+    """Every operations product of ``planning``'s plan into ``folder``:
+    passes (CSV, iCalendar), activities (CSV, JSON), the command schedule
+    (JSON, CSV), station pointing predictions (CSV), OEM and AEM per
+    spacecraft, the report. Returns the paths."""
+    from .operations import exports
+
+    return exports.write_all(folder, planning, verification=verification)
+
+
+def plan_replan(scenario, plan, from_utc: str, events=None, result=None):
+    """Replan from ``from_utc``: activities starting before it are kept,
+    the scenario's ``what_if`` events (or ``events``) applied; returns the
+    ``Planning`` with the new ``plan``."""
+    from .operations import whatif
+
+    return whatif.replan(scenario, plan, from_utc, events, result)
+
+
+def plan_robustness(scenario, plan, runs: int = 20, seed: int = 0, result=None, **settings):
+    """A seeded robustness batch of ``plan`` (lost passes, link margin
+    offset, slew time, initial battery; ``settings`` as
+    ``operations.robustness.run``): ``(draws, batch)``, the batch an
+    ``engine.monte_carlo_results.MonteCarloBatch`` of kind ``operations``."""
+    from .operations import robustness
+
+    return robustness.robustness(scenario, plan, runs, seed, result, **settings)
+
+
+def plan_compare(a, b) -> dict:
+    """Two plans side by side (requests held by each, per spacecraft
+    activity counts, contact time, lowest state of charge, data lost)."""
+    from .operations import robustness
+
+    return robustness.compare(a, b)
+
+
+def plan_load(path):
+    """A plan file (``operations.plan.Plan``)."""
+    from .operations.plan import Plan
+
+    return Plan.load(path)
 
 
 def reentry(scenario, spacecraft: str | None = None, population_density_per_km2: float | None = None,

@@ -98,9 +98,13 @@ class MonteCarloBatch:
     spread_statistic: str = "population"  # the model of SPREAD_CHOICE the batch was run with
     # A thermal Monte Carlo (thermal.sweeps.monte_carlo, decision T-36): no orbits, but each node's
     # temperature [degC] per run, shape (runs, samples), in the case named.
-    kind: str = "orbit"  # "orbit" or "thermal"
+    kind: str = "orbit"  # "orbit", "thermal" or "operations"
     temperatures_c: dict = field(default_factory=dict)
     case: str = ""
+    # An operations robustness batch (operations.robustness, decision O-18): no orbits, but per item
+    # (a spacecraft's state of charge, its memory) a profile per run, shape (runs, samples), in its unit.
+    profiles: dict = field(default_factory=dict)
+    profile_units: dict = field(default_factory=dict)
 
     @property
     def spacecraft(self) -> list[str]:
@@ -109,6 +113,8 @@ class MonteCarloBatch:
     @property
     def items(self) -> list[str]:
         """What the batch is shown by: its spacecraft, or a thermal batch's nodes."""
+        if self.kind == "operations":
+            return list(self.profiles)
         return list(self.temperatures_c) if self.kind == "thermal" else self.spacecraft
 
 
@@ -127,6 +133,8 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         arrays[f"v_{index}"] = np.asarray(batch.velocities[name], dtype=float)
     for index, name in enumerate(batch.temperatures_c):
         arrays[f"t_{index}"] = np.asarray(batch.temperatures_c[name], dtype=float)
+    for index, name in enumerate(batch.profiles):
+        arrays[f"p_{index}"] = np.asarray(batch.profiles[name], dtype=float)
     np.savez_compressed(folder / SUMMARY_NPZ, **arrays)
     meta = {
         "format": SUMMARY_FORMAT,
@@ -139,8 +147,11 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         "drawn": batch.drawn,
         "spread_statistic": batch.spread_statistic,
     }
-    if batch.kind != "orbit":
+    if batch.kind == "thermal":
         meta.update(kind=batch.kind, nodes=list(batch.temperatures_c), case=batch.case)
+    elif batch.kind == "operations":
+        meta.update(kind=batch.kind, profiles=list(batch.profiles), profile_units=dict(batch.profile_units),
+                    case=batch.case)
     path = folder / SUMMARY_JSON
     path.write_text(json.dumps(meta, indent=1), encoding="utf-8")
     return path
@@ -228,7 +239,7 @@ def load(folder: str | Path) -> MonteCarloBatch:
                  f"{SUMMARY_NPZ}: the arrays for {name!r} do not match {len(runs)} runs of {time_s.shape[0]} samples")
         positions[name], velocities[name] = r, v
     kind = meta.get("kind", "orbit")
-    _require(kind in ("orbit", "thermal"), f"{SUMMARY_JSON}: unknown kind {kind!r}")
+    _require(kind in ("orbit", "thermal", "operations"), f"{SUMMARY_JSON}: unknown kind {kind!r}")
     temperatures = {}
     for index, name in enumerate(meta.get("nodes", []) if kind == "thermal" else []):
         values = arrays.get(f"t_{index}")
@@ -236,7 +247,14 @@ def load(folder: str | Path) -> MonteCarloBatch:
                  f"{SUMMARY_NPZ}: the temperatures of {name!r} do not match {len(runs)} runs of "
                  f"{time_s.shape[0]} samples")
         temperatures[str(name)] = values
-    _require(kind == "orbit" or temperatures, f"{SUMMARY_JSON}: a thermal batch without nodes")
+    profiles = {}
+    for index, name in enumerate(meta.get("profiles", []) if kind == "operations" else []):
+        values = arrays.get(f"p_{index}")
+        _require(values is not None and values.shape == (len(runs), time_s.shape[0]),
+                 f"{SUMMARY_NPZ}: the profile {name!r} does not match {len(runs)} runs of {time_s.shape[0]} samples")
+        profiles[str(name)] = values
+    _require(kind != "thermal" or temperatures, f"{SUMMARY_JSON}: a thermal batch without nodes")
+    _require(kind != "operations" or profiles, f"{SUMMARY_JSON}: an operations batch without profiles")
     drawn = meta.get("drawn") or [{} for _ in runs]
     _require(len(drawn) == len(runs), f"{SUMMARY_JSON}: {len(drawn)} drawn-value rows for {len(runs)} runs")
     statistic = meta.get("spread_statistic", "population")  # a summary written before the choice: population
@@ -244,7 +262,8 @@ def load(folder: str | Path) -> MonteCarloBatch:
     return MonteCarloBatch(str(meta.get("scenario_name", "")), str(meta.get("central_body", "earth")), time_s,
                            runs, [int(run) for run in meta.get("failed", [])], positions, velocities,
                            [{str(k): float(v) for k, v in row.items()} for row in drawn],
-                           str(meta.get("epoch_utc", "")), statistic, kind, temperatures, str(meta.get("case", "")))
+                           str(meta.get("epoch_utc", "")), statistic, kind, temperatures, str(meta.get("case", "")),
+                           profiles, {str(k): str(v) for k, v in (meta.get("profile_units") or {}).items()})
 
 
 def stride_for(samples: int) -> int:
@@ -307,6 +326,18 @@ def to_result_set(batch: MonteCarloBatch) -> ResultSet:
     result = ResultSet(scenario_name=f"{batch.scenario_name} (Monte Carlo)")
     shown = min(len(batch.runs), MAX_PLOTTED_RUNS)
     columns = [f"run_{run}" for run in batch.runs[:shown]]
+    if batch.kind == "operations":  # each profile: every run's, and the runs' mean, spread and extremes
+        for name, values in batch.profiles.items():
+            unit = batch.profile_units.get(name, "-")
+            result.add(TimeSeries(f"operations_monte_carlo.{name}.value", batch.time_s, columns, values[:shown].T,
+                                  unit))
+            sigma = spread(values, batch.spread_statistic)
+            mean = values.mean(axis=0)
+            result.add(TimeSeries(f"operations_monte_carlo.{name}.spread", batch.time_s,
+                                  ["mean", "mean - 3 sigma", "mean + 3 sigma", "lowest run", "highest run"],
+                                  np.column_stack([mean, mean - 3 * sigma, mean + 3 * sigma, values.min(axis=0),
+                                                   values.max(axis=0)]), unit))
+        return result
     if batch.kind == "thermal":  # each node: every run's temperature, and the runs' mean and spread
         for name, values in batch.temperatures_c.items():
             result.add(TimeSeries(f"thermal_monte_carlo.{name}.temperature", batch.time_s, columns,
@@ -356,7 +387,10 @@ class NodeSpread:
 
 
 def node_spread(batch: MonteCarloBatch, node: str) -> NodeSpread:
-    values = batch.temperatures_c[node]
+    """A thermal node's (or an operations profile's, in its own unit)
+    extremes over the runs and the 1-sigma of each run's minimum and
+    maximum."""
+    values = batch.profiles[node] if batch.kind == "operations" else batch.temperatures_c[node]
     lows, highs = values.min(axis=1), values.max(axis=1)
     ddof = SPREAD_DDOF[batch.spread_statistic]
     sigma_min = float(lows.std(ddof=ddof)) if len(lows) > 1 else 0.0
@@ -379,6 +413,14 @@ def run_table(batch: MonteCarloBatch, spacecraft: str | None = None):
     drawn_labels: list[str] = []
     for row in batch.drawn:
         drawn_labels += [label for label in row if label not in drawn_labels]
+    if batch.kind == "operations":  # ``spacecraft`` names a profile; the outcomes are among the drawn values
+        item = spacecraft or batch.items[0]
+        values = batch.profiles[item]
+        unit = batch.profile_units.get(item, "-")
+        rows = [[float(run)] + [(batch.drawn[k] if k < len(batch.drawn) else {}).get(label, float("nan"))
+                                for label in drawn_labels] + [float(values[k].min()), float(values[k].max())]
+                for k, run in enumerate(batch.runs)]
+        return ["Run"] + drawn_labels + [f"{item} lowest [{unit}]", f"{item} highest [{unit}]"], rows
     if batch.kind == "thermal":  # ``spacecraft`` names a node
         node = spacecraft or batch.items[0]
         values = batch.temperatures_c[node]
@@ -408,6 +450,13 @@ def summary_lines(batch: MonteCarloBatch) -> list[str]:
     """A few lines for the CLI and the log."""
     days = float(batch.time_s[-1]) / 86400.0 if batch.time_s.size else 0.0
     lines = [f"{len(batch.runs)} run(s) summarized over {days:.3g} day(s); failed: {batch.failed or 'none'}"]
+    if batch.kind == "operations":
+        for name in batch.items:
+            s = node_spread(batch, name)
+            unit = batch.profile_units.get(name, "-")
+            lines.append(f"{name}: {s.coldest_c:.4g} to {s.hottest_c:.4g} {unit} over the runs; 1-sigma of the "
+                         f"lowest {s.sigma_min_k:.3g} {unit}")
+        return lines
     if batch.kind == "thermal":
         for name in batch.items:
             s = node_spread(batch, name)

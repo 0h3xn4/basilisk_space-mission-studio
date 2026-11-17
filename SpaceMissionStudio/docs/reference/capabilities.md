@@ -13,6 +13,7 @@ do it, and what has been verified.
   - [3D spacecraft models](#3d-spacecraft-models)
   - [Analyses built on the 3D model](#analyses-built-on-the-3d-model)
   - [Thermal analysis](#thermal-analysis)
+  - [Operations planning](#operations-planning)
   - [Flight-software export](#flight-software-export)
   - [Software in the loop](#software-in-the-loop)
   - [Mission planning](#mission-planning)
@@ -223,6 +224,45 @@ A lumped-parameter thermal model on the 3D model, solved after a run
 See templates 33 and 34, [Thermal analysis](../user-manual/thermal.md)
 and [the thermal model](../models/thermal.md).
 
+### Operations planning
+
+A plan of what one or more spacecraft do over a horizon of up to 104
+days, from the scenario's `operations` section (Run › Plan, `plan`,
+`api.plan_*`), flown and checked in the simulation:
+
+- **targets** as points or polygons (also from CSV and GeoJSON) with
+  priorities, the number of acquisitions wanted, off-nadir, elevation,
+  Sun-elevation and validity limits; **activity types** (acquisition,
+  contact, calibration, maneuver, momentum management, user) with their
+  pointing mode, setup, devices and power; **requests** per horizon, day
+  or orbit;
+- **geometry** from a finished run, an orbit-only Basilisk propagation or
+  an analytic model; **opportunities**: target windows with their
+  off-nadir angle, Sun elevation, ground sample distance and polygon
+  coverage, station passes with azimuth masks and predicted link
+  margins, eclipses;
+- **a deterministic, seeded scheduler**: slews from a model of the
+  attitude controller, the battery floor and the memory checked sample
+  by sample, per-orbit and per-day limits, contact time per day,
+  exclusions, star-tracker exclusion, locked activities, stations shared
+  between spacecraft (capacity, setup, handover, priority then
+  fairness), a lexicographic or weighted score and a large-neighbourhood
+  improvement; every request not placed comes with its reason;
+- **flying the plan** in Basilisk: a plan executor switches pointing and
+  devices at the planned times, with contingency rules (safe mode on low
+  charge, dropping low-priority images on a full memory); **verification**
+  of the flight against the plan;
+- **products** with provenance: passes (CSV, iCalendar), activities (CSV,
+  JSON), a time-tagged command schedule (JSON, CSV), pointing
+  predictions, CCSDS OEM and AEM 2.0, a report;
+- **what-if events, replanning from a time, a seeded robustness batch**
+  in the Monte Carlo view, and **plan comparison**;
+- **the GUI**: a Gantt chart with lock, move, delete and lose-a-pass, the
+  plan's status at the time cursor, the Timeline and Problems.
+
+See templates 35 and 36, [Operations planning](../user-manual/operations.md)
+and [the operations model](../models/operations.md).
+
 ### Flight-software export
 
 The Flight Software page (**Reports > Flight Software**) and
@@ -393,7 +433,7 @@ spacecraft's axis or instrument.
 Four spacecraft "bus" templates
 (100 kg ESPA-class, 150 kg microsatellite, 300 kg and 500 kg small
 satellites) and
-thirty-two complete example scenarios: most cover one concept each,
+thirty-six complete example scenarios: most cover one concept each,
 several integrate a whole system, and four are starting points for your
 own mission (the [template catalog](../../spacemissionstudio/scenarios/templates/README.md)).
 Five Python scripts in [`examples/`](../../examples/README.md) use the
@@ -500,13 +540,17 @@ compliance matrix.
   the shell's areas and commands, dialogs and the plots in their embedded
   web view.
 - **Template claims are re-checked.** `tests/test_template_claims.py`
-  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-34 in Basilisk and
+  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-36 in Basilisk and
   checks the headline numbers their descriptions quote; template 25 runs
   in `tests/test_examples.py`. `tests/test_golden_outputs.py` checks that
-  all 34 templates still give the outputs recorded in `tests/golden/`.
+  all 36 templates still give the outputs recorded in `tests/golden/`.
 - **The thermal model** is verified against closed forms, hand
   calculations and Basilisk's own `sensorThermal` module
   ([compliance/validation/thermal-vv.md](../../compliance/validation/thermal-vv.md)).
+- **Operations planning** is verified against closed forms, Basilisk's
+  own access analysis and `C2EP`, a brute-force optimum, RFC 5545 and the
+  CCSDS schema, and by flying plans in Basilisk
+  ([compliance/validation/operations-vv.md](../../compliance/validation/operations-vv.md)).
 - **Long runs**: a real 5-year LEO station-keeping run and a 7-day run of
   template 05 were run to completion.
 - **Packaging**: for 1.0.0 the Linux `.deb` and `install.sh`, and for

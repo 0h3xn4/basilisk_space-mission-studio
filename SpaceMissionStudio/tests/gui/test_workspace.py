@@ -92,8 +92,8 @@ def test_the_areas_and_what_they_hold(window):
         "Ground stations",
         "Ground stations > berlin-gs", "Mission sequence", "Monte Carlo", "Assumptions"]  # Assumptions: Phase 3d
     assert window.shell.page("scenario").header.isAncestorOf(window.scenario_editor.mode_toggle)  # Form · JSON
-    # History: M5a; Run: M5b; Design Checks: model analyses; Thermal: SRS-F-29
-    assert _tab_texts(window.run_views) == ["Run", "End of Life", "Budget", "Design Checks", "Thermal", "History",
+    # History: M5a; Run: M5b; Design Checks: model analyses; Thermal: SRS-F-29; Plan: SRS-F-30
+    assert _tab_texts(window.run_views) == ["Run", "End of Life", "Budget", "Design Checks", "Thermal", "Plan", "History",
                                             "Log"]
     assert _tab_texts(window.results_views) == ["Overview", "Plots", "3D View", "Dashboard", "Output", "Compare"]  # Overview: M6a; 3D View: SRS-F-16
     assert window.shell.page("timeline").content is window.event_timeline_widget

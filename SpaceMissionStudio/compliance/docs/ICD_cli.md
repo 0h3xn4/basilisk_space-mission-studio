@@ -155,6 +155,14 @@ run the scenario and solve each spacecraft's thermal model (nominal, hot and col
 | `--relative` | the sensitivity's step, a fraction of each value (default 0.1) |
 | `--monte-carlo` | run the thermal model's monte_carlo section and save the batch in DIR (the Monte Carlo view opens it) |
 
+## `plan`
+
+mission operations planning: opportunities, a plan, the plan flown and verified, operations products
+
+| Argument | Help |
+|---|---|
+| `action {opportunities,schedule,verify,export,replan,robustness,compare}` |  |
+
 ## `reentry`
 
 a preliminary re-entry casualty estimate from the 3D model (DAS-like, simplified)

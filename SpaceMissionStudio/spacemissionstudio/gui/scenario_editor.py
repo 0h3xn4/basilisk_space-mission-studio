@@ -331,6 +331,7 @@ class ScenarioEditorWidget(QWidget):
         source of truth for those three dataclasses."""
         self._gravity = GravityConfig()
         self._fsw_exports: list = []  # FswExportRecord list, kept as loaded (see set_fsw_exports)
+        self._operations = None  # schema.operations.OperationsConfig, kept as loaded (see set_operations)
         # The computed and overridden values (ValueMark list, Phase 5b): set by
         # a form's compute buttons and Give a reason..., kept with every edit.
         self._value_marks: list = []
@@ -661,6 +662,10 @@ class ScenarioEditorWidget(QWidget):
             for record in [*self._presets, *self._imports] if kind == "spacecraft" else ():  # (8c) imports too
                 if record.spacecraft == node.config.name:
                     record.spacecraft = config.name
+            from ..schema import operations as operations_schema  # the plan's targets, stations and locks follow
+
+            operations_schema.rename(self._operations, "spacecraft" if kind == "spacecraft" else "ground_station",
+                                     node.config.name, config.name)
         node.config = config
         self._applying = True
         try:
@@ -941,6 +946,7 @@ class ScenarioEditorWidget(QWidget):
             fsw_exports=list(self._fsw_exports),
             config_file=self._config_file,
         )
+        scenario.operations = copy.deepcopy(self._operations)
         # A mark goes with what it marked: a spacecraft removed, an orbit given another way.
         scenario.value_marks = [copy.copy(mark) for mark in live_value_marks(scenario, self._value_marks)]
         names = {sc.name for sc in scenario.spacecraft}
@@ -953,6 +959,16 @@ class ScenarioEditorWidget(QWidget):
         tab); they have no widget here but must survive every edit."""
         self._fsw_exports = list(records)
         self.changed.emit()
+
+    def set_operations(self, section) -> None:
+        """Replaces the operations planner's section (Run › Plan: a lock, an
+        unlock); it has no form here but must survive every edit."""
+        self._operations = copy.deepcopy(section)
+        self.changed.emit()
+
+    def operations(self):
+        """The operations section as edited (a copy; None when the scenario has none)."""
+        return copy.deepcopy(self._operations)
 
     def _expected_series_names(self) -> list[str]:
         try:
@@ -995,6 +1011,7 @@ class ScenarioEditorWidget(QWidget):
         self.mission_sequence_editor.from_command_list(scenario.mission_sequence)
         self._show_sequence_length()  # the Environment form was built before the sequence was filled
         self._fsw_exports = list(scenario.fsw_exports)
+        self._operations = copy.deepcopy(getattr(scenario, "operations", None))
         self._value_marks = [copy.copy(mark) for mark in scenario.value_marks]
         self._presets = [copy.copy(record) for record in scenario.presets]
         self._imports = [copy.copy(record) for record in scenario.imports]

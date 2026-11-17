@@ -1,0 +1,5902 @@
+{
+ "budget": {
+  "eo-micro": {
+   "refused": "BudgetError: eo-micro: set propellant_budget.isp_s, or give it an orbit thruster"
+  }
+ },
+ "explain": {
+  "explanation": {
+   "formation_diagrams": [],
+   "headline": "35 - Operations: a week of an Earth observation microsatellite",
+   "roe_diagrams": [],
+   "sections": [
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Orbit-frame (nadir) pointing",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [],
+     "title": "Attitude control"
+    },
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Sun-synchronous",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "Drag",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "Solar radiation pressure",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "Facet model (drag/SRP torques)",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [
+      "eo-micro: gravity degree 10 leaves out ~3e-05 m/s^2, more than SRP (6e-08 m/s^2); degree 77 matches it (ECSS-E-ST-10-04C 4.2.1b)",
+      "Earth orientation: IAU rotation model, no IERS data installed"
+     ],
+     "title": "Environment"
+    },
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Power budget",
+       "spacecraft": ""
+      },
+      {
+       "kind": "accent",
+       "label": "RF link budget",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [],
+     "title": "Power & comms"
+    },
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Data handling",
+       "spacecraft": ""
+      },
+      {
+       "kind": "neutral",
+       "label": "Patch antenna",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [
+      "eo-micro: 3.46e+03 Gbit/day; memory full in 0.0208 h",
+      "eo-micro: 5 Mbit/s, 3 Gbit per 10-min pass"
+     ],
+     "title": "Data handling"
+    },
+    {
+     "badges": [
+      {
+       "kind": "neutral",
+       "label": "svalbard-gs",
+       "spacecraft": ""
+      },
+      {
+       "kind": "neutral",
+       "label": "berlin-gs",
+       "spacecraft": ""
+      },
+      {
+       "kind": "neutral",
+       "label": "santiago-gs",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [
+      "svalbard-gs: 99 passes, first at 24 min for 6 min (peak 11 deg)",
+      "berlin-gs: 35 passes, first at 2.1 h for 2 min (peak 11 deg)",
+      "santiago-gs: 25 passes, first at 7.3 h for 4 min (peak 14 deg)"
+     ],
+     "title": "Ground stations"
+    }
+   ],
+   "spacecraft_table": [],
+   "stat_tiles": [
+    {
+     "label": "Spacecraft",
+     "value": "1"
+    },
+    {
+     "label": "Duration",
+     "value": "7 d"
+    },
+    {
+     "label": "Gravity",
+     "value": "Degree-10 Earth + Sun/Moon"
+    },
+    {
+     "label": "Orbit",
+     "value": "SSO 97.59 deg, 550 km alt"
+    }
+   ]
+  },
+  "passes": [
+   "svalbard-gs: 99 passes, first at 24 min for 6 min (peak 11 deg)",
+   "berlin-gs: 35 passes, first at 2.1 h for 2 min (peak 11 deg)",
+   "santiago-gs: 25 passes, first at 7.3 h for 4 min (peak 14 deg)"
+  ],
+  "plausibility": [
+   "Earth orientation: no IERS files installed -- the Earth-fixed frame is IAU_EARTH (about 160 m/day of error at 400 km); Settings > Reference data downloads them"
+  ],
+  "warnings": []
+ },
+ "lifetime": {
+  "eo-micro/cd_2.2": {
+   "area_m2": 1.62,
+   "deorbit": null,
+   "drag_coeff": 2.2,
+   "from_end_of_run": false,
+   "lifetime": {
+    "apogee_altitude_km": {
+     "first": 543.779184635845,
+     "last": 541.8932434285405,
+     "max": 543.779184635845,
+     "mean": 542.8874023725716,
+     "min": 541.8932434285405,
+     "non_finite": 0,
+     "samples": [
+      543.779184635845,
+      543.5937987362445,
+      543.4937180249989,
+      543.313920936184,
+      543.0846535622189,
+      542.9056370785711,
+      542.6709400528632,
+      542.5128644546252,
+      542.3701828119009,
+      542.1051130006537,
+      541.8932434285405
+     ]
+    },
+    "horizon_years": 1.0,
+    "lifetime_s": 31557600.0,
+    "perigee_altitude_km": {
+     "first": 537.2092428671522,
+     "last": 535.46259793327,
+     "max": 537.2092428671522,
+     "mean": 536.381630761228,
+     "min": 535.46259793327,
+     "non_finite": 0,
+     "samples": [
+      537.2092428671522,
+      537.0740283916565,
+      536.9169355647415,
+      536.7837815101528,
+      536.6117898334777,
+      536.3528849463295,
+      536.2052456396045,
+      536.0449115889622,
+      535.8258879032712,
+      535.6610527497083,
+      535.46259793327
+     ]
+    },
+    "reentered": "np.False_",
+    "start_utc": "2030-06-03T08:30:00",
+    "time_s": {
+     "first": 0.0,
+     "last": 31557600.0,
+     "max": 31557600.0,
+     "mean": 15811023.433242507,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      3196800.0,
+      6307200.0,
+      9504000.0,
+      12614400.0,
+      15811200.0,
+      19008000.0,
+      22118400.0,
+      25315200.0,
+      28425600.0,
+      31557600.0
+     ]
+    },
+    "warnings": [
+     "space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap"
+    ]
+   },
+   "mass_kg": 150.0
+  },
+  "eo-micro/own_cd": {
+   "area_m2": 1.62,
+   "deorbit": null,
+   "drag_coeff": 3.0,
+   "from_end_of_run": false,
+   "lifetime": {
+    "apogee_altitude_km": {
+     "first": 543.779184635845,
+     "last": 541.1931883389344,
+     "max": 543.779184635845,
+     "mean": 542.5587814401623,
+     "min": 541.1931883389344,
+     "non_finite": 0,
+     "samples": [
+      543.779184635845,
+      543.5263495739913,
+      543.3897076888941,
+      543.1439000043804,
+      542.8303876449354,
+      542.585044208358,
+      542.2630115125216,
+      542.0462465232042,
+      541.8498651714223,
+      541.484847051153,
+      541.1931883389344
+     ]
+    },
+    "horizon_years": 1.0,
+    "lifetime_s": 31557600.0,
+    "perigee_altitude_km": {
+     "first": 537.2092428671522,
+     "last": 534.8138481984819,
+     "max": 537.2092428671522,
+     "mean": 536.0763690959623,
+     "min": 534.8138481984819,
+     "non_finite": 0,
+     "samples": [
+      537.2092428671522,
+      537.0247115718695,
+      536.8101969669135,
+      536.6282759307325,
+      536.3927716527284,
+      536.0381391465701,
+      535.8357422900498,
+      535.6152133026021,
+      535.3141781034469,
+      535.0874576478786,
+      534.8138481984819
+     ]
+    },
+    "reentered": "np.False_",
+    "start_utc": "2030-06-03T08:30:00",
+    "time_s": {
+     "first": 0.0,
+     "last": 31557600.0,
+     "max": 31557600.0,
+     "mean": 15811023.433242507,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      3196800.0,
+      6307200.0,
+      9504000.0,
+      12614400.0,
+      15811200.0,
+      19008000.0,
+      22118400.0,
+      25315200.0,
+      28425600.0,
+      31557600.0
+     ]
+    },
+    "warnings": [
+     "space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap"
+    ]
+   },
+   "mass_kg": 150.0
+  }
+ },
+ "mission_output": null,
+ "operations": {
+  "activities": [
+   [
+    "A0001",
+    "eo-micro",
+    "star cal",
+    150.0,
+    750.0,
+    "daily-cal"
+   ],
+   [
+    "A0002",
+    "eo-micro",
+    "downlink",
+    1417.6290056500648,
+    1710.5301311994679,
+    "svalbard-gs"
+   ],
+   [
+    "A0003",
+    "eo-micro",
+    "image",
+    2150.0,
+    2170.0,
+    "aral-sea"
+   ],
+   [
+    "A0004",
+    "eo-micro",
+    "downlink",
+    7117.707575597769,
+    7542.239766626243,
+    "svalbard-gs"
+   ],
+   [
+    "A0005",
+    "eo-micro",
+    "image",
+    8090.0,
+    8110.0,
+    "nile-delta"
+   ],
+   [
+    "A0006",
+    "eo-micro",
+    "downlink",
+    12818.438209201198,
+    13306.9922256663,
+    "svalbard-gs"
+   ],
+   [
+    "A0007",
+    "eo-micro",
+    "image",
+    13610.0,
+    13630.0,
+    "po-valley"
+   ],
+   [
+    "A0008",
+    "eo-micro",
+    "downlink",
+    18514.214947105836,
+    19023.816644460367,
+    "svalbard-gs"
+   ],
+   [
+    "A0009",
+    "eo-micro",
+    "downlink",
+    24200.683077106478,
+    24725.36391802029,
+    "svalbard-gs"
+   ],
+   [
+    "A0010",
+    "eo-micro",
+    "image",
+    30410.0,
+    30430.0,
+    "greenland-jakobshavn"
+   ],
+   [
+    "A0011",
+    "eo-micro",
+    "image",
+    36800.0,
+    36820.0,
+    "mississippi-delta"
+   ],
+   [
+    "A0012",
+    "eo-micro",
+    "star cal",
+    86400.0,
+    87000.0,
+    "daily-cal#2"
+   ],
+   [
+    "A0013",
+    "eo-micro",
+    "downlink",
+    87438.49873413135,
+    87718.96414461698,
+    "svalbard-gs"
+   ],
+   [
+    "A0014",
+    "eo-micro",
+    "downlink",
+    93138.00272381013,
+    93555.70926271245,
+    "svalbard-gs"
+   ],
+   [
+    "A0015",
+    "eo-micro",
+    "downlink",
+    98838.89742284047,
+    99324.59914531869,
+    "svalbard-gs"
+   ],
+   [
+    "A0016",
+    "eo-micro",
+    "downlink",
+    104534.95209009897,
+    105042.87559148758,
+    "svalbard-gs"
+   ],
+   [
+    "A0017",
+    "eo-micro",
+    "downlink",
+    110222.56812848905,
+    110746.65820294674,
+    "svalbard-gs"
+   ],
+   [
+    "A0018",
+    "eo-micro",
+    "image",
+    116450.0,
+    116470.0,
+    "greenland-jakobshavn"
+   ],
+   [
+    "A0019",
+    "eo-micro",
+    "downlink",
+    173459.11302845206,
+    173726.84226269912,
+    "svalbard-gs"
+   ],
+   [
+    "A0020",
+    "eo-micro",
+    "star cal",
+    174000.0,
+    174600.0,
+    "daily-cal#3"
+   ],
+   [
+    "A0021",
+    "eo-micro",
+    "downlink",
+    179158.400335685,
+    179568.79278131726,
+    "svalbard-gs"
+   ],
+   [
+    "A0022",
+    "eo-micro",
+    "downlink",
+    184859.6330139154,
+    185341.87580946152,
+    "svalbard-gs"
+   ],
+   [
+    "A0023",
+    "eo-micro",
+    "downlink",
+    190556.08483209333,
+    191061.2477446049,
+    "svalbard-gs"
+   ],
+   [
+    "A0024",
+    "eo-micro",
+    "downlink",
+    196243.82814684857,
+    196767.20361384758,
+    "svalbard-gs"
+   ],
+   [
+    "A0025",
+    "eo-micro",
+    "downlink",
+    218772.15064293725,
+    218953.49653617616,
+    "berlin-gs"
+   ],
+   [
+    "A0026",
+    "eo-micro",
+    "downlink",
+    259480.47286809862,
+    259734.21471183226,
+    "svalbard-gs"
+   ],
+   [
+    "A0027",
+    "eo-micro",
+    "star cal",
+    259950.0,
+    260550.0,
+    "daily-cal#4"
+   ],
+   [
+    "A0028",
+    "eo-micro",
+    "downlink",
+    265178.594029231,
+    265581.4998869075,
+    "svalbard-gs"
+   ],
+   [
+    "A0029",
+    "eo-micro",
+    "downlink",
+    270879.7017278951,
+    271359.27757814963,
+    "svalbard-gs"
+   ],
+   [
+    "A0030",
+    "eo-micro",
+    "downlink",
+    276576.74238083337,
+    277078.94206781435,
+    "svalbard-gs"
+   ],
+   [
+    "A0031",
+    "eo-micro",
+    "image",
+    277490.0,
+    277510.0,
+    "lisbon"
+   ],
+   [
+    "A0032",
+    "eo-micro",
+    "downlink",
+    282265.54865710344,
+    282788.13654419465,
+    "svalbard-gs"
+   ],
+   [
+    "A0033",
+    "eo-micro",
+    "image",
+    289970.0,
+    289990.0,
+    "atacama"
+   ],
+   [
+    "A0034",
+    "eo-micro",
+    "downlink",
+    331928.96783703077,
+    332146.87685728486,
+    "santiago-gs"
+   ],
+   [
+    "A0035",
+    "eo-micro",
+    "star cal",
+    345600.0,
+    346200.0,
+    "daily-cal#5"
+   ],
+   [
+    "A0036",
+    "eo-micro",
+    "downlink",
+    351198.8177421053,
+    351593.8361955577,
+    "svalbard-gs"
+   ],
+   [
+    "A0037",
+    "eo-micro",
+    "downlink",
+    356900.0219254332,
+    357376.1265513069,
+    "svalbard-gs"
+   ],
+   [
+    "A0038",
+    "eo-micro",
+    "image",
+    357800.0,
+    357820.0,
+    "etna"
+   ],
+   [
+    "A0039",
+    "eo-micro",
+    "downlink",
+    362597.36071087816,
+    363097.5277983164,
+    "svalbard-gs"
+   ],
+   [
+    "A0040",
+    "eo-micro",
+    "downlink",
+    368286.80654848285,
+    368808.79779844655,
+    "svalbard-gs"
+   ],
+   [
+    "A0041",
+    "eo-micro",
+    "downlink",
+    375927.6077605903,
+    376379.51717832184,
+    "santiago-gs"
+   ],
+   [
+    "A0042",
+    "eo-micro",
+    "star cal",
+    432000.0,
+    432600.0,
+    "daily-cal#6"
+   ],
+   [
+    "A0043",
+    "eo-micro",
+    "downlink",
+    437219.0906371987,
+    437605.80353435647,
+    "svalbard-gs"
+   ],
+   [
+    "A0044",
+    "eo-micro",
+    "downlink",
+    442920.5316329343,
+    443392.4673613877,
+    "svalbard-gs"
+   ],
+   [
+    "A0045",
+    "eo-micro",
+    "downlink",
+    448618.33614386426,
+    449117.71713691053,
+    "svalbard-gs"
+   ],
+   [
+    "A0046",
+    "eo-micro",
+    "downlink",
+    454308.00295158295,
+    454828.71409445716,
+    "svalbard-gs"
+   ],
+   [
+    "A0047",
+    "eo-micro",
+    "downlink",
+    461961.1358606053,
+    462402.2163562853,
+    "santiago-gs"
+   ],
+   [
+    "A0048",
+    "eo-micro",
+    "image",
+    501200.0,
+    501220.0,
+    "tokyo-bay"
+   ],
+   [
+    "A0049",
+    "eo-micro",
+    "star cal",
+    518400.0,
+    519000.0,
+    "daily-cal#7"
+   ],
+   [
+    "A0050",
+    "eo-micro",
+    "downlink",
+    523239.26245156315,
+    523617.40036051685,
+    "svalbard-gs"
+   ],
+   [
+    "A0051",
+    "eo-micro",
+    "downlink",
+    528940.4606565718,
+    529408.3461230181,
+    "svalbard-gs"
+   ],
+   [
+    "A0052",
+    "eo-micro",
+    "image",
+    530210.0,
+    530230.0,
+    "lake-chad"
+   ],
+   [
+    "A0053",
+    "eo-micro",
+    "downlink",
+    534638.6146937277,
+    535137.2617317504,
+    "svalbard-gs"
+   ],
+   [
+    "A0054",
+    "eo-micro",
+    "image",
+    535310.0,
+    535330.0,
+    "rotterdam-port"
+   ],
+   [
+    "A0055",
+    "eo-micro",
+    "image",
+    535520.0,
+    535540.0,
+    "madrid"
+   ],
+   [
+    "A0056",
+    "eo-micro",
+    "downlink",
+    540329.6179244766,
+    540725.0,
+    "svalbard-gs"
+   ],
+   [
+    "A0057",
+    "eo-micro",
+    "image",
+    540860.0,
+    540880.0,
+    "iceland-vatnajokull"
+   ],
+   [
+    "A0058",
+    "eo-micro",
+    "downlink",
+    546009.0807294509,
+    546535.1373569289,
+    "svalbard-gs"
+   ],
+   [
+    "A0059",
+    "eo-micro",
+    "image",
+    547670.0,
+    547690.0,
+    "amazon-manaus"
+   ],
+   [
+    "A0060",
+    "eo-micro",
+    "image",
+    548420.0,
+    548440.0,
+    "patagonia-icefield"
+   ],
+   [
+    "A0061",
+    "eo-micro",
+    "image",
+    598880.0,
+    598900.0,
+    "ganges-delta"
+   ]
+  ],
+  "contested_passes": 0,
+  "resources": {
+   "eo-micro": {
+    "downlinked_bit": 13386159999.999996,
+    "lost_bit": 0.0,
+    "max_memory_bit": 2633039999.9999995,
+    "min_soc": 0.8573631690657648
+   }
+  },
+  "score": [
+   5,
+   13,
+   6,
+   -6.924707292862333
+  ],
+  "unscheduled": [
+   [
+    "alps-glacier",
+    "eo-micro",
+    "too_short",
+    0,
+    2
+   ],
+   [
+    "contact berlin-gs 2030-06-03T12:10Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-03T13:46Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-03T21:27Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-03T23:00Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-04T12:04Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-04T13:40Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-04T21:21Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-04T22:53Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-05T00:31Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-05T11:58Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-05T13:33Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-05T22:47Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-06T00:24Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-06T11:52Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-06T13:27Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-06T21:10Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-06T22:41Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-07T00:18Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-07T11:45Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-07T13:20Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-07T22:35Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-08T00:11Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-08T11:39Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-08T13:14Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-08T22:28Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-09T00:04Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-09T11:33Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-09T13:08Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-09T22:22Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact berlin-gs 2030-06-09T23:58Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-03T15:49Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-03T17:20Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-04T05:00Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-04T06:35Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-04T17:14Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-05T04:54Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-05T06:29Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-05T17:07Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-06T04:48Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-06T06:22Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-06T17:01Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-07T06:16Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-08T04:36Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-08T06:09Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-09T06:03Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-09T16:43Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact santiago-gs 2030-06-10T05:56Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-03T16:47Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-03T18:22Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-03T19:56Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-03T21:31Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-03T23:07Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T00:43Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T02:20Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T03:58Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T16:41Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T18:16Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T19:50Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T21:25Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-04T23:01Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T00:37Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T02:14Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T03:52Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T16:35Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T18:09Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T19:44Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T21:19Z",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-05T22:54Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T00:30Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T02:07Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T03:45Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T16:29Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T18:03Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T19:37Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T21:12Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-06T22:48Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T00:24Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T02:01Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T03:38Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T08:28Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T16:22Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T17:57Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T19:31Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T21:06Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-07T22:41Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T00:17Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T01:54Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T03:32Z",
+    "eo-micro",
+    "too_short",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T08:22Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T16:16Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T17:50Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T19:25Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T21:00Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-08T22:35Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T00:11Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T01:48Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T03:25Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T08:15Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T17:44Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T19:19Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T20:53Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-09T22:29Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-10T00:05Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-10T01:41Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-10T03:19Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "contact svalbard-gs 2030-06-10T08:09Z",
+    "eo-micro",
+    "per_day",
+    0,
+    1
+   ],
+   [
+    "rotterdam-port",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "danube-delta",
+    "eo-micro",
+    "no_opportunity",
+    0,
+    1
+   ],
+   [
+    "rhine-delta",
+    "eo-micro",
+    "conflict",
+    0,
+    1
+   ],
+   [
+    "kilimanjaro",
+    "eo-micro",
+    "no_opportunity",
+    0,
+    1
+   ]
+  ]
+ },
+ "rng_library": "libstdc++",
+ "run": {
+  "events": [
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 720.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 0.0
+   },
+   {
+    "detail": "1.82 Gbit",
+    "end_s": 1770.0,
+    "kind": "downlink",
+    "label": "downlink to svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "data",
+      1.82
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 1410.0
+   },
+   {
+    "detail": "max elevation 10.4 deg",
+    "end_s": 1770.0,
+    "kind": "pass",
+    "label": "pass over svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "max_elevation",
+      10.382408956246513
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 1410.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 6460.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 4330.0
+   },
+   {
+    "detail": "2.46 Gbit",
+    "end_s": 7600.000000000001,
+    "kind": "downlink",
+    "label": "downlink to svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "data",
+      2.465
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 7110.0
+   },
+   {
+    "detail": "max elevation 19.4 deg",
+    "end_s": 7600.000000000001,
+    "kind": "pass",
+    "label": "pass over svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "max_elevation",
+      19.38175566228685
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 7110.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 12190.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 10070.0
+   },
+   {
+    "detail": "2.81 Gbit",
+    "end_s": 13370.0,
+    "kind": "downlink",
+    "label": "downlink to svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "data",
+      2.815
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 12810.0
+   },
+   {
+    "detail": "max elevation 37.6 deg",
+    "end_s": 13370.0,
+    "kind": "pass",
+    "label": "pass over svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "max_elevation",
+      37.61525140117692
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 12810.0
+   },
+   {
+    "detail": "2.4 Gbit",
+    "end_s": 13730.0,
+    "kind": "downlink",
+    "label": "downlink to berlin-gs",
+    "note": "",
+    "other": "berlin-gs",
+    "quantities": [
+     [
+      "data",
+      2.4
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 13260.0
+   },
+   {
+    "detail": "max elevation 81.1 deg",
+    "end_s": 13730.0,
+    "kind": "pass",
+    "label": "pass over berlin-gs",
+    "note": "",
+    "other": "berlin-gs",
+    "quantities": [
+     [
+      "max_elevation",
+      81.06242308331187
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 13260.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 17930.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 15800.000000000002
+   },
+   {
+    "detail": "2.96 Gbit",
+    "end_s": 19090.0,
+    "kind": "downlink",
+    "label": "downlink to svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "data",
+      2.955
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 18500.0
+   },
+   {
+    "detail": "max elevation 75.2 deg",
+    "end_s": 19090.0,
+    "kind": "pass",
+    "label": "pass over svalbard-gs",
+    "note": "",
+    "other": "svalbard-gs",
+    "quantities": [
+     [
+      "max_elevation",
+      75.16536266807108
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 18500.0
+   },
+   {
+    "detail": "1.25 Gbit",
+    "end_s": 19260.0,
+    "kind": "downlink",
+    "label": "downlink to berlin-gs",
+    "note": "",
+    "other": "berlin-gs",
+    "quantities": [
+     [
+      "data",
+      1.25
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 19020.0
+   },
+   {
+    "detail": "max elevation 14.4 deg",
+    "end_s": 19260.0,
+    "kind": "pass",
+    "label": "pass over berlin-gs",
+    "note": "",
+    "other": "berlin-gs",
+    "quantities": [
+     [
+      "max_elevation",
+      14.434450722685892
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 19020.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 21600.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "eo-micro",
+    "start_s": 21540.0
+   }
+  ],
+  "provenance": {
+   "basilisk_qualified": true,
+   "central_body": "earth",
+   "central_body_mu_m3_s2": 398600436000000.0,
+   "configuration": {
+    "file": null,
+    "overrides": {}
+   },
+   "device_parameters": {
+    "spacecraft[eo-micro].actuators[rw-x]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[eo-micro].actuators[rw-y]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[eo-micro].actuators[rw-z]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    }
+   },
+   "dynamics_task_rate_s": 1.0,
+   "effective_config_note": "effective_defaults: each key the engine read that the file does not give, with the value it used; null: the engine set nothing, so the Basilisk module keeps its own value or the option is off. device_parameters: the values Basilisk's factories gave each wheel and thruster, in Basilisk's SI units (kg, kg*m^2, rad/s, N*m, N, s, W)",
+   "effective_defaults": {
+    "spacecraft[eo-micro].control_params": {
+     "Ki": -1.0,
+     "integral_limit": 0.0
+    },
+    "spacecraft[eo-micro].fsw_params": {
+     "target_body": null
+    },
+    "spacecraft[eo-micro].sensors[css-1].params": {
+     "bias": 0.0,
+     "fault_mode": "none",
+     "fov_deg": 90.0,
+     "noise_std": 0.0
+    },
+    "spacecraft[eo-micro].sensors[imu-1].params": {
+     "accel_bias_m_s2": null,
+     "accel_lsb_m_s2": 0.0,
+     "accel_noise_m_s2": 0.0,
+     "gyro_bias_rad_s": null,
+     "gyro_lsb_rad_s": 0.0
+    },
+    "spacecraft[eo-micro].sensors[st-1].params": {
+     "bias_walk_bound_arcsec": null
+    }
+   },
+   "frames": {
+    "B": {
+     "axes": "fixed to the spacecraft structure, as given by inertia_kg_m2 and device axes",
+     "epoch": "-",
+     "mnemonic": "B",
+     "name": "Spacecraft body",
+     "origin": "spacecraft body point B (Basilisk hub frame origin)",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "H": {
+     "axes": "x radial out, z orbit normal, y completes (along-track)",
+     "epoch": "-",
+     "mnemonic": "H",
+     "name": "Hill (orbit)",
+     "origin": "spacecraft",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "L": {
+     "axes": "South-East-Zenith; elevation/azimuth from the geodetic horizon, azimuth from North to East",
+     "epoch": "-",
+     "mnemonic": "L",
+     "name": "Topocentric (ground station)",
+     "origin": "ground station site (WGS-84 geodetic, engine.geodesy)",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "N": {
+     "axes": "Earth mean equator and equinox of J2000 (SPICE J2000, treated as ICRF-aligned by SPICE)",
+     "epoch": "J2000.0 = 2000-01-01T12:00:00 TT",
+     "mnemonic": "N",
+     "name": "Inertial (EME2000 / SPICE J2000)",
+     "origin": "Earth centre of mass",
+     "realisation": "SPICE with DE430",
+     "time_scale": "TDB (ephemerides, propagation)"
+    },
+    "P": {
+     "axes": "IAU_EARTH: Earth-fixed, z = rotation pole, x = prime meridian",
+     "epoch": "-",
+     "mnemonic": "P",
+     "name": "Earth-fixed",
+     "origin": "Earth centre of mass",
+     "realisation": "SPICE PCK (engine.earth_orientation for Earth)",
+     "time_scale": "TDB"
+    },
+    "TEME": {
+     "axes": "SGP4 output frame, converted to N at the scenario epoch (engine.tle)",
+     "epoch": "-",
+     "mnemonic": "TEME",
+     "name": "True equator, mean equinox of date (TLE input only)",
+     "origin": "Earth centre of mass",
+     "realisation": "-",
+     "time_scale": "UTC"
+    }
+   },
+   "integrator": "rkf78",
+   "integrator_absolute_tolerance": 1e-08,
+   "integrator_relative_tolerance": 1e-10,
+   "rng_seed": 0,
+   "rng_seed_note": "each model's RNGSeed is derived from the scenario's seed (sim_settings.seed) and the model's name (SHA-256); a navigation error's own seed is kept, and a Monte Carlo run disperses them per run",
+   "rng_seeds": {
+    "Rec:AccessMsg": 3250102459,
+    "Rec:AccessMsg#2": 3523270982,
+    "Rec:AccessMsg#3": 861926190,
+    "Rec:CSSRawDataMsg": 3335757366,
+    "Rec:CmdTorqueBodyMsg": 4214472608,
+    "Rec:DataStorageStatusMsg": 2361713189,
+    "Rec:EclipseMsg": 139054789,
+    "Rec:IMUSensorMsg": 705316174,
+    "Rec:MTBCmdMsg": 405266180,
+    "Rec:NavAttMsg": 371790668,
+    "Rec:PowerStorageStatusMsg": 3769895843,
+    "Rec:RWSpeedMsg": 3665585116,
+    "Rec:SCStatesMsg": 455511093,
+    "Rec:STSensorMsg": 2669411928,
+    "Rec:SpicePlanetStateMsg": 3018906880,
+    "Rec:SpicePlanetStateMsg#2": 1042706021,
+    "Rec:SpicePlanetStateMsg#3": 3168780788,
+    "SpiceInterfaceData": 193139944,
+    "eclipse": 3106495040,
+    "eo-micro": 1084666219,
+    "eo-microBattery": 1250440095,
+    "eo-microBusPowerSink": 3505170878,
+    "eo-microDataLedger": 3987279338,
+    "eo-microDataStorage": 3320699438,
+    "eo-microDownlinkGate": 3440187933,
+    "eo-microDrag": 106436015,
+    "eo-microInstrument_camera": 1188718140,
+    "eo-microInstrument_housekeeping": 415659693,
+    "eo-microInstrumentsPowerSink": 1695678883,
+    "eo-microSolarPanel": 3954648507,
+    "eo-microSrp": 2854060143,
+    "eo-microTransmitter": 22101281,
+    "eo-microTransmitterPowerSink": 963334074,
+    "eo-micro_attTrackingError": 3495841816,
+    "eo-micro_css-1": 1416145188,
+    "eo-micro_desatTAM": 970887479,
+    "eo-micro_hillPoint": 1374314725,
+    "eo-micro_imu-1": 4209693287,
+    "eo-micro_mrpFeedback": 276216986,
+    "eo-micro_mtbEffector": 2178501415,
+    "eo-micro_mtbMomentumManagement": 2132463369,
+    "eo-micro_reactionWheels": 3922271761,
+    "eo-micro_rwMotorTorque": 334587319,
+    "eo-micro_simpleNav": 2318412140,
+    "eo-micro_st-1": 1229845529,
+    "eo-micro_tamComm": 1222952568,
+    "geodeticProxy_eo-micro": 1606515734,
+    "groundStation_berlin-gs": 1154662275,
+    "groundStation_santiago-gs": 739001520,
+    "groundStation_svalbard-gs": 1315667144,
+    "magneticFieldWMM": 569455582,
+    "midStepOrientation_earth": 2740032469,
+    "midStepOrientation_moon": 3302786954,
+    "midStepOrientation_sun": 896524486,
+    "msisAtmosphere": 177801070,
+    "spaceWeatherData": 3328266330,
+    "zeroWind": 507670478
+   },
+   "scenario_file": "",
+   "scenario_file_migrations": [],
+   "scenario_file_sha256": "",
+   "series_frames": {
+    "berlin-gs.access_to_eo-micro.azimuth": "L",
+    "berlin-gs.access_to_eo-micro.elevation": "L",
+    "eo-micro.attitude_sigma_BN": "B relative to N",
+    "eo-micro.body_rate_omega_BN_B": "B",
+    "eo-micro.orbit_elements.arg_periapsis": "N",
+    "eo-micro.orbit_elements.eccentricity": "N",
+    "eo-micro.orbit_elements.inclination": "N",
+    "eo-micro.orbit_elements.raan": "N",
+    "eo-micro.orbit_elements.semi_major_axis": "N",
+    "eo-micro.orbit_elements.true_anomaly": "N",
+    "eo-micro.orbit_elements_mean.arg_periapsis": "N",
+    "eo-micro.orbit_elements_mean.eccentricity": "N",
+    "eo-micro.orbit_elements_mean.inclination": "N",
+    "eo-micro.orbit_elements_mean.raan": "N",
+    "eo-micro.orbit_elements_mean.semi_major_axis": "N",
+    "eo-micro.orbit_elements_mean.true_anomaly": "N",
+    "eo-micro.position_N": "N",
+    "eo-micro.sun_heading_body": "B",
+    "eo-micro.velocity_N": "N",
+    "ephemeris.earth.position_N": "N",
+    "ephemeris.moon.position_N": "N",
+    "ephemeris.sun.position_N": "N",
+    "santiago-gs.access_to_eo-micro.azimuth": "L",
+    "santiago-gs.access_to_eo-micro.elevation": "L",
+    "svalbard-gs.access_to_eo-micro.azimuth": "L",
+    "svalbard-gs.access_to_eo-micro.elevation": "L"
+   },
+   "time_system": {
+    "conversions": "ERFA (SOFA): dat, utctai, taitt, dtdb",
+    "epoch_tdb_seconds_past_j2000": 959977869.1848456,
+    "epoch_utc": "2030-06-03T08:30:00",
+    "last_leap_second_utc": "2017-01-01",
+    "tai_minus_utc_s": 37.0,
+    "tdb_minus_tt_s": 0.0008455520747039829,
+    "time_variable": "TDB seconds since the scenario epoch",
+    "tt_minus_tai_s": 32.184
+   },
+   "transformations": {
+    "N -> B": "dcm_BN from the spacecraft MRP sigma_BN (integrated by Basilisk)",
+    "N -> H": "dcm_HN from r_BN_N, v_BN_N (Basilisk hillFrame convention)",
+    "N -> P": "dcm_PN = J20002Pfix from SPICE pxform(J2000, P frame, ET) each step; time dependent; SPICE evaluates the PCK Chebyshev/rotation model at ET (no further interpolation)",
+    "P -> L": "dcm_LP from the site's geodetic latitude and longitude (engine.geodesy)",
+    "TEME -> N": "P^T N^T R3(-Eq) at the scenario epoch, IAU 1976/1980 (engine.tle)"
+   }
+  },
+  "series": {
+   "berlin-gs.access_to_eo-micro.antenna_off_boresight": {
+    "columns": [
+     "antenna_off_boresight"
+    ],
+    "data": [
+     {
+      "first": "nan",
+      "last": "nan",
+      "max": 64.82793730166345,
+      "mean": 53.06591812174062,
+      "min": 8.110362965305,
+      "non_finite": 2088,
+      "samples": [
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan"
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "deg"
+   },
+   "berlin-gs.access_to_eo-micro.azimuth": {
+    "columns": [
+     "azimuth"
+    ],
+    "data": [
+     {
+      "first": -0.9339628605059284,
+      "last": -3.0829048140060427,
+      "max": 3.1404887720270134,
+      "mean": -0.40019153839424865,
+      "min": -3.1409783745464948,
+      "non_finite": 0,
+      "samples": [
+       -0.9339628605059284,
+       1.5193350384939486,
+       -2.9427950432984455,
+       -0.14568987604287717,
+       2.9112463042523333,
+       -0.5662680355751235,
+       0.22889877620910531,
+       -2.852255263046994,
+       0.5099234649757176,
+       -1.9864280981153641,
+       -3.0829048140060427
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "berlin-gs.access_to_eo-micro.elevation": {
+    "columns": [
+     "elevation"
+    ],
+    "data": [
+     {
+      "first": -0.9707600887496992,
+      "last": -1.319170042825228,
+      "max": 1.4148061824484457,
+      "mean": -0.6744643640667636,
+      "min": -1.5153405370385333,
+      "non_finite": 0,
+      "samples": [
+       -0.9707600887496992,
+       -0.12134084126265202,
+       -1.200965361820262,
+       -0.6538637187943998,
+       -0.40739793311097333,
+       -1.4549301548455642,
+       -0.15629402991782568,
+       -0.8697727509253435,
+       -1.0105215378137302,
+       0.0014614591654876624,
+       -1.319170042825228
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "berlin-gs.access_to_eo-micro.has_access": {
+    "columns": [
+     "has_access"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.03378065710319297,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "berlin-gs.access_to_eo-micro.link_closed": {
+    "columns": [
+     "link_closed"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.03378065710319297,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "berlin-gs.access_to_eo-micro.link_margin_db": {
+    "columns": [
+     "link_margin_db"
+    ],
+    "data": [
+     {
+      "first": "nan",
+      "last": "nan",
+      "max": 17.523171260067024,
+      "mean": 8.420464484380647,
+      "min": 3.715544672511223,
+      "non_finite": 2088,
+      "samples": [
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan"
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "dB"
+   },
+   "berlin-gs.access_to_eo-micro.slant_range": {
+    "columns": [
+     "slant_range"
+    ],
+    "data": [
+     {
+      "first": 11188829.347871402,
+      "last": 12892400.891080769,
+      "max": 13269458.912804771,
+      "mean": 8401500.532770632,
+      "min": 562149.4792382771,
+      "non_finite": 0,
+      "samples": [
+       11188829.347871402,
+       3597089.3092524693,
+       12448506.706325823,
+       8637680.052770821,
+       6199761.780161648,
+       13212370.109888535,
+       3911952.7499779947,
+       10411422.079640342,
+       11455961.758398429,
+       2700556.237934814,
+       12892400.891080769
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "eo-micro.attitude_sigma_BN": {
+    "columns": [
+     "s1",
+     "s2",
+     "s3"
+    ],
+    "data": [
+     {
+      "first": 0.1,
+      "last": -0.7269051877654343,
+      "max": 0.7390159720511167,
+      "mean": -0.09084251970937104,
+      "min": -0.7396809347567178,
+      "non_finite": 0,
+      "samples": [
+       0.1,
+       -0.2173106212304234,
+       -0.710586619316011,
+       0.13351860784355804,
+       -0.3928743907359346,
+       0.5416294444914201,
+       -0.05520811525995427,
+       -0.5653649799844959,
+       0.31686938387079305,
+       -0.23484763490758478,
+       -0.7269051877654343
+      ]
+     },
+     {
+      "first": 0.2,
+      "last": 0.10465327552585221,
+      "max": 0.2,
+      "mean": -0.31480813198301943,
+      "min": -0.4587313048667593,
+      "non_finite": 0,
+      "samples": [
+       0.2,
+       -0.40780917835674074,
+       0.07330774053061276,
+       -0.45473228727326404,
+       -0.3131870262071201,
+       -0.3031841802645834,
+       -0.4505940384273496,
+       -0.15331965564782124,
+       -0.41426953566251695,
+       -0.40104446415880385,
+       0.10465327552585221
+      ]
+     },
+     {
+      "first": -0.15,
+      "last": 0.642429277163946,
+      "max": 0.6583691013872034,
+      "mean": 0.02790781530852999,
+      "min": -0.6581632851189614,
+      "non_finite": 0,
+      "samples": [
+       -0.15,
+       0.12166861732019252,
+       0.6233024158177721,
+       -0.18755070670850035,
+       0.28836622379101573,
+       -0.5144590833794127,
+       -0.02387472968752655,
+       0.46254823687623636,
+       -0.33824596576048765,
+       0.13917864982481132,
+       0.642429277163946
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.battery_charge": {
+    "columns": [
+     "charge"
+    ],
+    "data": [
+     {
+      "first": 270.0,
+      "last": 287.2525992309921,
+      "max": 300.0,
+      "mean": 269.78661106790884,
+      "min": 227.314319386542,
+      "non_finite": 0,
+      "samples": [
+       270.0,
+       275.7994230050261,
+       289.0695894800284,
+       238.06958948002844,
+       300.0,
+       271.4646451658732,
+       228.82652597321135,
+       300.0,
+       253.8591693675204,
+       265.84124509577305,
+       287.2525992309921
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "W*hr"
+   },
+   "eo-micro.battery_net_power": {
+    "columns": [
+     "net_power"
+    ],
+    "data": [
+     {
+      "first": -85.0,
+      "last": -85.0,
+      "max": 292.0029928787047,
+      "mean": 40.84863365654569,
+      "min": -85.0,
+      "non_finite": 0,
+      "samples": [
+       -85.0,
+       261.62336105416114,
+       -85.0,
+       -85.0,
+       260.20371998876305,
+       -85.0,
+       61.3812790897839,
+       40.49432183807883,
+       -85.0,
+       272.85291982747634,
+       -85.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "W"
+   },
+   "eo-micro.body_rate_omega_BN_B": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.001,
+      "last": -3.833577310422168e-07,
+      "max": 0.043499386864299716,
+      "mean": 7.937357423670918e-05,
+      "min": -4.229806936168365e-07,
+      "non_finite": 0,
+      "samples": [
+       0.001,
+       2.8005624226781224e-07,
+       -4.229806936168365e-07,
+       3.3580741636194e-07,
+       -9.111864712882371e-09,
+       -2.779417847340337e-07,
+       3.985826595682734e-07,
+       -2.8588106590796825e-07,
+       3.178045107415138e-08,
+       2.712384111215066e-07,
+       -3.833577310422168e-07
+      ]
+     },
+     {
+      "first": -0.001,
+      "last": 4.224362162657452e-09,
+      "max": 5.985787191549244e-08,
+      "mean": -7.361541830367825e-05,
+      "min": -0.039673842652975855,
+      "non_finite": 0,
+      "samples": [
+       -0.001,
+       -1.5263004845896335e-08,
+       2.093654128125038e-08,
+       3.096851260112397e-08,
+       5.588850653804927e-09,
+       9.763580391148743e-09,
+       -1.9633140734551954e-08,
+       1.5943853427016976e-08,
+       -1.0809478916168422e-09,
+       -1.4217197631517688e-08,
+       4.224362162657452e-09
+      ]
+     },
+     {
+      "first": 0.0005,
+      "last": 0.0010953360969488675,
+      "max": 0.001096991996427777,
+      "mean": 0.0010885486122952438,
+      "min": -0.003247157427163174,
+      "non_finite": 0,
+      "samples": [
+       0.0005,
+       0.001096370681277237,
+       0.0010953852677624163,
+       0.0010949265337381069,
+       0.001096927170418569,
+       0.0010949195168044792,
+       0.0010954510873756565,
+       0.0010963315014905384,
+       0.0010948444082290905,
+       0.0010965163646711727,
+       0.0010953360969488675
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "eo-micro.control_torque": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.4862608985720462,
+      "last": -2.8774147632992237e-07,
+      "max": 0.4862608985720462,
+      "mean": 0.00029556912628399463,
+      "min": -0.023884324515188488,
+      "non_finite": 0,
+      "samples": [
+       0.4862608985720462,
+       3.187256737772716e-06,
+       7.624975230394516e-07,
+       -8.146217569116642e-07,
+       2.5318119855695795e-06,
+       -1.212835971548929e-07,
+       -5.81059571739572e-07,
+       9.356784779307491e-07,
+       -1.8894894569909883e-08,
+       1.8285890525679274e-07,
+       -2.8774147632992237e-07
+      ]
+     },
+     {
+      "first": -0.44389346048270545,
+      "last": -4.855090908976931e-07,
+      "max": 0.022893391887157544,
+      "mean": -0.00025432209837715936,
+      "min": -0.44389346048270545,
+      "non_finite": 0,
+      "samples": [
+       -0.44389346048270545,
+       1.0848051088997424e-05,
+       -9.84505719567057e-07,
+       -6.364286494952287e-07,
+       1.7621035511509983e-06,
+       -3.9601463006573317e-07,
+       8.131377805809382e-07,
+       -2.536097715063843e-07,
+       -7.902101193387499e-08,
+       2.714603146113558e-06,
+       -4.855090908976931e-07
+      ]
+     },
+     {
+      "first": -0.03433195794247647,
+      "last": -1.761253178922914e-08,
+      "max": 0.0023719018882935065,
+      "mean": -1.0649261782608087e-05,
+      "min": -0.03433195794247647,
+      "non_finite": 0,
+      "samples": [
+       -0.03433195794247647,
+       2.011062882343745e-08,
+       -1.7513478106359515e-08,
+       4.4287648172693414e-09,
+       -9.445619825643141e-10,
+       -3.8039746553085224e-09,
+       1.940449323442587e-08,
+       -2.1820761182101387e-08,
+       -5.524171357021074e-10,
+       2.0737233634199664e-08,
+       -1.761253178922914e-08
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "N*m"
+   },
+   "eo-micro.data_handling.data_downlinked": {
+    "columns": [
+     "data_downlinked"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 12800000000.0,
+      "max": 12800000000.0,
+      "mean": 5614157797.316057,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1835000000.0,
+       1835000000.0,
+       1835000000.0,
+       4330000000.0,
+       4330000000.0,
+       5095000000.0,
+       8960000000.0,
+       8960000000.0,
+       12800000000.0,
+       12800000000.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "bit"
+   },
+   "eo-micro.data_handling.data_generated": {
+    "columns": [
+     "data_generated"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 864086400000.0,
+      "max": 864086400000.0,
+      "mean": 432043200000.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       86408640000.0,
+       172817280000.0,
+       259225920000.0,
+       345634560000.0,
+       432043200000.0,
+       518451840000.0,
+       604860480000.0,
+       691269120000.0,
+       777677760000.0,
+       864086400000.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "bit"
+   },
+   "eo-micro.data_handling.data_lost": {
+    "columns": [
+     "data_lost"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 848286400000.0,
+      "max": 848286400000.0,
+      "mean": 423450698611.75385,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       81600000000.0,
+       168000000000.0,
+       254400000000.0,
+       338320000000.0,
+       424720000000.0,
+       510401232000.0,
+       592921232000.0,
+       679321232000.0,
+       761881236000.0,
+       848286400000.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "bit"
+   },
+   "eo-micro.data_handling.downlink_rate": {
+    "columns": [
+     "downlink_rate"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 5000000.0,
+      "mean": 594632.1147616844,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       5000000.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "bit/s"
+   },
+   "eo-micro.data_handling.stored": {
+    "columns": [
+     "total",
+     "camera",
+     "housekeeping"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 3000000000.0,
+      "max": 3000000000.0,
+      "mean": 2978343590.9301248,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       2973640000.0,
+       2982280000.0,
+       2990920000.0,
+       2984560000.0,
+       2993200000.0,
+       2955608000.0,
+       2979248000.0,
+       2987888000.0,
+       2996524000.0,
+       3000000000.0
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 2920000000.0,
+      "max": 2980000000.0,
+      "mean": 2935809810.2730217,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       2965000000.0,
+       2965000000.0,
+       2965000000.0,
+       2950000000.0,
+       2950000000.0,
+       2905000000.0,
+       2920000000.0,
+       2920000000.0,
+       2920000000.0,
+       2920000000.0
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 80000000.0,
+      "max": 80000000.0,
+      "mean": 42533780.657103196,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       8640000.0,
+       17280000.0,
+       25920000.0,
+       34560000.0,
+       43200000.0,
+       50608000.0,
+       59248000.0,
+       67888000.0,
+       76524000.0,
+       80000000.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "bit"
+   },
+   "eo-micro.eclipse.illumination_factor": {
+    "columns": [
+     "illumination_factor"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.6679903670368865,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       0.0,
+       1.0,
+       1.0,
+       0.0,
+       1.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.mtb_dipole_commanded": {
+    "columns": [
+     "mtb_0",
+     "mtb_1",
+     "mtb_2"
+    ],
+    "data": [
+     {
+      "first": -0.0,
+      "last": -0.0013690478822597505,
+      "max": 15.0,
+      "mean": 0.07547994699355375,
+      "min": -0.03712532456955797,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       0.02059476011410454,
+       0.00013888244752455916,
+       -0.00041074940713791455,
+       0.013983819479127873,
+       -0.006469737577970407,
+       0.0001756086915134342,
+       0.011023665608040783,
+       -0.0036459669828775637,
+       0.007848025747192386,
+       -0.0013690478822597505
+      ]
+     },
+     {
+      "first": -0.0,
+      "last": -0.0008946757601033173,
+      "max": 15.0,
+      "mean": 0.05645323905299959,
+      "min": -0.7702026563787564,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       -0.0034530367049021952,
+       -0.008473403066202789,
+       0.00014656459203831357,
+       -0.013656674025621447,
+       0.000938067461502887,
+       0.00041652082717161265,
+       -0.01976728924981652,
+       -0.002123203546619335,
+       0.0024650081493644473,
+       -0.0008946757601033173
+      ]
+     },
+     {
+      "first": -0.0,
+      "last": -0.010645695200677643,
+      "max": 10.931844228977573,
+      "mean": -0.06628846961252272,
+      "min": -15.0,
+      "non_finite": 0,
+      "samples": [
+       -0.0,
+       -0.4823974457990435,
+       0.0016521938448269902,
+       0.0024805285258663583,
+       0.14710105110234653,
+       -0.019456509265948652,
+       -0.00729199341487533,
+       0.076939609195629,
+       -0.007953911807804087,
+       -0.05832967188219987,
+       -0.010645695200677643
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "A*m^2"
+   },
+   "eo-micro.orbit_elements.arg_periapsis": {
+    "columns": [
+     "argp"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.9941334991073283,
+      "max": 6.268487222680862,
+      "mean": 3.152525177519754,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       5.884032307031136,
+       1.8546120314614276,
+       3.3140524537373235,
+       3.2088653642891516,
+       3.12840899990825,
+       4.538751597725223,
+       0.6687828322213821,
+       1.7925149128085576,
+       0.3721926722463811,
+       1.9941334991073283
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements.eccentricity": {
+    "columns": [
+     "e"
+    ],
+    "data": [
+     {
+      "first": 3.6685461209537963e-16,
+      "last": 0.0018909282548552962,
+      "max": 0.001913925813508303,
+      "mean": 0.0010180839591023556,
+      "min": 3.6685461209537963e-16,
+      "non_finite": 0,
+      "samples": [
+       3.6685461209537963e-16,
+       0.00032935464686039486,
+       0.0018490438095354383,
+       0.0013067445544590144,
+       0.0009424606673820473,
+       0.0011724260691746188,
+       0.0017966549337251985,
+       0.0004971875866336351,
+       0.00010405908592131129,
+       0.00013049495024920779,
+       0.0018909282548552962
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.orbit_elements.inclination": {
+    "columns": [
+     "i"
+    ],
+    "data": [
+     {
+      "first": 1.7032668170212664,
+      "last": 1.7035051218704163,
+      "max": 1.703514820453106,
+      "mean": 1.7033985653865897,
+      "min": 1.7032668170212664,
+      "non_finite": 0,
+      "samples": [
+       1.7032668170212664,
+       1.7033641785476126,
+       1.703471928370319,
+       1.7033939110480305,
+       1.7033080016474675,
+       1.7033899262136416,
+       1.7034980335311607,
+       1.7034256560485255,
+       1.7033246531281345,
+       1.7034078401906565,
+       1.7035051218704163
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements.raan": {
+    "columns": [
+     "raan"
+    ],
+    "data": [
+     {
+      "first": 4.5277331455236896,
+      "last": 4.532117710752612,
+      "max": 4.532117710752612,
+      "mean": 4.529913042461992,
+      "min": 4.5277331455236896,
+      "non_finite": 0,
+      "samples": [
+       4.5277331455236896,
+       4.528258439934839,
+       4.528605734859248,
+       4.528957602796371,
+       4.529468803224702,
+       4.53001420360509,
+       4.530368711438516,
+       4.530694593698374,
+       4.5312113903107125,
+       4.53175417291444,
+       4.532117710752612
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements.semi_major_axis": {
+    "columns": [
+     "a"
+    ],
+    "data": [
+     {
+      "first": 6927999.999999996,
+      "last": 6909416.349579927,
+      "max": 6928058.255101522,
+      "mean": 6918608.427614737,
+      "min": 6909227.868333771,
+      "non_finite": 0,
+      "samples": [
+       6927999.999999996,
+       6918792.566901038,
+       6909304.423093575,
+       6918061.918395774,
+       6927977.6433603065,
+       6919597.228506861,
+       6909384.875321833,
+       6917279.840112605,
+       6927918.354315962,
+       6920421.098202451,
+       6909416.349579927
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "eo-micro.orbit_elements.true_anomaly": {
+    "columns": [
+     "true_anomaly"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 2.823950494485245,
+      "max": 6.282667992263334,
+      "mean": 3.211652350250193,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       2.76501898083045,
+       2.8795874643794557,
+       3.7853064100635985,
+       6.257773202075414,
+       2.422216013692913,
+       3.3770318413713296,
+       3.3322722247978196,
+       4.574367226972475,
+       2.07748502199565,
+       2.823950494485245
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements_mean.arg_periapsis": {
+    "columns": [
+     "argp"
+    ],
+    "data": [
+     {
+      "first": 3.141592653589793,
+      "last": 9.45096318683064,
+      "max": 15.751208794312479,
+      "mean": 12.799046298097812,
+      "min": 3.141592653589793,
+      "non_finite": 0,
+      "samples": [
+       3.141592653589793,
+       15.726729312627494,
+       9.435579850344133,
+       15.721892918652623,
+       15.720464081906501,
+       9.441961566314678,
+       15.714589591820754,
+       9.467386008708894,
+       15.732555758440201,
+       9.448278535401789,
+       9.45096318683064
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements_mean.eccentricity": {
+    "columns": [
+     "e"
+    ],
+    "data": [
+     {
+      "first": 0.0004748007189249764,
+      "last": 0.000497622347199953,
+      "max": 0.0005033591504526218,
+      "mean": 0.00047641117598734453,
+      "min": 0.00045673006052705583,
+      "non_finite": 0,
+      "samples": [
+       0.0004748007189249764,
+       0.0004640166394716201,
+       0.00045965555798408944,
+       0.00046405587280227257,
+       0.0004698288666999814,
+       0.0004750003865158788,
+       0.0004761170814635833,
+       0.000484636584263563,
+       0.0004741878878181419,
+       0.0005033171692923137,
+       0.000497622347199953
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.orbit_elements_mean.inclination": {
+    "columns": [
+     "i"
+    ],
+    "data": [
+     {
+      "first": 1.7033569212479187,
+      "last": 1.703416602572625,
+      "max": 1.7034249056284883,
+      "mean": 1.70339806395423,
+      "min": 1.7033569212479187,
+      "non_finite": 0,
+      "samples": [
+       1.7033569212479187,
+       1.703365928666431,
+       1.7033815038700557,
+       1.7033883176342433,
+       1.703397931039864,
+       1.703399413821917,
+       1.7034081981488265,
+       1.7034123137029717,
+       1.703413535389294,
+       1.7034246434860794,
+       1.703416602572625
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements_mean.raan": {
+    "columns": [
+     "raan"
+    ],
+    "data": [
+     {
+      "first": -1.755452161655897,
+      "last": -1.7510870497488873,
+      "max": -1.7510870497488873,
+      "mean": -1.7532684412888988,
+      "min": -1.755452161655897,
+      "non_finite": 0,
+      "samples": [
+       -1.755452161655897,
+       -1.7550180863084022,
+       -1.7545837883335489,
+       -1.7541363303576971,
+       -1.7537088765686182,
+       -1.7532621192900566,
+       -1.7528276518246633,
+       -1.7524004316727084,
+       -1.7519587035777433,
+       -1.7515207944147402,
+       -1.7510870497488873
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.orbit_elements_mean.semi_major_axis": {
+    "columns": [
+     "a"
+    ],
+    "data": [
+     {
+      "first": 6918630.813751498,
+      "last": 6918535.497206945,
+      "max": 6918715.33256713,
+      "mean": 6918635.357760573,
+      "min": 6918519.493174176,
+      "non_finite": 0,
+      "samples": [
+       6918630.813751498,
+       6918608.510591961,
+       6918623.277605027,
+       6918627.79842744,
+       6918623.432730987,
+       6918602.453296937,
+       6918642.587028041,
+       6918658.257433301,
+       6918680.427849203,
+       6918677.479659846,
+       6918535.497206945
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "eo-micro.orbit_elements_mean.true_anomaly": {
+    "columns": [
+     "true_anomaly"
+    ],
+    "data": [
+     {
+      "first": 3.141592653589793,
+      "last": 1.650327103505087,
+      "max": 3.141592653589793,
+      "mean": -0.1516876881268759,
+      "min": -3.1401686300241676,
+      "non_finite": 0,
+      "samples": [
+       3.141592653589793,
+       -0.794392411944259,
+       1.5818094774947395,
+       -2.339449556201099,
+       0.02935124068702622,
+       2.3919495350652786,
+       -1.515608880619484,
+       0.8167554212228064,
+       -3.082505443239867,
+       -0.7153167204071587,
+       1.650327103505087
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "eo-micro.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -1272037.8191664102,
+      "last": 765093.2733334956,
+      "max": 1553443.4360548004,
+      "mean": 17049.238102086725,
+      "min": -1557676.8111854347,
+      "non_finite": 0,
+      "samples": [
+       -1272037.8191664102,
+       274892.63706530974,
+       872420.4741223423,
+       -1521154.8532024184,
+       1295552.8800507935,
+       -331667.3694201685,
+       -821564.9135058845,
+       1498246.4733570295,
+       -1319255.932592218,
+       383074.51555917476,
+       765093.2733334956
+      ]
+     },
+     {
+      "first": -6810220.538764538,
+      "last": -881707.5295539547,
+      "max": 6810672.679128693,
+      "mean": 285811.93072204967,
+      "min": -6816628.807225358,
+      "non_finite": 0,
+      "samples": [
+       -6810220.538764538,
+       4974686.865450702,
+       -315704.48802162864,
+       -4542663.112969514,
+       6793054.172629007,
+       -5174674.393255921,
+       585882.0151683477,
+       4318473.646235502,
+       -6776975.86043575,
+       5347421.685779515,
+       -881707.5295539547
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -6822674.921612267,
+      "max": 6860770.855682399,
+      "mean": 257975.561306198,
+      "min": -6860740.811066224,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       4803742.400287532,
+       -6859179.783406984,
+       5000992.11991711,
+       -287112.16876417276,
+       -4591078.460829967,
+       6847504.088158416,
+       -5196299.748984935,
+       574097.5449081796,
+       4376828.545014783,
+       -6822674.921612267
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "eo-micro.rw_speeds": {
+    "columns": [
+     "wheel_0",
+     "wheel_1",
+     "wheel_2"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -0.04687158315072954,
+      "max": 4.530683600945703,
+      "mean": 0.06861849473228145,
+      "min": -90.17515234841106,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.8157867738264439,
+       -0.03363628337810592,
+       -0.0005825869023727569,
+       -0.05089266177623157,
+       -0.037758699308636755,
+       0.025949540561626502,
+       -0.05752358243478548,
+       -0.00756613660332147,
+       0.02412341843760557,
+       -0.04687158315072954
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.02675799969424851,
+      "max": 83.23480768034655,
+      "mean": -0.06606236408997178,
+      "min": -3.2267284754234486,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -0.3682625002909591,
+       -0.0004266922803129603,
+       0.0038703723985865548,
+       -0.17927550686479501,
+       0.012269263232352405,
+       -0.010356393256950733,
+       -0.036441341570358325,
+       0.0026556292196969694,
+       -0.06917153002692347,
+       0.02675799969424851
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0037789648470126316,
+      "max": 6.52532386847941,
+      "mean": -0.015266607649173529,
+      "min": -2.8242243835274627,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.037464039246358584,
+       0.0006391221515309932,
+       -0.00032515521106914517,
+       -0.011805716885946364,
+       0.013147182206776176,
+       3.33669222747854e-05,
+       -0.001120694568590181,
+       0.002759326906837324,
+       0.00032252579486892593,
+       0.0037789648470126316
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "eo-micro.sensor.css-1": {
+    "columns": [
+     "output"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.sensor.imu-1.accel": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -2.358834688116576e-11,
+      "max": 2.0464277523990228e-08,
+      "mean": -2.0713091086752735e-08,
+      "min": -7.20521340539333e-08,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -6.627144181720841e-08,
+       1.9954055567995938e-08,
+       1.9158369887016777e-08,
+       -6.583440153550798e-08,
+       -1.9477557532426665e-11,
+       -2.024679085973896e-08,
+       -1.4277822429683762e-08,
+       -5.13696401033482e-12,
+       -6.907798541375774e-08,
+       -2.358834688116576e-11
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2.066268541269129e-08,
+      "max": 2.4980508794726554e-08,
+      "mean": -2.1479378016858144e-08,
+      "min": -6.665118650689045e-08,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -5.1029907317053916e-08,
+       2.3813476837621057e-08,
+       -5.4608066926752726e-08,
+       -1.6363770217796122e-08,
+       -1.4844337201548911e-08,
+       -6.421525065684447e-08,
+       2.200499402129367e-08,
+       -1.1295469692509437e-08,
+       -5.05734013819733e-08,
+       -2.066268541269129e-08
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -1.400511239614921e-10,
+      "max": 1.157816820859033e-08,
+      "mean": 5.290917520101109e-09,
+      "min": -1.7707129498665484e-08,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.053330149893777e-08,
+       6.973448108273735e-09,
+       6.514294271548015e-09,
+       1.1554390189648742e-08,
+       -7.205399263492152e-10,
+       6.9758164816136164e-09,
+       7.266038698365904e-09,
+       -7.362516647479381e-10,
+       1.0841359432929114e-08,
+       -1.400511239614921e-10
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m/s^2"
+   },
+   "eo-micro.sensor.imu-1.gyro": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": -1.2555922846125957e-06,
+      "max": 0.04351358445514987,
+      "mean": 7.924630471431326e-05,
+      "min": -3.603855464900918e-05,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.046756750002164e-05,
+       2.0477939898323024e-05,
+       1.901396167781284e-05,
+       9.436826463363382e-06,
+       1.5086843390308806e-05,
+       -6.334376325244967e-06,
+       -6.866138462695591e-07,
+       -7.553988895605223e-06,
+       -1.1827832251027443e-05,
+       -1.2555922846125957e-06
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 9.489449208638821e-06,
+      "max": 3.443098120238718e-05,
+      "mean": -7.290560529733166e-05,
+      "min": -0.03967160572211497,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -4.407922001041709e-06,
+       1.0600075463706082e-05,
+       3.938677252359924e-06,
+       -4.6130704392084226e-06,
+       1.1740208060460568e-06,
+       1.3831281995730474e-05,
+       8.471947785565926e-06,
+       -7.709006876370963e-06,
+       -1.2779630091533834e-05,
+       9.489449208638821e-06
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0010796366501687443,
+      "max": 0.001126142152278616,
+      "mean": 0.001088002872161993,
+      "min": -0.0032417300131362264,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0010957266712653866,
+       0.001108475066736751,
+       0.0010943676765234754,
+       0.0010847081179415406,
+       0.0010926874430082533,
+       0.0011026956511803146,
+       0.0011012996226513125,
+       0.0011006711051803665,
+       0.0011035976811567007,
+       0.0010796366501687443
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "eo-micro.sensor.st-1": {
+    "columns": [
+     "q0",
+     "q1",
+     "q2",
+     "q3"
+    ],
+    "data": [
+     {
+      "first": 0.8648040900961516,
+      "last": 0.02455753792528809,
+      "max": 0.8692076284370025,
+      "mean": 0.43344725235138865,
+      "min": 0.0004784243408340531,
+      "non_finite": 0,
+      "samples": [
+       0.8648040900961516,
+       0.6282218249804893,
+       0.05330017570610615,
+       0.5875779315208712,
+       0.497460028110141,
+       0.21213194454761555,
+       0.6574654385535577,
+       0.28443213579950843,
+       0.4425391504092083,
+       0.6189540333770162,
+       0.02455753792528809
+      ]
+     },
+     {
+      "first": 0.1864973391301164,
+      "last": -0.7447651351228209,
+      "max": 0.7396968356642467,
+      "mean": -0.12749664831424692,
+      "min": -0.752438571624807,
+      "non_finite": 0,
+      "samples": [
+       0.1864973391301164,
+       -0.35382158603948166,
+       -0.748447810589358,
+       0.21196667176118847,
+       -0.5883156963286756,
+       0.6565601241670006,
+       -0.0915050555777783,
+       -0.7261812165327204,
+       0.4571049348010941,
+       -0.38021093648409804,
+       -0.7447651351228209
+      ]
+     },
+     {
+      "first": 0.37294586103581495,
+      "last": 0.10721584552227169,
+      "max": 0.37294586103581495,
+      "mean": -0.47686337852829375,
+      "min": -0.7524308214352402,
+      "non_finite": 0,
+      "samples": [
+       0.37294586103581495,
+       -0.6640026518125001,
+       0.07722575499015116,
+       -0.7219178734044255,
+       -0.4689834942937475,
+       -0.36750346739765044,
+       -0.746859334350105,
+       -0.1969315705309156,
+       -0.5976059702879168,
+       -0.6492815184420629,
+       0.10721584552227169
+      ]
+     },
+     {
+      "first": -0.27972131307179376,
+      "last": 0.658199501143444,
+      "max": 0.6586702779560686,
+      "mean": 0.03350505732888946,
+      "min": -0.6586907492898572,
+      "non_finite": 0,
+      "samples": [
+       -0.27972131307179376,
+       0.19811133803156486,
+       0.6565220094253472,
+       -0.2977530663341201,
+       0.43182478387187256,
+       -0.6235944538776497,
+       -0.03958732884906102,
+       0.5941188074853508,
+       -0.4879357367644032,
+       0.22531990181468145,
+       0.658199501143444
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.sun_heading_body": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -0.41475943752771915,
+      "last": -0.4528102049387793,
+      "max": 0.9826652566720657,
+      "mean": 0.05212534032688019,
+      "min": -0.9826651329331679,
+      "non_finite": 0,
+      "samples": [
+       -0.41475943752771915,
+       0.9039030980152352,
+       -0.37774953446344306,
+       -0.36620462851095126,
+       0.899365215233315,
+       -0.9197870933915645,
+       0.41383330658794154,
+       0.3261181413933946,
+       -0.8819477155810539,
+       0.9331385195639503,
+       -0.4528102049387793
+      ]
+     },
+     {
+      "first": 0.9083323993076293,
+      "last": -0.872126564417164,
+      "max": 0.9826782136656075,
+      "mean": 0.020709247229329972,
+      "min": -0.9826814580307176,
+      "non_finite": 0,
+      "samples": [
+       0.9083323993076293,
+       0.3854387508672009,
+       -0.9071586053736949,
+       0.9119024880104843,
+       -0.3959712029488286,
+       -0.345843956791774,
+       0.891275373889624,
+       -0.9269981609362372,
+       0.433402367738333,
+       0.308008490831782,
+       -0.872126564417164
+      ]
+     },
+     {
+      "first": -0.05391531646699116,
+      "last": -0.18535958011717507,
+      "max": -0.05391531646699116,
+      "mean": -0.18560617496459553,
+      "min": -0.32520185705046856,
+      "non_finite": 0,
+      "samples": [
+       -0.05391531646699116,
+       -0.18546201424656233,
+       -0.185387577547972,
+       -0.18527822974501024,
+       -0.18533487546490302,
+       -0.18542831601701848,
+       -0.18539202317360273,
+       -0.18526026955327451,
+       -0.18528522504551495,
+       -0.1854272711375726,
+       -0.18535958011717507
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "eo-micro.velocity_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -984.8417341325176,
+      "last": -1455.4169171085518,
+      "max": 1703.5824381727296,
+      "mean": 93.70242725356407,
+      "min": -1699.228646288287,
+      "non_finite": 0,
+      "samples": [
+       -984.8417341325176,
+       1676.784689417364,
+       -1406.3065721533635,
+       333.74166755126873,
+       927.7013699471541,
+       -1653.033633797714,
+       1431.1855122524105,
+       -394.4257995266991,
+       -868.0363680090076,
+       1629.9803697902335,
+       -1455.4169171085518
+      ]
+     },
+     {
+      "first": 183.95232938187036,
+      "last": -7398.836600829813,
+      "max": 7460.164678159803,
+      "mean": 272.6690999769504,
+      "min": -7461.386345185065,
+      "non_finite": 0,
+      "samples": [
+       183.95232938187036,
+       5093.047219339019,
+       -7448.578657709661,
+       5560.702168785568,
+       -494.9153921087124,
+       -4856.473026683407,
+       7431.138899216671,
+       -5771.544006480242,
+       804.4640014456623,
+       4624.856203856789,
+       -7398.836600829813
+      ]
+     },
+     {
+      "first": 7518.706887795521,
+      "last": 788.4049561603771,
+      "max": 7518.706887795521,
+      "mean": -313.79320695560597,
+      "min": -7525.971560999067,
+      "non_finite": 0,
+      "samples": [
+       7518.706887795521,
+       -5368.915810762259,
+       160.29322741116871,
+       5144.3477478658015,
+       -7519.164553739152,
+       5584.377727313499,
+       -467.3223494224001,
+       -4909.312127993563,
+       7492.201768596274,
+       -5791.743275139626,
+       788.4049561603771
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m/s"
+   },
+   "ephemeris.earth.dcm_PN": {
+    "columns": [
+     "c00",
+     "c01",
+     "c02",
+     "c10",
+     "c11",
+     "c12",
+     "c20",
+     "c21",
+     "c22"
+    ],
+    "data": [
+     {
+      "first": 0.9463069071449525,
+      "last": -0.32732268573324363,
+      "max": 0.9463069071449525,
+      "mean": 0.3946359240918699,
+      "min": -0.32732268573324363,
+      "non_finite": 0,
+      "samples": [
+       0.9463069071449525,
+       0.8838868573353765,
+       0.7995834913674565,
+       0.6954839963269508,
+       0.5741656728146224,
+       0.43863212612561026,
+       0.29223890277600195,
+       0.13861041368710458,
+       -0.018449799123406184,
+       -0.17505323087325725,
+       -0.32732268573324363
+      ]
+     },
+     {
+      "first": 0.3232575200308001,
+      "last": 0.944912114369362,
+      "max": 0.9999999756019716,
+      "mean": 0.808526741619605,
+      "min": 0.3232575200308001,
+      "non_finite": 0,
+      "samples": [
+       0.3232575200308001,
+       0.4676935060785878,
+       0.6005503123243573,
+       0.7185386631096184,
+       0.8187373968364363,
+       0.8986657880918177,
+       0.9563449656605484,
+       0.9903469055141053,
+       0.9998297858815571,
+       0.984558829122315,
+       0.944912114369362
+      ]
+     },
+     {
+      "first": -0.0027952161439351686,
+      "last": 0.0009775082598023007,
+      "max": 0.0009775082598023007,
+      "mean": -0.0011589068035444024,
+      "min": -0.0027952161439351686,
+      "non_finite": 0,
+      "samples": [
+       -0.0027952161439351686,
+       -0.002609176442793754,
+       -0.0023585376285811246,
+       -0.0020495047538604833,
+       -0.0016897286254694546,
+       -0.0012881163918685471,
+       -0.00085461102446106,
+       -0.0003999451530129188,
+       6.462465028996217e-05,
+       0.0005275965600584392,
+       0.0009775082598023007
+      ]
+     },
+     {
+      "first": -0.32325607839209025,
+      "last": -0.9449079922079768,
+      "max": -0.32325607839209025,
+      "mean": -0.8085231944238295,
+      "min": -0.9999956028584323,
+      "non_finite": 0,
+      "samples": [
+       -0.32325607839209025,
+       -0.4676914347281938,
+       -0.6005476625394516,
+       -0.7185355004888139,
+       -0.8187337996758126,
+       -0.8986618454465697,
+       -0.956340775140238,
+       -0.9903425708661059,
+       -0.9998254144225127,
+       -0.9845545290812098,
+       -0.9449079922079768
+      ]
+     },
+     {
+      "first": 0.9463110353590134,
+      "last": -0.32732414517832886,
+      "max": 0.9463110353590134,
+      "mean": 0.39463762563481236,
+      "min": -0.32732414517832886,
+      "non_finite": 0,
+      "samples": [
+       0.9463110353590134,
+       0.8838907083291622,
+       0.7995869697949224,
+       0.6954870160652536,
+       0.5741681590964473,
+       0.4386340173903738,
+       0.29224015219409916,
+       0.13861099031945617,
+       -0.018449909559215705,
+       -0.1750540256492234,
+       -0.32732414517832886
+      ]
+     },
+     {
+      "first": 0.0009654741419772471,
+      "last": 0.0027911009953647484,
+      "max": 0.0029573100923688395,
+      "mean": 0.0023950104056188596,
+      "min": 0.0009654741419772471,
+      "non_finite": 0,
+      "samples": [
+       0.0009654741419772471,
+       0.0013919810542997724,
+       0.0017840270667325512,
+       0.002131905706021256,
+       0.002427003956118396,
+       0.0026620155046725743,
+       0.002831121639641819,
+       0.0029301353162796977,
+       0.002956604827727403,
+       0.0029098745124673635,
+       0.0027911009953647484
+      ]
+     },
+     {
+      "first": 0.002957240660008948,
+      "last": 0.0029573071984930793,
+      "max": 0.0029573071984930793,
+      "mean": 0.0029572739292509677,
+      "min": 0.002957240660008948,
+      "non_finite": 0,
+      "samples": [
+       0.002957240660008948,
+       0.0029572473138571643,
+       0.002957253967705824,
+       0.0029572606215542605,
+       0.002957267275402475,
+       0.002957273929250911,
+       0.0029572805830993458,
+       0.00295728723694778,
+       0.0029572938907962134,
+       0.0029573005446446466,
+       0.0029573071984930793
+      ]
+     },
+     {
+      "first": -1.0064240276172228e-05,
+      "last": -1.0064693180986322e-05,
+      "max": -1.0064240276172228e-05,
+      "mean": -1.0064466727730332e-05,
+      "min": -1.0064693180986322e-05,
+      "non_finite": 0,
+      "samples": [
+       -1.0064240276172228e-05,
+       -1.0064285566194195e-05,
+       -1.0064330856320233e-05,
+       -1.0064376146546762e-05,
+       -1.006442143687444e-05,
+       -1.0064466727305432e-05,
+       -1.0064512017837673e-05,
+       -1.0064557308471816e-05,
+       -1.0064602599207862e-05,
+       -1.0064647890046468e-05,
+       -1.0064693180986322e-05
+      ]
+     },
+     {
+      "first": 0.9999956273036347,
+      "last": 0.9999956271068567,
+      "max": 0.9999956273036347,
+      "mean": 0.9999956272052459,
+      "min": 0.9999956271068567,
+      "non_finite": 0,
+      "samples": [
+       0.9999956273036347,
+       0.9999956272839571,
+       0.9999956272642795,
+       0.9999956272446018,
+       0.9999956272249241,
+       0.9999956272052463,
+       0.9999956271855684,
+       0.9999956271658906,
+       0.9999956271462127,
+       0.9999956271265348,
+       0.9999956271068567
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "ephemeris.earth.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "ephemeris.moon.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -36498219.59645876,
+      "last": -57328429.33142273,
+      "max": -36498219.59645876,
+      "mean": -46925126.2637386,
+      "min": -57328429.33142273,
+      "non_finite": 0,
+      "samples": [
+       -36498219.59645876,
+       -38587252.98886545,
+       -40675111.81582174,
+       -42761735.52471551,
+       -44847063.549931265,
+       -46931035.31403999,
+       -49013590.22899181,
+       -51094667.69730991,
+       -53174207.11328674,
+       -55252147.86418203,
+       -57328429.33142273
+      ]
+     },
+     {
+      "first": 373245397.2620787,
+      "last": 371177708.6358712,
+      "max": 373245397.2620787,
+      "mean": 372299854.2657648,
+      "min": 371177708.6358712,
+      "non_finite": 0,
+      "samples": [
+       373245397.2620787,
+       373086340.4607762,
+       372916678.5205316,
+       372736411.8881221,
+       372545541.28150594,
+       372344067.69013363,
+       372131992.3752568,
+       371909316.8702348,
+       371676042.98083854,
+       371432172.78555185,
+       371177708.6358712
+      ]
+     },
+     {
+      "first": 148329738.23489538,
+      "last": 145467264.91917542,
+      "max": 148329738.23489538,
+      "mean": 146933295.32151923,
+      "min": 145467264.91917542,
+      "non_finite": 0,
+      "samples": [
+       148329738.23489538,
+       148062326.5196483,
+       147790712.4096253,
+       147514901.97280186,
+       147234901.38878345,
+       146950716.94881546,
+       146662355.05579263,
+       146369822.2242667,
+       146073125.0804531,
+       145772270.36223653,
+       145467264.91917542
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "ephemeris.sun.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 45853511751.451294,
+      "last": 45249959190.935555,
+      "max": 45853511751.451294,
+      "mean": 45551802569.654945,
+      "min": 45249959190.935555,
+      "non_finite": 0,
+      "samples": [
+       45853511751.451294,
+       45793192814.440475,
+       45732865775.82902,
+       45672530647.12819,
+       45612187439.850555,
+       45551836165.50997,
+       45491476835.62157,
+       45431109461.701706,
+       45370734055.268,
+       45310350627.839264,
+       45249959190.935555
+      ]
+     },
+     {
+      "first": 132714375762.52007,
+      "last": 132893810227.37473,
+      "max": 132893810227.37473,
+      "mean": 132804290108.61592,
+      "min": 132714375762.52007,
+      "non_finite": 0,
+      "samples": [
+       132714375762.52007,
+       132732425682.20094,
+       132750451948.96448,
+       132768454559.87556,
+       132786433512.00636,
+       132804388802.43643,
+       132822320428.25262,
+       132840228386.54924,
+       132858112674.42792,
+       132875973288.99762,
+       132893810227.37473
+      ]
+     },
+     {
+      "first": 57527279153.97228,
+      "last": 57605038857.8097,
+      "max": 57605038857.8097,
+      "mean": 57566244406.267395,
+      "min": 57527279153.97228,
+      "non_finite": 0,
+      "samples": [
+       57527279153.97228,
+       57535101254.76581,
+       57542913107.54529,
+       57550714711.10974,
+       57558506064.26128,
+       57566287165.80511,
+       57574058014.54958,
+       57581818609.30616,
+       57589568948.88938,
+       57597309032.116974,
+       57605038857.8097
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "santiago-gs.access_to_eo-micro.antenna_off_boresight": {
+    "columns": [
+     "antenna_off_boresight"
+    ],
+    "data": [
+     {
+      "first": "nan",
+      "last": "nan",
+      "non_finite": 2161,
+      "samples": [
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan"
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "deg"
+   },
+   "santiago-gs.access_to_eo-micro.azimuth": {
+    "columns": [
+     "azimuth"
+    ],
+    "data": [
+     {
+      "first": -1.1244769348543067,
+      "last": -2.9367259620040143,
+      "max": 3.13736786250146,
+      "mean": 0.08554282603780529,
+      "min": -3.1403172599291684,
+      "non_finite": 0,
+      "samples": [
+       -1.1244769348543067,
+       1.0429314638540303,
+       3.0970327460070735,
+       -0.822459090390893,
+       1.6549858845503294,
+       -2.1905327096782066,
+       0.11773547971726067,
+       2.232409960998537,
+       -1.8245933023454346,
+       0.7051577476813813,
+       -2.9367259620040143
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "santiago-gs.access_to_eo-micro.elevation": {
+    "columns": [
+     "elevation"
+    ],
+    "data": [
+     {
+      "first": -0.4172897345306188,
+      "last": -0.4155751926817663,
+      "max": -0.11286757776213727,
+      "mean": -0.7318026453757732,
+      "min": -1.2296700254640023,
+      "non_finite": 0,
+      "samples": [
+       -0.4172897345306188,
+       -1.2081315554486989,
+       -0.33551116791438795,
+       -0.9288849664038621,
+       -0.770256167958419,
+       -0.5154436954797624,
+       -1.1172294431693288,
+       -0.30346842087102144,
+       -1.009960056005715,
+       -0.7415023660398735,
+       -0.4155751926817663
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "santiago-gs.access_to_eo-micro.has_access": {
+    "columns": [
+     "has_access"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "santiago-gs.access_to_eo-micro.link_closed": {
+    "columns": [
+     "link_closed"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "santiago-gs.access_to_eo-micro.link_margin_db": {
+    "columns": [
+     "link_margin_db"
+    ],
+    "data": [
+     {
+      "first": "nan",
+      "last": "nan",
+      "non_finite": 2161,
+      "samples": [
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan"
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "dB"
+   },
+   "santiago-gs.access_to_eo-micro.slant_range": {
+    "columns": [
+     "slant_range"
+    ],
+    "data": [
+     {
+      "first": 6319298.638594062,
+      "last": 6333855.284972459,
+      "max": 12583901.655714614,
+      "mean": 9005299.649120498,
+      "min": 3526293.7400162956,
+      "non_finite": 0,
+      "samples": [
+       6319298.638594062,
+       12492283.29765234,
+       5549335.068225122,
+       10868327.587131828,
+       9634367.547979895,
+       7308829.410776694,
+       12044885.654518353,
+       5226341.912985332,
+       11443328.596242715,
+       9364255.950391684,
+       6333855.284972459
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   },
+   "svalbard-gs.access_to_eo-micro.antenna_off_boresight": {
+    "columns": [
+     "antenna_off_boresight"
+    ],
+    "data": [
+     {
+      "first": "nan",
+      "last": "nan",
+      "max": 66.20563351530944,
+      "mean": 58.783736242677215,
+      "min": 13.553407198560471,
+      "non_finite": 1957,
+      "samples": [
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       59.264741663496146,
+       "nan",
+       "nan",
+       "nan",
+       "nan"
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "deg"
+   },
+   "svalbard-gs.access_to_eo-micro.azimuth": {
+    "columns": [
+     "azimuth"
+    ],
+    "data": [
+     {
+      "first": -0.7978251532034601,
+      "last": -2.5829892424954912,
+      "max": 3.140794513555834,
+      "mean": -0.24106968367408865,
+      "min": -3.1411770686167353,
+      "non_finite": 0,
+      "samples": [
+       -0.7978251532034601,
+       2.205941192666462,
+       -2.6499052994685446,
+       -0.14593280850263407,
+       2.985409974100349,
+       -0.1544937176919501,
+       0.7874417073379504,
+       -2.754278047609707,
+       0.48017026361603415,
+       -2.5185246123190375,
+       -2.5829892424954912
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "svalbard-gs.access_to_eo-micro.elevation": {
+    "columns": [
+     "elevation"
+    ],
+    "data": [
+     {
+      "first": -0.8203368002678616,
+      "last": -1.5498508294531708,
+      "max": 1.31188306201347,
+      "mean": -0.6655282714731635,
+      "min": -1.5498508294531708,
+      "non_finite": 0,
+      "samples": [
+       -0.8203368002678616,
+       -0.21194668536211933,
+       -1.4253815558891112,
+       -0.4022341819050611,
+       -0.6551048635261351,
+       -1.2347197173886804,
+       0.3615278028897636,
+       -1.0958307328255088,
+       -0.7960145253266432,
+       -0.24310929033742937,
+       -1.5498508294531708
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "rad"
+   },
+   "svalbard-gs.access_to_eo-micro.has_access": {
+    "columns": [
+     "has_access"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.09440074039796391,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "svalbard-gs.access_to_eo-micro.link_closed": {
+    "columns": [
+     "link_closed"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.09440074039796391,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "-"
+   },
+   "svalbard-gs.access_to_eo-micro.link_margin_db": {
+    "columns": [
+     "link_margin_db"
+    ],
+    "data": [
+     {
+      "first": "nan",
+      "last": "nan",
+      "max": 17.163534421594722,
+      "mean": 6.244674063101688,
+      "min": 1.6630772820184392,
+      "non_finite": 1957,
+      "samples": [
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       "nan",
+       7.4364401332273875,
+       "nan",
+       "nan",
+       "nan",
+       "nan"
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "dB"
+   },
+   "svalbard-gs.access_to_eo-micro.slant_range": {
+    "columns": [
+     "slant_range"
+    ],
+    "data": [
+     {
+      "first": 10061042.973390898,
+      "last": 13276976.652686061,
+      "max": 13276976.652686061,
+      "mean": 8320667.447292148,
+      "min": 580658.6632477483,
+      "non_finite": 0,
+      "samples": [
+       10061042.973390898,
+       4373757.467650563,
+       13148971.807452999,
+       6207360.814892103,
+       8603379.114577716,
+       12608392.546049396,
+       1294109.5006595852,
+       11927670.033076795,
+       9864845.669968808,
+       4653402.244768332,
+       13276976.652686061
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 21600.0,
+     "max": 21600.0,
+     "mean": 10800.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      2160.0,
+      4320.0,
+      6480.0,
+      8640.0,
+      10800.0,
+      12960.0,
+      15120.000000000002,
+      17280.0,
+      19440.0,
+      21600.0
+     ]
+    },
+    "units": "m"
+   }
+  },
+  "summary": [
+   {
+    "decimals": 2,
+    "key": "run_length",
+    "label": "Run length",
+    "unit": "h",
+    "value": 6.0
+   },
+   {
+    "decimals": 3,
+    "key": "eo-micro.mean_sma_change",
+    "label": "eo-micro: Mean semi-major axis change",
+    "unit": "km",
+    "value": -0.002029034899547696
+   },
+   {
+    "decimals": 2,
+    "key": "eo-micro.lowest_link_margin",
+    "label": "eo-micro: Lowest link margin",
+    "unit": "dB",
+    "value": 1.6630772820184392
+   },
+   {
+    "decimals": 2,
+    "key": "eo-micro.lowest_battery_charge",
+    "label": "eo-micro: Lowest battery charge",
+    "unit": "W*h",
+    "value": 227.314319386542
+   },
+   {
+    "decimals": 0,
+    "key": "eo-micro.passes",
+    "label": "eo-micro: Passes",
+    "unit": "-",
+    "value": 6.0
+   },
+   {
+    "decimals": 1,
+    "key": "eo-micro.contact_time",
+    "label": "eo-micro: Contact time",
+    "unit": "min",
+    "value": 45.16666666666668
+   },
+   {
+    "decimals": 0,
+    "key": "eo-micro.eclipses",
+    "label": "eo-micro: Eclipses",
+    "unit": "-",
+    "value": 5.0
+   },
+   {
+    "decimals": 1,
+    "key": "eo-micro.eclipse_time",
+    "label": "eo-micro: Eclipse time",
+    "unit": "min",
+    "value": 119.3333333333333
+   },
+   {
+    "decimals": 3,
+    "key": "eo-micro.data_downlinked",
+    "label": "eo-micro: Data downlinked",
+    "unit": "Gbit",
+    "value": 12.8
+   }
+  ],
+  "warnings": [
+   "space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap",
+   "the magnetic field model (WMM, epoch 2025.0) is valid from 2025.0 to 2030.0; outside those years magnetometer readings and torque-rod control use an extrapolated field",
+   "Earth orientation: IAU rotation model, no IERS data installed",
+   "Earth gravity field oriented by the IAU model (no IERS data): ~160 m/day position error at degree 20, 400 km"
+  ]
+ },
+ "span_days": 0.25,
+ "template": "35_eo_operations_week.json"
+}
