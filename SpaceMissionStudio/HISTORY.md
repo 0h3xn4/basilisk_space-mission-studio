@@ -18446,3 +18446,20 @@ and written with the rest of the layout at quit, which already happened.
 A crash loses the windows' places since the start, as it loses the rest
 of the layout. The geometry test now checks that a move writes nothing
 and that quitting writes the key (`docs/ui/TEST_CHANGES.md`).
+
+**Windows CI: the overlay stopped while a context was lost.** On the
+Windows runner the GPU process lost and gave back WebGL contexts by
+itself (its log: "Context lost during MakeCurrent", "Already being
+accessed for read" in the D3D shared-image backing). PR-2's frame loop
+skipped the whole frame while a context was lost, so the HUD's time,
+the sky and the labels kept their old state. That failed two tests of
+`test_mission_view.py` (the stars and the ISO time), and the recovery
+test read `00:00:00Z` before it took the context away. The loop now
+updates the scene, the overlay and the labels in every frame; only the
+draw call waits for a context, as before PR-2. The recovery tests wait
+for a live context before they take one away (a lost context has no
+`WEBGL_lose_context` to call), and the test of a context never given
+back checks that the overlay follows the frame while the context is
+lost. Two geometry tests expected a window of exactly the saved size; on
+Windows the Thermal view's own minimum is 714 px wide, so they now
+expect the saved size enlarged to the view's minimum.

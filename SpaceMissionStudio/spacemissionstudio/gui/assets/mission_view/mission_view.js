@@ -972,15 +972,19 @@ MV.updateLabels = function () {
 
 // Without WebGL the scene is still updated (time, views, lines of sight,
 // labels), only not drawn.
+// The scene, the overlay and the labels follow the frame even while the
+// WebGL context is lost; only the draw call waits for a context. (Skipping
+// the whole frame left the time shown and the sky as they were: a software
+// renderer on Windows loses its context during normal use.)
 MV.render = function () {
   MV.update();
-  if (MV.renderer) MV.renderer.render(MV.scene, MV.camera);
+  if (MV.renderer && !MV.contextLost) MV.renderer.render(MV.scene, MV.camera);
   MV.updateLabels();
   MV.dirty = false;
 };
 
 MV.loop = function () {
-  if (MV.dirty && MV.data && MV.style && !MV.contextLost) MV.render();
+  if (MV.dirty && MV.data && MV.style) MV.render();
   requestAnimationFrame(MV.loop);
 };
 
