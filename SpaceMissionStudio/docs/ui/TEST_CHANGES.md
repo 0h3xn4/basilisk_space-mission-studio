@@ -2208,4 +2208,6 @@ failed; that test is unchanged).
 | `test_breakout.py::test_the_3d_view_recovers_a_webgl_context_never_given_back` | lost, then one recovery | also: while lost (the page's timer held), a new frame changes the overlay's time; the recovery assertions are unchanged | the frame loop draws the overlay without a context now (HISTORY, "Windows CI") |
 | `test_breakout.py::_lose_context` and the recovery tests' own steps (second Windows round) | ran the test's JavaScript directly | run it through `_try_js`, which returns `"ok"` or the error's text; each step asserts `"ok"` | a step that throws (a context already lost by the GPU process) showed only as `Script error. (:0)` among the page's errors; now it fails with its own message |
 
+Also: before they read the overlay's time, the two recovery tests wait until the page has drawn the frame (`MV.dirty` false). The overlay follows `MV.frame` on the next animation frame, and on the Windows runner the test read it before that frame (it saw frame 0's time).
+
 New in the second round: `test_breakout.py::test_the_3d_view_tries_again_while_no_new_context_can_start` (the first new context is refused; the second try draws, with no error).

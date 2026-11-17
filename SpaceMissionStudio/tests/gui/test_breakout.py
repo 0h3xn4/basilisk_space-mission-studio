@@ -474,6 +474,8 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 77, timeout=10000)
     _js(qtbot, view, "MV.camera.position.set(9000, 1000, 2000); MV.dirty = true; "
                      "window.KEEP = [MV.scene, MV.body, MV.body.material, MV.body.material.map, MV.crafts[0].mesh]; 1")
+    # The frame drawn (the overlay follows MV.frame on the next animation frame, not at once).
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.dirty") is False, timeout=10000)
     clock = _js(qtbot, view, "document.getElementById('hud-time').textContent")
     before = _lose_context(qtbot, view)
     assert _try_js(qtbot, view, "LOSE.restoreContext();") == "ok"
@@ -509,6 +511,7 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     before = _lose_context(qtbot, view)
     # The page's own timer waits while the overlay is checked (a slow runner can take RECOVER_AFTER_MS for it).
     assert _try_js(qtbot, view, "clearTimeout(MV.recoverTimer);") == "ok"
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.dirty") is False, timeout=10000)  # the frame drawn
     shown = _js(qtbot, view, "document.getElementById('hud-time').textContent").split("\n")[0]
     view.slider.setValue(120)
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 120, timeout=10000)
