@@ -135,7 +135,9 @@ relative to `SpaceMissionStudio/` unless they start with `.github/`.
   - `## Next release` has no items (an empty backlog is a finished run,
     not a failure);
   - the GitHub tools (`mcp__github__*`) are missing, so the release
-    cannot be published;
+    cannot be published. They are deferred: load them with ToolSearch
+    (`select:mcp__github__actions_run_trigger,mcp__github__actions_list`)
+    before you decide that they are missing;
   - the tests cannot run in this container: Basilisk is missing and
     `pip install -c packaging/constraints.txt bsk==2.12.0` fails, or the
     Qt libraries for the GUI tests are missing.
@@ -150,12 +152,15 @@ relative to `SpaceMissionStudio/` unless they start with `.github/`.
   4. Commit with `git commit -s`. Write the message in short, plain
      sentences, about 80 % of the way to ASD-STE100 Simplified Technical
      English. Name every choice you made without asking.
-  5. Push.
+  5. Push. First run `git pull --rebase origin <default branch>`: other
+     work lands on the same branch. If the rebase conflicts, abort it,
+     drop your commit and move the item to `## Needs human`.
   6. Move the item to `## Done` with the short commit hash.
 - **The checks** (from `SpaceMissionStudio/`), all must pass before a push:
   - `python -m ruff check spacemissionstudio tests scripts compliance/tools`
   - `QT_QPA_PLATFORM=offscreen python -m pytest tests -q -n auto`
-  - `pre-commit run --files <changed files>` (from the repository root)
+  - `pre-commit run --files <changed files>` (from the repository root;
+    `pip install pre-commit` first, it is not in the `dev` extra)
   - `python compliance/tools/check_drds.py`, the other generators in
     "Checks before a commit", then `git diff --exit-code compliance/docs`
   The hard rules above still apply. The golden files stay byte-identical.
@@ -165,36 +170,58 @@ relative to `SpaceMissionStudio/` unless they start with `.github/`.
   and continue.
 - **Never ask questions** during a backlog run. Make reasonable choices
   and note them in the commit message.
+- **A denied tool call** is not retried in another form. Report it and
+  stop.
+- **Waiting for CI** uses a background command or the Monitor tool, never
+  a foreground `sleep`. Wait at most two hours; then stop and report.
+  CI is red when a check of the "SpaceMissionStudio" workflow failed.
+  If CI turns red after one of your pushes and the cause is in your
+  change, fix it once; otherwise stop, publish nothing and report it.
 - **Semver:** a breaking change is a major step, a new feature a minor
   step, anything else a patch.
 - **No release without done items.** If every item of this run went to
   `## Needs human`, push the moves, publish nothing and report it.
-- **Release** (only when `## Next release` is empty and this run moved
-  at least one item to `## Done`), by `docs/developer/releasing.md`
-  sections 2 to 4:
-  1. Set the version in `pyproject.toml`, `spacemissionstudio/__init__.py`
-     and `packaging/windows/spacemissionstudio.iss`.
-  2. Move the Unreleased entries in `CHANGELOG.md` under
-     `## X.Y.Z (YYYY-MM-DD)`. List every item of the release.
-  3. Update the release records: HISTORY, SRelD, and the others
-     `releasing.md` names.
-  4. Commit (`-s`) and push.
-  5. Wait until the "SpaceMissionStudio" workflow is green on that commit.
-  6. Run `python packaging/release_check.py --commit "$(git rev-parse HEAD)" --tags "$(git ls-remote --tags origin)"`.
-     It must pass.
-  7. Run `git tag -a spacemissionstudio-vX.Y.Z -m "SpaceMissionStudio X.Y.Z"`.
-     The tag name is `spacemissionstudio-vX.Y.Z`, not `vX.Y.Z`: the
-     release workflow starts only on that pattern, and `vX.Y.Z` is
-     Basilisk upstream's tag namespace.
-  8. Run `git push --follow-tags origin <default branch>`. The tag push
-     starts `.github/workflows/spacemissionstudio-release.yml`. It
-     builds, installs, checks and attaches every file to a draft release.
-  9. **Publish:** start the same workflow with the GitHub tool
-     `mcp__github__actions_run_trigger` (`run_workflow`, workflow
-     `spacemissionstudio-release.yml`, ref the default branch, inputs
-     `tag: spacemissionstudio-vX.Y.Z` and `publish: true`). It
-     publishes the release once every file is attached. Do not use the
-     `gh` CLI.
-  10. Check that `git ls-remote --tags origin` shows the tag and that
-      the release has its files.
+- **No release of other work.** `CHANGELOG.md` `## Unreleased` can hold
+  entries of work that a person or another session merged and that is
+  not finished. If it holds any entry that did not come from an item of
+  this run, do not release: push the item commits, publish nothing and
+  report that the release waits for that work. Do the same when CI was
+  already red on the default branch before your first push.
+- **Release** (only when `## Next release` is empty, this run moved at
+  least one item to `## Done`, and the two rules above allow it), by
+  `docs/developer/releasing.md` sections 2 to 4 and 6:
+  1. The version: take the newest tag from
+     `git ls-remote --tags origin 'spacemissionstudio-v*'` and raise it by
+     the semver rule above. It must be new.
+  2. Set it in `pyproject.toml`, `spacemissionstudio/__init__.py` and
+     `packaging/windows/spacemissionstudio.iss`.
+  3. Move the Unreleased entries in `CHANGELOG.md` under
+     `## X.Y.Z (YYYY-MM-DD)`, dated today in UTC, with a one-paragraph
+     summary first (the release notes use it). List every item.
+  4. Update the release records: HISTORY, SRelD, and the others
+     `releasing.md` sections 3 and 4 name.
+  5. Run the checks and
+     `python packaging/release_check.py --commit "$(git rev-parse HEAD)" --tags "$(git ls-remote --tags origin)"`.
+     It must pass. Commit (`-s`), pull with rebase, push.
+  6. Wait until CI is green on that commit (see "Waiting for CI").
+  7. **Tag and publish in one step:** start the workflow
+     `spacemissionstudio-tag-release.yml` with the GitHub tool
+     `mcp__github__actions_run_trigger` (`run_workflow`, ref the default
+     branch, inputs `version: X.Y.Z`, `ref: <default branch>`,
+     `publish: true`). It checks the head commit again (CI passed,
+     pip-audit with today's advisories, the CHANGELOG), tags exactly that
+     commit `spacemissionstudio-vX.Y.Z` and starts the release workflow,
+     which builds, installs, checks, attaches the eleven files and
+     publishes. Do not tag by hand and do not use the `gh` CLI. If
+     another commit landed on the branch after yours, the check runs on
+     that head; wait for its CI first.
+  8. Wait for both workflows (at most two hours). If one fails, stop and
+     report it: a failed check tags nothing, a failed build leaves at
+     most a draft.
+  9. Check that `git ls-remote --tags origin` shows the tag and that the
+     published release has its eleven files. Download them and run
+     `sha256sum -c SHA256SUMS-linux` and `sha256sum -c SHA256SUMS-windows`.
+  10. Record the publication as `releasing.md` section 6 says (SRelD
+      status and baseline, `compliance/human_actions.md` H05, then
+      `compliance/tools/build_matrix.py`). Commit, pull with rebase, push.
 - **Progress** goes to `PROGRESS.md`, next to this file. Git ignores it.
