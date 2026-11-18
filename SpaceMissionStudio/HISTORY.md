@@ -18862,3 +18862,74 @@ one timing test of the breakout windows measured one Budgets move at
 74.5 ms under four parallel workers (it passed three of three runs
 alone). The rest of the suite passed (3476 tests). Screenshots taken
 offscreen at 1280 x 720 before and after show each view.
+
+## UI audit batch B2: one primary action, stable headers (2026-11-18)
+
+The UI audit of 2026-11-17 found five defects in the window's primary
+action, its area headers and its top bar. Batch B2 fixes them.
+
+**One accent per view (UI-03).** Run › History showed three accent
+buttons: the top bar's Run, the Run area's Run and the empty state's
+Run. Results › Overview, Design Checks, End of Life and Budgets had two.
+The top bar's Run is now the app's primary action and the one accent of
+every view while a run can start. The Run area's own Run, the empty
+states' Run, Check, Estimate, Add Budgets Section, Add Item, a data
+table's empty-state action and Bring Back are secondary buttons.
+Design Checks shows one Check at a time: the empty state's before the
+first check, the row's after it.
+`AreaPage.add_command` lost its `primary` argument. Home's Open
+template is the accent only while no scenario is open; then Run is
+disabled and grey. The work areas' New Scenario stays the accent: it
+shows only while no scenario is open. The Run area keeps its own Run,
+because `test_toolbar_actions_are_all_visible` requires it there.
+
+**Area headers (UI-17).** A header without commands was hidden, so
+Reports, Home and Settings had no title, and a header's commands
+wrapped in a `FlowLayout`, so its height changed. The tab rows started
+at 90, 128 and 137 px. Now every area shows its header with its title,
+48 px high (`theme.AREA_HEADER_HEIGHT`). The commands are one row; with
+no room for their names they show icons only, the names in their
+tooltips and accessible names, until there is room again.
+`AreaPage.title_bar` is the whole header; `AreaPage.header` is its
+commands, which give way to the empty state while no scenario is open.
+At 1280 x 720 the tab rows of Run, Results, Budgets and Reports start at
+one height, with the Inspector shown or not. The breadcrumb names the
+Reports tab ("Reports › Exports").
+
+**Top bar (UI-36).** Save showed the save state ("Unchanged", "Not saved
+yet") as its label. It now always reads "Save". The state stays the
+subtitle's first part and has an icon of its own before it
+(`TopBar.save_state_icon`). The run-mode button changed its width with
+the mode ("SIL" 18 px, "Monte Carlo" 70 px of text), so Undo, Redo, Save
+and Run moved by up to 52 px. It is now as wide as its longest mode
+(`app_shell.SteadyToolButton`). The problem count moved from the end of
+the row to its start, so it takes its room from the subtitle and no
+button moves when it shows. At 1280 px with the Inspector shown the
+subtitle had 29 px ("Un…"). A top bar narrower than 1040 px now shows
+the search field's icon and key only, and the subtitle shows the save
+state whole. It elides, with its whole text as its tooltip, as before.
+
+**Clear Time Cursor (UI-41).** The command was enabled whenever a
+scenario was open. It is now enabled only while a time cursor is set, in
+the menu, the palette and the Results and Timeline headers, and its
+tooltip says why when it is not.
+
+**Run when it cannot start (UI-55).** Run stayed enabled and accent with
+an error in the scenario, and a click only then said "Cannot run". Run
+is now disabled when no run can start: with no scenario open, with an
+error in the scenario's problem list, or while a run goes. Its tooltip
+and its palette entry say why (`ActionRegistry.set_available`,
+`Command.unavailable`, `PaletteEntry.reason`), and Ctrl+R does nothing.
+The empty states' Run buttons follow it. Warnings do not disable Run.
+The editor computes the problem list on each edit already, so the check
+adds no work on the GUI thread. `on_run` keeps its own check.
+
+Tests: the new file `tests/gui/test_primary_action.py` has 15 tests (17
+cases). All 17 failed before the fixes. One test walks every area, tab and Scenario
+page with no scenario and with template 01 and counts the visible,
+enabled accent buttons. Fourteen existing tests changed:
+`docs/ui/TEST_CHANGES.md` lists them. Four assert the new behaviour of
+UI-03 and UI-36; ten give the blank scenario a spacecraft first, so that
+Run can start. Screenshots taken offscreen at 1280 x 720 before and
+after show History, Results › Overview, Design Checks, Budgets, Reports,
+Home, Settings and the top bar in the three run modes.

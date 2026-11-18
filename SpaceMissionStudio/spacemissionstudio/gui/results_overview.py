@@ -198,8 +198,9 @@ class ResultsOverview(QWidget):
         outer.addWidget(self.stack)
 
         self.empty = EmptyState("No run yet", "After a run, its headline figures are here: delta-V, propellant, "
-                                "link margin, battery, passes, eclipses.", "Run", primary=True)
-        self.empty_run_button = self.empty.button  # the empty state's primary action
+                                "link margin, battery, passes, eclipses.", "Run")
+        # Secondary: the top bar's Run is the one accent (UI-03); the window enables it with Run (UI-55).
+        self.empty_run_button = self.empty.button
         self.empty_run_button.clicked.connect(self.run_requested)
         self.stack.addWidget(self.empty)
 

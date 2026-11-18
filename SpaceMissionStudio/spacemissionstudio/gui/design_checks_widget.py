@@ -94,7 +94,7 @@ class DesignChecksWidget(QWidget):
         top.addWidget(QLabel("Spacecraft"))
         self.spacecraft_combo = ComboBox()
         top.addWidget(self.spacecraft_combo, 1)
-        self.check_button = set_role(QPushButton("Check"), variant="primary")
+        self.check_button = QPushButton("Check")  # secondary: the top bar's Run is the one accent (UI-03)
         self.check_button.setToolTip("Check the spacecraft's 3D model: fields of view, thrusters and plumes, mass "
                                      "budget, launcher envelope")
         self.check_button.clicked.connect(self.check)
@@ -117,6 +117,8 @@ class DesignChecksWidget(QWidget):
                                       compact=True)
         self.empty_state.button.clicked.connect(self.check)
         layout.addWidget(self.empty_state)
+        # One Check on the page: the row's own shows once the empty state has gone (as an empty list's Add, B3).
+        self.check_button.setVisible(False)
         self.findings_label = NoteList("finding", empty="No design finding.")
         self.findings_label.setVisible(False)  # until a check has run: then its findings, or that there are none
         layout.addWidget(self.findings_label)
@@ -189,6 +191,7 @@ class DesignChecksWidget(QWidget):
         self.report = report
         findings = report.findings()
         self.empty_state.setVisible(False)
+        self.check_button.setVisible(True)  # to check again, or another spacecraft
         self.findings_label.setVisible(True)
         self.findings_label.set_notes(findings)
         rows = report.fov.rows() if report.fov is not None else []

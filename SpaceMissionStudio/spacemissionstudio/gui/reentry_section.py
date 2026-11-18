@@ -79,7 +79,7 @@ class ReentrySection(QGroupBox):
         self.density_field.setEnabled(False)
         self.density_check.toggled.connect(self.density_field.setEnabled)
         row.addWidget(self.density_field)
-        self.compute_button = set_role(QPushButton("Estimate"), variant="primary")
+        self.compute_button = QPushButton("Estimate")  # secondary: the top bar's Run is the one accent (UI-03)
         self.compute_button.clicked.connect(self.compute)
         row.addWidget(self.compute_button)
         self.save_button = QPushButton("Save...")

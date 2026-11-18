@@ -55,6 +55,7 @@ class Command:
     area: str  # one of AREAS
     tip: str = ""  # what it does, without the shortcut
     keywords: tuple[str, ...] = field(default_factory=tuple)  # older names the palette also matches
+    unavailable: str = ""  # why it is disabled now (ActionRegistry.set_available); "" when it is not
 
     @property
     def label(self) -> str:
@@ -68,10 +69,11 @@ class Command:
         return self.action.shortcut().toString(QKeySequence.SequenceFormat.NativeText)
 
 
-def tooltip_text(label: str, keys: str, tip: str) -> str:
-    """ "Save (Ctrl+S)", then what it does on the next line."""
+def tooltip_text(label: str, keys: str, tip: str, unavailable: str = "") -> str:
+    """ "Save (Ctrl+S)", then why it is disabled now (``unavailable``),
+    then what it does, each on a line of its own."""
     title = f"{label} ({keys})" if keys else label
-    return f"{title}\n{tip}" if tip else title
+    return "\n".join(line for line in (title, unavailable, tip) if line)
 
 
 def _sequences(keys: Keys | Sequence[Keys] | None) -> list[QKeySequence]:
@@ -143,7 +145,16 @@ class ActionRegistry:
         command = self._commands[command_id]
         if tip is not None:
             command.tip = tip
-        command.action.setToolTip(tooltip_text(command.label, command.keys, command.tip))
+        command.action.setToolTip(tooltip_text(command.label, command.keys, command.tip, command.unavailable))
+
+    def set_available(self, command_id: str, reason: str = "") -> None:
+        """Enable the command (``reason`` empty) or disable it and say why:
+        its tooltip and its palette entry give ``reason`` (UI audit UI-55)."""
+        command = self._commands[command_id]
+        command.action.setEnabled(not reason)
+        if reason != command.unavailable:
+            command.unavailable = reason
+            self.refresh_tooltip(command_id)
 
     def __contains__(self, command_id: str) -> bool:
         return command_id in self._commands

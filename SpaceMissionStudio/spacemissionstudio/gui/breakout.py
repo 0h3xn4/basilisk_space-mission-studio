@@ -28,7 +28,7 @@ One mechanism for every view that can open in its own window:
   the time cursor keep working, and the view keeps receiving its data.
 * :class:`BreakoutPlaceholder` -- what the view's place in the main window
   shows while the view is away: the tab keeps its index and its text, and
-  **Bring Back** (primary) and **Show Window** are its actions.
+  **Bring Back** and **Show Window** are its actions.
 * :class:`BreakoutButton` -- the icon button in the view's own toolbar.
 
 The view keeps its parent: it leaves its tab (``QTabWidget.removeTab``
@@ -153,7 +153,8 @@ class _CloseWatcher(QObject):
 
 class BreakoutPlaceholder(EmptyState):
     """The view's place while it is in its own window: "<view> is in its
-    own window", **Bring Back** (primary) and **Show Window**."""
+    own window", **Bring Back** and **Show Window** (secondary: the top
+    bar's Run is the one accent, UI audit UI-03)."""
 
     bring_back_requested = Signal(str)
     show_requested = Signal(str)
@@ -161,7 +162,7 @@ class BreakoutPlaceholder(EmptyState):
     def __init__(self, view_id: str, title: str, parent: QWidget | None = None) -> None:
         super().__init__(f"{title} is in its own window",
                          f"It keeps working there, with its data. Bring Back ({SHORTCUT}) or closing its window "
-                         "puts it here again.", action=BACK_TEXT, primary=True, parent=parent)
+                         "puts it here again.", action=BACK_TEXT, parent=parent)  # secondary: Run is the accent
         self.view_id = view_id
         self.setObjectName("breakoutPlaceholder")
         self.button.setToolTip(f"{BACK_TEXT} ({SHORTCUT})\nMove {title} back into this window.")

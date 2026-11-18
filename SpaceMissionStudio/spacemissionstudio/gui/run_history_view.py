@@ -293,8 +293,9 @@ class RunHistoryView(QWidget):
         layout.addLayout(row)
 
         self.empty = EmptyState("No runs yet", "Each run is listed here: its status, how long it took and where it "
-                                "is saved.", "Run", primary=True)  # the one empty state (UI audit UI-15)
-        self.empty_run_button = self.empty.button  # the empty state's primary action
+                                "is saved.", "Run")  # the one empty state (UI audit UI-15)
+        # Secondary: the top bar's Run is the one accent (UI-03); the window enables it with Run (UI-55).
+        self.empty_run_button = self.empty.button
         self.empty_run_button.clicked.connect(self.run_requested)
         layout.addWidget(self.empty, 1)
 

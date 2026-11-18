@@ -352,18 +352,24 @@ A few things to notice right away:
   dividers' positions) for each scenario file: open a file again and its
   layout comes back. A file without one keeps the layout on screen.
 * A **top bar** above the area names the scenario and says whether it
-  has unsaved changes, where it came from ("from template 22", or the
-  file's name) and when it last ran, how it ended and how long it took;
-  under that, where you are ("Scenario › Spacecraft › sat-1"). On its
-  right: **Undo** and **Redo**, the save button (it says "Saved", "Not
-  saved yet" or "Save"; a click saves), **Run** with its mode, the
-  search field of the command palette and, while the scenario has any,
-  the number of problems (a click opens **Problems**). Runs are numbered in the session
+  has unsaved changes ("Unsaved changes", "Unchanged", "Saved" or "Not
+  saved yet", with an icon), where it came from ("from template 22", or
+  the file's name) and when it last ran, how it ended and how long it
+  took; under that, where you are ("Scenario › Spacecraft › sat-1").
+  Point at the line to read all of it when it is cut. On its right:
+  while the scenario has any, the number of problems (a click opens
+  **Problems**), then **Undo** and **Redo**, **Save**, **Run** with its
+  mode and the search field of the command palette. **Run** is the one
+  blue button. It is grey when no run can start (no scenario open, an
+  error in the scenario, a run going); point at it to read why.
+* Every area has its title at the top, with its commands beside it. When
+  they have no room for their names they show their icons; point at one
+  to read its name. Runs are numbered in the session
   ("Run 2, 12:19"): the top bar, the plots' provenance line and the
   traces of a comparison name them.
 * When a run ends, a note at the bottom right says so: "Run 2 complete
-  in 6 s: 4 passes, 15 eclipses". A run that cannot start (a problem in
-  the scenario, Monte Carlo turned off) or that
+  in 6 s: 4 passes, 15 eclipses". A run that cannot start once it is
+  asked for (Monte Carlo turned off, for example) or that
   fails says why in a note and the status bar and opens where it is
   dealt with: **Problems** at the field, the Monte Carlo page, or the
   **Log** at its errors. The message stays in the Log. Message boxes are
@@ -1540,7 +1546,8 @@ it one sample, with **Shift** ten samples, **Alt+PgDown** and
 **Alt+PgUp** to the next or previous event, **Alt+Home** and **Alt+End**
 to the start and end of the run. The
 status bar shows the cursor's time; **Clear Time Cursor** (at the top of
-Results and the Timeline; **Alt+Backspace**, or Esc in the Timeline) clears it. A saved PNG or SVG includes the line if
+Results and the Timeline; **Alt+Backspace**, or Esc in the Timeline) clears it. It is
+enabled only while a cursor is set. A saved PNG or SVG includes the line if
 it is showing.
 
 The **Reference data** window (the status bar's reference data entry,

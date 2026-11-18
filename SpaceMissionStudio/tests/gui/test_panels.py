@@ -445,6 +445,12 @@ def test_a_keyboard_only_walk_of_the_shell(shown, qtbot, monkeypatch):
     qtbot.keyClick(window, Qt.Key.Key_J, Qt.KeyboardModifier.ControlModifier)
     assert window.problems_dock.isVisible() and window.problems_dock.isAncestorOf(QApplication.focusWidget())
 
+    # A spacecraft, so the scenario can run: Run is enabled, and in the Tab order (UI-55).
+    from spacemissionstudio.schema.scenario import OrbitIC, SpacecraftConfig
+
+    window.scenario_editor.spacecraft_list.from_list([SpacecraftConfig(
+        name="sat-1", orbit=OrbitIC(type="cartesian", position_km=[7000, 0, 0], velocity_km_s=[0, 7.5, 0]))])
+    window.scenario_editor.changed.emit()
     window.status_details_action.setChecked(True)  # every status-bar entry, to walk them all
     window.shell.show_area("home")
     start = rail.buttons["home"]

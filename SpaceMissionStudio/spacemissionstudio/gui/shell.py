@@ -22,7 +22,8 @@ left and the area shown beside it.
 * :class:`NavRail`: one button per area, icon and label, collapsible to
   icons only. Settings and Help sit at its bottom.
 * :class:`AreaPage`: an area's page, a header (its title and the
-  commands of the area) over the screen it hosts.
+  commands of the area, one height in every area) over the screen it
+  hosts.
 * :class:`AreaStack`: the pages, one shown at a time.
 * :class:`Shell`: the rail and the stack. :meth:`Shell.register` adds an
   area, so a later area (Operations) is one more call, with no change to
@@ -41,8 +42,7 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (QButtonGroup, QFrame, QHBoxLayout, QLabel, QSizePolicy, QStackedWidget, QToolButton,
                                QVBoxLayout, QWidget)
 
-from .flow_layout import FlowLayout
-from .theme import ICON_SIZE, SPACE, icon, set_role
+from .theme import AREA_HEADER_HEIGHT, ICON_SIZE, SPACE, icon, set_role
 
 
 @dataclass
@@ -61,8 +61,17 @@ class Area:
 class AreaPage(QWidget):
     """An area's page: a header with the title and the area's commands,
     over ``content``, the screen it hosts unchanged. With an empty state
-    (:meth:`set_empty_state`) the page can show that instead of its header
-    and content (:meth:`show_empty`): the area while no scenario is open."""
+    (:meth:`set_empty_state`) the page can show that instead of its
+    commands and content (:meth:`show_empty`): the area while no scenario
+    is open.
+
+    The header (``title_bar``) is always shown, with the area's title, and
+    has one height in every area (``theme.AREA_HEADER_HEIGHT``), so the
+    tab rows under it start at one height (UI audit UI-17). The commands
+    (``header``) are one row beside the title. When the row has no room
+    for their names, the buttons show their icons only (``squeezed``),
+    each with its name as tooltip and accessible name; the names come back
+    when there is room."""
 
     def __init__(self, area_id: str, title: str, content: QWidget, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -71,59 +80,111 @@ class AreaPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        self.header = QFrame()
-        self.header.setObjectName("areaHeader")
-        header_layout = QHBoxLayout(self.header)
-        header_layout.setContentsMargins(SPACE["lg"], SPACE["sm"], SPACE["lg"], SPACE["sm"])
-        header_layout.setSpacing(SPACE["md"])
+        self.title_bar = QFrame()
+        self.title_bar.setObjectName("areaHeader")
+        self.title_bar.setFixedHeight(AREA_HEADER_HEIGHT)
+        bar_layout = QHBoxLayout(self.title_bar)
+        bar_layout.setContentsMargins(SPACE["lg"], 0, SPACE["lg"], 0)
+        bar_layout.setSpacing(SPACE["md"])
         self.title_label = set_role(QLabel(title), role="page-title")
-        header_layout.addWidget(self.title_label, 0, Qt.AlignmentFlag.AlignTop)
-        self._buttons = QWidget()
-        self._buttons_layout = FlowLayout(self._buttons, spacing=SPACE["xs"])
-        header_layout.addWidget(self._buttons, 1)
+        bar_layout.addWidget(self.title_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        # The commands: one row, never taller than the header, never holding the window wider.
+        self.header = QWidget()
+        self.header.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+        self._buttons_layout = QHBoxLayout(self.header)
+        self._buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self._buttons_layout.setSpacing(SPACE["xs"])
+        self._buttons_layout.addStretch(1)
+        bar_layout.addWidget(self.header, 1, Qt.AlignmentFlag.AlignVCenter)
         self.buttons: dict[QAction, QToolButton] = {}
-        self._has_commands = False  # the header shows once it has a command
+        self._has_commands = False  # the commands show once there is one
         self.header.setVisible(False)
-        layout.addWidget(self.header)
+        self.squeezed = False
+        layout.addWidget(self.title_bar)
         layout.addWidget(content, 1)
         self.empty_state: QWidget | None = None
         self.showing_empty = False
 
-    def add_command(self, action: QAction, primary: bool = False) -> QToolButton:
+    def add_command(self, action: QAction) -> QToolButton:
         """A button for ``action`` in the header: its text, icon and
-        enabled state follow the action."""
+        enabled state follow the action. It is secondary: the one accent
+        is the top bar's Run (UI audit UI-03)."""
         button = QToolButton()
         button.setDefaultAction(action)
-        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        if primary:
-            button.setObjectName("primaryToolButton")
-        self._buttons_layout.addWidget(button)
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly if self.squeezed
+                                  else Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        button.setAccessibleName(action.text().replace("&", ""))
+        self._add(button)
         self.buttons[action] = button
-        self._has_commands = True
-        self.header.setVisible(not self.showing_empty)
         return button
 
     def add_widget(self, widget: QWidget) -> None:
         """A control of the area's own in the header (the run mode button)."""
-        self._buttons_layout.addWidget(widget)
+        self._add(widget)
+
+    def _add(self, widget: QWidget) -> None:
+        self._buttons_layout.insertWidget(self._buttons_layout.count() - 1, widget, 0,
+                                          Qt.AlignmentFlag.AlignVCenter)
         self._has_commands = True
         self.header.setVisible(not self.showing_empty)
+        self._fit_commands()
 
     def set_empty_state(self, widget: QWidget) -> None:
-        """``widget``: what the page shows instead of its header and content
-        while :meth:`show_empty` says so."""
+        """``widget``: what the page shows instead of its commands and
+        content while :meth:`show_empty` says so."""
         self.empty_state = widget
         self.layout().addWidget(widget, 1)
         widget.setVisible(self.showing_empty)
 
     def show_empty(self, empty: bool) -> None:
-        """The empty state (``empty``, when the page has one) or the header
-        and content."""
+        """The empty state (``empty``, when the page has one) or the
+        commands and content; the title stays."""
         self.showing_empty = empty and self.empty_state is not None
         self.header.setVisible(self._has_commands and not self.showing_empty)
         self.content.setVisible(not self.showing_empty)
         if self.empty_state is not None:
             self.empty_state.setVisible(self.showing_empty)
+        self._fit_commands()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 -- Qt API name
+        super().resizeEvent(event)
+        self._fit_commands()
+
+    def showEvent(self, event) -> None:  # noqa: N802 -- Qt API name
+        super().showEvent(event)
+        self._fit_commands()
+
+    def _named_width(self) -> int:
+        """The width the commands take with their names [px]."""
+        layout = self._buttons_layout
+        widgets = [layout.itemAt(i).widget() for i in range(layout.count())]
+        shown = [w for w in widgets if w is not None and not w.isHidden()]
+        width = 0
+        for widget in shown:
+            if isinstance(widget, QToolButton) and widget in self.buttons.values():
+                style = widget.toolButtonStyle()
+                widget.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+                width += widget.sizeHint().width()
+                widget.setToolButtonStyle(style)
+            else:
+                width += widget.sizeHint().width()
+        return width + layout.spacing() * max(len(shown) - 1, 0)
+
+    def _fit_commands(self) -> None:
+        """Icons only while the names do not fit the header's width; the
+        names again once they fit."""
+        if not self._has_commands or not self.isVisible():
+            return
+        margins = self.title_bar.layout().contentsMargins()
+        room = (self.title_bar.width() - margins.left() - margins.right() - self.title_label.sizeHint().width()
+                - self.title_bar.layout().spacing())
+        squeezed = self._named_width() > room
+        if squeezed == self.squeezed:
+            return
+        self.squeezed = squeezed
+        for button in self.buttons.values():
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly if squeezed
+                                      else Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
 
 
 class AreaStack(QStackedWidget):

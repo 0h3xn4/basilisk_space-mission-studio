@@ -3706,3 +3706,87 @@ open in its own window.
   is (`ProblemsWidget.set_scenario_open`, set by the window). The status
   bar's "No problems" chip is left as it is. **Why:** UI-24 names the
   panel; the chip counts problems and is batch B8's (the status bar).
+
+## One primary action, stable headers (UI audit B2, 2026-11-18)
+
+- **Decision:** the top bar's Run is the app's primary action. It is the
+  one accent button of every view while a run can start. A page's own
+  buttons are secondary: the Run area's Run, the Run of the History and
+  Results › Overview empty states, Check on Run › Design Checks,
+  Estimate on End of Life, Add Budgets Section and Add Item on
+  Budgets › Equipment, a data table's empty-state action and Bring Back
+  on a placeholder. **Why:** UI-03 found two or three accent buttons in
+  one view. The audit's fix puts the accent on one command in one place.
+- **Decision:** Home's Open template is the accent while no scenario is
+  open; with a scenario open it is secondary
+  (`LoadScenarioWidget.set_primary`). The work areas' New Scenario stays
+  primary: it shows only while no scenario is open. **Why:** Home's job
+  is to open a scenario. While none is open, Run is disabled and grey, so
+  the view still has one accent.
+- **Decision:** the Run area keeps its own Run button, now secondary.
+  **Why:** `test_main_window.py::test_toolbar_actions_are_all_visible`
+  requires Run in the Run area's header. Taking a command away from where
+  users find it is the owner's choice.
+- **Decision:** a disabled primary button is not counted as an accent.
+  **Why:** the style sheet draws it grey (`bg.hover`, `text.disabled`).
+  `tests/gui/test_primary_action.py` counts the visible, enabled buttons
+  drawn in the accent, in every area, tab and Scenario page, with no
+  scenario and with template 01.
+- **Decision:** every area shows its header with its title, Home,
+  Reports and Settings too. The header has a fixed height of 48 px
+  (`theme.AREA_HEADER_HEIGHT`: a 32 px control and 8 px above and below).
+  Its commands are one row (a `QHBoxLayout`, no longer a `FlowLayout`).
+  When their names do not fit, the buttons show their icons only, with
+  the names in their tooltips and accessible names
+  (`AreaPage.squeezed`). **Why:** UI-17. A header without commands was
+  hidden, and a wrapped row was taller, so the tab rows started at
+  different heights. The navigation rail squeezes the same way (B-19).
+- **Decision:** `AreaPage.title_bar` is the whole header and is always
+  shown; `AreaPage.header` is its commands, hidden with the content while
+  the empty state shows. **Why:** the title always says where the user
+  is; `test_landing_page.py` checks that the commands give way to the
+  empty state.
+- **Decision:** the breadcrumb names the Reports tab ("Reports ›
+  Exports"). Home, Timeline and Settings have one page, so their
+  breadcrumb is the area name. **Why:** UI-17.
+- **Decision:** the top bar's Save always reads "Save". The save state
+  stays the subtitle's first part and gets an icon of its own before it:
+  `circle-dot` for unsaved changes, `circle-check` for unchanged or
+  saved, `file-plus` for not saved yet, in `text.secondary`, with the
+  state as its accessible name and tooltip. **Why:** UI-36; a button's
+  label says what it does. The subtitle already said the state. A status
+  colour would make a normal state look like a problem.
+- **Decision:** the run-mode button is as wide as its longest mode
+  (`app_shell.SteadyToolButton`). The problem count moves to the start
+  of the top bar's commands, so it takes its room from the subtitle.
+  **Why:** UI-36. The count appears after an edit, and at the end of the
+  row it moved Run under the pointer.
+- **Decision:** a top bar narrower than 1040 px
+  (`theme.TOP_BAR_COMPACT_BELOW`: 1280 px with the Inspector shown) shows
+  the search field's icon and key ("Ctrl+K") only. **Why:** at 1280 px
+  with the Inspector the subtitle had 29 px ("Un…"). Now the save state
+  shows whole. The rule uses the bar's width only, so a mode or a count
+  never changes it.
+- **Decision:** Clear Time Cursor is enabled only while a scenario is
+  open and a time cursor is set. It left `_SCENARIO_COMMANDS`. **Why:**
+  UI-41.
+- **Decision:** Run is enabled only when a run can start: no run going,
+  a scenario open, and no error in the scenario's problem list
+  (`ScenarioEditor.problems`, the list the Problems panel shows).
+  Otherwise Run is disabled in the top bar, the Run area, the menu, the
+  palette and Ctrl+R, and its tooltip and palette entry say why
+  (`ActionRegistry.set_available`, `Command.unavailable`). The empty
+  states' Run buttons follow it. Warnings do not disable Run, and the
+  run-mode controls stay enabled with an error. `on_run` keeps its own
+  check (`_cannot_run`). **Why:** UI-55. The editor computes the problem
+  list on each edit already, so the check adds no work on the GUI
+  thread. Picking a mode starts nothing.
+- **Decision:** a disabled palette entry shows its command's reason when
+  the command has one, else "Not available right now." **Why:** the
+  palette says what the tooltip says. A reason for every other disabled
+  command (UI-40) is batch B12's.
+- **Decision:** Run › Design Checks shows one Check at a time, both
+  secondary: the empty state's before the first check, the row's (beside
+  the spacecraft) after it. **Why:** two Check buttons, one under the
+  other, did the same thing; an empty list's own Add is hidden in the
+  same way (B3, `EmptyStack.hide_while_empty`).

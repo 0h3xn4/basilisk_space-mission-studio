@@ -2170,6 +2170,40 @@ or weakened. The new tests are in `tests/gui/test_empty_states.py`.
 |---|---|---|---|
 | `test_wide_screen.py::test_list_buttons_keep_their_own_width` | measured the ground station list's Add with no station | gives the list one station first and waits until Add is visible; the assertion (`width() < 200`) is unchanged | an empty list now shows its empty state and hides its own Add, and a hidden button is never laid out (the Windows job read Qt's default 640 px). With a station the button is shown and measured as before |
 
+## UI audit B2: one primary action, stable headers
+
+The owner's batch B2 changes three behaviours that existing tests
+asserted: the empty states' and placeholders' buttons are no longer the
+accent (UI-03), the top bar's Save always reads "Save" (UI-36), and Run
+is disabled while the scenario has an error (UI-55). The tests below
+assert the new behaviour as strictly as the old, or give the scenario a
+spacecraft first so that Run can start; every other assertion is kept.
+No test outside `tests/gui/` changed, and no golden file. The new tests
+are in `tests/gui/test_primary_action.py`.
+
+**Behaviour changed on purpose (UI-03, UI-36):**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_breakout.py::test_detach_and_attach_keep_the_same_3d_view_its_page_and_its_state` | Bring Back's `variant` is `"primary"` | it is not `"primary"` | the top bar's Run is the view's one accent (UI-03) |
+| `test_budgets_area.py::test_a_spacecraft_without_a_section_offers_to_add_one` | Add Budgets Section's `variant` is `"primary"` | it is not `"primary"` | the same |
+| `test_run_record.py::test_history_lists_a_run_with_its_status_mode_and_duration` | the History empty state's Run is `"primary"` | it is not `"primary"` | the same |
+| `test_shell.py::test_the_save_button_shows_the_save_state_and_saves` | Save reads "Not saved yet", then "Save" after an edit | Save reads "Save" both times; `TopBar.save_state` is "Not saved yet", then "Unsaved changes"; the click is unchanged | Save always says Save; the state is the subtitle's, with its icon (UI-36) |
+
+**How the test reaches a scenario that can run (UI-55):** a blank
+scenario (New) has an error ("scenario needs at least one spacecraft"),
+so Run is now disabled for it. These tests check that Run is enabled
+again after a run, or after New; they now give the blank scenario one
+spacecraft first, as `test_main_window.py::_add_valid_spacecraft`
+already did for other tests. The assertions are unchanged.
+
+| Test | Before | Now |
+|---|---|---|
+| `test_main_window.py::test_run_finished_exception_still_stops_busy_indicator`, `test_run_cancelled_exception_still_stops_busy_indicator`, `test_run_finished_stops_busy_indicator_and_reenables_actions`, `test_run_failed_stops_busy_indicator_and_reenables_actions`, `test_monte_carlo_finished_stops_busy_indicator_and_reenables_actions`, `test_monte_carlo_failed_stops_busy_indicator_and_reenables_actions`, `test_run_cancelled_updates_results_widget_and_status` | the blank scenario of the `window` fixture | `_add_valid_spacecraft(window)` before `_start_busy` |
+| `test_menu_bar.py::test_menu_items_follow_their_commands_state` | after New, Run is enabled | after New and one spacecraft, Run is enabled; the docstring says why |
+| `test_landing_page.py::test_new_scenario_opens_one_and_enables_its_commands` | `run.run` among the commands enabled after New | the other commands as before; then, after one spacecraft, `run.run` is enabled |
+| `test_panels.py::test_a_keyboard_only_walk_of_the_shell` | the Tab walk after New | one spacecraft before the Tab walk, so Run is enabled and in the Tab order; the walk and its checks are unchanged |
+
 ## 2.12.0 windows and views
 
 ### PR-1: thermal results (decisions T-40 to T-42)
