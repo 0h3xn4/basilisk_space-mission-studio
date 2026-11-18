@@ -18875,6 +18875,8 @@ The top bar's Run is now the app's primary action and the one accent of
 every view while a run can start. The Run area's own Run, the empty
 states' Run, Check, Estimate, Add Budgets Section, Add Item, a data
 table's empty-state action and Bring Back are secondary buttons.
+Design Checks shows one Check at a time: the empty state's before the
+first check, the row's after it.
 `AreaPage.add_command` lost its `primary` argument. Home's Open
 template is the accent only while no scenario is open; then Run is
 disabled and grey. The work areas' New Scenario stays the accent: it

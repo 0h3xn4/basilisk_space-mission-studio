@@ -3785,8 +3785,8 @@ open in its own window.
   the command has one, else "Not available right now." **Why:** the
   palette says what the tooltip says. A reason for every other disabled
   command (UI-40) is batch B12's.
-- **Decision:** Run › Design Checks keeps the Check button of its empty
-  state under the page's own Check; both are secondary now. **Why:**
-  `test_empty_states.py::test_design_checks_offer_check_before_the_first_one`
-  (B3) requires the empty state's Check. Which of the two goes is the
-  owner's choice.
+- **Decision:** Run › Design Checks shows one Check at a time, both
+  secondary: the empty state's before the first check, the row's (beside
+  the spacecraft) after it. **Why:** two Check buttons, one under the
+  other, did the same thing; an empty list's own Add is hidden in the
+  same way (B3, `EmptyStack.hide_while_empty`).

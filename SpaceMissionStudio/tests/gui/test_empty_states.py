@@ -361,6 +361,7 @@ def test_design_checks_offer_check_before_the_first_one(qtbot):
     qtbot.addWidget(page)
     assert not page.empty_state.isHidden() and page.findings_label.isHidden()
     assert page.empty_state.button.text() == "Check" and not page.empty_state.button.isEnabled()
+    assert page.check_button.isHidden()  # one Check on the page: the empty state's
     scenario = _template("28")
     scenario.spacecraft[0].model = None
     page.set_scenario(scenario, _TEMPLATES)
@@ -369,3 +370,4 @@ def test_design_checks_offer_check_before_the_first_one(qtbot):
     qtbot.waitUntil(lambda: page.report is not None and page._worker is None, timeout=30000)
     assert page.empty_state.isHidden() and not page.findings_label.isHidden()
     assert page.findings_label.text() == "No design finding."
+    assert not page.check_button.isHidden()  # the row's Check, to check again
