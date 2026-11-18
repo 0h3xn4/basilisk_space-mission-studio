@@ -45,9 +45,9 @@ from decimal import Decimal
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QValidator
-from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QLabel, QLayout,
-                               QPushButton, QScrollArea, QSpinBox, QStyledItemDelegate, QTabBar, QTabWidget, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QFormLayout,
+                               QGroupBox, QHBoxLayout, QLabel, QLayout, QPushButton, QScrollArea, QSizePolicy, QSpinBox,
+                               QStackedWidget, QStyledItemDelegate, QTabBar, QTableView, QTabWidget, QVBoxLayout, QWidget)
 
 from .theme import ROW_HEIGHT, SPACE, set_role
 
@@ -433,38 +433,149 @@ def flow_row(*widgets: QWidget, spacing: int = 6) -> QWidget:
 
 
 class EmptyState(QWidget):
-    """What an empty list says, with its action when it has one."""
+    """What an empty view or list says: a title, a line of text and, when
+    there is one, the action that fills it. The one empty state of the GUI
+    (UI audit UI-05, UI-15): every view, list and panel with nothing to
+    show uses it.
+
+    The full form sits in the middle of its area, its title a section
+    title. ``compact``: a short form for a panel, a short list or the room
+    beside a table (UI-21): left-aligned, as tall as its lines, its title a
+    heading. :meth:`add_action` adds a second or third button beside the
+    first, :meth:`add_detail` a widget under the text (a short list of
+    reasons). ``text()`` gives the title and the text as lines, for tests
+    and for copying."""
 
     def __init__(self, title: str, text: str = "", action: str | None = None, primary: bool = False,
-                 parent: QWidget | None = None) -> None:
+                 parent: QWidget | None = None, compact: bool = False) -> None:
         super().__init__(parent)
+        self.compact = compact
+        align = Qt.AlignmentFlag.AlignLeft if compact else Qt.AlignmentFlag.AlignHCenter
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["lg"], SPACE["lg"])
+        margin = SPACE["sm"] if compact else SPACE["lg"]
+        layout.setContentsMargins(margin, margin, margin, margin)
         layout.setSpacing(SPACE["sm"])
-        layout.addStretch(1)
-        self.title_label = set_role(QLabel(title), role="heading")
-        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        if not compact:
+            layout.addStretch(1)
+        self.title_label = set_role(QLabel(title), role="heading" if compact else "section-title")
+        self.title_label.setAlignment(align)
         self.title_label.setWordWrap(True)
         layout.addWidget(self.title_label)
         self.text_label = set_role(QLabel(text), tone="secondary")
-        self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.text_label.setAlignment(align)
         self.text_label.setWordWrap(True)
         self.text_label.setVisible(bool(text))
         layout.addWidget(self.text_label)
+        self._details = QVBoxLayout()
+        self._details.setSpacing(SPACE["xs"])
+        layout.addLayout(self._details)
+        self._buttons = QHBoxLayout()
+        self._buttons.setSpacing(SPACE["sm"])
+        if not compact:
+            self._buttons.addStretch(1)
         self.button = QPushButton(action or "")
         if primary:
             set_role(self.button, variant="primary")
         self.button.setVisible(action is not None)
-        layout.addWidget(self.button, 0, Qt.AlignmentFlag.AlignHCenter)
-        layout.addStretch(1)
+        self._buttons.addWidget(self.button)
+        self._buttons.addStretch(1)
+        layout.addLayout(self._buttons)
+        layout.addStretch(1)  # compact: the lines stay at the top when a stack gives it more room
+        if compact:
+            self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
 
     def set_text(self, title: str, text: str = "", action: str | None = None) -> None:
+        """A new title and text; ``action`` names the button, None hides it."""
         self.title_label.setText(title)
         self.text_label.setText(text)
         self.text_label.setVisible(bool(text))
         if action is not None:
             self.button.setText(action)
         self.button.setVisible(action is not None)
+
+    def add_action(self, text: str) -> QPushButton:
+        """A further button beside the first; the caller connects it."""
+        button = QPushButton(text)
+        self._buttons.insertWidget(self._buttons.count() - 1, button)
+        return button
+
+    def add_detail(self, widget: QWidget) -> QWidget:
+        """``widget`` under the text (a short list of reasons, a note). In
+        the full form it takes the middle three fifths of the width, so its
+        lines wrap there and are never cut."""
+        if self.compact:
+            self._details.addWidget(widget)
+            return widget
+        row = QHBoxLayout()
+        row.addStretch(1)
+        row.addWidget(widget, 3)
+        row.addStretch(1)
+        self._details.addLayout(row)
+        return widget
+
+    def text(self) -> str:
+        """The title and the text shown, one per line."""
+        return "\n".join(label.text() for label in (self.title_label, self.text_label) if label.text())
+
+
+class EmptyStack(QStackedWidget):
+    """A list, tree or table view, or its :class:`EmptyState` while the
+    view has no row (UI audit UI-05): never a blank box over the buttons.
+
+    ``fit_rows``: the stack is as tall as the view's rows (a short list
+    does not fill the page with blank rows) and as tall as the empty
+    state while there are none; the owner puts a stretch below it. A view
+    whose emptiness is not its row count (a search that hides every row)
+    calls :meth:`refresh` with ``empty``."""
+
+    def __init__(self, view: QAbstractItemView, empty: EmptyState, fit_rows: bool = False,
+                 parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.view = view
+        self.empty = empty
+        self.fit_rows = fit_rows
+        self._empty: bool | None = None  # what the owner said last; None: the row count
+        self.addWidget(view)
+        self.addWidget(empty)
+        model = view.model()
+        for signal in (model.rowsInserted, model.rowsRemoved, model.modelReset, model.layoutChanged):
+            signal.connect(self._rows_changed)
+        self.refresh()
+
+    def _rows_changed(self, *_args) -> None:
+        self.refresh(self._empty)
+
+    def showing_empty(self) -> bool:
+        return self.currentWidget() is self.empty
+
+    def refresh(self, empty: bool | None = None) -> None:
+        """The empty state when ``empty`` (None: when the view has no row),
+        else the view; with ``fit_rows`` the height follows."""
+        self._empty = empty
+        if empty is None:
+            empty = self.view.model().rowCount() == 0
+        self.setCurrentWidget(self.empty if empty else self.view)
+        if self.fit_rows:
+            self.setMaximumHeight(self.empty.sizeHint().height() if empty else self._rows_height())
+
+    def _rows_height(self) -> int:
+        """[px] the view's rows, its header and its frame."""
+        view = self.view
+        rows = view.model().rowCount()
+        height = 2 * view.frameWidth()
+        if isinstance(view, QTableView):
+            if view.horizontalHeader().isVisible():
+                height += view.horizontalHeader().sizeHint().height()
+            height += sum(view.rowHeight(row) for row in range(rows))
+        else:
+            height += sum(max(view.sizeHintForRow(row), 0) for row in range(rows))
+        if view.horizontalScrollBar().isVisible():
+            height += view.horizontalScrollBar().sizeHint().height()
+        return max(height, view.minimumSizeHint().height())
+
+    def showEvent(self, event) -> None:  # noqa: N802 -- Qt's name
+        super().showEvent(event)
+        self.refresh(self._empty)  # the rows' height once the style's font is known
 
 
 class ScrollBody(QScrollArea):

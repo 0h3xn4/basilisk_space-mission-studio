@@ -103,7 +103,9 @@ from .live_scene import LIVE_BATCH, LIVE_BATCH_STATES, LIVE_TICK_MS, LiveScene, 
 from .theme import SPACE, TOKENS, current_theme, icon, mono_font, on_change, set_role
 from .theme.mission_view_style import mission_view_style
 from .theme.palettes import NO_TEMPERATURE_COLOUR, SPACE_COLOUR, TEMPERATURE_STOPS, temperature_rgb
+from .widgets import EmptyState
 
+_NO_VIEW = ("No 3D view yet", "Run a scenario to see it here in 3D.")  # the empty state without a run
 ASSETS = Path(__file__).resolve().parent / "assets" / "mission_view"
 PAGE = ASSETS / "mission_view.html"
 _TICK_MS = 40  # [ms] playback timer: 25 frames a second
@@ -534,10 +536,7 @@ class MissionViewWidget(QWidget):
             shortcut.activated.connect(slot)
 
         self.stack = QStackedWidget()
-        self.empty = QLabel("Run a scenario to see it here in 3D.")
-        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.empty.setWordWrap(True)
-        set_role(self.empty, tone="secondary")
+        self.empty = EmptyState(*_NO_VIEW)  # the one empty state (UI audit UI-15)
         self.stack.addWidget(self.empty)
         # The globe and, beside it, the 2D map (in a slot of its own, so it can move to its own window).
         self.ground_map = GroundMapWidget()
@@ -632,7 +631,7 @@ class MissionViewWidget(QWidget):
             self._epoch = parse_epoch_utc(scenario.epoch_utc)
         except (TypeError, ValueError):
             self._epoch = None
-        self.empty.setText("Building the 3D view...")
+        self.empty.set_text("Building the 3D view...")
         self.stack.setCurrentWidget(self.empty)
         self.ground_map.clear("Building the map...", "")
         self._set_controls_enabled(False)
@@ -646,7 +645,7 @@ class MissionViewWidget(QWidget):
         self._shown_result = None
         self.set_thermal(None, None)
         self.scene = None
-        self.empty.setText("Run a scenario to see it here in 3D.")
+        self.empty.set_text(*_NO_VIEW)
         self.stack.setCurrentWidget(self.empty)
         self.ground_map.clear("No ground track yet")
         self._set_controls_enabled(False)
@@ -671,7 +670,7 @@ class MissionViewWidget(QWidget):
             self._epoch = parse_epoch_utc(scenario.epoch_utc)
         except (TypeError, ValueError):
             self._epoch = None
-        self.empty.setText("Waiting for the run's first state...")
+        self.empty.set_text("Waiting for the run's first state...")
         self.stack.setCurrentWidget(self.empty)
         self.ground_map.clear("Waiting for the run's first state...", "")
         self.live_button.show()
@@ -801,7 +800,7 @@ class MissionViewWidget(QWidget):
         self.ground_map.wait()
 
     def _on_failed(self, message: str) -> None:
-        self.empty.setText(f"The 3D view could not be built: {message}")
+        self.empty.set_text("The 3D view could not be built", message)
         self.stack.setCurrentWidget(self.empty)
         self.ground_map.clear("The map could not be built", message)
 
@@ -859,7 +858,7 @@ class MissionViewWidget(QWidget):
             self.stack.setCurrentWidget(self.web_view)
             self._send_scene()
         else:
-            self.empty.setText("The run is shown here.")
+            self.empty.set_text("The run is shown here.")
 
     def _show_scale_note(self) -> None:
         scene = self.scene

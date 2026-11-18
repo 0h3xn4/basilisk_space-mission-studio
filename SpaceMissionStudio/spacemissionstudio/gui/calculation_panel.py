@@ -43,6 +43,7 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QPushButton, QS
 
 from ..engine.trace import Quantity, Trace
 from .theme import SPACE, mono_font, set_role
+from .widgets import EmptyState
 
 
 @dataclass
@@ -75,10 +76,9 @@ class CalculationPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(SPACE["md"], SPACE["md"], SPACE["md"], SPACE["md"])
         layout.setSpacing(SPACE["sm"])
-        self.empty_label = QLabel("Choose Show calculation beside a computed number to see how it was computed: the "
-                                  "equation, each input with its unit and source, and the standard it comes from.")
-        self.empty_label.setWordWrap(True)
-        set_role(self.empty_label, role="empty")
+        self.empty_label = EmptyState("No calculation shown", "Choose Show calculation beside a computed number to "
+                                      "see how it was computed: the equation, each input with its unit and source, "
+                                      "and the standard it comes from.", compact=True)
         layout.addWidget(self.empty_label)
 
         self.body = QWidget()

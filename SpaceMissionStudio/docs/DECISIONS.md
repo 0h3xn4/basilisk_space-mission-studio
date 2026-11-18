@@ -3641,3 +3641,61 @@ open in its own window.
   of the path and the ground track (display data, in memory). The page
   gets it as `tt`, to split the track at the time shown. No output file,
   no golden file and no file format changes.
+
+## Empty states everywhere (UI audit B3, 2026-11-18)
+
+- **Decision:** `widgets.EmptyState` is the GUI's one empty state. B1's
+  widget gets a compact form (`compact=True`: left-aligned, as tall as
+  its lines, the title a heading; the full form keeps the middle of its
+  area with a section title), more buttons (`add_action`) and a detail
+  under the text (`add_detail`). `NoScenarioState` and
+  `BreakoutPlaceholder` are subclasses of it. **Why:** the audit found
+  five styles (UI-15); the repository still has no `gui/components/`
+  package, so the widget stays in `widgets.py` (B1's decision).
+- **Decision:** the old styles go: the "empty" label role and the
+  `emptyState` label leave the style sheet, and the Problems panel, the
+  Inspector, Compare, Show calculation, Home's template filter, History,
+  Results › Overview, Plots, Dashboard, Output and 3D View, Run › Plan and
+  the work areas without a scenario show an `EmptyState`. A `DataTable`'s
+  own line inside a table and a `NoteList`'s or `ValueSheet`'s "none"
+  line stay. **Why:** those are a line inside a component that is
+  already there, not the state of a view; they are used in more than 60
+  places.
+- **Decision:** a list shows its empty state in its place
+  (`widgets.EmptyStack`), and Edit and Remove are off until a row is
+  selected. The ground station and spacecraft lists are as tall as their
+  rows (`fit_rows`), with the free room below the buttons. The mission
+  sequence (a tree) keeps the page's height, and its form pane hides
+  while there is no step. The spacecraft list's Add is no longer the
+  accent while the list is empty: its empty state's Add spacecraft is
+  the action there, a secondary button. **Why:** UI-05; a tree's height
+  changes as its steps open and close; one accent per view is batch B2's.
+- **Decision:** Results › Plots shows its empty state over the plot page,
+  which stays loaded under it (`QStackedLayout.StackAll`). **Why:** the
+  page's size, its loading and its "drawn" signal stay as they were;
+  `_empty_state_html` stays because `test_dark_theme.py` reads it.
+- **Decision:** End of Life puts the results first (the empty state
+  before an estimate, then the tiles, the badges, the notes and the
+  plot) and the inputs below them in the existing `FoldSection`
+  ("Inputs"), open at first. **Why:** UI-10; the plot is in view after an
+  estimate without scrolling, and folding stays the user's choice.
+- **Decision:** Run › Plan's empty state says what a plan is. With no
+  operations section it offers Open Template 35 (opened as Home opens a
+  template, with the unsaved-changes question); with one, Plan. The page
+  no longer tells the user to edit JSON; the error after Plan still
+  names Scenario › JSON, as the how-to does. **Why:** UI-22; template 35
+  is the app's way to start a plan. A form that builds an operations
+  section is out of scope for B3.
+- **Decision:** Run › Design Checks shows "Not checked yet" with Check
+  before the first check (the empty state's Check is a secondary button:
+  the page's own Check stays the primary one). **Why:** UI-45; one accent
+  per view is batch B2's.
+- **Decision:** the Timeline without events hides the timeline, the
+  table, the summary and the cursor line, and shows one empty state with
+  the reasons as a note list. With events, the summary line is as before.
+  The timeline draws nothing without rows; a table that the filters
+  empty says so once. **Why:** UI-25.
+- **Decision:** the Problems panel says "No scenario is open" while none
+  is (`ProblemsWidget.set_scenario_open`, set by the window). The status
+  bar's "No problems" chip is left as it is. **Why:** UI-24 names the
+  panel; the chip counts problems and is batch B8's (the status bar).

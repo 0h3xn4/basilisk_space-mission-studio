@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QFrame, QHBoxLayout, QHeaderVi
                                QTableView, QVBoxLayout, QWidget)
 
 from .theme import TOKENS, icon, mono_font, set_role
-from .widgets import show_window
+from .widgets import EmptyState, show_window
 
 HISTORY_COLUMNS = ("Status", "Run", "Scenario", "Mode", "Started (UTC)", "Duration", "Saved")
 SORT_ROLE = Qt.ItemDataRole.UserRole + 1
@@ -292,18 +292,10 @@ class RunHistoryView(QWidget):
         row.addWidget(self.copy_button)
         layout.addLayout(row)
 
-        self.empty = QWidget()
-        empty_layout = QVBoxLayout(self.empty)
-        empty_layout.addStretch(1)
-        self.empty_label = set_role(QLabel("No runs yet. Each run is listed here: its status, how long it "
-                                           "took and where it is saved."), tone="secondary")
-        self.empty_label.setWordWrap(True)
-        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_layout.addWidget(self.empty_label)
-        self.empty_run_button = set_role(QPushButton("Run"), variant="primary")  # the empty state's primary action
+        self.empty = EmptyState("No runs yet", "Each run is listed here: its status, how long it took and where it "
+                                "is saved.", "Run", primary=True)  # the one empty state (UI audit UI-15)
+        self.empty_run_button = self.empty.button  # the empty state's primary action
         self.empty_run_button.clicked.connect(self.run_requested)
-        empty_layout.addWidget(self.empty_run_button, 0, Qt.AlignmentFlag.AlignHCenter)
-        empty_layout.addStretch(1)
         layout.addWidget(self.empty, 1)
 
         self.model = HistoryModel(self)

@@ -56,14 +56,13 @@ from PySide6.QtWidgets import (
 )
 
 from . import export_log
-from .budgets_area import EmptyState
 from .data_table import DataTable, Row
 from .feedback import report
 from .svg_plot import SvgPlotView, render_image, render_size
 from .theme import SPACE, current_theme, on_change, set_role
 from .theme.svg_plot_style import svg_plot_style
 from .value_sheet import NoteList
-from .widgets import ComboBox, TabWidget
+from .widgets import ComboBox, EmptyState, TabWidget
 
 _ALL_NODES = "All nodes"
 _MODEL_HEIGHT_PX = 240  # [px] the 3D model's least height (the page fits a 720 px window)
@@ -329,9 +328,10 @@ class ThermalWidget(QWidget):
         self.flow_plot = SvgPlotView("Heat flows", _DRAWING)
         self.flow_plot.size_settled.connect(self._request_plots)
         layout.addWidget(self.flow_plot, 3)
-        self.flow_empty = EmptyState("Pick a node", "The heat flows into one node, by kind: pick it in the Node list "
-                                     "above.")
-        layout.addWidget(self.flow_empty, 3)
+        # One compact line until a node is picked, so the table below gets the room (UI audit UI-21).
+        self.flow_empty = EmptyState("No node picked", "The plot shows the heat flows into one node, by kind: pick "
+                                     "it in the Node list above.", compact=True)
+        layout.addWidget(self.flow_empty, 0)
         self.tables: dict[str, tuple[QWidget, DataTable]] = {}
         table = DataTable("No heat flow in this case.")
         self.tables["flows"] = (_section("Orbit-average heat flows [W] (positive in)", table), table)

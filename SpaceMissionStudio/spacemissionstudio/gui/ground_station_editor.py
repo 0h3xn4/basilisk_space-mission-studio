@@ -50,7 +50,7 @@ from .field_text import field_title, labelled
 from .feedback import (ProblemBanner, bring_into_view, clear_field_error, clear_invalid, clear_on_edit,
                        mark_invalid, report, show_field_error, show_toast)
 from .problem_location import GROUND_STATION, locate
-from .widgets import PreciseDoubleSpinBox, finish_form
+from .widgets import EmptyStack, EmptyState, PreciseDoubleSpinBox, finish_form
 
 # A new station starts from the schema's defaults, so a station made here and
 # one written in a file without these fields are the same station.
@@ -243,7 +243,12 @@ class GroundStationListWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.list_widget = QListWidget()
-        layout.addWidget(self.list_widget)
+        # The list as tall as its rows, or the empty state with Add while there is none (UI audit UI-05).
+        self.empty_state = EmptyState("No ground stations", "A ground station gives the run its passes and the "
+                                      "link budget its other end.", "Add ground station", compact=True)
+        self.empty_state.button.clicked.connect(self._on_add)
+        self.list_stack = EmptyStack(self.list_widget, self.empty_state, fit_rows=True)
+        layout.addWidget(self.list_stack)
 
         button_row = QHBoxLayout()
         self.add_button = QPushButton("Add")
@@ -254,16 +259,26 @@ class GroundStationListWidget(QWidget):
         button_row.addWidget(self.remove_button)
         button_row.addStretch(1)  # buttons at their own width, not a third of a wide page each
         layout.addLayout(button_row)
+        layout.addStretch(1)  # a short list leaves the room below it, not between its rows
 
         self.add_button.clicked.connect(self._on_add)
         self.edit_button.clicked.connect(self._on_edit)
         self.remove_button.clicked.connect(self._on_remove)
         self.list_widget.itemDoubleClicked.connect(lambda _item: self._on_edit())
+        self.list_widget.currentRowChanged.connect(lambda _row: self._update_buttons())
+        self._update_buttons()
+
+    def _update_buttons(self) -> None:
+        """Edit and Remove only with a station selected (UI audit UI-05)."""
+        selected = self.list_widget.currentRow() >= 0
+        self.edit_button.setEnabled(selected)
+        self.remove_button.setEnabled(selected)
 
     def _refresh_list(self) -> None:
         self.list_widget.clear()
         for config in self._configs:
             self.list_widget.addItem(QListWidgetItem(f"{config.name} ({config.latitude_deg:.2f}, {config.longitude_deg:.2f})"))
+        self._update_buttons()
 
     def _on_add(self) -> None:
         existing_names = {c.name for c in self._configs}

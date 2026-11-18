@@ -117,7 +117,7 @@ from .problem_location import SPACECRAFT, locate
 from .sensor_actuator_editor import SensorActuatorListWidget
 from .theme import set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row
+from .widgets import ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row
 
 _FSW_MODE_NONE_LABEL = "(none -- no attitude control)"
 
@@ -3236,16 +3236,15 @@ class SpacecraftListWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.list_widget = QListWidget()
-        layout.addWidget(self.list_widget)
         # The empty state, in the list's place while there is no spacecraft:
-        # what to do first, not a blank box over the buttons.
-        self.empty_label = QLabel(
-            "No spacecraft yet: a run needs one. Add builds one from scratch; New from template... starts "
-            "from a 100-500 kg preset.")
-        self.empty_label.setWordWrap(True)
-        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        set_role(self.empty_label, role="empty")
-        layout.addWidget(self.empty_label, 1)
+        # what to do first, not a blank box over the buttons. The list is
+        # as tall as its rows (UI audit UI-05).
+        self.empty_state = EmptyState("No spacecraft", "A run needs one. Add builds one from scratch; New from "
+                                      "template... starts from a 100-500 kg preset.", "Add spacecraft", compact=True)
+        self.empty_state.button.clicked.connect(lambda: self._on_add())
+        self.empty_label = self.empty_state  # the name the guide's tests know it by
+        self.list_stack = EmptyStack(self.list_widget, self.empty_state, fit_rows=True)
+        layout.addWidget(self.list_stack)
 
         # Two rows, not one: all 5 buttons in a single QHBoxLayout needed
         # ~700px to avoid truncating/hiding the last one or two -- more
@@ -3270,6 +3269,7 @@ class SpacecraftListWidget(QWidget):
             "(for example a passively safe helix), held by impulsive burns or Basilisk's mean-element feedback.")
         layout.addWidget(flow_row(self.generate_constellation_button, self.generate_phasing_formation_button,
                                   self.generate_roe_formation_button))
+        layout.addStretch(1)  # a short list leaves the room below the buttons
 
         self.add_button.clicked.connect(self._on_add)
         self.new_from_template_button.clicked.connect(self._on_new_from_template)
@@ -3286,9 +3286,7 @@ class SpacecraftListWidget(QWidget):
         """The empty state while there is no spacecraft; Edit and Remove only
         with one selected."""
         empty = not self._configs
-        self.list_widget.setVisible(not empty)
-        self.empty_label.setVisible(empty)
-        set_role(self.add_button, variant="primary" if empty else None)  # the empty state's action
+        self.list_stack.refresh(empty)
         selected = self.list_widget.currentRow() >= 0
         self.edit_button.setEnabled(selected)
         self.remove_button.setEnabled(selected)

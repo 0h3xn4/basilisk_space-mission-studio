@@ -70,6 +70,10 @@ from .feedback import report
 from .gantt import PlanGantt
 from .theme import set_role
 from .value_sheet import NoteList
+from .widgets import EmptyState
+
+# The template the empty state opens: a week of an Earth observation microsatellite (User Manual, operations).
+PLAN_TEMPLATE = "35_eo_operations_week.json"
 
 
 class _Worker(QThread):
@@ -111,6 +115,7 @@ class PlanWidget(QWidget):
     operations_changed = Signal(object)  # the scenario's new operations section (a lock or an unlock)
     problems_changed = Signal()  # problem_rows() changed
     monte_carlo_saved = Signal(str)  # the folder a robustness batch was saved in
+    template_requested = Signal(str)  # the empty state's Open Template 35: the template's file name
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -126,6 +131,7 @@ class PlanWidget(QWidget):
         self.draws = self.batch = None
         self._worker: _Worker | None = None
         self._cancel = False
+        self._has_operations: bool | None = None  # the edited scenario has an operations section (None: unknown)
 
         layout = QVBoxLayout(self)
         top = QHBoxLayout()
@@ -158,6 +164,10 @@ class PlanWidget(QWidget):
         layout.addWidget(self.status_label)
         self.notes_list = NoteList("note")
         layout.addWidget(self.notes_list)
+        # No plan yet: what a plan is, and how to start one (UI audit UI-22).
+        self.empty_state = EmptyState("No plan yet", "")
+        self.empty_state.button.clicked.connect(self._on_empty_action)
+        layout.addWidget(self.empty_state)
 
         self.chart_group = QGroupBox("Plan")
         chart = QVBoxLayout(self.chart_group)
@@ -335,6 +345,47 @@ class PlanWidget(QWidget):
         else:
             self.on_cursor_changed(time_s)
 
+    def set_scenario(self, scenario) -> None:
+        """The edited scenario (None while it does not validate): whether it
+        has an operations section decides what the empty state offers."""
+        has = None if scenario is None else getattr(scenario, "operations", None) is not None
+        if has != self._has_operations:
+            self._has_operations = has
+            self._show_empty()
+
+    def _show_empty(self) -> None:
+        """The empty state while there is no plan: with an operations
+        section, Plan; without one, the template that has one."""
+        empty = self.plan is None
+        self.empty_state.setVisible(empty)
+        if not empty:
+            return
+        what = ("A plan schedules the activities of the scenario's operations section (images, passes, "
+                "calibrations) against the battery and the memory.")
+        if self._has_operations is False:
+            self.empty_state.set_text("No operations section", f"{what} This scenario has none. Template 35 has "
+                                      "one: a week of an Earth observation microsatellite. Open plan... shows a "
+                                      "saved plan.", "Open Template 35")
+        else:
+            self.empty_state.set_text("No plan yet", f"{what} Plan makes one from the scenario's section; Open "
+                                      "plan... shows a saved plan.", "Plan")
+        self.empty_state.button.setEnabled(self._worker is None)
+
+    def _note_missing_section(self) -> None:
+        """Plan found no operations section: the empty state then offers
+        the template that has one."""
+        try:
+            scenario = self.scenario()
+        except Exception:  # noqa: BLE001 -- no scenario, or one that does not validate: the status says why
+            return
+        self.set_scenario(scenario)
+
+    def _on_empty_action(self) -> None:
+        if self._has_operations is False:
+            self.template_requested.emit(PLAN_TEMPLATE)
+        else:
+            self.make_plan()
+
     def set_run(self, scenario, result, base_dir=None) -> None:
         """The last run (its geometry can be used; None: no run)."""
         self._scenario, self._result, self._base_dir = scenario, result, base_dir
@@ -400,6 +451,7 @@ class PlanWidget(QWidget):
             scenario = self._planned_scenario()
         except Exception as exc:  # noqa: BLE001 -- an invalid scenario is said on the page
             self.status_label.setText(str(exc))
+            self._note_missing_section()
             return
         result = self._result if self.from_run_check.isChecked() else None
         self._run("Building the geometry and scheduling...", lambda: analysis.plan(scenario, result),
@@ -758,6 +810,7 @@ class PlanWidget(QWidget):
 
     def _show_buttons(self) -> None:
         busy = self._worker is not None
+        self.empty_state.button.setEnabled(not busy)
         has_plan = self.plan is not None
         selected = self.plan.find(self.gantt.selected) if has_plan and self.gantt.selected else None
         editable = selected is not None and self.planning is not None and not busy
@@ -781,10 +834,9 @@ class PlanWidget(QWidget):
         for group in (self.status_group, self.activities_group, self.flight_group, self.replan_group,
                       self.robustness_group):
             group.setVisible(plan is not None)
+        self._show_empty()
         if plan is None:
-            self.status_label.setText("Press Plan to schedule the scenario's operations section (Scenario › JSON, "
-                                      "'operations'), or open a plan file." if self._worker is None else
-                                      self.status_label.text())
+            self.status_label.setText("" if self._worker is None else self.status_label.text())
             self.notes_list.set_notes([])
             self.unscheduled_group.setVisible(False)
             self._show_buttons()

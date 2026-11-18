@@ -44,7 +44,7 @@ from . import export_log
 from .data_table import DataTable, Row
 from .theme import set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox
+from .widgets import ComboBox, EmptyState
 
 STIFFNESS_NOTE = ("Launcher compatibility here is geometry, mass and centre of mass only: stiffness and "
                   "fundamental frequencies need a structural model and are not checked.")
@@ -111,7 +111,14 @@ class DesignChecksWidget(QWidget):
                                             "launcher."), tone="secondary")
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
+        # Before the first check: the empty state with Check, not "No design finding." (UI audit UI-45).
+        self.empty_state = EmptyState("Not checked yet", "Check lists the fields of view, the thrusters and plumes, "
+                                      "the mass budget and the launcher envelope here, with their findings.", "Check",
+                                      compact=True)
+        self.empty_state.button.clicked.connect(self.check)
+        layout.addWidget(self.empty_state)
         self.findings_label = NoteList("finding", empty="No design finding.")
+        self.findings_label.setVisible(False)  # until a check has run: then its findings, or that there are none
         layout.addWidget(self.findings_label)
         self.fov_table = DataTable("No mounted sensor, camera or antenna with a field of view.")
         self.thruster_table = DataTable("No thruster with a position and a direction.")
@@ -149,6 +156,7 @@ class DesignChecksWidget(QWidget):
     def _update_enabled(self) -> None:
         self.check_button.setEnabled(self._scenario is not None and self.spacecraft_combo.count() > 0
                                      and self._worker is None)
+        self.empty_state.button.setEnabled(self.check_button.isEnabled())
 
     def _spacecraft(self):
         name = self.spacecraft_combo.currentText()
@@ -180,6 +188,8 @@ class DesignChecksWidget(QWidget):
     def _show(self, report) -> None:
         self.report = report
         findings = report.findings()
+        self.empty_state.setVisible(False)
+        self.findings_label.setVisible(True)
         self.findings_label.set_notes(findings)
         rows = report.fov.rows() if report.fov is not None else []
         self.fov_table.set_table(("Item", "Configuration", "Field of view [deg]", "Blocked [%]", "+- [%]",

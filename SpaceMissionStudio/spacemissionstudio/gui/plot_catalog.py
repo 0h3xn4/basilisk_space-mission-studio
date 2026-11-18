@@ -38,6 +38,10 @@ from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import QLineEdit, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 from ..plot_categories import PLOT_GROUPS, catalog_path
+from .widgets import EmptyStack, EmptyState
+
+_NO_PLOTS = ("No plots yet", "A run lists its plots here. Tick a plot to show it.")
+
 
 def _leaf_names(item: QTreeWidgetItem) -> list[str]:
     names = []
@@ -82,7 +86,11 @@ class PlotCatalog(QWidget):
         self.tree.itemChanged.connect(self._on_item_changed)
         self.tree.itemActivated.connect(self._on_item_activated)
         self.tree.itemClicked.connect(self._on_item_clicked)
-        layout.addWidget(self.tree, 1)
+        # No run yet, or a search that leaves no plot: the empty state, not a blank list (UI audit UI-05).
+        self.empty_state = EmptyState(*_NO_PLOTS, compact=True)
+        self.empty_state.button.clicked.connect(self.search.clear)
+        self.stack = EmptyStack(self.tree, self.empty_state)
+        layout.addWidget(self.stack, 1)
         self._items: dict[str, QTreeWidgetItem] = {}
         self._filling = False
         self._just_toggled: QTreeWidgetItem | None = None  # the tick box this click changed
@@ -199,6 +207,12 @@ class PlotCatalog(QWidget):
 
         for index in range(self.tree.topLevelItemCount()):
             visit(self.tree.topLevelItem(index), "")
+        if not self._items:
+            self.empty_state.set_text(*_NO_PLOTS)
+        elif not self.visible_names():
+            self.empty_state.set_text("No plot matches the search", "Every word must be in the plot's name, its "
+                                      "code name or its group.", "Clear search")
+        self.stack.refresh(not self.visible_names())
 
     def _on_search_entered(self) -> None:
         visible = self.visible_names()

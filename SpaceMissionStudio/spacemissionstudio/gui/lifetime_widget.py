@@ -47,8 +47,8 @@ from .calculation_panel import Explanation
 from .chained_inputs_panel import ChainedInputsPanel
 from .scenario_explainer_widget import _clear_layout, _stat_tile
 from .theme import CONTENT_MAX_WIDTH_PX, PALETTE, set_role
-from .value_sheet import NoteList
-from .widgets import ComboBox, PreciseDoubleSpinBox
+from .value_sheet import FoldSection, NoteList
+from .widgets import ComboBox, EmptyState, PreciseDoubleSpinBox
 
 _FROM_START = "Start of scenario"
 _FROM_LAST_RUN = "End of last run"
@@ -260,15 +260,20 @@ class LifetimeWidget(QWidget):
         propellant_row.addWidget(self.propellant_spin)
         propellant_row.addStretch(1)
         form.addRow("Propellant at the start", propellant_row)
-        settings = QWidget()  # the settings at a form's width; the plot below keeps the page's
+        settings = QWidget()  # the settings at a form's width; the plot above keeps the page's
         settings.setLayout(form)
         form.setContentsMargins(0, 0, 0, 0)
         settings.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
-        layout.addWidget(settings)
+        inputs = QWidget()
+        inputs_layout = QVBoxLayout(inputs)
+        inputs_layout.setContentsMargins(0, 0, 0, 0)
+        inputs_layout.addWidget(settings)
         # What the estimate takes from the last run, before it computes (Phase 8b).
         self.chain_panel = ChainedInputsPanel()
         self.chain_panel.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
-        layout.addWidget(self.chain_panel)
+        inputs_layout.addWidget(self.chain_panel)
+        # The inputs fold away under the results (UI audit UI-10): the results come first.
+        self.inputs = FoldSection("Inputs", inputs, folded=False)
         self.from_combo.currentIndexChanged.connect(lambda _index: self._show_chain())
         self.spacecraft_combo.currentIndexChanged.connect(lambda _index: self._show_chain())
 
@@ -296,19 +301,30 @@ class LifetimeWidget(QWidget):
         button_row.addWidget(self.export_button)
         layout.addLayout(button_row)
 
+        # Before an estimate: the empty state, not an empty plot box (UI audit UI-10).
+        self.empty_state = EmptyState("No lifetime estimate yet", "Estimate lifetime follows the orbit's decay "
+                                      "under drag from the start of the scenario or the end of the last run, with "
+                                      "the inputs below.", compact=True)
+        layout.addWidget(self.empty_state)
+        self.results = QWidget()
+        results = QVBoxLayout(self.results)
+        results.setContentsMargins(0, 0, 0, 0)
         self.tiles_row = QHBoxLayout()
-        layout.addLayout(self.tiles_row)
+        results.addLayout(self.tiles_row)
         self.badges_row = QHBoxLayout()
-        layout.addLayout(self.badges_row)
+        results.addLayout(self.badges_row)
         self.notes_label = NoteList("warning")
-        layout.addWidget(self.notes_label)
+        results.addWidget(self.notes_label)
         self.chart = AltitudeChart()
-        layout.addWidget(self.chart, 1)
+        results.addWidget(self.chart, 1)
         hint = QLabel("Orbit-averaged drag with the scenario's atmosphere and space weather. "
                       "See User Manual Sec. 11 and 12.")
         hint.setWordWrap(True)
         set_role(hint, role="caption")
-        layout.addWidget(hint)
+        results.addWidget(hint)
+        self.results.setVisible(False)
+        layout.addWidget(self.results, 1)
+        layout.addWidget(self.inputs)
         # The preliminary re-entry casualty estimate from the 3D model (model analyses, Phase D).
         from .reentry_section import ReentrySection
 
@@ -476,6 +492,8 @@ class LifetimeWidget(QWidget):
         _clear_layout(self.badges_row)
         self.notes_label.set_notes([])
         self.chart.clear()
+        self.results.setVisible(False)
+        self.empty_state.setVisible(True)
 
     def _show(self, end_of_life) -> None:
         from ..engine import lifetime as lt
@@ -483,6 +501,8 @@ class LifetimeWidget(QWidget):
         scenario = getattr(self, "_computed_for", None)
         self._clear_results()
         self._end_of_life = end_of_life
+        self.empty_state.setVisible(False)
+        self.results.setVisible(True)
         self.calculation_button.setEnabled(bool(end_of_life.traces))
         self.export_button.setEnabled(True)
         result = end_of_life.lifetime

@@ -351,6 +351,7 @@ class MainWindow(QMainWindow):
         self.plan_widget.problems_changed.connect(self._on_plan_problems_changed)
         self.plan_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
         self.plan_widget.set_scenario_provider(self.scenario_editor.to_scenario)
+        self.plan_widget.template_requested.connect(self._open_template_named)  # its empty state (UI-22)
         self.plan_widget.set_time_cursor(self.time_cursor)
         self.scenario_editor.navigate_requested.connect(self._on_guide_navigate)
 
@@ -1488,6 +1489,7 @@ class MainWindow(QMainWindow):
             shown = {row[1] for row in rows}  # the scenario checks can name a finding already (shading)
             rows += [row for row in (thermal.problem_rows() if thermal is not None else []) if row[1] not in shown]
         editor = self.scenario_editor
+        self.problems_widget.set_scenario_open(self._scenario_open)  # no "valid" without a scenario (UI-24)
         self.problems_widget.set_problems(rows, [c.name for c in editor.spacecraft_list.to_list()],
                                           [g.name for g in editor.ground_station_list.to_list()])
 
@@ -1825,6 +1827,7 @@ class MainWindow(QMainWindow):
         self._refresh_stale_banner(scenario)
         self._refresh_top_bar()
         self.lifetime_widget.set_scenario(scenario)
+        self.plan_widget.set_scenario(scenario)
         self.budget_widget.set_scenario(scenario)
         # The Budgets area edits the section of a scenario that does not validate too.
         self.budgets_views.set_scenario(scenario, scenario if scenario is not None
@@ -2262,6 +2265,11 @@ class MainWindow(QMainWindow):
         if not self._confirm_discard_unsaved():
             return
         self.open_path(Path(path))
+
+    def _open_template_named(self, name: str) -> None:
+        """Open the bundled template ``name`` (a file name), as Home does:
+        Run › Plan's empty state opens template 35 so."""
+        self._on_load_scenario_path_chosen(TEMPLATES_DIR / name)
 
     def _on_load_scenario_customized(self, scenario: Scenario) -> None:
         """Handles LoadScenarioWidget.scenario_customized -- a template

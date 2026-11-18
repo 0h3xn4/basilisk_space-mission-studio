@@ -69,6 +69,7 @@ from .badges import ACCENT as _ACCENT_BADGE, DANGER as _DANGER_BADGE, MUTED as _
 from .badges import SUCCESS as _SUCCESS_BADGE, set_badge
 from .calculation_panel import Explanation
 from .theme import set_role
+from .widgets import EmptyState
 
 
 def _find_comms_pointing_spacecraft(result: ResultSet | None) -> str | None:
@@ -155,13 +156,10 @@ class MissionDashboardWidget(QWidget):
 
         layout = QVBoxLayout(self)
 
-        self._placeholder = QLabel(
-            "No live telemetry yet. Run a scenario with Comms pointing (e.g. template 19) to see it here."
-        )
-        self._placeholder.setWordWrap(True)
-        self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)  # same centered empty state as the Results tab
-        set_role(self._placeholder, tone="secondary")
-        layout.addWidget(self._placeholder)
+        # The one empty state of the GUI (UI audit UI-15), in the middle of the tab.
+        self._placeholder = EmptyState("No live telemetry yet", "Run a scenario with Comms pointing (e.g. template "
+                                       "19) to see it here.")
+        layout.addWidget(self._placeholder, 1)
 
         # Cards sized to their content, in two columns (one when the pane
         # is narrow -- see resizeEvent), with spare height left below them
@@ -170,8 +168,12 @@ class MissionDashboardWidget(QWidget):
         self._panels_grid = QGridLayout()
         self._panels_grid.setHorizontalSpacing(12)
         self._panels_grid.setVerticalSpacing(12)
-        layout.addLayout(self._panels_grid)
-        layout.addStretch(1)
+        self._cards = QWidget()  # the cards and the spare height below them; hidden with the empty state
+        cards = QVBoxLayout(self._cards)
+        cards.setContentsMargins(0, 0, 0, 0)
+        cards.addLayout(self._panels_grid)
+        cards.addStretch(1)
+        layout.addWidget(self._cards, 1)
         self._columns = 0
 
         # -- Operating state --------------------------------------------
@@ -301,6 +303,7 @@ class MissionDashboardWidget(QWidget):
         self._power_box.setVisible(visible)
         self._rf_box.setVisible(visible)
         self._placeholder.setVisible(not visible)
+        self._cards.setVisible(visible)
 
     def explanation(self) -> Explanation | None:
         """The link margin's calculation at the time cursor; the budget's

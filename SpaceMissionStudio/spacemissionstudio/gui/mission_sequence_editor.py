@@ -83,7 +83,7 @@ from .icons import step_icon
 from .page_tree import embed_dialog, watch_edits
 from .theme import on_change, set_role
 from .theme.items import retint, tint
-from .widgets import ComboBox, PreciseDoubleSpinBox, SpinBox, finish_form
+from .widgets import ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, finish_form
 
 # Mirrors engine.mission_engine._ASSIGNMENT_CONTROLLERS/_ASSIGNMENT_ATTRIBUTES
 # -- duplicated here (not imported) because engine.mission_engine imports
@@ -798,12 +798,17 @@ class MissionSequenceEditorWidget(QWidget):
         on_change(self._retint)
         self.tree.setToolTip("Drag a step to move it, or into an if/while step to nest it. Untick a step to "
                              "leave it out of the run.")
-        steps_layout.addWidget(self.tree, 1)
 
         edit_row = QHBoxLayout()
         self.add_button = QPushButton("Add step")
         self.add_button.setToolTip("Adds a step after the selected one.")
         self.add_button.setMenu(self._kind_menu(self._on_add_kind))
+        # No step yet: the empty state with Add step, not a blank box (UI audit UI-05).
+        self.empty_state = EmptyState("No mission steps", "Without steps the run lasts the scenario's duration. "
+                                      "Steps fly the mission as commands: coast, burn, report, repeat.", "Add step")
+        self.empty_state.button.setMenu(self.add_button.menu())
+        self.steps_stack = EmptyStack(self.tree, self.empty_state)
+        steps_layout.addWidget(self.steps_stack, 1)
         self.add_child_button = QPushButton("Add inside")
         self.add_child_button.setToolTip("Adds a step inside the selected 'if'/'while' step.")
         self.add_child_button.setMenu(self._kind_menu(self._on_add_child_kind))
@@ -821,10 +826,14 @@ class MissionSequenceEditorWidget(QWidget):
         self.splitter.addWidget(steps)
 
         self.form_stack = QStackedWidget()
-        self.empty_label = QLabel("Select a step to edit it here, or add one with Add step.")
-        self.empty_label.setWordWrap(True)
-        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        self.form_stack.addWidget(self.empty_label)
+        self.empty_label = EmptyState("No step selected", "Select a step to edit it here, or add one with Add step.",
+                                      compact=True)
+        no_step = QWidget()  # the compact state at the top of the form's room
+        no_step_layout = QVBoxLayout(no_step)
+        no_step_layout.setContentsMargins(0, 0, 0, 0)
+        no_step_layout.addWidget(self.empty_label)
+        no_step_layout.addStretch(1)
+        self.form_stack.addWidget(no_step)
         form_page = QWidget()
         form_layout = QVBoxLayout(form_page)
         form_layout.setContentsMargins(0, 0, 0, 0)
@@ -1016,6 +1025,8 @@ class MissionSequenceEditorWidget(QWidget):
         for button in (self.duplicate_button, self.remove_button, self.move_up_button, self.move_down_button):
             button.setEnabled(has_selection)
         self.add_child_button.setEnabled(has_selection and self.command_of(item).kind in _CONTAINER_KINDS)
+        # With no step at all, the list's empty state says it all: no form pane beside it (UI-05).
+        self.form_stack.setVisible(self.tree.topLevelItemCount() > 0)
 
     def _default_command(self, kind: str) -> Command:
         """A new step of ``kind``, with the form's own defaults."""
@@ -1136,7 +1147,7 @@ class MissionSequenceEditorWidget(QWidget):
             self.form = None
         self._form_item = item
         if item is None:
-            self.form_stack.setCurrentWidget(self.empty_label)
+            self.form_stack.setCurrentWidget(self.empty_label.parentWidget())
             return
         form = _CommandEditorDialog(command=self.command_of(item), spacecraft_names=self._spacecraft_names(),
                                     series_names=self._series_names(),

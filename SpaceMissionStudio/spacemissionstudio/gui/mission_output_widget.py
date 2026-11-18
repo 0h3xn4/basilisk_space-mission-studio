@@ -46,6 +46,7 @@ from ..plot_categories import categorize, legacy_display
 from . import feedback
 from .data_table import DataTable, Row
 from .theme import set_role
+from .widgets import EmptyState
 
 _FILE_FILTER = "CSV files (*.csv)"
 _MISSING = "–"
@@ -117,6 +118,7 @@ def _series_rows(name: str, values: np.ndarray, result: ResultSet | None, multi_
 
 
 _EMPTY_TEXT = "No reports yet: add a Report step under Mission sequence, then Run."
+_NO_REPORTS = ("No reports yet", "Add a Report step under Mission sequence, then Run.")
 
 
 class MissionOutputWidget(QWidget):
@@ -150,7 +152,11 @@ class MissionOutputWidget(QWidget):
         self.summary_label = QLabel(_EMPTY_TEXT)
         self.summary_label.setWordWrap(True)
         set_role(self.summary_label, tone="secondary")
+        self.summary_label.setVisible(False)  # the empty state says it until a run reports
         layout.addWidget(self.summary_label)
+        # No report: the one empty state (UI audit UI-15), not a line of text over a blank page.
+        self.empty_state = EmptyState(*_NO_REPORTS)
+        layout.addWidget(self.empty_state, 1)
 
         # A DataTable (UI overhaul M6b): the reports' values, a row a quantity.
         self.table = DataTable(_EMPTY_TEXT)
@@ -170,6 +176,9 @@ class MissionOutputWidget(QWidget):
         self.table.clear()
         self.table.setVisible(False)
         self.summary_label.setText(_EMPTY_TEXT)  # say why the view is empty, as before a first run
+        self.summary_label.setVisible(False)
+        self.empty_state.set_text(*_NO_REPORTS)
+        self.empty_state.setVisible(True)
 
     def set_command_summary(self, summary: CommandSummary | None, result: ResultSet | None = None) -> None:
         """``result`` (the same run's ResultSet) supplies each series'
@@ -220,7 +229,11 @@ class MissionOutputWidget(QWidget):
         commands = f"{summary.commands_executed} command{'s' if summary.commands_executed != 1 else ''} run"
         if not reports:
             self.summary_label.setText(f"{commands} · no report commands ran")
+            self.summary_label.setVisible(True)
             self.table.setVisible(False)
+            self.empty_state.set_text("No reports in this run", "The run ran no Report step. Add one under Mission "
+                                      "sequence, then run again.")
+            self.empty_state.setVisible(True)
             return
 
         names: list = []
@@ -270,6 +283,8 @@ class MissionOutputWidget(QWidget):
         self._rows = rows
         self.table.set_table(headers, table_rows, numeric=range(1, len(headers)), stretch=0)
         self.table.setVisible(True)
+        self.summary_label.setVisible(True)
+        self.empty_state.setVisible(False)
         self._apply_filter(rows, reports, commands)
         self._mark_cursor_report()
 
