@@ -61,10 +61,15 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.11.0, the System
+signed (decision 11). The current release is 2.12.0, windows and
+views: Results › 3D View, Run › Thermal and the Budgets area in windows
+of their own, ground tracks, ground stations and a live 2D map, the
+thermal results as tabs and on the 3D View, dialogs that fit a
+1280 x 720 screen and a new app icon, with the scenario format
+unchanged (prepared 2026-11-18); before it 2.11.0, the System
 Budget Studio merge's phase 1: the equipment list, the static power
 budget and the Budgets area, at scenario schema version 5 (published
-2026-11-17); before it 2.10.0, mission operations planning (published
+2026-11-17), 2.10.0, mission operations planning (published
 2026-11-17), 2.9.0, spacecraft thermal analysis on the 3D model with
 NASA's November 2026 solar-cycle prediction (published 2026-11-16), 2.8.0, a calmer window
 that is easier to read (a menu bar, a quieter Home and status bar,
@@ -165,7 +170,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.11.0, and the code is at 2.11.0.
+  release is 2.12.0, and the code is at 2.12.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;

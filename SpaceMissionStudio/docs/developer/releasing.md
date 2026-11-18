@@ -520,6 +520,19 @@ release check on `d387dc5` and tagged it at 17:06; the release workflow
 checked every file, attached the eleven and published the release 48
 minutes later. It was never a public release without files.
 
+2.12.0 was prepared on 2026-11-18 by this checklist: the 2.12.0 windows
+and views (`windows-views-design.md`): the thermal results (#278), the
+breakout windows (#281), the ground tracks, stations and live 2D map
+(#282), the desktop integration (#276) and the new app icon (#280),
+with UI audit batch B1 (#283) and the 2.11.0 publication record (#279);
+a minor release because it adds features. No file format changed: the
+scenario schema is still version 5 and `schema/` is unchanged since
+2.11.0. Checked with 2.11.0's code (the tag, `d387dc5`): 2.11.0 and
+2.12.0 save the 36 templates and a file with a `budgets` section byte
+for byte the same, and each version opens and validates all 37 files of
+the other with no message. The space weather was not refreshed (not
+tried), so 2.12.0 carries 2.8.0's file (observations to 2026-11-14).
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

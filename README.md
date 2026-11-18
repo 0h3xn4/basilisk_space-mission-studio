@@ -5,7 +5,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-[![Version 2.11.0](https://img.shields.io/badge/version-2.11.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.11.0)
+[![Version 2.12.0](https://img.shields.io/badge/version-2.12.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.12.0)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -153,8 +153,14 @@ Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capab
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.11.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.11.0),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): equipment list and power budget: each unit's
+- **Version:** 2.12.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.12.0),
+  [changelog](SpaceMissionStudio/CHANGELOG.md)): views in their own windows (Results › 3D View,
+  Run › Thermal and the Budgets area, for example on a second screen),
+  ground tracks on by default, ground stations easy to see and a live 2D
+  map in the 3D View, Run › Thermal as tabs with plots that fit and
+  temperatures on the 3D View, dialogs that fit a 1280 x 720 screen, and
+  a new app icon; the scenario format is 2.11.0's. 2.11.0 added the
+  equipment list and power budget: each unit's
   mass and its power in each mode, every number with its source or
   marked "TBD", the power budget per system mode, subsystem and bus, and
   the units in the mass budget, in a new Budgets area; the first part of
