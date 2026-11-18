@@ -46,17 +46,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
 from ..engine.findings import explanation_lines
 from .feedback import row_label
 from .problem_location import JSON_VIEW, MISSION_SEQUENCE, PROPAGATION, SCENARIO, SPACECRAFT, locate
-from .theme import ROW_HEIGHT, SPACE, TOKENS, icon, mono_font, set_role
-from .widgets import ComboBox
-
-
-def _empty_state(text: str) -> QLabel:
-    label = QLabel(text)
-    label.setObjectName("emptyState")
-    label.setWordWrap(True)
-    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    set_role(label, role="empty")
-    return label
+from .theme import ROW_HEIGHT, SPACE, TOKENS, icon, mono_font
+from .widgets import ComboBox, EmptyState
 
 
 def _plain(text: str) -> str:
@@ -135,7 +126,8 @@ class InspectorWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        self.empty_label = _empty_state("Select a field to see its value, allowed range and help here.")
+        self.empty_label = EmptyState("No field selected", "Select a field to see its value, allowed range and help "
+                                      "here.", compact=True)
         layout.addWidget(self.empty_label)
         self.form = QWidget()
         form = QFormLayout(self.form)
@@ -307,6 +299,10 @@ class ProblemsTable(QTableView):
         return "\n".join(lines) + "\n"
 
 
+_NO_PROBLEMS = ("No problems", "The scenario is valid: nothing to fix.")
+_NO_SCENARIO = ("No scenario is open", "Problems lists what to fix in the open scenario. Open one on Home.")
+
+
 class ProblemsWidget(QWidget):
     """The scenario's validation error and plausibility warnings: the
     Problems panel at the bottom of the window (UI overhaul M2b)."""
@@ -319,7 +315,9 @@ class ProblemsWidget(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.empty_label = _empty_state("No problems: the scenario is valid.")
+        # The empty state: no problem in the open scenario, or no scenario open at all (UI audit UI-24).
+        self.empty_label = EmptyState(*_NO_PROBLEMS)
+        self._scenario_open = True
         self.model = ProblemsModel(self)
         self.proxy = _SortProxy(self)
         self.proxy.setSourceModel(self.model)
@@ -337,7 +335,7 @@ class ProblemsWidget(QWidget):
         header.setStretchLastSection(True)
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.table.activated.connect(self._on_activated)
-        layout.addWidget(self.empty_label)
+        layout.addWidget(self.empty_label, 1)
         layout.addWidget(self.table, 1)
         self.setFocusProxy(self.table)  # focusing the panel focuses its table
         self.problems: list[tuple[str, str]] = []
@@ -362,6 +360,12 @@ class ProblemsWidget(QWidget):
         """The table as shown: (severity, ID, object, message) per row."""
         return [tuple(str(self.proxy.index(row, column).data()) for column in range(len(PROBLEM_COLUMNS)))
                 for row in range(self.proxy.rowCount())]
+
+    def set_scenario_open(self, is_open: bool) -> None:
+        """Whether a scenario is open: with none, the panel says so instead
+        of calling the scenario valid."""
+        self._scenario_open = is_open
+        self.empty_label.set_text(*(_NO_PROBLEMS if is_open else _NO_SCENARIO))
 
     def set_problems(self, problems: list[tuple[str, ...]], spacecraft: Sequence[str] = (),
                      stations: Sequence[str] = ()) -> None:

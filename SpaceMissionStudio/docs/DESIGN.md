@@ -434,8 +434,10 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Form fields | `widgets.SpinBox`, `DoubleSpinBox`, `PreciseDoubleSpinBox`, `ComboBox` | Numbers and choices: they ignore the mouse wheel unless focused, keep a value from a file that is outside their range (and mark it), and show full precision |
 | Field map | each form's `field_widget(path)`, `field_title(code)`, `problem_text(message)` | Where a field is, and what it is called, for Problems and for messages |
 | List editor | a list with Add / Edit / Remove at their own width, left-aligned | Spacecraft, stations, sensors, actuators, dispersions |
+| Empty state | `widgets.EmptyState(title, text, action, primary=, compact=)`: `set_text`, `add_action`, `add_detail`, `text()` | The one empty state of every view, list and panel: a title, a line of text and the action that fills it. The full form sits in the middle of its area; `compact=True` is as tall as its lines, for a panel, a short list or the room beside a table |
+| Empty list | `widgets.EmptyStack(view, empty_state, fit_rows=)`: `refresh(empty=None)`, `showing_empty()` | A list, tree or table, or its `EmptyState` while it has no row; `fit_rows=True` makes a short list as tall as its rows. Edit, Remove and the other actions on a row are off until a row is selected |
 | Badge / tag | `badges.set_badge(label, badges.SUCCESS)` and the other kinds | A state in a word: Explain, the dashboard, rule results |
-| Role | `theme.set_role(widget, role=..., tone=..., badge=...)` | A label's or frame's look from the style sheet: caption, heading, section-title, mono, empty, hint, card; a status tone |
+| Role | `theme.set_role(widget, role=..., tone=..., badge=...)` | A label's or frame's look from the style sheet: caption, heading, section-title, mono, hint, card; a status tone |
 | Toast | `feedback.report(widget, text, kind)` | Something finished or failed, not tied to a field |
 | Problem banner | `feedback.ProblemBanner` | Above a form: what is wrong in it |
 | Stale results banner | `feedback.StaleResultsBanner` | Above the run views: the results no longer match the scenario, with Re-run |
@@ -649,12 +651,29 @@ A widget that owns a worker has `wait_for_worker()`:
 
 ### Empty states
 
-An empty view says why it is empty and what fills it, for example:
+An empty view, list or panel shows `widgets.EmptyState`, the GUI's one
+empty state (UI audit B3): a title, a line of text and the action that
+fills it (Add, Run, Check, Browse...). A list shows it in the list's
+place (`widgets.EmptyStack`), never a blank box, and a short list is as
+tall as its rows. Its Edit and Remove stay off until a row is selected.
+A panel, a short list or the room beside a table takes the compact form
+(Run › Thermal › Heat flows before a node is picked), so the table keeps
+the height. Reasons go in a short list under the text
+(`EmptyState.add_detail`, the Timeline's run without events). No view
+draws its own centred line of text any more, and the style sheet has no
+"empty" label role. An empty view says why it is empty and what fills
+it, for example:
 
 - **Results Dashboard:** "No live telemetry yet. Run a scenario with
   Comms pointing (e.g. template 19) to see it here."
 - **Output:** why it is empty after a run without Report steps.
 - **Log:** "Nothing logged yet in this session."
+- **Run › Plan:** what a plan is; with no operations section, Open
+  Template 35 (the template that has one), else Plan.
+- **Run › Design Checks, before the first check:** "Not checked yet",
+  with Check; after a check without findings, "No design finding." once.
+- **Problems, with no scenario open:** "No scenario is open", never "the
+  scenario is valid".
 - **Explain, while the scenario does not validate:** "The scenario has
   a problem (see Problems): fix it to see its summary here."
 - **A work area with no scenario open** (Scenario, Run, Results,

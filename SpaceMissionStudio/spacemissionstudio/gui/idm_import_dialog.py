@@ -60,7 +60,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QDialog, QDialogBut
                                QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
 
 from .theme import set_role
-from .widgets import ComboBox
+from .widgets import ComboBox, EmptyStack, EmptyState
 
 CREDIT = ("Reads IDM-CIC models (IDM-CIC is © CNES) with SpaceMissionStudio's own reader. SpaceMissionStudio "
           "is not affiliated with or endorsed by CNES.")
@@ -172,6 +172,7 @@ class IdmImportDialog(QDialog):
         self.tabs.addTab(devices_page, "Devices found")
         self.devices_note = set_role(QLabel(""), tone="secondary")
         self.devices_note.setWordWrap(True)
+        self.devices_note.setVisible(False)  # until devices are found
         devices_layout.addWidget(self.devices_note)
         self.devices_table = QTableWidget(0, len(self.DEVICE_COLUMNS))
         self.devices_table.setHorizontalHeaderLabels(self.DEVICE_COLUMNS)
@@ -181,7 +182,12 @@ class IdmImportDialog(QDialog):
         self.devices_table.setTabKeyNavigation(False)
         self.devices_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.devices_table.horizontalHeader().setStretchLastSection(True)
-        devices_layout.addWidget(self.devices_table, 1)
+        # No file yet, or none of its equipment is a device: the empty state, not a blank table (UI audit UI-05).
+        self.devices_empty = EmptyState("No model file", "Choose an .idm file: the sensors and actuators its "
+                                        "equipment names are listed here.", "Browse...", compact=True)
+        self.devices_empty.button.clicked.connect(self._on_browse)
+        self.devices_stack = EmptyStack(self.devices_table, self.devices_empty)
+        devices_layout.addWidget(self.devices_stack, 1)
         self._findings: list = []
         properties_page = QWidget()
         properties_layout = QVBoxLayout(properties_page)
@@ -513,13 +519,16 @@ class IdmImportDialog(QDialog):
             product.currentIndexChanged.connect(lambda _i, row=row: self._update_device_row(row))
             add.toggled.connect(lambda _on, row=row: self._update_device_row(row))
             self._update_device_row(row)
+        self.devices_empty.set_text("No device found", "No equipment of the model is named as a sensor or an "
+                                    "actuator.")
         self.devices_note.setText(
-            "None found by name." if not findings else
+            "" if not findings else
             ("This scenario runs orbit only, which simulates no sensors or actuators: they are listed, not added."
              if not self._devices_allowed else
              "The model says what each device is and where it sits, not how it performs: a device takes its values "
              "from the catalog product chosen, or runs with Basilisk's defaults until you set them (the pre-run "
              "checks say so). A thruster goes to the 3D model's equipment, for the design checks."))
+        self.devices_note.setVisible(bool(findings))
 
     def _update_device_row(self, row: int) -> None:
         """The note of a row: why it is not added, or where its values come from."""

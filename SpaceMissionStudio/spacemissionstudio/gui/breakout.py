@@ -75,12 +75,11 @@ from dataclasses import dataclass, field
 
 from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLayout, QPushButton, QStackedWidget, QTabWidget,
+from PySide6.QtWidgets import (QApplication, QLayout, QStackedWidget, QTabWidget,
                                QToolButton, QWidget)
 
-from .budgets_area import EmptyState
-from .theme import SPACE, icon, set_role
-from .widgets import WINDOW_FLAGS, show_window
+from .theme import icon, set_role
+from .widgets import WINDOW_FLAGS, EmptyState, show_window
 
 #: The command that opens the view shown in its own window, or brings it back.
 SHORTCUT = "Ctrl+Shift+D"
@@ -167,19 +166,9 @@ class BreakoutPlaceholder(EmptyState):
         self.setObjectName("breakoutPlaceholder")
         self.button.setToolTip(f"{BACK_TEXT} ({SHORTCUT})\nMove {title} back into this window.")
         self.button.setAccessibleName(f"{BACK_TEXT}: {title}")
-        self.show_button = set_role(QPushButton("Show Window"), variant="ghost")
+        self.show_button = set_role(self.add_action("Show Window"), variant="ghost")  # beside Bring Back
         self.show_button.setToolTip(f"Bring the window of {title} to the front.")
         self.show_button.setAccessibleName(f"Show the window of {title}")
-        layout = self.layout()
-        index = layout.indexOf(self.button)
-        layout.removeWidget(self.button)
-        row = QHBoxLayout()
-        row.setSpacing(SPACE["sm"])
-        row.addStretch(1)
-        row.addWidget(self.button)
-        row.addWidget(self.show_button)
-        row.addStretch(1)
-        layout.insertLayout(index, row)
         self.button.clicked.connect(self._on_bring_back)
         self.show_button.clicked.connect(self._on_show)
 

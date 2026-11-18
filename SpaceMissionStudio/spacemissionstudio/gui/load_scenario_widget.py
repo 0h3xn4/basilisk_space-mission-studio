@@ -85,6 +85,7 @@ from .startup_fetch_dialog import ReferenceDataCard
 from .template_wizard import TemplateCustomizeWizard, get_wizard_spec
 from .theme import SPACE, TOKENS, icon, items, set_role, ui_font
 from .value_sheet import FoldSection
+from .widgets import EmptyState
 from .theme.richtext import css
 
 _logger = logging.getLogger(__name__)
@@ -435,7 +436,8 @@ class TemplateGrid(QWidget):
         self.cards: list[TemplateCard] = []
         self._columns = 0
         self._current: TemplateCard | None = None
-        self.empty_label = set_role(QLabel("No template matches the filter."), role="empty")
+        self.empty_label = EmptyState("No template matches the filter", "Every word must be in the template's name, "
+                                      "its mode, its orbit or its description.", compact=True)
         self.empty_label.setVisible(False)
 
     def add(self, card: TemplateCard) -> None:

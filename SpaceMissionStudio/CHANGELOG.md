@@ -8,6 +8,28 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Fixed
+
+- **Empty states everywhere** (UI audit batch B3). An empty view, list or
+  panel now says what it is waiting for, with the action that fills it,
+  in one style across the window. The ground station, spacecraft and
+  plot lists, the mission sequence and the IDM-CIC import's devices no
+  longer show a blank box, and Edit and Remove stay off until you select
+  a row. A short list is as tall as its rows.
+- End of Life shows its results first, with the inputs below them in a
+  section you can fold. Before an estimate it says so instead of showing
+  an empty plot box.
+- Run › Plan says what a plan is and opens template 35 when the scenario
+  has no operations section. It no longer tells you to edit JSON.
+- The Problems panel says "No scenario is open" when none is, instead of
+  "the scenario is valid".
+- The Timeline says "No events in this run" once, with the reasons as a
+  short list. Run › Design Checks offers Check before the first check.
+  Run › Thermal › Heat flows asks for a node in one compact line, so the
+  table gets the room.
+
 ## 2.12.0 (2026-11-18)
 
 SpaceMissionStudio 2.12.0 is about seeing more of a mission at once.

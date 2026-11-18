@@ -126,7 +126,6 @@ QLabel[role="page-title"] {{ font-size: {px(SIZE['page'])}; font-weight: {semibo
 QLabel[role="display"] {{ font-size: {px(SIZE['display'])}; font-weight: {semibold}; }}
 QLabel[role="value"] {{ font-size: {px(SIZE['section'])}; font-weight: {semibold}; }}
 QLabel[role="mono"] {{ font-family: "{MONO_FONT_FAMILY}"; font-size: {px(SIZE['small'])}; }}
-QLabel[role="empty"], QLabel#emptyState {{ color: {t['text.secondary']}; padding: {px(SPACE['xl'])}; }}
 QLabel[role="hint"] {{
     background-color: {t['status.standby.soft']};
     color: {t['text.primary']};
@@ -187,6 +186,8 @@ QFrame[role="card"] {{
     border-radius: {r_panel};
 }}
 QFrame[role="card"] QLabel {{ border: none; }}
+/* The empty state over Results › Plots' grid: the plots' surface (UI-15). */
+QWidget#plotEmptyState {{ background-color: {t['bg.surface']}; }}
 /* A template card on Home: hover, selected (the accent edge) and focus
    (the 2 px ring; the 1 px margin keeps its content from moving). */
 QFrame#templateCard {{ margin: {px(FOCUS_RING - BORDER)}; }}

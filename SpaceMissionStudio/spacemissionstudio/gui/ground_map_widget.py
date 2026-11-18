@@ -76,9 +76,9 @@ from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMenu, QPushButton, QSizePol
                                QVBoxLayout, QWidget)
 
 from ..engine import scene3d
-from .budgets_area import EmptyState
 from .theme import SPACE, current_theme, icon, mono_font, on_change, set_role, ui_font
 from .theme.ground_map_style import ground_map_style
+from .widgets import EmptyState
 
 ASSETS = Path(__file__).resolve().parent / "assets" / "mission_view"
 TEXTURE_2K = ASSETS / "earth_day_2k.jpg"  # 2048 x 1024, -180 to 180 degrees

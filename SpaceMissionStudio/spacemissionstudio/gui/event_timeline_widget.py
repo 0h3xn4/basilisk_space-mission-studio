@@ -60,6 +60,8 @@ from .data_table import DataTable, LazyRows, Row
 from .feedback import report
 from .theme import PALETTE, SERIES_COLORS, set_role
 from .time_cursor import TimeCursor, describe
+from .value_sheet import NoteList
+from .widgets import EmptyState
 
 # Fixed categorical order, one slot per kind (the Results tab's series colours).
 KIND_SLOTS: dict[str, int] = {kind: index for index, kind in enumerate(event_model.KINDS)}
@@ -72,6 +74,7 @@ def kind_colour(kind: str) -> str:
     """The colour of an event kind in the theme in use."""
     return SERIES_COLORS[KIND_SLOTS[kind]] if kind in KIND_SLOTS else PALETTE["accent"]
 _ALL_STATIONS = "All stations"
+_NO_RUN = ("No run yet", "Run a scenario to see its passes, eclipses, burns and mode changes.")
 _RIGHT = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
 _ROW_HEIGHT = 22  # [px]
 _AXIS_HEIGHT = 26  # [px]
@@ -342,9 +345,7 @@ class GanttView(QWidget):
         rect = self._plot_rect()
         muted, grid = QColor(PALETTE["text_muted"]), QColor(PALETTE["border"])
         if not self.rows:
-            painter.setPen(muted)
-            painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "No events in this run.")
-            return
+            return  # the page's empty state or the table says why (UI audit UI-25)
         for index, row in enumerate(self.rows):
             top = index * _ROW_HEIGHT
             painter.setPen(QColor(PALETTE["text"]))
@@ -598,6 +599,11 @@ class EventTimelineWidget(QWidget):
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter, 1)
+        # No run, or a run without events: one empty state, the reasons as a short list (UI audit UI-25).
+        self.empty_state = EmptyState(*_NO_RUN)
+        self.reasons = NoteList("note")
+        self.empty_state.add_detail(self.reasons)
+        layout.addWidget(self.empty_state, 1)
         clear = QShortcut(QKeySequence("Esc"), self, context=Qt.ShortcutContext.WidgetWithChildrenShortcut)
         clear.activated.connect(lambda: self._pick_time(None))
         self.set_result(None)
@@ -642,6 +648,13 @@ class EventTimelineWidget(QWidget):
             self.summary_label.setText((text or "No events") + "." + "".join(
                 f" No {_plural(kind, 2)[2:]}: {why}." for kind, why in missing.items()))
         self.export_button.setEnabled(bool(self.events))
+        empty = not self.events
+        if empty:
+            self.empty_state.set_text(*(_NO_RUN if result is None else ("No events in this run", "")))
+            self.reasons.set_notes([f"No {_plural(kind, 2)[2:]}: {why}." for kind, why in missing.items()])
+        for widget in (self.summary_label, self.cursor_label, self.splitter):
+            widget.setVisible(not empty)
+        self.empty_state.setVisible(empty)
         self._fill_stations()
         self._apply_filter()
 
@@ -680,6 +693,7 @@ class EventTimelineWidget(QWidget):
         run_end = max((float(s.time_s[-1]) for s in self._result.series.values() if s.time_s.size),
                       default=0.0) if self._result is not None else 0.0  # [s]
         self.gantt.set_events(visible, run_end, self._epoch_utc)
+        self.table.set_empty_text("No event matches the search, the station and the kinds ticked.")
         self._fill_table(visible)
         self._fit_timeline_height()
 

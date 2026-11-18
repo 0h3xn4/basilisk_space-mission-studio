@@ -54,6 +54,7 @@ from .calculation_panel import Explanation
 from .flow_layout import FlowLayout
 from .run_history_view import ProvenancePopover, provenance_text
 from .theme import CONTENT_MAX_WIDTH_PX, icon, numeric_font, set_role
+from .widgets import EmptyState
 
 CARD_WIDTH_PX = 216  # [px] a card, on the 4 px grid: four in a row at 1280 px with the side panel open
 _CRITICAL_ICON_PX = 16  # [px]
@@ -196,18 +197,10 @@ class ResultsOverview(QWidget):
         self.stack = QStackedWidget()
         outer.addWidget(self.stack)
 
-        self.empty = QWidget()
-        empty_layout = QVBoxLayout(self.empty)
-        empty_layout.addStretch(1)
-        self.empty_label = set_role(QLabel("No run yet. After a run, its headline figures are here: delta-V, "
-                                           "propellant, link margin, battery, passes, eclipses."), tone="secondary")
-        self.empty_label.setWordWrap(True)
-        self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        empty_layout.addWidget(self.empty_label)
-        self.empty_run_button = set_role(QPushButton("Run"), variant="primary")  # the empty state's primary action
+        self.empty = EmptyState("No run yet", "After a run, its headline figures are here: delta-V, propellant, "
+                                "link margin, battery, passes, eclipses.", "Run", primary=True)
+        self.empty_run_button = self.empty.button  # the empty state's primary action
         self.empty_run_button.clicked.connect(self.run_requested)
-        empty_layout.addWidget(self.empty_run_button, 0, Qt.AlignmentFlag.AlignHCenter)
-        empty_layout.addStretch(1)
         self.stack.addWidget(self.empty)
 
         scroll = QScrollArea()

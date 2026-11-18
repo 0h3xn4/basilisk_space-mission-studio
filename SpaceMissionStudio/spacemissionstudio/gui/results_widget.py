@@ -168,6 +168,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSplitter,
+    QStackedLayout,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -191,7 +192,7 @@ from .feedback import report
 from .theme import SERIES_COLORS, SIZE, SPACE, TOKENS, WEB_FONT_STACK, on_change, set_role
 from .theme import plotly_template as pt
 from .value_sheet import NoteList
-from .widgets import ComboBox, make_window, show_window
+from .widgets import ComboBox, EmptyState, make_window, show_window
 
 # Categorical series colours: the theme's categorical palette (theme/
 # palettes.py has its validation), the same list object, so a figure built
@@ -783,9 +784,21 @@ class ResultsWidget(QWidget):
         # the window taller than 720 px (docs/ux-audit.md U-03).
         self.catalog.setMinimumHeight(40)  # [px]
         self.readout.setMinimumHeight(30)  # [px]
+        # The grid, or over it the empty state while no plot is shown (UI audit UI-15): the one
+        # EmptyState of the GUI, not a line of text drawn in the page. The page stays under it,
+        # loaded and drawing, so its size and its "drawn" signal do not change.
+        self.plot_area = QWidget()
+        plot_layers = QStackedLayout(self.plot_area)
+        plot_layers.setStackingMode(QStackedLayout.StackingMode.StackAll)
+        plot_layers.addWidget(self.web_view)
+        self.plot_empty = EmptyState(*self._empty_texts())
+        self.plot_empty.setObjectName("plotEmptyState")  # opaque, the plots' surface (theme.qss)
+        self.plot_empty.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        plot_layers.addWidget(self.plot_empty)
+        plot_layers.setCurrentWidget(self.plot_empty)
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.addWidget(self.side_splitter)
-        self.splitter.addWidget(self.web_view)
+        self.splitter.addWidget(self.plot_area)
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 1)
         self.splitter.setCollapsible(1, False)
@@ -1393,6 +1406,7 @@ class ResultsWidget(QWidget):
         self._band_notes = []
         self._x_is_epoch = False
         if self._result is None:
+            self._show_plot_empty()
             return
         built = [(name, self._cached_plot(name)) for name in self._shown]
         self._shown = [name for name, fig in built if fig is not None]
@@ -1401,6 +1415,7 @@ class ResultsWidget(QWidget):
         self._focused = min(self._focused, max(len(self.figures) - 1, 0))
         self.events_note.set_notes(self._band_notes)
         self.events_note.setVisible(bool(self._band_notes))
+        self._show_plot_empty()
 
     def _build_access_timeline_figure(self) -> go.Figure | None:
         """One Gantt-style chart of every
@@ -1490,6 +1505,22 @@ class ResultsWidget(QWidget):
         return "Run a simulation to see results here" if self._result is None else \
             "Tick a plot in the catalog to show it here"
 
+    def _empty_texts(self) -> tuple[str, str]:
+        """The empty state's title and text: no run yet, or no plot ticked."""
+        if getattr(self, "_result", None) is None:
+            return "No results yet", "Run the scenario to see its plots here."
+        return "No plot shown", "Tick a plot in the list to show it here."
+
+    def _show_plot_empty(self) -> None:
+        """The empty state over the grid while no plot is shown."""
+        if not hasattr(self, "plot_empty"):
+            return  # still building
+        empty = not self.figures
+        if empty:
+            self.plot_empty.set_text(*self._empty_texts())
+            self.plot_empty.raise_()
+        self.plot_empty.setVisible(empty)
+
     def _load_shell(self) -> None:
         """Load the persistent page (M6a): plotly.js once; every change is
         then sent to it (:meth:`_push_figure_to_webview`). Loaded again only
@@ -1519,6 +1550,7 @@ class ResultsWidget(QWidget):
         (:attr:`plot_drawn`). See :meth:`set_live_result`'s throttling
         comment for why this is split from building the figures.
         """
+        self._show_plot_empty()
         if self._page_ready:
             self._render_generation += 1
             if not self.figures:

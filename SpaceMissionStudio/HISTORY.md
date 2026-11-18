@@ -18778,3 +18778,87 @@ the `.deb` and the setup program also the checksums in its notes; the
 wheel, the sdist and both bills of materials, downloaded from the
 release, pass `sha256sum -c`. SRelD issue 44, the SDP, H05 and
 `releasing.md` record the tag, the runs and the files' digests.
+
+## UI audit batch B3: empty states everywhere (2026-11-18)
+
+The UI audit of 2026-11-17 found eight defects with empty views. Batch
+B3 fixes them. The model is B1's `widgets.EmptyState`; the repository
+still has no `gui/components/` package, so it stays in `widgets.py`.
+
+**One empty state (UI-15).** The audit counted five styles: an HTML line
+in the plot page, a centred label on the Dashboard, a line over the
+Output table, a label with a button on History and a status line on
+Plan. There were more: the "empty" label role (Problems, the Inspector,
+Compare, Show calculation, the spacecraft list, Home's template filter)
+and centred labels on Results › Overview and the 3D View. All of them
+now show an `EmptyState`. The widget gets a compact form for panels,
+short lists and the room beside a table, more buttons (`add_action`), a
+detail under the text (`add_detail`) and `text()`. `NoScenarioState`
+and the breakout placeholder are now subclasses of it. The style sheet
+loses the "empty" role. On Results › Plots the empty state lies over the
+plot page, which stays loaded under it, so the page's size and its
+"drawn" signal do not change. A `DataTable`'s own line and a
+`NoteList`'s "none" line stay: they are a line inside a component.
+
+**Lists (UI-05).** A new `widgets.EmptyStack` shows a list, tree or
+table, or its empty state while it has no row. The ground stations
+(with Add ground station), the spacecraft (Add spacecraft), the mission
+sequence (Add step, with the same kinds' menu), the IDM-CIC import's
+devices (Browse...) and the plot list use it. The plot list also says
+when a search leaves no plot, with Clear search. The ground station and
+spacecraft lists are as tall as their rows (`fit_rows`). Edit and
+Remove on the ground station list are now off until a station is
+selected, as they already were on the spacecraft list. The mission
+sequence hides its form pane while there is no step. While a list
+shows its empty state, its own Add and the buttons that need a row are
+hidden (`EmptyStack.hide_while_empty`), so the page has one Add, not
+two; New from template... and the generators stay. B1 had already fixed
+the model editor's Equipment tab.
+
+**End of Life (UI-10).** Before an estimate the page showed a 260 px
+empty plot box; after one, the plot was below the fold at 1280 x 720.
+The page now shows the button row, then the empty state or the results
+(tiles, badges, notes, the plot), then the inputs in the existing
+`FoldSection`, open at first. After an estimate the plot is in view
+without scrolling.
+
+**Heat flows (UI-21).** "Pick a node" was a full empty state with a
+stretch of 3 against the table's 2, so the table had two rows at
+1280 x 720. It is now one compact empty state with no stretch. In the
+after screenshot the table shows all six nodes.
+
+**Run › Plan (UI-22).** The page said "Press Plan to schedule the
+scenario's operations section (Scenario › JSON, 'operations')". It now
+shows an empty state that says what a plan is. The app's way to start a
+plan is a template with an operations section: without a section the
+empty state offers Open Template 35 (through the window's usual
+template opening, with the unsaved-changes question); with one, Plan.
+The window tells the page whether the edited scenario has a section. A
+form that builds an operations section is out of scope for B3.
+
+**Problems (UI-24).** With no scenario open the panel said "No problems:
+the scenario is valid." The window now tells the panel whether a
+scenario is open (`ProblemsWidget.set_scenario_open`), and the panel
+says "No scenario is open".
+
+**Timeline (UI-25).** Without events the page said "No events in this
+run." in the timeline and in the table, under a summary line. After a
+run that summary was a sentence of reasons. Now one empty state takes
+the place of the summary, the cursor line, the timeline and the table;
+after a run its title is "No events in this run" and the reasons are a
+note list under it. The timeline draws nothing without rows. A table
+that the filters leave empty says so once.
+
+**Design Checks (UI-45).** The page said "No design finding." before
+Check was pressed. It now shows "Not checked yet" with a Check button
+(a secondary one: the page's own Check stays the primary action). After
+a check without findings it says "No design finding." once.
+
+Tests: the new file `tests/gui/test_empty_states.py` has 15 tests, one
+or more per defect, and a test that walks the window and finds no label
+of the old styles. All 15 failed before the fixes. No existing test
+changed. After the fixes the GUI suite ran 2063 tests: 2062 passed, and
+one timing test of the breakout windows measured one Budgets move at
+74.5 ms under four parallel workers (it passed three of three runs
+alone). The rest of the suite passed (3476 tests). Screenshots taken
+offscreen at 1280 x 720 before and after show each view.

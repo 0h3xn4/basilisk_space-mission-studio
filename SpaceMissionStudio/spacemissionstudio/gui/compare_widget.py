@@ -56,18 +56,9 @@ from . import plot_page, units
 from .data_table import DataTable, Row
 from .theme import SERIES_COLORS, TOKENS, on_change, set_role
 from .theme import plotly_template as pt
-from .widgets import ComboBox
+from .widgets import ComboBox, EmptyState
 
 _S_PER_H = 3600.0  # [s/h]
-
-
-def _empty_state(text: str) -> QLabel:
-    label = QLabel(text)
-    label.setObjectName("emptyState")
-    label.setWordWrap(True)
-    label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-    set_role(label, role="empty")
-    return label
 
 
 def _table() -> DataTable:
@@ -107,9 +98,9 @@ class CompareWidget(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
-        self.empty_label = _empty_state("Run the scenario twice (or two versions of it) to compare the runs here. "
-                                        "Runs are saved, so the runs of earlier sessions show here too.")
-        layout.addWidget(self.empty_label)
+        self.empty_label = EmptyState("No runs to compare", "Run the scenario twice (or two versions of it) to compare "
+                                      "the runs here. Runs are saved, so the runs of earlier sessions show here too.")
+        layout.addWidget(self.empty_label, 1)
         self.content = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(self.content, 1)
 

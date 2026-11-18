@@ -116,7 +116,12 @@ def test_list_buttons_keep_their_own_width(qtbot, window):
     editor.monte_carlo_group.enabled_check.setChecked(True)  # the dispersions show only while Monte Carlo is on (M4a)
     qtbot.waitUntil(lambda: editor.monte_carlo_group.dispersion_list.add_button.isVisible())
     assert editor.monte_carlo_group.dispersion_list.add_button.width() < 200  # [px]
+    from spacemissionstudio.schema.scenario import GroundStationConfig
+
+    # A station first: an empty list shows its empty state, with the list's own buttons hidden (UI audit B3).
+    editor.ground_station_list.from_list([GroundStationConfig(name="gs-1", latitude_deg=48.0, longitude_deg=11.0)])
     _show(qtbot, window, editor.ground_station_page)
+    qtbot.waitUntil(lambda: editor.ground_station_list.add_button.isVisible())
     assert editor.ground_station_list.add_button.width() < 200  # [px]
     editor.show_spacecraft(0)
     qtbot.waitUntil(lambda: editor._spacecraft_nodes[0].form is not None)
