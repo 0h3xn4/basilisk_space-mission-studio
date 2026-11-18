@@ -141,6 +141,11 @@ relative to `SpaceMissionStudio/` unless they start with `.github/`.
   - the tests cannot run in this container: Basilisk is missing and
     `pip install -c packaging/constraints.txt bsk==2.12.0` fails, or the
     Qt libraries for the GUI tests are missing.
+- **Python:** the cloud environment's setup script installs Python 3.14,
+  Basilisk 2.12.0, the app (`-e ".[dev,gui]"`) and `pre-commit` in
+  `/opt/sms-venv`. Use `/opt/sms-venv/bin/python` (and
+  `/opt/sms-venv/bin/pre-commit`) for every check when that folder
+  exists.
 - **Branch.** Find the default branch with
   `git symbolic-ref refs/remotes/origin/HEAD` (today it is `develop`).
   Never assume it is called `main`. Work on that branch and push to it.
