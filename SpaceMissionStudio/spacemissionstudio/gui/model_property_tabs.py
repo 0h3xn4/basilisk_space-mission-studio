@@ -102,7 +102,8 @@ class MaterialsTab(QWidget):
         layout = QHBoxLayout(self)
         left = QVBoxLayout()
         note = QLabel(f"The library's {len(library.MATERIALS)} sourced materials are always available "
-                      "(docs/models/materials.md). Add your own here, with where its values come from.")
+                      "(user manual, section 6, \"A 3D model of the spacecraft\"). Add your own here, "
+                      "with where its values come from.")
         note.setWordWrap(True)
         set_role(note, tone="secondary")
         left.addWidget(note)

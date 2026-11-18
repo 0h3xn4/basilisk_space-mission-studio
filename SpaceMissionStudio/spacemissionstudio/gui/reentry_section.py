@@ -34,7 +34,7 @@ from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, NumberField
 
 PRELIMINARY = ("Preliminary estimate (DAS-like, simplified): not a substitute for DAS, DRAMA or SESAM. "
-               "See docs/models/reentry.md.")
+               "See the user manual, section 6, \"Analyses built on the 3D model\".")
 
 
 class _Worker(QThread):

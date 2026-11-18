@@ -1469,11 +1469,12 @@ def test_a_run_warning_gets_the_drift_explanation_only_when_it_is_a_drift_warnin
     rs = _sample_result_set()
     rs.warnings = ["sat-1: re-entered: below 100 km at t = 3.20 days"]
     widget.set_result(rs)
-    assert widget.warnings_label.isVisibleTo(widget) and widget.warnings_label.toolTip() == ""
+    rows = widget.run_warning_rows()  # the Problems panel's rows (UI audit B5, UI-37)
+    assert [row[2] for row in rows] == rs.warnings and rows[0][3] == ""
     rs = _sample_result_set()
     rs.warnings = ["sat-1: orbital energy drifted 2.0% (limit 1%) -- the step is likely too large"]
     widget.set_result(rs)
-    assert "numerical-integration problem" in widget.warnings_label.toolTip()
+    assert "numerical-integration problem" in widget.run_warning_rows()[0][3]
 
 
 def test_the_shown_run_exports_as_a_reproduction_bundle(widget, tmp_path, reported, qtbot):
@@ -1530,8 +1531,8 @@ def test_a_run_warnings_tooltip_gives_each_warnings_rule(widget):
                     "higher-order integrator", "run.energy_drift", actual="2.0%", limit="1%")
     rs.warnings = [reentry, drift]
     widget.set_result(rs)
-    assert widget.warnings_label.text() == f"⚠ {reentry}\n⚠ {drift}"
-    reentry_rule, drift_rule = widget.warnings_label.toolTip().split("\n\n")
+    assert [row[2] for row in widget.run_warning_rows()] == [reentry, drift]  # the Problems panel's rows (UI-37)
+    reentry_rule, drift_rule = (row[3] for row in widget.run_warning_rows())
     assert reentry_rule.startswith("rule run.reentry_stopped: ") and "limit 100 km" in reentry_rule
     assert "dynamics.reentry_altitude_km" in reentry_rule
     assert drift_rule.startswith("rule run.energy_drift: ") and "found 2.0%; limit 1%" in drift_rule

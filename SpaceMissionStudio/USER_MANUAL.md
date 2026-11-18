@@ -313,10 +313,12 @@ A few things to notice right away:
   (end of Section 7); its name in the tree says how many things there are
   to check.
 * The **Problems** panel at the bottom (`Ctrl+J`): what does not validate,
-  and what looks implausible, as a table: **Severity** (an icon and the
+  what looks implausible, and the warnings of the run shown in Results, as
+  a table (it is the one place where a warning is written out; the top bar
+  and the status bar only count them): **Severity** (an icon and the
   word), **ID** (the field it is about), **Object** (the scenario, the
   propagation setup, a spacecraft or ground station, the mission
-  sequence) and **Message**. Errors come first; click a column's heading
+  sequence, or the run a run warning comes from) and **Message**. Errors come first; click a column's heading
   to sort by it, and `Ctrl+C` copies the selected rows. Double-click a row,
   or select it and press `Enter`, to go where it is fixed: the field on
   its page of the Scenario area (the **Scenario** or **Environment** page,
@@ -780,11 +782,11 @@ The quickest way to a mission of your own is a starter template (22 or
    drag** with its area (and **Enable solar radiation pressure**).
 4. **Ground stations**: **Add**, then its name, latitude, longitude and the
    lowest usable elevation (10 deg is common).
-5. Look at the bottom of the page: **✓ valid** means Run is available;
-   otherwise the message names the field to fix, the field is marked in
-   red with the message under it, and its node in the tree shows a count
-   (the **Problems** panel lists it too; double-click it to go
-   to the field). **Overview** (Explain), first in the tree,
+5. Look at the top bar: when **Run** is available, the scenario is valid
+   (a warning does not stop a run). Otherwise the **Problems** panel (click
+   the problem count in the top bar, or `Ctrl+J`) names the field to fix,
+   the field is marked in red with the message under it, and its node in
+   the tree shows a count (double-click the problem to go to the field). **Overview** (Explain), first in the tree,
    already shows the orbit type, the ground passes and what the
    environment includes, before anything runs.
 6. **Save As...** (Ctrl+Shift+S), then **Run** (`Ctrl+R`).
@@ -1335,11 +1337,13 @@ of the run's plots on the left, the plots in a grid beside it, and a
 readout under the catalog.
 
 **Overview**, the first view of Results, shows the run's headline
-figures as cards, each with its unit: run length, delta-V and propellant
+figures as cards of one size, each with its unit: run length, the orbital
+period and the altitude (the lowest and the highest when they differ,
+above the central body's equatorial radius), delta-V and propellant
 used, the change of the mean semi-major axis, the lowest link margin and
 battery charge, passes and contact time, eclipses and eclipse time, and
 data downlinked (only those the run recorded; Compare's summary has the
-same figures). A card is red, with an icon and its reason, only where the
+same figures but the period and the altitude). A card is red, with an icon and its reason, only where the
 scenario sets the limit: a link margin below the required margin (0 dB
 unless the project configuration sets `link.required_margin_db`; the
 margin already includes the required Eb/N0) and a battery that ran empty,
@@ -1478,13 +1482,13 @@ goes away if you undo back to the scenario that ran. While the scenario
 has a problem, the banner says so and Re-run waits until it is fixed.
 
 A line under the buttons names what produced the result (versions,
-integrator and step, run time). The run's warnings appear there too, as
-an amber note: a re-entry, propellant running out, the forecast space
-weather it read, or an orbit-only run whose energy or angular momentum
-drifts by more than 1 % (`dynamics.conservation_tolerance`; try a smaller
-dynamics step or a higher-order integrator). Hover over the note to see
-each warning's rule: what it found against its limit, why it matters and
-the fix.
+integrator and step, run time). The run's warnings are rows of the
+**Problems** panel, its object the run: a re-entry, propellant running
+out, the forecast space weather it read, or an orbit-only run whose energy
+or angular momentum drifts by more than 1 % (`dynamics.conservation_tolerance`;
+try a smaller dynamics step or a higher-order integrator). Hover over a
+row to see the warning's rule: what it found against its limit, why it
+matters and the fix; double-click it to come back to the run's plots.
 
 The plot is interactive: hover to see exact values, and use your
 scroll wheel/drag to zoom and pan.
@@ -1664,8 +1668,9 @@ The slider and the shared time cursor (Section 7) move together.
 **View** chooses the camera (`[` and `]` step through the list):
 
 * **Whole orbit:** around the central body. The spacecraft are drawn
-  larger than they are, so they can be seen; the note under the controls
-  says by how much.
+  larger than they are, so they can be seen; the line under the controls
+  says by how much, and its tooltip has the view's notes (a spacecraft
+  with no attitude in the run, a 3D model that could not be built).
 * **Follow** a spacecraft: around it, at its true size.
 * **Earth-fixed:** around the Earth, turning with it.
 * **From** a spacecraft along a body axis, or from one of its

@@ -88,6 +88,12 @@ def _shown(window, widget, area):
     assert widget.isVisibleTo(window)
 
 
+def _removed(owner, *names):
+    """The widgets ``names`` of ``owner`` are gone (the plan's "Removed")."""
+    for name in names:
+        assert not hasattr(owner, name), name
+
+
 def _status(window, widget):
     """A status-bar entry: shown with all details (View > Status Bar: All
     Details); only what needs attention shows without them."""
@@ -202,8 +208,9 @@ _ROWS = {
     "Run progress strip": lambda w: _in_the_status_bar(w, w.run_progress),
     "Stale-results banner": lambda w: _is_above_the_areas(w, w.stale_results_banner),
     "Status bar items": lambda w: _status(w, w.status_items.basilisk_label),
-    # M4 removes it with the editor's rebuild; the Problems panel already lists the same problems.
-    "Validation strip under the editor": lambda w: _shown(w, w.scenario_editor.validation_label, "scenario"),
+    # Removed (UI audit B5, UI-09), as the plan says: the Problems panel holds what it said.
+    "Validation strip under the editor": lambda w: (_removed(w.scenario_editor, "validation_label",
+                                                             "plausibility_label"), _command(w, "view.problems")),
     "**Scenario tab** › Templates": lambda w: _shown(w, w.load_scenario_widget, "home"),
     "Scenario › Scenario, Environment, Spacecraft…, Ground stations…, Mission sequence, Monte Carlo": lambda w: [
         _tree(w, path) for path in ("Scenario", "Environment", "Spacecraft", "Ground stations", "Mission sequence",

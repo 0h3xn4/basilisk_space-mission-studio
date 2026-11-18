@@ -133,7 +133,7 @@ class RunWorker(QThread):
         except ImportError as exc:
             self.failed.emit(
                 f"Basilisk is not installed/built ({exc}) -- cannot run a simulation until it is. "
-                f"See SpaceMissionStudio/README.md."
+                'See the user manual, section 2, "Installing it".'
             )
             return
         try:
@@ -258,7 +258,7 @@ class MonteCarloWorker(QThread):
         except ImportError as exc:
             self.failed.emit(
                 f"Basilisk is not installed/built ({exc}) -- cannot run Monte Carlo until it is. "
-                f"See SpaceMissionStudio/README.md."
+                'See the user manual, section 2, "Installing it".'
             )
             return
         try:

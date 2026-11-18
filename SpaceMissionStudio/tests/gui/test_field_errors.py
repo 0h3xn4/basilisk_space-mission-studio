@@ -103,7 +103,7 @@ def test_an_invalid_epoch_is_marked_at_its_field(window):
     editor.epoch_edit.setText("2030-13-45T99:00:00")
     assert field_error_text(editor.epoch_edit).startswith("Epoch (UTC) '2030-13-45T99:00:00' is not a valid ISO 8601")
     assert window.problems_widget.row_text(0).startswith("Error: Epoch (UTC) '2030-13-45T99:00:00'")
-    assert "scenario.epoch_utc" not in editor.validation_label.text()
+    assert "scenario.epoch_utc" not in window.problems_widget.row_text(0)
 
     editor.epoch_edit.setText("2030-01-01T08:30:00")
     assert field_error_text(editor.epoch_edit) == "" and editor.epoch_edit.property("state") == ""

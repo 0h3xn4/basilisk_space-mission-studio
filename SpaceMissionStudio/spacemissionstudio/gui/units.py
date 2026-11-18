@@ -39,7 +39,7 @@ _DISPLAY = {
     "s": "s", "ms": "ms", "min": "min", "h": "h", "hr": "h", "day": "days", "days": "days", "y": "years",
     "kg": "kg", "g": "g", "kg m^2": "kg·m²", "kg*m^2": "kg·m²", "kg/s": "kg/s",
     "N": "N", "mN": "mN", "N*m": "N·m", "N m": "N·m", "N*m*s": "N·m·s", "N m s": "N·m·s",
-    "W": "W", "W*hr": "Wh", "Wh": "Wh", "V": "V", "A": "A", "A*m^2": "A·m²", "A m^2": "A·m²",
+    "W": "W", "W*hr": "Wh", "W*h": "Wh", "Wh": "Wh", "V": "V", "A": "A", "A*m^2": "A·m²", "A m^2": "A·m²",
     "T": "T", "nT": "nT", "K": "K", "degC": "°C",
     "1/(N*m*s^2)": "1/(N·m·s²)",
     "Hz": "Hz", "GHz": "GHz", "MHz": "MHz", "1/s": "1/s", "1/s^2": "1/s²",
@@ -57,6 +57,19 @@ def display(unit: str) -> str | None:
     """How a field shows ``unit`` ("" for a dimensionless one), or None
     for a unit not known here."""
     return _DISPLAY.get(unit.strip())
+
+
+def shown(unit: str) -> str:
+    """``unit`` as the window shows it beside a value: its display form
+    ("W*h" -> "Wh"), or the unit itself when it is not known here."""
+    known = display(unit)
+    return unit.strip() if known is None else known
+
+
+def display_rows(rows) -> list[tuple[str, str, str]]:
+    """The core's (label, value, unit) rows with each unit as shown, for a
+    ``value_sheet.ValueSheet``."""
+    return [(label, value, shown(unit)) for label, value, unit in rows]
 
 
 def suffix(unit: str) -> str:

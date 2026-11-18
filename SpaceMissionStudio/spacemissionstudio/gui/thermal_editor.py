@@ -218,7 +218,7 @@ class ThermalGroup(QGroupBox):
         self.setCheckable(True)
         self.setChecked(config is not None)
         self.setToolTip("A lumped-parameter thermal model on the 3D model's parts, solved after a run in "
-                        "Run › Thermal (docs/models/thermal.md).")
+                        "Run › Thermal (user manual, section 6, \"Thermal analysis\").")
         self._spacecraft_provider = spacecraft_provider
         self._base_dir_provider = base_dir_provider
         self._version = config.version if config is not None else thermal_schema.THERMAL_VERSION

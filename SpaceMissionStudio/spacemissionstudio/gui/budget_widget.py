@@ -443,9 +443,9 @@ class BudgetWidget(QWidget):
             self.chain_panel.clear()
             return
         started = getattr(getattr(result, "provenance", None), "run_started_utc", "")
-        self.chain_panel.show_inputs("From the last run" + (f", started {started}" if started else "") +
-                                     " (a contributor set to 'from last run' takes these):", quantities,
-                                     chained_inputs.changed_since(run_scenario, self._scenario))
+        self.chain_panel.show_inputs("From the last run", quantities,
+                                     chained_inputs.changed_since(run_scenario, self._scenario), started=started,
+                                     note="A contributor set to \"from last run\" takes these values.")
 
     def _update_altitude_hint(self) -> None:
         from ..engine.propellant_budget import REQ_EARTH_M, default_altitudes_km

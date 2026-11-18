@@ -38,6 +38,15 @@ configuration open now. A run without provenance uses the defaults.
 | Eclipses, eclipse time [min] | The eclipse events below |
 | Data downlinked [Gbit] | The data-handling ledger, at the end |
 
+**Results › Overview** also shows each spacecraft's orbit after the run
+length (`engine.run_summary.overview_figures`; Compare, `run --explain`
+and the golden files keep the figures above):
+
+| Figure | Read from |
+|---|---|
+| Orbital period [min] | `2 pi sqrt(a^3 / mu)`, with `a` the median semi-major axis (the mean elements' when recorded, else the osculating ones) and `mu` the central body's GM, as for the semi-major axis change |
+| Altitude [km] | The distance from the centre (`position_N`) less the central body's equatorial radius, a sphere: its mean when its lowest and highest agree to 0.1 km, else a lowest and a highest altitude. None around a body without one radius (a small body) |
+
 **The mean semi-major axis change** averages over whole orbits.
 First-order mean elements still wobble at the orbital period, so a
 difference of two single samples would carry that wobble. The
@@ -141,9 +150,9 @@ The mission dashboard reads the moment under the time cursor:
 
 A run's warnings say how to read its results; none changes them. Each
 names its rule (`engine/findings.py`): what the rule is, what it found
-against its limit, why it matters and the fix. Results' warning note
-shows them on hover, and `run --explain` and `lifetime --explain` print
-them. A saved run keeps them (`run.json`'s `warning_rules`, beside the
+against its limit, why it matters and the fix. The window lists the
+shown run's warnings in the Problems panel, their rule on hover, and
+`run --explain` and `lifetime --explain` print them. A saved run keeps them (`run.json`'s `warning_rules`, beside the
 text).
 
 | Warning | Rule | Given when | Limit |

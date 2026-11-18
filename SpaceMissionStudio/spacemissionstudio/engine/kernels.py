@@ -255,7 +255,8 @@ def require_kernels(kernels: Iterable = ALL_SUPPORT_DATA_FILES) -> list[KernelSt
         names = "; ".join(f"{s.name} ({s.error})" for s in failed)
         raise KernelError(
             f"could not fetch required support-data file(s): {names} -- SpaceMissionStudio does not access "
-            "the network at runtime by design, only during installation (see packaging/README.md): these "
+            "the network at runtime by design, only during installation (see the user manual, section 2, "
+            "\"Installing it\"): these "
             "files should already have been cached then. If you're seeing this outside that installer "
             "(e.g. a dev checkout), run `spacemissionstudio kernels-status` once WITH network access to "
             "fetch them now, or restore/re-run the installer if the local cache was deleted or corrupted."

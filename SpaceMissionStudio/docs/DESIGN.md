@@ -364,10 +364,21 @@ bar and no toolbar:
   Message; errors first, any column sorts, Ctrl+C copies TSV, Enter or a
   double-click goes to the field. Its counts are on its title, in the
   status bar and the top bar.
+- **One place for a warning (UI audit B5, UI-37):** a problem or a
+  warning is written out in the Problems panel only: the scenario's
+  errors and plausibility warnings, Run › Plan's and Run › Thermal's,
+  and the shown run's warnings (`ResultsWidget.run_warning_rows`, the
+  run as their Object, their rule on hover). The top bar and the status
+  bar show its count, which opens the panel (`MainWindow.show_problems`);
+  a field with an error is marked under the field. There is no footer
+  under the editor and no warning line on Results › Plots, whose
+  provenance line names what produced the run only.
 - **Status bar:** the run job (phase, progress, time so far and left,
   Cancel) while a run goes, the run state chip otherwise; then the problem count
   (it opens Problems), Basilisk version, reference data, Earth
-  orientation data, frames.
+  orientation data, frames. A message about a file names the file
+  ("Opened 01_two_body_circular_orbit.json"), elided in the middle to
+  the room left, with the whole path as the bar's tooltip while it shows.
 - **Layout memory:** Settings > Layout > Reset Layout restores the panels
   and the rail. The layout (docks, rail, the main splitters) is kept per
   scenario file, and for the window between sessions (`layout.ini`).
@@ -473,7 +484,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Time cursor | `time_cursor.TimeCursor`, `ResultsWidget.cursor_actions` | One time shared by the plots, the timeline, the dashboard and the output |
 | Command | `actions.ActionRegistry.add(id, text, handler, category=, area=, shortcut=, tip=)` | Every command of the window: its palette entry, header and top-bar buttons, tooltip ("Save (Ctrl+S)") and shortcut row come from it |
 | Area | `shell.Shell.register(id, icon, label, content, order)`, `AreaPage.add_command(action)` | A top-level area of the navigation rail, hosting a screen, with its commands in its header |
-| Value sheet | `value_sheet.ValueSheet(title, rows=[(name, value, unit)], note=, empty=)` | Several values of one thing, to be read: one row each, the number right-aligned in tabular figures beside its unit, a title and a note (frame, source). Never a sentence of numbers |
+| Value sheet | `value_sheet.ValueSheet(title, rows=[(name, value, unit)], note=, empty=)`; `set_rows(rows, tips=)` gives a row a tooltip (its source) | Several values of one thing, to be read: one row each, the number right-aligned in tabular figures beside its unit, a title and a note (frame, source). Never a sentence of numbers. The core gives such values as rows of (label, value, unit), the unit in the code's spelling; `units.display_rows` shows each unit as the window does ("kg*m^2" as "kg·m²") |
 | Value table | `value_sheet.ValueTable(title, headers, rows, numeric=)` | A matrix (an inertia tensor) or a few rows with several columns (principal axes); a long or sortable list is a `DataTable` |
 | Note list | `value_sheet.NoteList(kind, notes, empty=, fold_after=4)` | Notes (`"note"`, info icon, secondary text), warnings (`"warning"`, caution triangle) or findings (`"finding"`): one row each, the icon then the wrapped text; past `fold_after`, "Show n more". `text()` gives the lines behind a mark for copying. Never a block of dash-led lines |
 | Elided label | `app_shell.ElidedLabel` | One line that ends in "..." rather than widening the window; the whole text is its tooltip |

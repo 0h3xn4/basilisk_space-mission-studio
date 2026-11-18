@@ -1764,7 +1764,7 @@ class ModelPartConfig:
     subsystem: str = ""
     # Where the part was imported from (written only when set): the source
     # object's identifier, e.g. an IDM-CIC shape occurrence's fullId, which
-    # a re-import matches on (docs/developer/idm-cic-integration.md).
+    # a re-import matches on (the user manual, section 6, "A 3D model of the spacecraft").
     source_id: str = ""
 
     def validate(self, where: str, mesh_count: int) -> None:
@@ -3649,7 +3649,7 @@ class Scenario:
     # Phase 8c); written only when there is one, as value_marks.
     imports: list = field(default_factory=list)  # list[ImportRecord]
     # The operations planner's inputs (schema.operations.OperationsConfig;
-    # docs/developer/operations-planning-design.md); None, as every
+    # the user manual, section 6, "Operations planning"); None, as every
     # scenario before it, and then not written.
     operations: operations_schema.OperationsConfig | None = None
 

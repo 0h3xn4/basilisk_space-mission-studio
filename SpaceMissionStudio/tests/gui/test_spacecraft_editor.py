@@ -2055,7 +2055,8 @@ def test_unticked_control_gains_show_the_gains_the_engine_applies(qtbot):
     form = dialog.control_param_form
     assert form.widget("K").value() == pytest.approx(3.5 * 10.0 / 900.0, rel=1e-3)
     assert form.widget("P").value() == pytest.approx(30.0 * 10.0 / 900.0, rel=1e-3)
-    assert "K 0.03889, P 0.3333" in dialog.control_legend.text()
+    assert (dialog.control_legend.value("Attitude gain K"), dialog.control_legend.value("Rate gain P")) == (
+        "0.03889", "0.3333")
     assert len(dialog.control_legend.text()) <= 160  # the GUI's help-label limit (test_label_text)
     form.set_value("P", 2.0)  # ticked: the user's own
     for box in (dialog.ixx, dialog.iyy, dialog.izz):

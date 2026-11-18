@@ -73,8 +73,8 @@ class ManualDialog(QDialog):
         try:
             self.browser.setMarkdown(manual.read_text(encoding="utf-8"))
         except OSError as exc:
-            self.browser.setPlainText(f"The user manual could not be read ({exc}). It is USER_MANUAL.md in the "
-                                      "SpaceMissionStudio folder of the source.")
+            self.browser.setPlainText(f"The user manual could not be read ({exc}). Installing "
+                                      "SpaceMissionStudio again restores it.")
         self._fit_images(manual.parent)
         self._anchors = self._heading_positions()
 

@@ -302,7 +302,7 @@ def _hook(event: str, args: tuple) -> None:
         raise NetworkRefused(f"{name} is not one of the addresses allowed for {PURPOSES[purpose].label}")
     _log("refused", "-", f"{event} {host}")
     raise NetworkRefused(f"network access to {host} refused: SpaceMissionStudio reaches the network only for a "
-                         "download you start (see docs/reference/network.md)")
+                         "download you start (Settings › Network; the user manual, section 3)")
 
 
 def install_guard() -> None:

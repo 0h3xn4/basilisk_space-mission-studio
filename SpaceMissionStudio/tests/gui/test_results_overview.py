@@ -77,7 +77,7 @@ def test_each_figure_is_a_card_with_its_value_and_unit(overview, qtbot):
     from spacemissionstudio.engine import run_summary
 
     cards = _show(overview, qtbot, _result())
-    assert [card.figure for card in overview.cards] == run_summary.summarize(_result())
+    assert [card.figure for card in overview.cards] == run_summary.overview_figures(_result())
     margin = cards["lowest_link_margin"]
     assert (margin.value.text(), margin.unit.text()) == ("3.00", "dB")
     assert cards["passes"].unit.text() == ""  # a count has no unit

@@ -73,12 +73,15 @@ class ValueSheet(QWidget):
         self.rows: list[Row] = []
         self.set_rows(rows)
 
-    def set_rows(self, rows: Iterable[Row]) -> None:
+    def set_rows(self, rows: Iterable[Row], tips: Iterable[str] = ()) -> None:
+        """``rows`` of (name, value, unit); ``tips``, when given, a tooltip
+        per row (where a value comes from), "" for none."""
         while self.grid.count():
             item = self.grid.takeAt(0)
             if item.widget() is not None:
                 item.widget().deleteLater()
         self.rows = [tuple(row) for row in rows]
+        tips = list(tips)
         for index, (name, value, unit) in enumerate(self.rows):
             name_label = set_role(QLabel(name), tone="secondary")
             value_label = QLabel(value)
@@ -88,6 +91,9 @@ class ValueSheet(QWidget):
             value_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
             unit_label = set_role(QLabel(unit), tone="secondary")
+            if index < len(tips) and tips[index]:
+                name_label.setToolTip(tips[index])
+                value_label.setToolTip(tips[index])
             self.grid.addWidget(name_label, index, 0)
             self.grid.addWidget(value_label, index, 1)
             self.grid.addWidget(unit_label, index, 2)

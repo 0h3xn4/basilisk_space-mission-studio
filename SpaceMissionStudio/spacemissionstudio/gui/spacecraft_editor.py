@@ -116,6 +116,7 @@ from .param_form import ParamForm
 from .problem_location import SPACECRAFT, locate
 from .sensor_actuator_editor import SensorActuatorListWidget
 from .theme import set_role
+from . import units
 from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row
 
@@ -762,9 +763,12 @@ class SpacecraftEditorDialog(QDialog):
 
         self.control_group = QGroupBox("Control gains (MRP feedback)")
         control_layout = QVBoxLayout(self.control_group)
-        self.control_legend = QLabel("")
-        self.control_legend.setWordWrap(True)
-        set_role(self.control_legend, tone="secondary")
+        # The gains applied while K or P is unticked, a value per row (UI audit UI-14).
+        self.control_legend = ValueSheet("Applied while unticked")
+        reference = control_gains.MRP_GAIN_REFERENCE_INERTIA_KG_M2  # [kg*m^2]
+        self.control_legend.setToolTip(
+            f"The reference gains (K {control_gains.DEFAULT_MRP_GAINS['K']:g}, P {control_gains.DEFAULT_MRP_GAINS['P']:g}"
+            f", tuned for a {reference:g} kg·m² spacecraft) times this spacecraft's mean inertia / {reference:g} kg·m².")
         control_layout.addWidget(self.control_legend)
         self.control_param_form = ParamForm()
         self.control_param_form.set_specs(_CONTROL_PARAM_SPECS, dict(config.control_params) if config else {})
@@ -2186,7 +2190,7 @@ class SpacecraftEditorDialog(QDialog):
         (engine.control_gains), in the legend and in the unticked fields.
         Transparency audit 3.4: the form showed the unscaled 3.5 and 30."""
         inertia = self._inertia_from_form()
-        self.control_legend.setText(control_gains.describe_default_gains(inertia))
+        self.control_legend.set_rows(units.display_rows(control_gains.default_gains_rows(inertia)))
         for key, value in control_gains.default_mrp_gains_for_inertia(inertia).items():
             box = self.control_param_form.include_box(key)
             if box is not None and not box.isChecked():
@@ -3722,7 +3726,7 @@ class SpacecraftListWidget(QWidget):
         except ImportError as exc:
             report(self, f"Could not make the phasing formation: Basilisk is not installed ({exc}).\n"
                          "The follower's orbit comes from Basilisk's Hill-frame transform; see "
-                         "SpaceMissionStudio/README.md.")
+                         "the user manual, section 2, \"Installing it\".")
             return
         except ScenarioValidationError as exc:
             report(self, f"Could not make the phasing formation: {exc}")
@@ -3760,7 +3764,7 @@ class SpacecraftListWidget(QWidget):
         except ImportError as exc:
             report(self, f"Could not make the ROE formation: Basilisk is not installed ({exc}).\n"
                          "The follower is placed with Basilisk's mean/osculating element mapping; see "
-                         "SpaceMissionStudio/README.md.")
+                         "the user manual, section 2, \"Installing it\".")
             return
         except ScenarioValidationError as exc:
             report(self, f"Could not make the ROE formation: {exc}")

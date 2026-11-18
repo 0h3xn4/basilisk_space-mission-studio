@@ -18933,3 +18933,109 @@ UI-03 and UI-36; ten give the blank scenario a spacecraft first, so that
 Run can start. Screenshots taken offscreen at 1280 x 720 before and
 after show History, Results › Overview, Design Checks, Budgets, Reports,
 Home, Settings and the top bar in the three run modes.
+
+## UI audit batch B5: value sheets instead of sentences (2026-11-18)
+
+The UI audit of 2026-11-17 found six defects where the window wrote
+values as sentences, showed one warning in several places, or showed
+developer text. Batch B5 fixes them.
+
+**The footer and the status bar (UI-09).** Under the scenario editor a
+footer said "✓ valid" beside the warnings and listed them again (about
+70 px). The footer is gone. The Problems panel already listed every
+error and plausibility warning, the top bar and the status bar count
+them, and a field with an error is marked under it, so nothing showed
+only in the footer. The status bar printed the opened file's absolute
+path, clipped at its first entry. It now names the file ("Opened
+01_two_body_circular_orbit.json", "Saved mine.json"), elided in the
+middle to the room it has, and the whole path is the bar's tooltip while
+the message shows (`MainWindow._show_file_message`).
+
+**Sentences of numbers (UI-14).** Four places wrote values as a line of
+text. The core now gives each as rows of (label, value, unit), and the
+window lays them out as a `ValueSheet`; the text forms stay, because the
+golden files, the command line and tests read them.
+- The default control gains ("Unticked: K 0.03889, P 0.3333, integral
+  off. That is K 3.5, P 30 ...") are a sheet: the applied K and P with
+  N·m and N·m·s, the integral feedback, the mean and the reference
+  inertia (`control_gains.default_gains_rows`). The scaling is the
+  sheet's tooltip.
+- The Overview's orbit tile ("Classical 97.03 deg, 400 km alt") is three
+  tiles: Classical, 97.03 °, 400 km (`scenario_explainer.orbit_rows`).
+  Each tile shows its value with its unit beside it.
+- The inputs from the last run on Budgets › Propellant and End of Life
+  had the heading "From the last run, started
+  2026-11-17T18:49:48.737253+00:00 (a contributor set to 'from last run'
+  takes these):". They are a titled sheet: "Run started" in ISO 8601 UTC
+  with Z, to the second, then a row per value with its unit and its
+  source as the row's tooltip. `ValueSheet.set_rows` gained `tips`.
+- The IDM-CIC import preview was the summary's text lines in a text
+  box. It is a sheet of the import's facts (the model version, the body
+  element, the parts, point masses and meshes, the mass in kg) beside a
+  note list of its findings, in the same six lines' height
+  (`ImportSummary.rows`, `findings`). `idm-import` prints `lines()` as
+  before.
+
+**Results › Overview (UI-20).** Template 01's run had one card, its
+length. The overview now adds each spacecraft's orbital period and
+altitude when the run recorded its orbit (`run_summary.overview_figures`,
+`orbit_figures`): the period from the median semi-major axis and the
+run's GM, the altitude from the distance to the centre less the central
+body's equatorial radius, one card when the lowest and the highest agree
+to 0.1 km, else a lowest and a highest. Template 01 shows 24.00 h,
+92.56 min and 399.9 km. Each figure has its calculation trace. Eclipses
+had their cards already when the run recorded the eclipse.
+`run_summary.summarize` is unchanged, so Compare, `run --explain`, the
+API and the golden files are too. Every card now has the height of the
+tallest one, and the battery's unit reads "Wh" (`units` maps "W*h"; the
+figure keeps its spelling).
+
+**One warning in one place (UI-37).** One Earth orientation warning
+showed in the footer, as the top bar's count, as the status bar's count,
+in the Problems panel and, as the run's own warning, under Results ›
+Plots' provenance line. The Problems panel is now where a warning is
+written out: the footer is gone, and the shown run's warnings are rows
+of the panel (`ResultsWidget.run_warning_rows`), the run as their
+object, their rule on hover, a double-click back to the plots. Results ›
+Plots keeps the provenance line and no warning text. The top bar keeps
+its count, which opens the panel (`MainWindow.show_problems`), and the
+status bar keeps its count. `Problem` gained `tip` and an object of the
+caller's.
+
+**Repository paths (UI-43).** The window named files of the source tree:
+docs/models/reentry.md, docs/models/model-analyses.md,
+docs/models/materials.md, docs/models/thermal.md and
+SpaceMissionStudio/README.md, which an installed app does not have, and
+the help viewer's fallback named USER_MANUAL.md "in the source". They now
+name the user manual's section (for example "the user manual, section 6,
+"Thermal analysis""). So do the network guard's refusal, the
+support-data error and two schema comments that the JSON page shows as
+help (`field_help.json` rebuilt). A new test reads every string constant
+of the GUI that is not a docstring or a log call. The command line's
+texts, the calculation traces' references and the model choices'
+sources keep their paths: they are the command line's own help, which a
+test requires to name docs/user-manual/command-line.md, and citations
+that files written by the app carry.
+
+**The 3D View (UI-51).** Two lines under the controls were always shown:
+"Spacecraft drawn 298,232× larger than they are, to be seen at this
+scale." and the scene's notes. The note is now one line in the caption
+style, elided, the whole of it in its tooltip: "Not to scale: spacecraft
+drawn 298,232× larger than they are, so that you can see them." while
+the spacecraft are enlarged, the axis colours when following one; it is
+hidden in the views from a spacecraft. The dark strip at the right edge
+was the page's background: the canvas was sized while the page still
+had a scroll bar, and when the theme's CSS hid the overflow its host
+grew by 16 px with no resize event. The page now follows its host's size
+with a `ResizeObserver`; the canvas is as wide as the view (981 px of
+981, it was 965).
+
+Tests: the new files `tests/gui/test_value_sheets.py` (9 tests) and
+`tests/test_value_rows.py` (10 tests, 45 cases) failed before the fixes
+(all 19 tests, all 54 cases). Seventeen existing tests changed how they reach a value:
+`docs/ui/TEST_CHANGES.md` lists them. One asserts the new behaviour of
+UI-20. Screenshots taken offscreen at 1280 x 720 before and after show
+the scenario editor and the status bar, the Overview's tiles, Results ›
+Overview, Plots and the 3D View after a run of template 01, Budgets ›
+Propellant after the run, the control gains of template 06 and the
+IDM-CIC import preview.

@@ -59,7 +59,7 @@ def test_the_dialog_previews_the_import_and_offers_the_file_s_choices(qtbot, tmp
                                                                     "LCH (Launch)"]
     assert [dialog.body_combo.itemText(i) for i in range(dialog.body_combo.count())][1:] == ["Bus", "Camera",
                                                                                              "Ground jig"]
-    assert "38.7 kg imported" in dialog.preview.toPlainText()
+    assert (dialog.preview_sheet.value("Mass imported"), dialog.preview_sheet.rows[-2][2]) == ("38.7", "kg")
     ok = dialog.buttons.button(QDialogButtonBox.StandardButton.Ok)
     assert ok.isEnabled() and ok.text() == "Import"
     dialog.configuration_combo.setCurrentIndex(2)
@@ -67,7 +67,7 @@ def test_the_dialog_previews_the_import_and_offers_the_file_s_choices(qtbot, tmp
     _settle(qtbot, dialog)
     assert dialog.plan().summary.configuration.startswith("LCH")
     assert dialog.plan().summary.stowed_configuration.startswith("OPS")
-    assert "45.7 kg imported" in dialog.preview.toPlainText()
+    assert dialog.preview_sheet.value("Mass imported") == "45.7"
     assert dialog.plan().stowed  # the wing is elsewhere in operations
 
 

@@ -399,13 +399,14 @@ class LifetimeWidget(QWidget):
 
         run_scenario, result = self._last_run
         started = getattr(getattr(result, "provenance", None), "run_started_utc", "")
-        heading = "From the end of the last run" + (f", started {started}" if started else "") + ":"
+        heading = "From the end of the last run"
         try:
             quantities = chained_inputs.lifetime_inputs(run_scenario, result, name)
         except Exception as exc:  # noqa: BLE001 -- said here; the estimate gives the same reason
-            self.chain_panel.show_inputs(heading, (), error=str(exc))
+            self.chain_panel.show_inputs(heading, (), error=str(exc), started=started)
             return
-        self.chain_panel.show_inputs(heading, quantities, chained_inputs.changed_since(run_scenario, self._scenario))
+        self.chain_panel.show_inputs(heading, quantities, chained_inputs.changed_since(run_scenario, self._scenario),
+                                     started=started)
 
     # -- computing ----------------------------------------------------------
 

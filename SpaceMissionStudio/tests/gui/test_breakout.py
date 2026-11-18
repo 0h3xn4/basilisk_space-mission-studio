@@ -593,7 +593,14 @@ def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
     As in the app (``app.freeze_start_up_objects``), what exists before the
     moves leaves the full collections: in the test process a full
     collection walks every earlier test's objects (45 to 70 ms here), and
-    one that fell in a move failed the test in CI (Budgets, 60 ms)."""
+    one that fell in a move failed the test in CI (Budgets, 60 ms).
+
+    A view over its limit is timed once more, and fails only when it is
+    over again. CI runs the suite on as many workers as the runner has
+    processors, and the clock also counts the time another worker holds
+    the processor: in one Windows run a 3D View move took 47.8 ms while
+    its other five took 5 to 9 ms. A move that is slow in itself is slow
+    every time; the limits are unchanged."""
     import gc
 
     from spacemissionstudio.gui.app import freeze_start_up_objects
@@ -601,16 +608,24 @@ def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
     _with_run(window, qtbot)
     freeze_start_up_objects()
     try:
-        took, shown = _time_the_moves(window)
+        took, shown = _time_the_moves(window, _VIEWS)
+        first = _over_limit(took, shown)
+        again = _over_limit(*_time_the_moves(window, tuple(first))) if first else {}
     finally:
         gc.unfreeze()
-    limits = {view_id: max(_GUI_THREAD_MS, 2.0 * shown[view_id] + 10.0) for view_id in _VIEWS}
-    over = {view_id: (round(max(times), 1), round(limits[view_id], 1), round(shown[view_id], 1))
+    assert not again, (f"(slowest move, limit, plain show) per view in ms, timed twice: first {first}, "
+                       f"again {again}; all first moves: {took}")
+
+
+def _over_limit(took: dict, shown: dict) -> dict:
+    """The views whose slowest move reached their limit: (slowest move,
+    limit, plain show) in ms."""
+    limits = {view_id: max(_GUI_THREAD_MS, 2.0 * shown[view_id] + 10.0) for view_id in took}
+    return {view_id: (round(max(times), 1), round(limits[view_id], 1), round(shown[view_id], 1))
             for view_id, times in took.items() if max(times) >= limits[view_id]}
-    assert not over, f"(slowest move, limit, plain show) per view in ms: {over}; all moves: {took}"
 
 
-def _time_the_moves(window) -> tuple[dict, dict]:
+def _time_the_moves(window, view_ids: tuple) -> tuple[dict, dict]:
     """Each view's moves (detach, attach; three times) and its plain show
     (the median of three), in ms."""
     import statistics
@@ -618,7 +633,7 @@ def _time_the_moves(window) -> tuple[dict, dict]:
     from PySide6.QtWidgets import QApplication
 
     took, shown = {}, {}
-    for view_id in _VIEWS:
+    for view_id in view_ids:
         widget = window.breakouts.widget(view_id)
         window.show_view(widget)
         QApplication.processEvents()

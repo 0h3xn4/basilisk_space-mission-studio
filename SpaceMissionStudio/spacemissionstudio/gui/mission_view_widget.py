@@ -103,6 +103,7 @@ from .live_scene import LIVE_BATCH, LIVE_BATCH_STATES, LIVE_TICK_MS, LiveScene, 
 from .theme import SPACE, TOKENS, current_theme, icon, mono_font, on_change, set_role
 from .theme.mission_view_style import mission_view_style
 from .theme.palettes import NO_TEMPERATURE_COLOUR, SPACE_COLOUR, TEMPERATURE_STOPS, temperature_rgb
+from .app_shell import ElidedLabel
 from .widgets import EmptyState
 
 _NO_VIEW = ("No 3D view yet", "Run a scenario to see it here in 3D.")  # the empty state without a run
@@ -523,10 +524,13 @@ class MissionViewWidget(QWidget):
         controls.addWidget(self.show_button)
         self._controls = controls  # add_tool_button: the window's Open in Own Window button goes last
         layout.addLayout(controls)
-        self.scale_note = QLabel()
-        set_role(self.scale_note, tone="secondary")
+        # One muted line, where it helps (UI audit UI-51): the scale in the
+        # whole-orbit views, the axis colours when following; the scene's
+        # notes after it, all of it in the tooltip.
+        self.scale_note = ElidedLabel()
+        self._scale_note_helps = False  # until a run is shown
+        set_role(self.scale_note, role="caption")
         self.scale_note.setContentsMargins(SPACE["md"], 0, SPACE["md"], 0)
-        self.scale_note.setWordWrap(True)
         layout.addWidget(self.scale_note)
         for keys, slot in (("Space", self.toggle_play), ("[", lambda: self._step_view(-1)),
                            ("]", lambda: self._step_view(1)), ("End", self.go_live)) + tuple(
@@ -588,7 +592,7 @@ class MissionViewWidget(QWidget):
         self.map_slot.setVisible(mode != "globe")
         for widget in (self.colour_combo, self.view_combo, self.show_button):
             widget.setVisible(globe)
-        self.scale_note.setVisible(globe)
+        self.scale_note.setVisible(globe and self._scale_note_helps)
         if mode == "both":
             half = max(1, self.splitter.width() // 2)
             self.splitter.setSizes([half, half])
@@ -865,20 +869,25 @@ class MissionViewWidget(QWidget):
         if scene is None:
             return
         spec = self.view_combo.currentData() or {"mode": "orbit"}
+        helps = True  # the line says what the view itself does not
         if spec["mode"] in ("orbit", "earth"):
             factors = [max(1.0, _ORBIT_CRAFT_FRACTION * scene.extent_km / craft.size_km) for craft in scene.crafts]
-            text = (f"Spacecraft drawn {min(factors):,.0f}× larger than they are, to be seen at this scale."
-                    if max(factors) > 1.0 else "Everything at its true size.")
+            helps = max(factors) > 1.0
+            text = (f"Not to scale: spacecraft drawn {min(factors):,.0f}× larger than they are, so that you can "
+                    "see them." if helps else "Everything at its true size.")
             if spec["mode"] == "earth":
                 text += " The camera turns with the Earth."
         elif spec["mode"] == "follow":
             text = ("True size, centred on the spacecraft. Body axes: x red, y green, z blue; arrows to the Sun, "
                     "to nadir and along the velocity.")
-        else:
+        else:  # from the spacecraft: its name says so
+            helps = False
             text = "True size, from the spacecraft: " + self.view_combo.currentText().split(" ", 2)[-1] + "."
         short, full = grouped_notes([n for n in scene.notes if n])
-        self.scale_note.setText("\n".join([text] + short))
-        self.scale_note.setToolTip("\n".join(full))
+        self._scale_note_helps = helps
+        self.scale_note.setText("  ·  ".join([text] + short))
+        self.scale_note.setToolTip("\n".join([text] + full))
+        self.scale_note.setVisible(helps and self._layout != "map")
 
     # -- the page ----------------------------------------------------------------
     def _ensure_view(self) -> None:
