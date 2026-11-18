@@ -8,7 +8,27 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.12.0 (2026-11-18)
+
+SpaceMissionStudio 2.12.0 is about seeing more of a mission at once.
+Results › 3D View, Run › Thermal and the Budgets area can each move into
+a window of their own, so the globe can sit on a second screen while you
+work through the budgets on the first. It is still the same live view:
+the run, the camera and the playback come along, and a run that is
+still running carries on in the new window. The globe now draws every
+spacecraft's ground track by default, ground stations finally stand out,
+and a new live 2D map shows the tracks, what each station can see and
+the night side as the run plays back or runs.
+
+The thermal results got the same care. Run › Thermal is now a set of
+tabs that fits the window, and its plots no longer stretch out of shape.
+Once a case is solved, the 3D View can colour each part of the
+spacecraft by its temperature as the run plays back. Dialogs now fit on
+a 1280 x 720 screen, and the app has a new icon that stays visible on
+dark and light panels, along with AppStream metadata so that software
+centres can describe the `.deb`. Nothing a run computes has changed, and
+the scenario format is still 2.11.0's, so files move freely between the
+two versions.
 
 ### Added
 
@@ -90,9 +110,6 @@ fixes bugs.
 - A run shown live is extended in a worker (`gui/live_scene.py`): the
   window's thread only sends the new frames to the globe and the map, so
   it stays responsive with many spacecraft.
-
-### Changed
-
 - **A new app icon.** It shows a mission instead of a lone satellite: the
   real Earth (the 3D view's NASA Blue Marble texture), an orbit flown and
   predicted, a satellite on it with a link beam to a ground station, and
@@ -135,6 +152,66 @@ fixes bugs.
   drawn again after a resize and a theme change. **Save SVG...**, **Save
   PNG...**, **Save...** and `spacemissionstudio thermal --tables` write
   the same files as 2.11.0, byte for byte (T-40).
+
+### Who should update
+
+- **Anyone who wants a view beside their other work, or on a second
+  screen:** press `Ctrl+Shift+D` on Results › 3D View, Run › Thermal or
+  the Budgets area, or use **View > Own Windows**.
+- **Anyone who works with ground stations or ground tracks:** the globe
+  shows the tracks and the stations clearly, and Results › 3D View has a
+  live 2D map (**Globe**, **Map** or **Both**, keys `G`, `M` and `B`).
+- **Anyone who runs thermal analyses:** the plots fit their tabs, and
+  **Show on 3D View** colours the spacecraft by temperature during
+  playback.
+- **Anyone on a 1280 x 720 screen:** OK and Cancel of the 3D model
+  editor and the IDM-CIC import are now on the screen.
+- **Ubuntu and Windows desktop users:** the icon is visible on dark and
+  light panels, and the Windows shortcuts and taskbar show it instead of
+  Python's.
+- **Compatibility:** the scenario format is unchanged (schema version
+  5). 2.11.0 opens every file 2.12.0 saves, and 2.12.0 opens every file
+  2.11.0 saves. Results, the command line and the files it writes are as
+  in 2.11.0; the thermal plot files are the same byte for byte. 2.10.0
+  and earlier still refuse files at schema version 5, as with 2.11.0.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.12.0_amd64.deb` replaces 2.11.0; on Windows, run
+  the 2.12.0 setup over 2.11.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The Budgets area can take 50 ms or more to show on a slow Windows
+  machine.** On the Windows CI runner each move of the area into its own
+  window or back took 50 to 81 ms, above the 50 ms the window aims at
+  (10 to 11 ms on a Linux development machine). Making
+  the area quicker to show is still to do.
+- **On Windows, CI tests the 3D View with Chromium's compositor drawn in
+  software** (`--disable-gpu-compositing`), because the runner has no
+  GPU. The app's own Chromium flags are unchanged; the 3D View, its own
+  window and its WebGL recovery have not been tried on a Windows machine
+  with a GPU.
+- **Not checked by hand:** the screenshot harness was not run for the
+  new 2D map; a software centre's page for a downloaded `.deb` before it
+  is installed (it needs Ubuntu 24.04 with a desktop); the taskbar icon
+  on a real Windows machine.
+- **The windows of the views:** on Wayland a view's window keeps only
+  its size, not its place, and a crash loses the windows' places, as it
+  loses the rest of the layout.
+- **The 2D map** uses geocentric latitude (at most about 0.19° from
+  geodetic) and says so. A run shown while it runs has no temperatures:
+  the thermal analysis runs after the run.
+- **The icon is made once at start-up:** about 100 ms the first time,
+  above the 50 ms target.
+- **The bundled CelesTrak space weather is still 2.8.0's** (observations
+  to 2026-11-14): it was not refreshed for this release. Fetch the
+  current file in **Settings > Reference data**.
+- **The 3D View without a graphics card is slow,** as in 2.11.0: about
+  15 frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.11.0 (2026-11-17)
 

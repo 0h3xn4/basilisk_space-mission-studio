@@ -1,6 +1,6 @@
 [project]
 name = "spacemissionstudio"
-version = "2.11.0"
+version = "2.12.0"
 description = "Standalone GUI mission-analysis application built on the Basilisk astrodynamics framework"
 readme = "README.md"
 requires-python = ">=3.14"

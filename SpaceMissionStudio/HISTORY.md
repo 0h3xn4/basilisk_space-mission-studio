@@ -18706,3 +18706,48 @@ off the GUI thread, the map alone needing no web view, the shallow copy,
 the View menu and palette commands, and the map in its own window).
 Three test lines changed (`docs/ui/TEST_CHANGES.md`). No golden file, no
 file format and no output changed.
+
+## Release 2.12.0 prepared (2026-11-18)
+
+A minor release: it adds features and changes no file format. Contents
+since 2.11.0: the 2.11.0 publication record (#279) and the 2.12.0
+windows and views (`docs/developer/windows-views-design.md`): the
+desktop integration, with the icon on a plate and the AppStream
+metadata (#276, PR-4), the thermal results (#278, PR-1), the new app
+icon (#280), the breakout windows (#281, PR-2), the ground tracks,
+stations and the live 2D map (#282, PR-3), and UI audit batch B1,
+dialogs that fit the screen (#283). Also on `develop`: the unattended
+backlog and release procedure (`CLAUDE.md`, `BACKLOG.md` and
+`.claude/settings.json`).
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4: version
+2.12.0 in `pyproject.toml`, `__init__.py` and the Inno Setup script; the
+CHANGELOG's Unreleased entries under 2.12.0 with an introduction, Who
+should update and Known limits (the section had two Changed lists; they
+are now one); SRelD issue 43 (K-40 to K-43 added, K-13 extended); the
+SDP, SRS, ICD, CSD, SUM, limitations and both READMEs name 2.12.0. The
+space weather was not refreshed: section 1 of the checklist was not part
+of this preparation, so 2.12.0 carries 2.8.0's file (observations to
+2026-11-14; K-13).
+
+The known limits come from the entries above. The Budgets area took 50
+to 81 ms to show on the Windows CI runner (K-40). The Windows CI job
+draws Chromium's compositor in software, because the runner has no GPU
+(K-41). Not checked: the screenshot harness for the new map, a software
+centre's page for a downloaded `.deb`, and the taskbar icon on a real
+Windows machine (K-42). The views' windows, the map and the icon have
+limits by design (K-43).
+
+Compatibility checked with 2.11.0's code (the tagged commit `d387dc5`).
+`git diff spacemissionstudio-v2.11.0 develop -- spacemissionstudio/schema`
+is empty, so the scenario file is still at schema version 5. The 36
+templates and one file with a `budgets` section, as 2.11.0 and as this
+code save them, are byte for byte the same. 2.11.0 opens and validates
+all 37 files as this code saves them, and this code opens and validates
+all 37 as 2.11.0 saves them, with no message. The golden outputs of the
+36 templates are unchanged.
+
+Tests on the release's code, Linux, Python 3.14, four workers, run
+apart: 3476 passed outside `tests/gui/` and 2048 passed in it, 5524 in
+all (5386 at 2.11.0), none failed. The timing test of the breakout
+windows passed in the full GUI run.

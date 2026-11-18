@@ -588,12 +588,35 @@ def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
     A move must take under 50 ms, or, on a machine where showing the view
     alone takes longer (the Windows runner shows the 435 widgets of the
     Budgets area in about 50 ms, Linux in about 9), under twice that plus
-    10 ms: the move adds nothing to showing the view."""
+    10 ms: the move adds nothing to showing the view.
+
+    As in the app (``app.freeze_start_up_objects``), what exists before the
+    moves leaves the full collections: in the test process a full
+    collection walks every earlier test's objects (45 to 70 ms here), and
+    one that fell in a move failed the test in CI (Budgets, 60 ms)."""
+    import gc
+
+    from spacemissionstudio.gui.app import freeze_start_up_objects
+
+    _with_run(window, qtbot)
+    freeze_start_up_objects()
+    try:
+        took, shown = _time_the_moves(window)
+    finally:
+        gc.unfreeze()
+    limits = {view_id: max(_GUI_THREAD_MS, 2.0 * shown[view_id] + 10.0) for view_id in _VIEWS}
+    over = {view_id: (round(max(times), 1), round(limits[view_id], 1), round(shown[view_id], 1))
+            for view_id, times in took.items() if max(times) >= limits[view_id]}
+    assert not over, f"(slowest move, limit, plain show) per view in ms: {over}; all moves: {took}"
+
+
+def _time_the_moves(window) -> tuple[dict, dict]:
+    """Each view's moves (detach, attach; three times) and its plain show
+    (the median of three), in ms."""
     import statistics
 
     from PySide6.QtWidgets import QApplication
 
-    _with_run(window, qtbot)
     took, shown = {}, {}
     for view_id in _VIEWS:
         widget = window.breakouts.widget(view_id)
@@ -614,10 +637,7 @@ def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
                 move(view_id)
                 took.setdefault(view_id, []).append(1000.0 * (time.perf_counter() - start))
                 QApplication.processEvents()
-    limits = {view_id: max(_GUI_THREAD_MS, 2.0 * shown[view_id] + 10.0) for view_id in _VIEWS}
-    over = {view_id: (round(max(times), 1), round(limits[view_id], 1), round(shown[view_id], 1))
-            for view_id, times in took.items() if max(times) >= limits[view_id]}
-    assert not over, f"(slowest move, limit, plain show) per view in ms: {over}; all moves: {took}"
+    return took, shown
 
 
 # -- a live run -------------------------------------------------------------------------------------------
