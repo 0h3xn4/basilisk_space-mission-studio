@@ -55,6 +55,27 @@ def remove_left_behind_folders() -> None:
         logging.getLogger(__name__).info("Removed %d temporary folder(s) left behind by earlier sessions", removed)
 
 
+# The Windows taskbar identity of the app (AppUserModelID).
+WINDOWS_APP_ID = "SpaceMissionStudio.SpaceMissionStudio"
+
+
+def set_windows_app_id(platform: str = sys.platform) -> bool:
+    """On Windows, give the process its own AppUserModelID, so the
+    taskbar shows the window under the app's icon rather than grouped
+    under ``pythonw.exe`` with Python's icon. Must run before the first
+    window. Returns whether it was set; elsewhere, or if the call fails,
+    nothing changes."""
+    if platform != "win32":
+        return False
+    try:
+        import ctypes
+
+        result = ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(WINDOWS_APP_ID)
+    except (AttributeError, OSError):
+        return False
+    return result == 0  # S_OK
+
+
 def freeze_start_up_objects() -> None:
     """Move what start-up made (modules, Qt wrappers, the window) out of
     the garbage collector's full collections (UI overhaul M6a). They live as
@@ -76,6 +97,7 @@ def main(argv: list | None = None) -> int:
     # In the background: after a crash there can be hundreds of folders.
     threading.Thread(target=remove_left_behind_folders, name="left-behind-folders", daemon=True).start()
     apply_ui_scale()
+    set_windows_app_id()
     app = QApplication(argv if argv is not None else sys.argv)
     app.setApplicationName("SpaceMissionStudio")
     # Needed for QSettings() (the GUI's remembered preferences) to resolve to a stable

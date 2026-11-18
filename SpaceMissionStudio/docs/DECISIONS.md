@@ -5,6 +5,43 @@ Choices made where the brief (`docs/ui/UI_OVERHAUL.md`) or the plan
 The user's own answers to the plan's questions are in the plan's §9.
 Newest milestone first.
 
+## The app icon shows a mission (2026-11-17)
+
+The owner's request: the icon did not show what the tool does; the Earth
+must look like the Earth; the icon must be visible in dark mode on Ubuntu
+and Windows.
+
+- **A scene, not an object:** the Earth, an orbit (solid where flown,
+  dashed ahead), a satellite with a beam to a ground station, the Sun.
+  Why: each stands for something the tool analyses (orbits, pointing and
+  power, passes and links, eclipses); a lone satellite showed hardware
+  only.
+- **The Earth is the bundled Blue Marble texture**, projected onto a lit
+  globe once (about 22 ms warm, 100 ms the first time in a process with
+  the JPEG decoder and numpy still to load) and scaled for every size.
+  Why: drawn blob continents read as a blue ball; the texture is already
+  bundled and public domain, so no new asset or dependency.
+- **Africa, the Mediterranean and Europe in view** (centre 20 deg E,
+  20 deg S). Why: the most recognisable outline in the visible cap.
+- **No eye shape:** the planet is cut by the plate's corner and the orbit
+  is an open arc. Why: the first icon, a disc in a centred ring, read as
+  an eye at 16-32 px.
+- **The scene replaces the satellite on #276's plate.** #276 (merged while
+  this was open) kept the satellite and added the plate, the rim, every
+  hicolor size, the SVG and the `.ico`. The owner chose the scene ("I want
+  your new design"). Why: the plate, its tests and the packaging carry
+  any drawing; only the drawing changes.
+- **The plate and rim in the scene's navy:** `plate` `#1A2C57`, flat at
+  the top and deepening to `#0A1128`, `rim` `#5B7FC7`. Why: the scene's
+  colours; they still meet #276's measured 3 : 1 on every dark and light
+  panel (the rim 3.33 : 1 on #303030, the lowest) and on the Windows dark
+  taskbars.
+- **The scene cuts its own shapes to the plate,** not with a clip path.
+  Why: `QSvgGenerator` writes no clip paths, so the SVG showed the orbit
+  and the Earth outside the rim.
+- **An AppUserModelID at start-up on Windows.** Why: without it the
+  taskbar groups the window under `pythonw.exe` with Python's icon.
+
 ## The 3D View live (2026-11-10)
 
 The owner's request: the 3D View must also work as a live renderer. This
@@ -3381,6 +3418,35 @@ The plan, its overlap table and its phases are in
   Debian copyright file. **Why:** AppStream asks for a permissive
   metadata licence; the rest of the package keeps its own.
 
+## Dialogs fit the screen (UI audit B1, 2026-11-17)
+
+- **Decision:** `gui/theme/dialogs.py` limits a dialog's minimum height
+  to the screen's available height less 64 px (`TITLE_BAR_ROOM`, two
+  32 px steps of the grid), and shrinks a dialog that opens taller. Only
+  the layout's own minimum can make it taller. **Why:** the audit's
+  blockers UI-01 and UI-02; the available area excludes the desktop's
+  panels but not the window's title bar, which is about 30 to 40 px.
+- **Decision:** the screen limits the height only; a dialog keeps the
+  width its code gave it. **Why:** the window manager places a wide
+  window, and the Customize dialog is laid out for its width; narrowing
+  it to an 800 px test screen made its cards scroll sideways with large
+  fonts (`test_wizard_fits_without_sideways_scrolling_with_large_fonts`).
+- **Decision:** `widgets.ScrollBody` is a frameless scroll area that asks
+  for its content's whole size but has a small minimum height. **Why:** a
+  dialog opens as large as before on a large screen and scrolls on a
+  small one; the phasing-formation dialog (886 px) uses it.
+- **Decision:** `EmptyState` moves from `budgets_area.py` to
+  `widgets.py`; `budgets_area` imports it from there. **Why:** the model
+  editor's Equipment tab needs it too (UI-29), and the repository has no
+  `gui/components/` package.
+- **Decision:** a material drop-down is 20 characters wide
+  (`model_property_tabs.fill_material_combo`); its open list still shows
+  each entry in full. **Why:** the longest entry made the part form
+  750 px wide (UI-28).
+- **Decision:** the Customize dialog gives every field label one width,
+  the widest label's, on its one scrolling page (UI-47). **Why:** the
+  audit asked for one label width per page; the dialog has one page.
+
 ## Breakout windows (2026-11-17)
 
 The design is in
@@ -3443,6 +3509,20 @@ window".
   thread for 36 ms), and CI measured one move at 146 ms. A crash now
   loses the windows' places since the start, as it loses the rest of the
   layout.
+- **Decision:** the Windows CI job draws Chromium's compositor in
+  software (`--disable-gpu-compositing` in its `QTWEBENGINE_CHROMIUM_FLAGS`),
+  as it already drew WebGL (SwiftShader). The app's own flags do not
+  change. **Why:** the runner has no GPU, and the compositor's Direct3D
+  shared images lost WebGL contexts at random; after a recovery test took
+  one away, no later 3D View in that process got one back, so a different
+  set of WebGL tests failed in each run. The owner chose this
+  (2026-11-18) over a deeper study on a Windows machine with a GPU.
+- **Decision:** when a lost WebGL context comes back too early (no new
+  context can start yet), the 3D View tries again 2 s later, five times
+  in all, before it says that WebGL is gone. **Why:** on Windows a move
+  to another window loses the GPU context, and the GPU process takes a
+  moment to start again; giving up at the first try left the view
+  without a picture for good (Windows CI, second round).
 - **Decision:** every view opens docked at start, and no window opens by
   itself. When no scenario is open, and before the layout is saved at
   quit, every view comes back. Showing a view in its own window (a

@@ -91,14 +91,43 @@ fixes bugs.
   window's thread only sends the new frames to the globe and the map, so
   it stays responsive with many spacecraft.
 
+### Changed
+
+- **A new app icon.** It shows a mission instead of a lone satellite: the
+  real Earth (the 3D view's NASA Blue Marble texture), an orbit flown and
+  predicted, a satellite on it with a link beam to a ground station, and
+  the Sun. Detail drops out cleanly down to 16 px. The README banner
+  shows the same icon.
+- **The Windows taskbar shows the app's own icon.** The running app sets
+  its own taskbar identity (AppUserModelID), so its taskbar button is no
+  longer grouped under Python.
+
 ### Fixed
 
+- **Dialogs fit a 1280 x 720 screen** (UI audit batch B1). The 3D model
+  editor asked for a minimum height of 967 px and the IDM-CIC import for
+  820 px, so OK and Cancel were off the screen. A dialog is now never
+  taller than the screen less 64 px for the title bar (656 px on a
+  720 px screen), and tall content scrolls. The generate-phasing-formation
+  dialog (886 px) now scrolls its groups. A test opens every dialog of
+  the GUI on a 1280 x 720 screen.
+- The 3D model editor's part form fits its column: all three Position
+  and Rotation fields, the whole "Shown" label and every face's label are
+  in view, with no sideways scrolling. A long material name made the form
+  750 px wide.
+- The 3D model editor's Equipment tab says "No equipment", with Add,
+  when there is nothing to select, instead of a disabled form.
+- The SIL dialog shows no error before you choose a program, no empty
+  SHA-256 row, and its whole placeholder text.
+- The Customize dialog: the contents list has 26 px rows and shows its
+  first heading in full, and the labels of every section have one width,
+  so the fields line up.
 - **The app icon was hard to see on Ubuntu's panels.** The glyph had no
   background: its blue panels had 2.55 : 1 on the dark dock (#303030) and
-  its gold body 1.86 : 1 on light panels (#FAFAFA). The same glyph now
-  sits on a dark rounded plate with a light rim: 5.15 : 1 or more on the
-  dark panels, 15.0 : 1 or more on the light ones
-  (`tests/gui/test_icons.py`).
+  its gold body 1.86 : 1 on light panels (#FAFAFA). The icon now sits on
+  a dark rounded plate with a light rim: 3.33 : 1 or more on the dark
+  panels and the Windows dark taskbars, 11.4 : 1 or more on the light
+  ones (`tests/gui/test_icons.py`).
 - **The thermal plots on Run › Thermal were stretched and cramped** (the
   owner's report): the title and the legend were up to 1.7 times too wide
   when the window was wide. A plot now fills its tab at its own aspect

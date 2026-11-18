@@ -444,10 +444,17 @@ def _lose_context(qtbot, view) -> int:
     qtbot.waitUntil(lambda: _js(qtbot, view, "Boolean(MV.renderer) && !MV.contextLost && "
                                              "!MV.renderer.getContext().isContextLost()") is True, timeout=10000)
     before = _js(qtbot, view, "MV.recoveries")
-    _js(qtbot, view, "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
-                     "window.CANVAS = MV.renderer.domElement; LOSE.loseContext(); 1")
+    assert _try_js(qtbot, view, "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
+                                "window.CANVAS = MV.renderer.domElement; LOSE.loseContext();") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.contextLost") is True, timeout=10000)
     return before
+
+
+def _try_js(qtbot, view, code: str) -> str:
+    """Run a test's own JavaScript: "ok", or its error's text. A test step
+    that throws must not show as an error of the page (MV_ERRORS)."""
+    return _js(qtbot, view, "(function () { try { " + code + " return 'ok'; } "
+                            "catch (e) { return String(e && e.stack || e); } })()")
 
 
 def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
@@ -468,9 +475,11 @@ def test_the_3d_view_recovers_a_webgl_context_given_back(qtbot):
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 77, timeout=10000)
     _js(qtbot, view, "MV.camera.position.set(9000, 1000, 2000); MV.dirty = true; "
                      "window.KEEP = [MV.scene, MV.body, MV.body.material, MV.body.material.map, MV.crafts[0].mesh]; 1")
+    # The frame drawn (the overlay follows MV.frame on the next animation frame, not at once).
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.dirty") is False, timeout=10000)
     clock = _js(qtbot, view, "document.getElementById('hud-time').textContent")
     before = _lose_context(qtbot, view)
-    _js(qtbot, view, "LOSE.restoreContext(); 1")
+    assert _try_js(qtbot, view, "LOSE.restoreContext();") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=10000)
     state = _state(qtbot, view)
     assert state["contextLost"] is False and state["contextAlive"] is True and state["ready"] is True
@@ -502,7 +511,8 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
     _drawn(qtbot, view)
     before = _lose_context(qtbot, view)
     # The page's own timer waits while the overlay is checked (a slow runner can take RECOVER_AFTER_MS for it).
-    _js(qtbot, view, "clearTimeout(MV.recoverTimer); 1")
+    assert _try_js(qtbot, view, "clearTimeout(MV.recoverTimer);") == "ok"
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.dirty") is False, timeout=10000)  # the frame drawn
     shown = _js(qtbot, view, "document.getElementById('hud-time').textContent").split("\n")[0]
     view.slider.setValue(120)
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 120, timeout=10000)
@@ -510,12 +520,39 @@ def test_the_3d_view_recovers_a_webgl_context_never_given_back(qtbot):
                     .split("\n")[0] != shown, timeout=10000)
     # Still lost: the overlay was drawn without a context.
     assert _js(qtbot, view, "MV.contextLost") is True and _js(qtbot, view, "MV.recoveries") == before
-    _js(qtbot, view, "MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS); 1")  # as onContextLost set it
+    # As onContextLost set it.
+    assert _try_js(qtbot, view, "MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS);") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=15000)
     state = _state(qtbot, view)
     assert state["contextAlive"] is True and state["ready"] is True and state["frames"] == 300
     assert _js(qtbot, view, "JSON.stringify(MV_ERRORS)") == "[]"
 
+
+
+def test_the_3d_view_tries_again_while_no_new_context_can_start(qtbot):
+    """No new WebGL context yet (the GPU process starting again, as on
+    Windows after a move to another window): the view tries again
+    RECOVER_AFTER_MS later instead of saying that WebGL is gone."""
+    from spacemissionstudio.gui.mission_view_widget import MissionViewWidget
+
+    view = MissionViewWidget()
+    qtbot.addWidget(view)
+    view.resize(900, 600)
+    view.show()
+    view.set_run(*_run())
+    _drawn(qtbot, view)
+    before = _lose_context(qtbot, view)
+    assert _try_js(qtbot, view, "window.REAL = MV.createRenderer; window.REFUSED = 0; "
+                                "MV.createRenderer = function (o) { if (REFUSED < 1) { REFUSED += 1; "
+                                "throw new Error('no context yet'); } return REAL(o); };") == "ok"
+    assert _try_js(qtbot, view, "MV.recover();") == "ok"  # as the page's own timer would
+    assert _js(qtbot, view, "REFUSED === 1 && MV.contextLost && MV.webgl && MV.recoverTries === 1") is True
+    qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=15000)
+    state = _state(qtbot, view)
+    assert state["contextAlive"] is True and state["webgl"] is True and state["frames"] == 300
+    assert _js(qtbot, view, "MV.recoverTries === 0 && document.getElementById('view').className !== 'no-webgl'") \
+        is True
+    assert _js(qtbot, view, "JSON.stringify(MV_ERRORS)") == "[]"
 
 # -- Budgets ----------------------------------------------------------------------------------------------
 
@@ -544,22 +581,43 @@ def test_budgets_in_its_own_window_counts_as_shown(window, qtbot):
 
 def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
     """The view keeps its parent and becomes a window: no restyle of its
-    widgets (a new parent took 50 to 70 ms for Budgets). Each view three
-    times, the 3D View with its page loaded."""
+    widgets (a new parent took 50 to 70 ms for Budgets) and no file write
+    (a layout write held the interpreter lock, 146 ms in CI). Each view
+    three times, the 3D View with its page loaded.
+
+    A move must take under 50 ms, or, on a machine where showing the view
+    alone takes longer (the Windows runner shows the 435 widgets of the
+    Budgets area in about 50 ms, Linux in about 9), under twice that plus
+    10 ms: the move adds nothing to showing the view."""
+    import statistics
+
     from PySide6.QtWidgets import QApplication
 
     _with_run(window, qtbot)
-    took = {}
+    took, shown = {}, {}
     for view_id in _VIEWS:
-        window.show_view(window.breakouts.widget(view_id))
+        widget = window.breakouts.widget(view_id)
+        window.show_view(widget)
         QApplication.processEvents()
+        plain = []
+        for _round in range(3):  # the view's own cost: hidden and shown in place
+            widget.hide()
+            QApplication.processEvents()
+            start = time.perf_counter()
+            widget.show()
+            plain.append(1000.0 * (time.perf_counter() - start))
+            QApplication.processEvents()
+        shown[view_id] = statistics.median(plain)
         for _round in range(3):
             for move in (window.breakouts.detach, window.breakouts.attach):
                 start = time.perf_counter()
                 move(view_id)
                 took.setdefault(view_id, []).append(1000.0 * (time.perf_counter() - start))
                 QApplication.processEvents()
-    assert max(max(times) for times in took.values()) < _GUI_THREAD_MS, took
+    limits = {view_id: max(_GUI_THREAD_MS, 2.0 * shown[view_id] + 10.0) for view_id in _VIEWS}
+    over = {view_id: (round(max(times), 1), round(limits[view_id], 1), round(shown[view_id], 1))
+            for view_id, times in took.items() if max(times) >= limits[view_id]}
+    assert not over, f"(slowest move, limit, plain show) per view in ms: {over}; all moves: {took}"
 
 
 # -- a live run -------------------------------------------------------------------------------------------

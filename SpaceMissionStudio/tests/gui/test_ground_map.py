@@ -420,6 +420,12 @@ def test_a_station_has_a_glyph_and_a_visibility_ring_stronger_in_contact(qtbot):
     assert _state(qtbot, view)["stations"][0]["glyph"] is False
 
 
+def _try_js(qtbot, view, code: str) -> str:
+    """Run a test's own JavaScript: "ok", or its error's text."""
+    return _js(qtbot, view, "(function () { try { " + code + " return 'ok'; } "
+                            "catch (e) { return String(e && e.stack || e); } })()")
+
+
 def test_tracks_and_rings_survive_a_lost_webgl_context(qtbot):
     """MV.recover makes a new renderer for the same scene: the track lines
     and the station rings are the same objects, still drawn."""
@@ -431,11 +437,12 @@ def test_tracks_and_rings_survive_a_lost_webgl_context(qtbot):
     qtbot.waitUntil(lambda: _js(qtbot, view, "Boolean(MV.renderer) && !MV.contextLost && "
                                              "!MV.renderer.getContext().isContextLost()") is True, timeout=10000)
     before = _js(qtbot, view, "MV.recoveries")
-    _js(qtbot, view, "window.KEEP = [MV.crafts[0].track, MV.crafts[0].trackFuture, MV.rings[0].line]; "
-                     "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
-                     "LOSE.loseContext(); 1")
+    # The test's own steps return "ok" or their error, never an error of the page (test_breakout.py's _try_js).
+    assert _try_js(qtbot, view, "window.KEEP = [MV.crafts[0].track, MV.crafts[0].trackFuture, MV.rings[0].line]; "
+                                "window.LOSE = MV.renderer.getContext().getExtension('WEBGL_lose_context'); "
+                                "LOSE.loseContext();") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.contextLost") is True, timeout=10000)
-    _js(qtbot, view, "LOSE.restoreContext(); 1")
+    assert _try_js(qtbot, view, "LOSE.restoreContext();") == "ok"
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.recoveries") == before + 1, timeout=10000)
     assert _js(qtbot, view, "MV.crafts[0].track === KEEP[0] && MV.crafts[0].trackFuture === KEEP[1] "
                             "&& MV.rings[0].line === KEEP[2] && MV.earthGroup.children.includes(KEEP[2])") is True

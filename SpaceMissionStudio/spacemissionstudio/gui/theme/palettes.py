@@ -51,19 +51,25 @@ def categorical(mode: str) -> list[str]:
     """The categorical palette of ``mode``: a copy."""
     return list(CATEGORICAL[mode])
 
-# The application icon (gui/icons.py): blue solar panels in the light
-# theme's accent, a gold (multi-layer insulation) body, on a dark
-# rounded-square plate with a light rim. One icon for both themes: the
-# taskbar's background is the platform's, not ours. The plate gives the
-# icon 3 : 1 or more against light panels, the rim against dark panels
+# The application icon (gui/icons.py): a mission scene on a dark
+# rounded-square plate with a light rim. The Earth, its orbit, a satellite
+# on the orbit with a link beam to a ground station, and the Sun. One icon
+# for both themes: the taskbar's background is the platform's, not ours.
+# The plate gives the icon 3 : 1 or more against light panels, the rim
+# against dark panels (Windows 10 and 11, Ubuntu's dock and top bar)
 # (docs/developer/windows-views-design.md, section 5; tests/gui/test_icons.py).
 APP_ICON = {
-    "panel": "#2563EB",  # the light accent
-    "panel_line": "#1E3A8A",  # the antenna
-    "body": "#CFB87C",
-    "body_line": "#A88F53",  # the body's centre line
-    "plate": "#0F172A",  # the plate, and the panel grid lines
-    "rim": "#94A3B8",  # the plate's rim
+    "plate": "#1A2C57",  # the plate: flat at the top, deepening to plate_bottom
+    "plate_bottom": "#0A1128",  # the plate's lower part; the satellite's outline
+    "rim": "#5B7FC7",  # the plate's rim
+    "ocean": "#1A4FA6",  # the Earth when its texture is missing
+    "atmosphere": "#9CC7FF",  # the Earth's limb
+    "orbit": "#E8EEF8",  # the orbit track
+    "sun": "#F2B705",  # the Sun (SUN_COLOUR of the 3D view)
+    "panel": "#60A5FA",  # solar panels
+    "body": "#CFB87C",  # the satellite's body: gold multi-layer insulation
+    "beam": "#5BD27A",  # the link beam (LINE_OF_SIGHT_COLOUR of the 3D view)
+    "station": "#F4F5F7",  # the ground station (STATION_COLOUR of the 3D view)
 }
 
 # The axes of the 3D model view: x, y, z in the red, green, blue order

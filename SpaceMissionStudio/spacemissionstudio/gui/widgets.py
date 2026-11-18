@@ -43,10 +43,13 @@ from __future__ import annotations
 import math
 from decimal import Decimal
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QValidator
 from PySide6.QtWidgets import (QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QLabel, QLayout,
-                               QSpinBox, QTabBar, QTabWidget, QWidget)
+                               QPushButton, QScrollArea, QSpinBox, QStyledItemDelegate, QTabBar, QTabWidget, QVBoxLayout,
+                               QWidget)
+
+from .theme import ROW_HEIGHT, SPACE, set_role
 
 # The flags of a window of its own: a title bar with the system menu,
 # minimise, maximise and close (the 3D model editor, the viewers).
@@ -427,3 +430,78 @@ def flow_row(*widgets: QWidget, spacing: int = 6) -> QWidget:
     for widget in widgets:
         flow.addWidget(widget)
     return holder
+
+
+class EmptyState(QWidget):
+    """What an empty list says, with its action when it has one."""
+
+    def __init__(self, title: str, text: str = "", action: str | None = None, primary: bool = False,
+                 parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["lg"], SPACE["lg"])
+        layout.setSpacing(SPACE["sm"])
+        layout.addStretch(1)
+        self.title_label = set_role(QLabel(title), role="heading")
+        self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title_label.setWordWrap(True)
+        layout.addWidget(self.title_label)
+        self.text_label = set_role(QLabel(text), tone="secondary")
+        self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.text_label.setWordWrap(True)
+        self.text_label.setVisible(bool(text))
+        layout.addWidget(self.text_label)
+        self.button = QPushButton(action or "")
+        if primary:
+            set_role(self.button, variant="primary")
+        self.button.setVisible(action is not None)
+        layout.addWidget(self.button, 0, Qt.AlignmentFlag.AlignHCenter)
+        layout.addStretch(1)
+
+    def set_text(self, title: str, text: str = "", action: str | None = None) -> None:
+        self.title_label.setText(title)
+        self.text_label.setText(text)
+        self.text_label.setVisible(bool(text))
+        if action is not None:
+            self.button.setText(action)
+        self.button.setVisible(action is not None)
+
+
+class ScrollBody(QScrollArea):
+    """A dialog's body that scrolls when the screen is too small for it
+    (UI audit UI-01): it asks for the whole size of its content, so the
+    dialog opens as large as before, but its minimum height is small, so
+    the dialog fits the screen (``theme.dialogs``) with its buttons in
+    view. Its minimum width is the content's, so it never scrolls
+    sideways."""
+
+    def __init__(self, widget: QWidget, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWidgetResizable(True)
+        self.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setWidget(widget)
+
+    def _bar_width(self) -> int:
+        return self.verticalScrollBar().sizeHint().width() + 2 * self.frameWidth()
+
+    def sizeHint(self) -> QSize:  # noqa: N802 -- Qt's name
+        widget = self.widget()
+        if widget is None:
+            return super().sizeHint()
+        hint = widget.sizeHint()
+        return QSize(hint.width() + self._bar_width(), hint.height() + 2 * self.frameWidth())
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 -- Qt's name
+        widget = self.widget()
+        if widget is None:
+            return super().minimumSizeHint()
+        return QSize(widget.minimumSizeHint().width() + self._bar_width(), super().minimumSizeHint().height())
+
+
+class RowHeightDelegate(QStyledItemDelegate):
+    """Rows at least the theme's table-row height (:data:`theme.ROW_HEIGHT`)
+    in a list or tree view."""
+
+    def sizeHint(self, option, index) -> QSize:  # noqa: N802 -- Qt's name
+        return super().sizeHint(option, index).expandedTo(QSize(0, ROW_HEIGHT))

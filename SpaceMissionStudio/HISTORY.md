@@ -18354,6 +18354,127 @@ One existing test changed how it reaches a widget: it selects the 3D
 model tab before it reads the web view (`docs/ui/TEST_CHANGES.md`). No
 golden file and no file format changed.
 
+## UI audit batch B1: dialogs fit the screen (2026-11-17)
+
+The UI audit of 2026-11-17 opened every screen and dialog at 1280 x 720
+and 1920 x 1080. Batch B1 fixes the six defects in dialogs.
+
+**The two blockers (UI-01, UI-02).** On a 1280 x 720 screen the 3D model
+editor had a minimum height of 967 px and the IDM-CIC import one of
+820 px, so OK and Cancel were off the screen. The cause was
+`gui/theme/dialogs.py`: `fit()` set a dialog's minimum height to its
+layout's height for its width, with no upper limit. That height is the
+preferred height of every tab, table and text box, not the minimum.
+`fit()` now stops at `room()`: the screen's available height less 64 px
+for the title bar (656 px on a 720 px screen). Only the layout's own
+minimum can make a dialog taller. A dialog that its code made taller
+than the screen (the model editor asks for 820 px) shrinks to it when it
+is shown. The width stays as the code set it: narrowing the Customize
+dialog to the 800 px test screen made its cards scroll sideways with
+large fonts, and a window manager places a wide window anyway. Measured
+with the audit's screen file: the model editor now has a minimum of
+680 x 656 px (its layout needs 355 px), the IDM-CIC import 587 x 656 px
+(582 px). The import's preview is six lines high and scrolls, so the
+tables get the height. In the model editor the parts, the form and the
+3D view give up height on a small screen, and the tabs below keep
+theirs.
+
+**Every dialog.** A new test, `tests/gui/test_dialogs_fit_the_screen.py`,
+finds every `QDialog` class in `spacemissionstudio.gui` (25 today), opens
+each on a 1280 x 720 screen and checks its minimum size and its size. A
+dialog class without an entry fails the test. It found one more dialog
+that did not fit: the generate-phasing-formation dialog needed 886 px.
+Its groups now sit in `widgets.ScrollBody`, a scroll area that asks for
+the whole size of its content but has a small minimum height. Before the
+fix the test failed for the model editor, the IDM-CIC import, the
+phasing and ROE formation dialogs and the user manual.
+
+**The part form (UI-28).** The form was 768 px wide in a 470 px column,
+so it scrolled sideways, and the third Position and Rotation fields, the
+end of "Shown" and the label of the fourth face were out of view. The
+material drop-down was the cause: its longest entry, a name with its
+description, made it 726 px wide. `fill_material_combo` now sizes the
+box for 20 characters; the open list still shows each entry in full. A
+tick box in a row of the form keeps its own width.
+
+**The Equipment tab (UI-29).** With nothing to select, the tab showed a
+disabled form with "camera" in it. It now shows an `EmptyState`, "No
+equipment", whose Add equipment button opens the same menu as Add.
+`EmptyState` moved from `budgets_area.py` to `widgets.py` for this.
+
+**The SIL dialog (UI-46).** It said "Choose the program to run." in red
+before the user did anything, showed an empty SHA-256 row and cut its
+placeholder. An empty field is now no error (Run SIL stays off), the
+SHA-256 row shows only with a hash, and the field is as wide as its
+placeholder.
+
+**The Customize dialog (UI-47).** The contents list now draws its rows
+at least 26 px high (`widgets.RowHeightDelegate`), and its first heading
+is in full. Every field label on the page has the width of the widest
+one, so the fields of all sections line up.
+
+Tests: the new file has 31 tests. Before the fixes, 10 failed: five
+dialogs (the model editor, the IDM-CIC import, the phasing and ROE
+formation dialogs, and the user manual, which opened 760 px high) and the
+five checks of UI-28, UI-29, UI-46 and UI-47. After the fixes, the
+whole GUI suite passed (1974 tests) and the rest of the suite passed
+(3470 tests).
+Screenshots taken offscreen at 1280 x 720 show OK and Cancel in view in
+both blocker dialogs, the part form without a sideways scroll bar and
+the Equipment tab's empty state.
+
+## A new app icon: the mission scene (2026-11-17)
+
+The owner found that the app icon, a satellite alone, did not show what
+the tool does. During the work they added two requests: the Earth must
+look like the Earth, not a blue ball, and the icon must be visible in
+dark mode on Ubuntu and Windows. The desktop-integration change above
+(#276) was merged while this one was open; it kept the satellite and put
+it on a plate. The owner chose this design for the icon, so the scene
+replaces the satellite and keeps #276's plate, rim, hicolor sizes, SVG,
+`.ico` and their tests.
+
+- **The design** (`gui/icons.py`): a mission scene inside the plate. The
+  Earth in the lower-left corner, an orbit around it (solid where the
+  satellite has flown, dashed ahead), the satellite (gold body, blue
+  panels) with a link beam to a ground station, and the Sun. The planet
+  is cut by the plate's corner and the orbit is an open arc, so the first
+  icon's problem (a disc in a ring reads as an eye) does not come back.
+- **The Earth** is the 3D view's bundled Blue Marble texture
+  (`earth_day_2k.jpg`, public domain) in orthographic projection,
+  centred at 20 deg E, 20 deg S so Africa, the Mediterranean and Europe
+  fill the visible cap, and lit from the Sun's side. A first try with
+  drawn continents still read as a blue ball. The layer is made once per
+  process: about 22 ms warm, about 100 ms the first time (numpy and the
+  JPEG decoder load); `app_icon()` with all seven sizes about 33 ms warm.
+  The first-time cost is above the 50 ms GUI-thread target and happens
+  once, at start-up.
+- **The plate's colours** are the scene's navy: `plate` `#1A2C57` (flat
+  across the top quarter, deepening to `#0A1128`) and `rim` `#5B7FC7`.
+  The rim has 3.33 : 1 or more on Ubuntu's dark panels (#303030 the
+  lowest) and on the Windows 10 and 11 dark taskbars, the plate 11.4 : 1
+  or more on the light panels; #276's tests measure them at every size,
+  and a new test adds the Windows taskbars.
+- **The SVG.** `QSvgGenerator` writes no clip paths, so the scene cuts
+  its own shapes to the plate (`QPainterPath.intersected`) and masks the
+  Earth image before drawing it. A test renders the SVG and checks that
+  nothing is drawn outside the plate.
+- **Small sizes:** below 48 px the orbit is one solid arc; below 32 px
+  the Sun's glow and the limb are left out and the Sun and satellite are
+  drawn larger; below 24 px the beam is left out. Checked by rendering
+  512 down to 16 px on Windows and Ubuntu taskbar colours.
+- **Windows taskbar:** the app now sets an AppUserModelID at start-up, so
+  the taskbar does not group it under `pythonw.exe` with Python's icon.
+  Not seen on a real Windows machine (no Windows in the session).
+- **Committed copies:** `packaging/windows/spacemissionstudio.ico` made
+  again with `packaging/make_ico.py --from-app`;
+  `scripts/build_app_icon_files.py` writes `docs/images/app_icon.png` and
+  the README banner's icon (embedded as a PNG: an SVG that links to an
+  image does not show it on GitHub).
+- **Tests** (`tests/gui/test_icons.py`, `test_app.py`): land on the Earth
+  (not only ocean), the Windows taskbars, the SVG inside the plate, the
+  documentation files, and the app ID only on Windows.
+
 ## 2.12.0 windows and views: breakout windows (2026-11-17)
 
 The second part of 2.12.0 (`docs/developer/windows-views-design.md`,
@@ -18463,6 +18584,56 @@ back checks that the overlay follows the frame while the context is
 lost. Two geometry tests expected a window of exactly the saved size; on
 Windows the Thermal view's own minimum is 714 px wide, so they now
 expect the saved size enlarged to the view's minimum.
+
+**Windows CI, second round: a recovery that came too early.** With the
+overlay fixed, three tests of `test_breakout.py` still failed on
+Windows. (1) After a move to its own window the 3D View had no renderer:
+the move lost the GPU context, and `MV.recover` asked for a new one while
+the GPU process was still starting again. `createRenderer` threw, and
+the page put up "could not start WebGL" for good. A user on Windows could
+have seen that. `MV.recover` now tries again `RECOVER_AFTER_MS` later,
+`RECOVER_TRIES` (5) times in all, and says that WebGL is gone only
+after that. A new test refuses the first new context and checks that
+the second try draws. (2) A window saved on a screen that is gone opened
+49 px off centre: it was centred at the saved width (620 px) and Qt then
+widened it to the Thermal view's minimum (714 px on Windows). `_place`
+now takes the view's minimum size into account before it centres the
+window. (3) The test of a context never given back found
+`Script error. (:0)` in the page's errors. The tests' own JavaScript
+(take the context away, give it back, hold the timer) now runs in a
+`try` block that returns the error's text, so a step that throws fails
+the test with its message and never shows as an error of the page.
+
+**Windows CI: the Budgets area is slow to show on the runner.** With the
+file write gone, `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+still failed on the Windows runner: every move of the Budgets area took
+50 to 81 ms (the 3D View 5 to 17 ms). Here, a move of the Budgets area
+takes 10 to 11 ms, and simply hiding and showing the area in place takes
+9 to 10 ms: the move adds about 1 ms. The swap into its layout slot is
+almost all of it (`show()` of the area's 435 widgets; Thermal, 228
+widgets in a tab, takes 1 ms). Removing the three hidden pages saved
+only 3 to 5 ms, so no one part dominates. The Windows runner shows the
+area about five times slower than this machine. The test now measures
+each view's own show time in place and allows a move under 50 ms, or
+under twice that show time plus 10 ms where showing the view alone takes
+longer. On Linux every limit stays 50 ms. A 60 ms stall added to
+`attach` still fails the test for all three views (checked by hand), so
+it still catches a restyle or a lock held by a worker. Making the Budgets
+area itself quicker to show is a backlog item.
+
+**Windows CI: a software compositor (the owner's decision, 2026-11-18).**
+Even with every fix above, the 3D View's WebGL tests failed on the
+Windows runner, and a different set in each run on nearly the same code:
+the detach test (no renderer), the recovery tests (no live context
+within 10 s). The runner has no GPU. WebGL already ran on SwiftShader,
+but Chromium's compositor still used Direct3D shared images, and their
+errors filled the log ("Already being accessed for read", "Context lost
+during MakeCurrent"). After one test took a context away, no later page
+in that process got a live one. The Windows job now also passes
+`--disable-gpu-compositing`, so the compositor draws in software too.
+The app's own flags (`gui/webengine_setup.py`) do not change: this is a
+setting of the runner without a GPU. The 3D View, live-run, breakout and
+thermal-view tests pass with these exact flags here (61 tests).
 
 ## 2.12.0 windows and views: ground tracks, stations and a live 2D map (2026-11-17)
 
