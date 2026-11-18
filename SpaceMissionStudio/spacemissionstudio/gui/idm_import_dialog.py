@@ -54,12 +54,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
-                               QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QTableWidget,
+                               QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPushButton, QScrollArea, QTableWidget,
                                QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
 
-from .theme import set_role
+from . import units
+from .theme import SPACE, set_role
+from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, EmptyStack, EmptyState
 
 CREDIT = ("Reads IDM-CIC models (IDM-CIC is © CNES) with SpaceMissionStudio's own reader. SpaceMissionStudio "
@@ -68,6 +70,19 @@ _DEFAULT = ""  # the combo data for "the default values" / "chosen" / "none"
 
 
 _PREVIEW_LINES = 6  # [-] lines of the preview in view
+
+
+class _PreviewArea(QScrollArea):
+    """The preview's scroll area: it asks for :attr:`asked_height` (six
+    lines), so the dialog gives it that room when it has it, and can still
+    make it smaller on a small screen (its minimum is a scroll area's)."""
+
+    asked_height = 0  # [px]
+
+    def sizeHint(self):  # noqa: N802 -- Qt's name
+        hint = super().sizeHint()
+        hint.setHeight(max(self.asked_height, 0) or hint.height())
+        return hint
 
 
 class _Worker(QThread):
@@ -156,15 +171,30 @@ class IdmImportDialog(QDialog):
         form.addRow("Origin of the body frame", self.origin_combo)
         layout.addLayout(form)
         layout.addWidget(QLabel("What the import will do"))
-        self.preview = QPlainTextEdit()
-        self.preview.setReadOnly(True)
-        self.preview.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
-        # A few lines high; it scrolls for more, so the tables below and the buttons stay on a small screen
-        # (UI audit UI-02).
-        self.preview.ensurePolished()  # the style sheet's font and frame
-        margin = int(2 * (self.preview.frameWidth() + self.preview.document().documentMargin()))
-        self.preview.setMaximumHeight(_PREVIEW_LINES * self.preview.fontMetrics().lineSpacing() + margin)
-        layout.addWidget(self.preview)
+        # The import's facts as a value sheet and its findings as a note
+        # list, side by side, not a text dump (UI audit UI-14). A few lines
+        # high; it scrolls for more, so the tables below and the buttons
+        # stay on a small screen (UI audit UI-02).
+        preview_body = QWidget()
+        preview_row = QHBoxLayout(preview_body)
+        preview_row.setContentsMargins(0, 0, 0, 0)
+        preview_row.setSpacing(SPACE["xl"])
+        self.preview_status = set_role(QLabel(""), tone="secondary")  # "Reading the model...", while it works
+        self.preview_sheet = ValueSheet()
+        self.preview_notes = NoteList("finding")
+        preview_row.addWidget(self.preview_status, 0, Qt.AlignmentFlag.AlignTop)
+        preview_row.addWidget(self.preview_sheet, 0, Qt.AlignmentFlag.AlignTop)
+        preview_row.addWidget(self.preview_notes, 1, Qt.AlignmentFlag.AlignTop)
+        self.preview_area = _PreviewArea()
+        self.preview_area.setWidgetResizable(True)
+        self.preview_area.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.preview_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.preview_area.setWidget(preview_body)
+        self.preview_area.setMaximumHeight(_PREVIEW_LINES * self.preview_sheet.fontMetrics().lineSpacing()
+                                           + (_PREVIEW_LINES - 1) * SPACE["xs"])
+        self.preview_area.asked_height = self.preview_area.maximumHeight()  # six lines when there is room
+        layout.addWidget(self.preview_area)
+        self._show_preview(None)
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs, 1)
         devices_page = QWidget()
@@ -282,7 +312,7 @@ class IdmImportDialog(QDialog):
 
     def _start(self, options: dict) -> None:
         self._plan = None
-        self.preview.setPlainText("Reading the model..." if self._model is None else "Planning the import...")
+        self._show_preview(None, "Reading the model..." if self._model is None else "Planning the import...")
         self.status.setText("")
         self._worker = _Worker(self._path, self._model, options, self)
         self._worker.finished_ok.connect(self._on_planned)
@@ -290,6 +320,16 @@ class IdmImportDialog(QDialog):
         self._worker.finished.connect(self._on_worker_done)
         self._update_buttons()
         self._worker.start()
+
+    def _show_preview(self, summary, status: str = "") -> None:
+        """``summary`` (``idm_import.ImportSummary``) as its rows and
+        findings; ``status`` while there is none."""
+        self.preview_status.setText(status)
+        self.preview_status.setVisible(bool(status))
+        self.preview_sheet.set_rows(units.display_rows(summary.rows()) if summary is not None else [])
+        self.preview_sheet.setVisible(summary is not None)
+        self.preview_notes.set_notes(summary.findings() if summary is not None else [])
+        self.preview_notes.setVisible(summary is not None and bool(self.preview_notes.notes))
 
     def _fill_combos(self, model) -> None:
         for combo in (self.configuration_combo, self.stowed_combo, self.body_combo):
@@ -311,7 +351,7 @@ class IdmImportDialog(QDialog):
             self._model = model
             self._fill_combos(model)
         self._plan = plan
-        self.preview.setPlainText("\n".join(plan.summary.lines()))
+        self._show_preview(plan.summary)
         self._fill_devices(plan.devices)
         self._fill_power(plan.power)
         self._fill_properties(plan.devices)
@@ -586,7 +626,7 @@ class IdmImportDialog(QDialog):
 
     def _on_failed(self, message: str) -> None:
         self._plan = None
-        self.preview.setPlainText("")
+        self._show_preview(None)
         self.status.setText(f"Cannot import: {message}")
 
     def _on_worker_done(self) -> None:

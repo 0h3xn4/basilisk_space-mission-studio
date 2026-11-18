@@ -119,6 +119,43 @@ class ImportSummary:
     origin_moved: list = field(default_factory=list)  # what moved with it, as text
     center_of_mass_m: list = field(default_factory=list)  # [m] from B after the import
 
+    def rows(self) -> list[tuple[str, str, str]]:
+        """What the import reads and makes, as rows of (label, value, unit)
+        for a value sheet (the GUI's preview, UI audit UI-14); the devices,
+        properties and power have tables of their own. :meth:`lines` is the
+        same for the command line."""
+        rows = [("Model version", self.version or "not given", "")]
+        rows += [("Project", self.project, "")] if self.project else []
+        rows.append(("Configuration", self.configuration, ""))
+        rows += [("Stowed configuration", self.stowed_configuration, "")] if self.stowed_configuration else []
+        rows += [("Body element", self.body_element, ""), ("Elements imported", str(len(self.elements)), ""),
+                 ("Parts", str(self.parts), ""), ("Point masses", str(self.equipment), ""),
+                 ("Generated meshes", str(self.meshes), ""), ("Mass imported", f"{self.mass_kg:.6g}", "kg")]
+        rows += [("Propellant", f"{self.propellant_kg:.6g}", "kg")] if self.propellant_kg else []
+        if self.added or self.updated or self.kept or self.gone or self.unchanged:
+            rows += [("Added", str(len(self.added)), ""), ("Updated", str(len(self.updated)), ""),
+                     ("Unchanged", str(self.unchanged), ""), ("Kept as edited", str(len(self.kept)), ""),
+                     ("No longer in the file", str(len(self.gone)), "")]
+        return rows
+
+    def findings(self) -> list[str]:
+        """What the reader should know about the import, one line each (a
+        note list's rows): what was left out or approximated, the margins
+        reported, what a re-import kept, and the notes."""
+        out = [f"Left out: element {name} ({reason})" for name, reason in self.left_out]
+        for reason, names in sorted(self.approximations.items()):
+            distinct = list(dict.fromkeys(names))
+            shown = ", ".join(distinct[:3]) + (f" and {len(distinct) - 3} more" if len(distinct) > 3 else "")
+            out.append(f"Approximated ({len(names)}): {reason}: {shown}")
+        if self.margins:
+            levels = collections.Counter((level or "not given", margin) for _, level, margin in self.margins)
+            text = "; ".join(f"{level} {margin * 100:g} % x{count}" for (level, margin), count in sorted(levels.items()))
+            out.append(f"Mass margins in the file (reported, not applied: nominal masses imported): {text}")
+        out += [f"Kept as edited: {name}: {what}" for name, what in self.kept]
+        out += [f"No longer in the file (kept; remove it if it should go): {name}" for name in self.gone]
+        out += [f"Device not added: {name}: {why}" for name, why in self.devices_skipped]
+        return out + [note[:1].upper() + note[1:] for note in self.notes]
+
     def lines(self) -> list[str]:
         """The summary as text lines."""
         out = [f"IDM-CIC model {self.source} (model version {self.version or 'not given'}"

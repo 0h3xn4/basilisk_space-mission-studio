@@ -110,7 +110,7 @@ from ..engine.live_view import LiveFeed
 from .mission_view_widget import LAYOUTS as MAP_LAYOUTS, MissionViewWidget
 from .run_page import RunModeControl, RunPage
 from .widgets import TabWidget, make_window, show_window
-from .theme import (CONTENT_MAX_WIDTH_PX, apply_theme, current_theme, follow_system, icon, resolve_theme,
+from .theme import (CONTENT_MAX_WIDTH_PX, SPACE, apply_theme, current_theme, follow_system, icon, resolve_theme,
                     set_theme_setting, theme_setting)
 from .compare_widget import CompareWidget
 from .workspace_panels import InspectorWidget, LogViewWidget, ProblemsWidget, install_log_view
@@ -349,6 +349,7 @@ class MainWindow(QMainWindow):
                                                                   source="plan"))
         self.plan_widget.operations_changed.connect(self.scenario_editor.set_operations)
         self.plan_widget.problems_changed.connect(self._on_plan_problems_changed)
+        self.results_widget.run_warnings_changed.connect(self._on_plan_problems_changed)  # UI-37
         self.plan_widget.monte_carlo_saved.connect(self._show_thermal_monte_carlo)
         self.plan_widget.set_scenario_provider(self.scenario_editor.to_scenario)
         self.plan_widget.template_requested.connect(self._open_template_named)  # its empty state (UI-22)
@@ -575,6 +576,10 @@ class MainWindow(QMainWindow):
         self._autosave_timer.timeout.connect(self._on_autosave_tick)
         self._autosave_timer.start()
 
+        # A file's message names the file; its path is the bar's tooltip
+        # while the message shows (UI audit UI-09, _show_file_message).
+        self._file_message = ""
+        self.statusBar().messageChanged.connect(self._on_status_message_changed)
         self.statusBar().showMessage("Ready.")
         self._update_window_title()
 
@@ -1417,7 +1422,11 @@ class MainWindow(QMainWindow):
         """A double-clicked problem opens where it is fixed (U-12): the
         Scenario Editor at the scenario's own field; the propagation setup,
         a spacecraft's or a ground station's editor at the field; a 3D
-        model's problem that spacecraft's model editor."""
+        model's problem that spacecraft's model editor; a run's warning
+        the run's plots."""
+        if self.results_widget.has_run_warning(text):
+            self.show_view(self.results_widget)
+            return
         editor = self.scenario_editor
         location = locate(text, [c.name for c in editor.spacecraft_list.to_list()],
                           [g.name for g in editor.ground_station_list.to_list()])
@@ -1495,6 +1504,9 @@ class MainWindow(QMainWindow):
             thermal = getattr(self, "thermal_widget", None)
             shown = {row[1] for row in rows}  # the scenario checks can name a finding already (shading)
             rows += [row for row in (thermal.problem_rows() if thermal is not None else []) if row[1] not in shown]
+            # The shown run's warnings: Problems is where a warning lives (UI audit UI-37).
+            results = getattr(self, "results_widget", None)
+            rows += results.run_warning_rows() if results is not None else []
         editor = self.scenario_editor
         self._refresh_run_command()  # an error in the scenario: Run cannot start (UI-55)
         self.problems_widget.set_scenario_open(self._scenario_open)  # no "valid" without a scenario (UI-24)
@@ -1502,8 +1514,8 @@ class MainWindow(QMainWindow):
                                           [g.name for g in editor.ground_station_list.to_list()])
 
     def _on_plan_problems_changed(self) -> None:
-        """Run › Plan's warnings or Run › Thermal's findings changed: the
-        Problems panel lists them with the editor's."""
+        """Run › Plan's warnings, Run › Thermal's findings or the shown run's
+        warnings changed: the Problems panel lists them with the editor's."""
         self._on_problems_changed(self.scenario_editor.problem_rows())
 
     def _on_problem_counts(self, errors: int, warnings: int) -> None:
@@ -1768,7 +1780,7 @@ class MainWindow(QMainWindow):
 
         basilisk_status = (
             "available" if importlib.util.find_spec("Basilisk") is not None
-            else "not installed/built -- see SpaceMissionStudio/README.md"
+            else 'not installed: see the user manual, section 2, "Installing it"'
         )
         QMessageBox.about(
             self, "About SpaceMissionStudio",
@@ -2359,8 +2371,10 @@ class MainWindow(QMainWindow):
         self._mark_clean()
         self._set_scenario_open(True)
         self._refresh_history()
-        label = str(current_path) if current_path is not None else scenario.name
-        self.statusBar().showMessage(f"{verb} {label}")
+        if current_path is not None:
+            self._show_file_message(verb, current_path)
+        else:
+            self.statusBar().showMessage(f"{verb} {scenario.name}")
         show_toast(self, f"{verb} {current_path.name if current_path is not None else scenario.name}")
         self.show_view(self.scenario_editor)
 
@@ -2408,8 +2422,26 @@ class MainWindow(QMainWindow):
         self._save_project_layout()
         self._mark_clean()
         self._remember_recent(path)
-        self.statusBar().showMessage(f"Saved {path}")
+        self._show_file_message("Saved", path)
         show_toast(self, f"Saved {path.name}")
+
+    def _show_file_message(self, verb: str, path: Path) -> None:
+        """"Opened <file name>" in the status bar, elided in the middle to
+        the room left of the permanent entries, with the whole path as the
+        bar's tooltip until another message replaces it (UI audit UI-09:
+        the absolute path was clipped at the first entry)."""
+        bar = self.statusBar()
+        entries = [w for w in bar.findChildren(QWidget) if w.parent() is bar and w.isVisible()]
+        room = bar.width() - sum(w.sizeHint().width() + SPACE["xs"] for w in entries) - SPACE["md"]  # [px]
+        text = bar.fontMetrics().elidedText(f"{verb} {Path(path).name}", Qt.TextElideMode.ElideMiddle, max(room, 0))
+        self._file_message = text
+        bar.showMessage(text)
+        bar.setToolTip(str(path))
+
+    def _on_status_message_changed(self, message: str) -> None:
+        if message != self._file_message:
+            self._file_message = ""
+            self.statusBar().setToolTip("")
 
     # -- run-in-progress feedback -------------------------------------------
     def _set_running(self, running: bool) -> None:

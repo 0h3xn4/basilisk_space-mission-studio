@@ -40,7 +40,6 @@ from PySide6.QtWidgets import (
     QFrame,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
@@ -81,8 +80,7 @@ from .monte_carlo_editor import SCALAR_DISPERSION_QUANTITIES, MonteCarloGroupWid
 from .problem_location import (GROUND_STATION, JSON_VIEW, MISSION_SEQUENCE, PROPAGATION, SCENARIO, SPACECRAFT,
                                locate)
 from .spacecraft_editor import SpacecraftEditorDialog, SpacecraftLabels, SpacecraftListWidget, tab_titles
-from .theme import CONTENT_MAX_WIDTH_PX, set_role
-from .value_sheet import NoteList
+from .theme import CONTENT_MAX_WIDTH_PX
 from .widgets import ComboBox, out_of_range_boxes
 from .workspace_panels import field_label
 
@@ -236,14 +234,9 @@ class ScenarioEditorWidget(QWidget):
         # are the mode's tabs), a new station list the forms.
         self.simulation_mode_combo.currentIndexChanged.connect(self._on_spacecraft_list_changed_shape)
 
-        self.validation_label = QLabel()
-        self.validation_label.setWordWrap(True)
-        outer_layout.addWidget(self.validation_label)
-        # Plausibility checks while editing (UX/UI guidelines): orbits that
-        # cannot be flown, a run outside the installed reference data.
-        self.plausibility_label = NoteList("warning")
-        self.plausibility_label.setVisible(False)
-        outer_layout.addWidget(self.plausibility_label)
+        # No footer under the tree (UI audit UI-09): the Problems panel lists
+        # each error and plausibility warning (problems_changed), the top bar
+        # and the status bar count them, and a field with an error is marked.
 
         self.changed.connect(self.revalidate)
         self.changed.connect(self._on_changed_for_json)
@@ -1168,22 +1161,14 @@ class ScenarioEditorWidget(QWidget):
         errors = list(unique.values())
         problems = [("error", error) for error in errors]
         if errors:
-            more = len(errors) - 1
-            self.validation_label.setText(f"⚠ {self.problem_display(errors[0])}"
-                                          + (f" (and {more} more: see Problems)" if more else ""))
-            set_role(self.validation_label, tone="critical")
             location_names = self._spacecraft_and_station_names()
             field_error = next((error for error in errors if (location := locate(error, *location_names)) is not None
                                 and location.area == SCENARIO), "")
             self._show_field_problem(field_error)
         else:
             self._show_field_problem("")
-            self.validation_label.setText("✓ valid")
-            set_role(self.validation_label, tone="normal")
             base_dir = self._base_dir_provider() if self._base_dir_provider else None
             warnings = plausibility_warnings(scenario, base_dir=base_dir)
-        self.plausibility_label.set_notes(warnings)
-        self.plausibility_label.setVisible(bool(warnings))
         warnings = self._range_warnings() + warnings
         self.problems = problems + [("warning", warning) for warning in warnings]
         self.mission_guide.update_state(len(scenario.spacecraft), len(scenario.ground_stations), valid=not errors,

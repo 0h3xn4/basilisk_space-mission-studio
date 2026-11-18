@@ -133,7 +133,7 @@ def test_the_end_of_life_page_shows_the_chain_and_takes_the_edited_propellant(qt
     assert widget.chain_panel.isHidden()  # from the start of the scenario: nothing chained
     widget.from_combo.setCurrentText(lifetime_widget._FROM_LAST_RUN)
     assert not widget.chain_panel.isHidden() and widget.chain_panel.caution.text() == ""
-    assert widget.chain_panel.rows["fuel tank's propellant"].text() == "0.1 kg"
+    assert widget.chain_panel.value_text("fuel tank's propellant") == "0.1 kg"
     edited = copy.deepcopy(scenario)
     edited.spacecraft[0].dry_mass_kg += 10.0  # [kg]
     widget.set_scenario(edited)
@@ -163,6 +163,4 @@ def test_the_budget_page_shows_what_the_last_run_gives(qtbot):
     widget.set_scenario(scenario)
     assert widget.chain_panel.isHidden()
     widget.set_last_run(scenario, result)
-    assert not widget.chain_panel.isHidden() and "Run length" in [
-        widget.chain_panel.form.itemAt(i, widget.chain_panel.form.ItemRole.LabelRole).widget().text()
-        for i in range(widget.chain_panel.form.rowCount())]
+    assert not widget.chain_panel.isHidden() and "Run length" in widget.chain_panel.names()

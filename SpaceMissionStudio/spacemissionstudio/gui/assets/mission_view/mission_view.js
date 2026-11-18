@@ -101,6 +101,12 @@ MV.init = function () {
     if (MV.renderer) MV.renderer.setPixelRatio(1);
   }
   window.addEventListener('resize', MV.resize);
+  // The canvas follows its host's size, not only the window's: the host
+  // grows by a scroll bar's width once the theme's CSS hides the page's
+  // overflow, and no 'resize' comes then (a dark strip on the right).
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { if (MV.camera) MV.resize(); }).observe(document.getElementById('view'));
+  }
   MV.loadTextures();
   MV.pageReady = true;
   document.title = MV.software && MV.autoReduced ? 'mv:reduced-software' : 'mv:ready';

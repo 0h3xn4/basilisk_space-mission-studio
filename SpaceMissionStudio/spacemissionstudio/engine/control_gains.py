@@ -77,3 +77,17 @@ def describe_default_gains(inertia_kg_m2: list[float] | None) -> str:
     return (f"Unticked: K {gains['K']:.4g}, P {gains['P']:.4g}, integral off. That is K {DEFAULT_MRP_GAINS['K']:g}, "
             f"P {DEFAULT_MRP_GAINS['P']:g} (tuned for {MRP_GAIN_REFERENCE_INERTIA_KG_M2:g} kg*m^2) times mean "
             f"inertia {mean:.4g} kg*m^2 / {MRP_GAIN_REFERENCE_INERTIA_KG_M2:g}.")
+
+
+def default_gains_rows(inertia_kg_m2: list[float] | None) -> list[tuple[str, str, str]]:
+    """:func:`describe_default_gains` as rows of (label, value, unit), for a
+    value sheet: the gains applied when K and P are unticked, then what
+    they are scaled from. The units are the code's spelling ("N*m")."""
+    gains = default_mrp_gains_for_inertia(inertia_kg_m2)
+    rows = [("Attitude gain K", f"{gains['K']:.4g}", "N*m"), ("Rate gain P", f"{gains['P']:.4g}", "N*m*s"),
+            ("Integral feedback", "off", "")]
+    mean = mean_inertia(inertia_kg_m2)
+    if mean is not None:
+        rows += [("Mean inertia", f"{mean:.4g}", "kg*m^2"),
+                 ("Reference inertia", f"{MRP_GAIN_REFERENCE_INERTIA_KG_M2:g}", "kg*m^2")]
+    return rows

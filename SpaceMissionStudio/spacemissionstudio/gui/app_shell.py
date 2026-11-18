@@ -104,8 +104,9 @@ class ElidedLabel(QLabel):
         painter = QPainter(self)
         painter.setPen(self.palette().color(self.foregroundRole()))
         painter.setFont(self.font())
-        shown = self.fontMetrics().elidedText(self.text(), Qt.TextElideMode.ElideRight, self.width())
-        painter.drawText(self.rect(), int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft), shown)
+        room = self.contentsRect()  # inside its margins
+        shown = self.fontMetrics().elidedText(self.text(), Qt.TextElideMode.ElideRight, room.width())
+        painter.drawText(room, int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft), shown)
 
 
 _CANCEL_TIP = "Cancel (Esc): the run stops at its next checkpoint and keeps what it has"

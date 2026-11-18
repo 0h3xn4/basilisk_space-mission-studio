@@ -3790,3 +3790,104 @@ open in its own window.
   the spacecraft) after it. **Why:** two Check buttons, one under the
   other, did the same thing; an empty list's own Add is hidden in the
   same way (B3, `EmptyStack.hide_while_empty`).
+
+## Value sheets instead of sentences (UI audit B5, 2026-11-18)
+
+- **Decision:** the scenario editor has no footer. Its "✓ valid" line
+  and its plausibility warnings are gone. **Why:** UI-09. The Problems
+  panel listed every error and warning already, the top bar and the
+  status bar count them, and a field with an error is marked under it.
+  No information shows only in the footer: `ScenarioEditorWidget.problems`
+  holds the same errors and warnings, and the plausibility warnings are
+  still computed only while the scenario has no error (UI-50 is another
+  batch's).
+- **Decision:** a status-bar message about a file names the file
+  ("Opened 01_two_body_circular_orbit.json", "Saved mine.json"), elided
+  in the middle to the room left of the permanent entries, and the whole
+  path is the status bar's tooltip until another message replaces it
+  (`MainWindow._show_file_message`). **Why:** UI-09. The path is the
+  user's own; it stays out of the visible text, which clipped it. An
+  error report that names a path (a save that failed) is left as it is.
+- **Decision:** where the core makes a sentence of numbers that the
+  window shows, it also gives rows of (label, value, unit), the unit in
+  the code's spelling: `control_gains.default_gains_rows`,
+  `scenario_explainer.orbit_rows`, `idm_import.ImportSummary.rows` and
+  `findings`. The text forms stay as they were (`describe_default_gains`,
+  the "Orbit" tile's value, `ImportSummary.lines()`), because the golden
+  files, the command line and tests read them. `units.display_rows` turns
+  the units into the window's ("N*m" as "N·m"). **Why:** UI-14; the
+  golden files stay byte-identical.
+- **Decision:** the control gains' sheet lists the applied K and P, the
+  integral feedback (off), the mean inertia and the reference inertia;
+  the reference gains and the scaling are its tooltip, computed from
+  `control_gains`' constants. **Why:** one value per row, and the sheet's
+  text stays within the 160 characters of a help label.
+- **Decision:** the Overview's orbit tile is three tiles: the kind of
+  orbit (Classical, SSO, Cartesian state, TLE), the inclination [°] and
+  the altitude [km] ("From the centre" around a small body). A scenario
+  with several spacecraft keeps its table. **Why:** UI-14.
+- **Decision:** the inputs from the last run (Budgets › Propellant, End of
+  Life) are a value sheet titled "From the last run" or "From the end of
+  the last run": first "Run started" in ISO 8601 UTC with Z, to the
+  second (`run_history_view.utc_text`), then a row per value with its
+  unit, its source as the row's tooltip; the contributor hint is the
+  sheet's note. `ValueSheet.set_rows` gained `tips` for the tooltips.
+  **Why:** UI-14 (the heading printed "2026-11-17T18:49:48.737253+00:00").
+- **Decision:** the IDM-CIC import preview is a value sheet (model
+  version, project, configuration, body element, the number of elements,
+  parts, point masses and meshes, the mass and the propellant [kg], a
+  re-import's counts) beside a note list of its findings (left out,
+  approximated, the margins in the file, the notes), in the same six
+  lines' height, scrolling. The devices, properties and power stay on
+  their tabs; the command line prints `lines()` as before. **Why:** UI-14
+  and UI-02.
+- **Decision:** Results › Overview shows `run_summary.overview_figures`:
+  `summarize`'s figures with each spacecraft's orbital period [min] and
+  altitude [km] after the run length. The period comes from the median
+  semi-major axis (mean elements when recorded) and the run's GM; the
+  altitude is the distance from the centre less the central body's
+  equatorial radius (a sphere), one "Altitude" when its lowest and
+  highest agree to the shown 0.1 km, else "Lowest altitude" and
+  "Highest altitude". A small body has no altitude card. `summarize`
+  itself is unchanged, so Compare, `run --explain`, the API and the
+  golden files are too. Eclipses already had their cards when the run
+  recorded the eclipse. **Why:** UI-20. "Lowest" and "highest", not
+  "perigee" and "apogee": over a run with manoeuvres or drag they are the
+  run's extremes, not one orbit's.
+- **Decision:** every Overview card has the height of the tallest one.
+  The battery's unit shows as "Wh" (`units` maps "W*h"); the figure keeps
+  "W*h". **Why:** UI-20; the figures in files keep their spelling.
+- **Decision:** the Problems panel is where a warning is written out.
+  The shown run's warnings are Problems rows (`ResultsWidget.run_warning_rows`):
+  their object the run ("Run 2"), their tooltip the warning's rule or,
+  for a drift warning without a rule, the drift explanation; a
+  double-click opens Results › Plots. Results › Plots keeps its
+  provenance line and no warning line. The top bar keeps a count that
+  opens the panel (`MainWindow.show_problems`, the method this code base
+  has for it); the status bar keeps its count. **Why:** UI-37. Before,
+  one warning showed in the footer, the top bar, the status bar, Problems
+  and the plots page. The run's messages in the status bar ("Run 1
+  complete", "Cannot run: ...") are left: they report a run, not a
+  warning of the scenario.
+- **Decision:** text the window shows names the user manual's section
+  ("the user manual, section 6, "Thermal analysis"") instead of a file of
+  the source tree (docs/models/..., SpaceMissionStudio/README.md,
+  packaging/README.md), in the GUI, the network guard's refusal, the
+  support-data error and the two schema comments the JSON page shows as
+  help. The command line's texts, the calculation traces' references and
+  the model choices' sources keep their paths: a test requires the
+  command line's help to name docs/user-manual/command-line.md, and a
+  trace's reference is a citation that files written by the app carry.
+  **Why:** UI-43; an installed app has no source tree.
+- **Decision:** the 3D View's note is one line (`app_shell.ElidedLabel`,
+  now inside its margins), in the caption style: "Not to scale:
+  spacecraft drawn 298,232× larger than they are, so that you can see
+  them." in the whole-orbit and Earth-fixed views while the spacecraft
+  are enlarged, the axis colours when following a spacecraft; the scene's
+  notes after it and in full in its tooltip. It is hidden in the views
+  from a spacecraft, whose name says what they show. **Why:** UI-51.
+- **Decision:** the 3D View's page resizes its canvas when its host
+  element changes size (a `ResizeObserver`), not only on a window resize.
+  **Why:** UI-51. The canvas was sized while the page still had a scroll
+  bar; the theme's CSS then hid the overflow and the host grew by 16 px
+  with no resize event, which left a dark strip at the right edge.

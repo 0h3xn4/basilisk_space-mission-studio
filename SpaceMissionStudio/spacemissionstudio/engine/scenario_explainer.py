@@ -200,6 +200,37 @@ def _orbit_summary(orbit, gravity, scenario=None) -> str:
     return "Orbit"
 
 
+def _orbit_rows(orbit, gravity, scenario=None) -> list[tuple[str, str, str]]:
+    """:func:`_orbit_summary` as rows of (label, value, unit): the kind of
+    orbit, then its inclination and its altitude (from the centre, for a
+    small body), so a tile holds one value, not a sentence of numbers (UI
+    audit UI-14). The units are the code's spelling ("deg", "km")."""
+    if getattr(orbit, "type", None) != "classical_elements":
+        return [("Orbit", _orbit_summary(orbit, gravity, scenario), "")]
+    sma, inc = orbit.semi_major_axis_km, orbit.inclination_deg
+    if sma is None or inc is None:
+        return [("Orbit", "Classical elements", "")]
+    rows = [("Orbit", "SSO" if _is_sun_synchronous(orbit, gravity, scenario) else "Classical", ""),
+            ("Inclination", f"{inc:g}", "deg")]
+    body = getattr(gravity, "central_body", "earth")
+    if small_bodies.body(body) is not None:
+        return rows + [("From the centre", f"{sma:g}", "km")]
+    return rows + [("Altitude", f"{sma - _BODY_RADIUS_KM.get(body, _EARTH_REQUATOR_KM):.0f}", "km")]
+
+
+def orbit_rows(scenario) -> list[tuple[str, str, str]]:
+    """The Overview's orbit tile as rows of (label, value, unit), for a
+    scenario of one spacecraft ([] otherwise: the spacecraft table has each
+    orbit). :func:`explain`'s "Orbit" tile keeps its text. Never raises."""
+    try:
+        if len(scenario.spacecraft) != 1:
+            return []
+        return _orbit_rows(scenario.spacecraft[0].orbit, scenario.gravity, scenario)
+    except Exception:  # noqa: BLE001 -- as explain(): a half-edited scenario has no rows
+        _logger.debug("Explain tab: the orbit's rows could not be made", exc_info=True)
+        return []
+
+
 # Plain names for the attitude modes (shown instead of their code names).
 _FSW_MODE_NAMES = {
     "inertial3D": "Inertial hold",

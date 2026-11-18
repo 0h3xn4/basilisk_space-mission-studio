@@ -41,6 +41,7 @@ import logging
 from PySide6.QtCore import QEvent, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QFrame,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QScrollArea,
@@ -52,13 +53,14 @@ from PySide6.QtWidgets import (
 )
 
 from ..engine.findings import explanation_lines
-from ..engine.scenario_explainer import ScenarioExplanation, explain
+from ..engine.scenario_explainer import ScenarioExplanation, explain, orbit_rows
 from ..schema.scenario import Scenario
 from .flow_layout import FlowLayout
 from .badges import ACCENT, DANGER, MUTED, SUCCESS, WARNING, set_badge
 from .formation_diagram_widget import FormationDiagramWidget
 from .roe_diagram_widget import RoeDiagramWidget
-from .theme import set_role
+from . import units
+from .theme import SPACE, set_role
 
 _LOG = logging.getLogger(__name__)
 
@@ -87,7 +89,9 @@ def _clear_layout(layout) -> None:
             _clear_layout(item.layout())
 
 
-def _stat_tile(label: str, value: str) -> QFrame:
+def _stat_tile(label: str, value: str, unit: str = "") -> QFrame:
+    """A tile: one value, its unit beside it in the secondary tone, its
+    label under it (never a sentence of numbers, UI audit UI-14)."""
     frame = QFrame()
     frame.setObjectName("statTile")
     frame.setFrameShape(QFrame.Shape.NoFrame)
@@ -95,12 +99,20 @@ def _stat_tile(label: str, value: str) -> QFrame:
     layout = QVBoxLayout(frame)
     layout.setContentsMargins(10, 6, 10, 6)
     layout.setSpacing(2)
+    row = QHBoxLayout()
+    row.setContentsMargins(0, 0, 0, 0)
+    row.setSpacing(SPACE["xs"])
     value_label = QLabel(value)
     set_role(value_label, role="value")
     value_label.setWordWrap(True)
+    value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    row.addWidget(value_label)
+    if unit:
+        row.addWidget(set_role(QLabel(unit), tone="secondary"), 0, Qt.AlignmentFlag.AlignBottom)
+    row.addStretch(1)
     label_label = QLabel(label)
     set_role(label_label, role="caption")
-    layout.addWidget(value_label)
+    layout.addLayout(row)
     layout.addWidget(label_label)
     return frame
 
@@ -133,7 +145,7 @@ class _ExplainWorker(QThread):
 
     def run(self) -> None:
         try:
-            explanation = explain(self._scenario)
+            explanation = (explain(self._scenario), orbit_rows(self._scenario))
         except Exception:  # noqa: BLE001 -- the page shows its placeholder, never a crashed thread
             _LOG.exception("explaining the scenario failed")
             explanation = None
@@ -165,6 +177,8 @@ class ScenarioExplainerWidget(QWidget):
         self._timer.timeout.connect(self._start_worker)
         self.warning_count = 0  # pre-run warnings currently shown (see engine.scenario_checks)
         self.model_buttons: list = []  # the 3D model badges, as buttons
+        self.tiles: list[tuple[str, str, str]] = []  # the tiles shown: (label, value, unit as shown)
+        self.tile_frames: list[QFrame] = []
         outer_layout = QVBoxLayout(self)
         outer_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -239,6 +253,7 @@ class ScenarioExplainerWidget(QWidget):
         self.warning_count = 0  # pre-run warnings shown (see engine.scenario_checks)
         if scenario is None:
             self.model_buttons = []
+            self.tiles, self.tile_frames = [], []
             self._placeholder_label.setVisible(True)
             self._headline_label.setVisible(False)
             _clear_layout(self._tiles_row)
@@ -248,7 +263,7 @@ class ScenarioExplainerWidget(QWidget):
             self._table.setColumnCount(0)
             return
 
-        self._show_explanation(explain(scenario))
+        self._show_explanation(explain(scenario), orbit_rows(scenario))
 
     # -- asked for after an edit, computed in a worker ---------------------------------
     def request(self, scenario: Scenario | None) -> None:
@@ -288,7 +303,7 @@ class ScenarioExplainerWidget(QWidget):
         if explanation is None:
             self.set_scenario(None)
         else:
-            self._show_explanation(explanation)
+            self._show_explanation(*explanation)
         self.explained.emit()
 
     def _on_worker_finished(self) -> None:
@@ -314,22 +329,31 @@ class ScenarioExplainerWidget(QWidget):
             # a closing window may not run again: let it go now.
             self._on_worker_finished()
 
-    def _show_explanation(self, explanation: ScenarioExplanation) -> None:
+    def _show_explanation(self, explanation: ScenarioExplanation, orbit: list | None = None) -> None:
+        """``orbit``: the orbit tile as rows (``scenario_explainer.orbit_rows``),
+        shown in its place, one tile per value."""
         self._placeholder_label.setVisible(False)
         self._headline_label.setVisible(True)
-        self._render(explanation)
+        self._render(explanation, orbit or [])
 
     def _on_model_badge(self) -> None:
         self.model_requested.emit(self.sender().property("spacecraft"))
 
-    def _render(self, explanation: ScenarioExplanation) -> None:
+    def _render(self, explanation: ScenarioExplanation, orbit: list) -> None:
         self.model_buttons = []
         self.warning_count = sum(len(s.notes) for s in explanation.sections if s.title == "Check before running")
         self._headline_label.setText(explanation.headline)
 
         _clear_layout(self._tiles_row)
+        self.tiles = []
         for tile in explanation.stat_tiles:
-            self._tiles_row.addWidget(_stat_tile(tile.label, tile.value))
+            if tile.label == "Orbit" and orbit:
+                self.tiles += units.display_rows(orbit)  # one tile per value, not "Classical 97.03 deg, ..."
+            else:
+                self.tiles.append((tile.label, tile.value, ""))
+        self.tile_frames = [_stat_tile(*tile) for tile in self.tiles]
+        for frame in self.tile_frames:
+            self._tiles_row.addWidget(frame)
 
         _clear_layout(self._sections_layout)
         for section in explanation.sections:

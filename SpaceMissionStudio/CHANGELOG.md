@@ -46,6 +46,26 @@ fixes bugs.
   buttons no longer move when you change the run mode or when the
   problem count appears. With the Inspector open at 1280 px the search
   field shows only its icon and Ctrl+K, so the save state stays readable.
+- **Value sheets instead of sentences** (UI audit batch B5). The default
+  control gains, the Overview's orbit, what Budgets and End of Life take
+  from the last run, and the IDM-CIC import's preview now show one value
+  per row with its unit, not a line of numbers. The last run's start time
+  reads like 2026-11-17T18:49:48Z.
+- Results › Overview adds the orbital period and the altitude (or the
+  lowest and highest altitude) when the run recorded the orbit, gives
+  every card the same height, and writes the battery's unit as Wh.
+- A warning is written out in one place, the Problems panel. The line
+  under the scenario editor ("✓ valid" and the warnings) is gone, and the
+  run's warnings moved from Results › Plots to the Problems panel, where
+  hovering a row shows its rule. The top bar and the status bar keep the
+  count, which opens the panel.
+- The status bar names the file you opened or saved instead of printing
+  its whole path; the path is in its tooltip.
+- Messages that pointed at files of the source tree (such as
+  docs/models/reentry.md or SpaceMissionStudio/README.md) now point at
+  the user manual's section.
+- The 3D View's scale note is one line, shown in the views where it
+  helps, and the dark strip at the right edge of the view is gone.
 
 ## 2.12.0 (2026-11-18)
 

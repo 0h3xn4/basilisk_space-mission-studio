@@ -179,7 +179,7 @@ def test_the_window_fits_1280_by_720_with_provenance_and_warning_lines(app_theme
     window.run_history.add({"name": result.scenario_name}, result, "2030-01-01T08:30:00")
     second = window.run_history.add({"name": result.scenario_name}, result, "2030-01-01T08:30:00")
     window.results_widget.set_runs(window.run_history.runs, second)
-    assert window.results_widget.provenance_label.text() and window.results_widget.warnings_label.isVisibleTo(window)
+    assert window.results_widget.provenance_label.text() and window.results_widget.run_warning_rows()
     qtbot.wait(100)  # [ms] let the layouts take in the new widgets before measuring
 
     hint = window.minimumSizeHint()
@@ -187,7 +187,7 @@ def test_the_window_fits_1280_by_720_with_provenance_and_warning_lines(app_theme
     window.resize(1280, 720)  # [px]
     assert (window.width(), window.height()) == (1280, 720)
     rw = window.results_widget
-    for note in (rw.provenance_label, rw.warnings_label):
+    for note in (rw.provenance_label,):
         item = rw.layout().itemAt(rw.layout().indexOf(note))
         assert item.minimumSize().height() <= 2 * note.fontMetrics().lineSpacing() + 4, note.text()  # [px]
         assert note.height() >= note.fontMetrics().height()  # still shown in full at the window's width

@@ -309,6 +309,86 @@ def _summarize_spacecraft(result: ResultSet, events, sc: str, window_orbits: flo
                    f"last run: {downlinked_name}, its last finite sample")]))
 
 
+def overview_figures(result: ResultSet | None, events: list[event_model.Event] | None = None) -> list[Figure]:
+    """Results › Overview's cards (UI audit UI-20): :func:`summarize`'s
+    figures with each spacecraft's orbit (:func:`orbit_figures`) after the
+    run length. :func:`summarize` itself, which Compare, ``run --explain``
+    and the golden files read, is unchanged."""
+    if result is None:
+        return []
+    figures = summarize(result) if events is None else summarize(result, events)
+    first = [f for f in figures if f.key == "run_length"]
+    return first + orbit_figures(result) + [f for f in figures if f.key != "run_length"]
+
+
+def _median_positive(series: TimeSeries) -> float | None:
+    values = series.data[:, 0] if series.data.shape[0] else np.zeros(0)
+    good = values[np.isfinite(values) & (values > 0.0)]
+    return float(np.median(good)) if good.size else None
+
+
+def orbit_figures(result: ResultSet) -> list[Figure]:
+    """Each spacecraft's orbital period [min] and altitude [km], read from
+    the recorded orbit: the period from the median semi-major axis (the
+    mean elements' when recorded, else the osculating ones) and the central
+    body's GM; the altitude from the distance to the centre less the
+    central body's equatorial radius: its lowest and highest over the run,
+    or one figure when the two agree to the shown 0.1 km. A body without
+    one radius (a small body) has no altitude."""
+    from ..constants import CENTRAL_BODY_EQUATORIAL_RADIUS_KM
+
+    spacecraft = sorted(name[:-len(".position_N")] for name in result.series if name.endswith(".position_N"))
+    several = len(spacecraft) > 1
+    body = (getattr(result.provenance, "central_body", "") or "earth").lower()
+    radius_km = CENTRAL_BODY_EQUATORIAL_RADIUS_KM.get(body)  # [km]
+    figures: list[Figure] = []
+
+    def add(sc: str, key: str, label: str, unit: str, value: float, decimals: int, trace: Trace) -> None:
+        if math.isfinite(value):
+            figures.append(Figure(f"{sc}.{key}", f"{sc}: {label}" if several else label, unit, value, decimals, trace))
+
+    for sc in spacecraft:
+        for kind in ("orbit_elements_mean", "orbit_elements"):
+            name = f"{sc}.{kind}.semi_major_axis"
+            a_m = _median_positive(result.series[name]) if name in result.series else None  # [m]
+            if a_m is not None:
+                mu, mu_source = orbit_number.central_body_mu_and_source(result)
+                period = 2.0 * math.pi * math.sqrt(a_m ** 3 / mu) / _S_PER_MIN  # [min]
+                add(sc, "orbital_period", "Orbital period", "min", period, 2, _sum_trace(
+                    "Orbital period", "T", period, "[min]", "T = 2 pi sqrt(a^3 / mu) / 60", [
+                        _q("semi-major axis", "a", a_m, "[m]",
+                           f"last run: {name}, the median of its finite positive samples"),
+                        _q("central body's gravitational parameter", "mu", mu, "[m^3/s^2]", mu_source)]))
+                break
+        position = result.series[f"{sc}.position_N"]
+        if radius_km is None or not position.data.shape[0]:
+            continue
+        distance_km = np.linalg.norm(position.data[:, :3], axis=1) / _M_PER_KM  # [km]
+        distance_km = distance_km[np.isfinite(distance_km)]
+        if not distance_km.size:
+            continue
+        low, high = float(distance_km.min()) - radius_km, float(distance_km.max()) - radius_km  # [km]
+        radius = _q("central body's equatorial radius", "R", radius_km, "[km]",
+                    f"constant: CENTRAL_BODY_EQUATORIAL_RADIUS_KM[{body!r}]")
+        sphere = ("Above a sphere of the central body's equatorial radius, not above its surface or an "
+                  "ellipsoid.",)
+        source = f"last run: {sc}.position_N, its finite samples"
+        if f"{low:.1f}" == f"{high:.1f}":
+            mean = float(distance_km.mean()) - radius_km  # [km]
+            add(sc, "altitude", "Altitude", "km", mean, 1, _sum_trace(
+                "Altitude", "h", mean, "[km]", "h = mean of |r| over the run - R", [
+                    _q("mean distance from the centre", "|r|", float(distance_km.mean()), "[km]", source), radius],
+                sphere))
+            continue
+        for key, label, value, word in (("lowest_altitude", "Lowest altitude", low, "min"),
+                                        ("highest_altitude", "Highest altitude", high, "max")):
+            add(sc, key, label, "km", value, 1, _sum_trace(
+                label, "h", value, "[km]", f"h = {word} of |r| over the run - R", [
+                    _q(f"distance from the centre at its {word}imum", "|r|", value + radius_km, "[km]", source),
+                    radius], sphere))
+    return figures
+
+
 def explain_lines(figures: list[Figure]) -> list[str]:
     """Each figure with its value, then how it was computed (``run --explain``)."""
     lines = []

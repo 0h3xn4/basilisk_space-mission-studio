@@ -2204,6 +2204,64 @@ already did for other tests. The assertions are unchanged.
 | `test_landing_page.py::test_new_scenario_opens_one_and_enables_its_commands` | `run.run` among the commands enabled after New | the other commands as before; then, after one spacecraft, `run.run` is enabled |
 | `test_panels.py::test_a_keyboard_only_walk_of_the_shell` | the Tab walk after New | one spacecraft before the Tab walk, so Run is enabled and in the Tab order; the walk and its checks are unchanged |
 
+## UI audit B5: value sheets instead of sentences
+
+The owner's batch B5 removes three things that existing tests read: the
+footer under the scenario editor (`validation_label`,
+`plausibility_label`; UI-09), the run warnings' note on Results › Plots
+(`warnings_label`; UI-37) and three sentences of numbers (the control
+gains' legend, the inputs from the last run and the IDM-CIC preview;
+UI-14). The tests below now reach the same information where it is
+shown now: the editor's problem rows (`problem_rows()`, what the
+Problems panel lists), the Problems panel itself, the run's Problems
+rows (`ResultsWidget.run_warning_rows()`), and the value sheets. Each
+asserts what it asserted before, as strictly. One test asserts the new
+behaviour of UI-20, and the shell's reachability check of the removed
+strip now checks that it is gone, as the plan says. Outside `tests/gui/`
+only the two GUI tests of `tests/test_chained_inputs.py` changed. No
+golden file changed. The new tests are in `tests/gui/test_value_sheets.py`
+and `tests/test_value_rows.py`.
+
+**How the test reaches the editor's verdict (UI-09):** the footer said
+"✓ valid", or "⚠" and the first error (with "(and n more: see
+Problems)"). The tests read the error rows the Problems panel shows.
+
+| Test | Before | Now |
+|---|---|---|
+| `test_scenario_editor.py::test_default_state_is_invalid_with_no_spacecraft` | "⚠" and "spacecraft" in the footer | an error row, and "spacecraft" in the first one (`_errors`, a helper of the file) |
+| `test_scenario_editor.py::test_full_round_trip_matches_loaded_scenario` | "✓" in the footer | no error row |
+| `test_scenario_editor.py::test_live_validation_reacts_to_bad_edit` | "✓", then "⚠" and "Name must not be empty" in the footer | no error row, then an error row whose shown text has "Name must not be empty"; the field's mark as before |
+| `test_scenario_editor.py::test_a_scenario_loaded_is_validated_once_with_every_field_in` | "✓" in the footer | no error row |
+| `test_scenario_templates_gui.py::test_template_round_trips_through_scenario_editor_widget` | "✓" in the footer | no error row; the failure message lists the errors |
+| `test_field_errors.py::test_an_invalid_epoch_is_marked_at_its_field` | "scenario.epoch_utc" not in the footer | not in the Problems panel's first row (the row the test reads already) |
+| `test_out_of_range.py::test_a_waiting_form_problem_no_longer_hides_the_others` | "(and 1 more: see Problems)" in the footer | exactly two error rows |
+| `test_plausibility_checks.py::test_the_editor_shows_the_warnings_while_editing` | "✓" in the footer; the footer's warning list shown, with "below Earth's surface" | no error row; a warning row with "below Earth's surface"; the docstring says where |
+| `test_shell_reachability.py::test_every_row_is_reachable_in_the_shell` (row "Validation strip under the editor") | the strip shown in the Scenario area | the strip is gone (no `validation_label`, no `plausibility_label`) and the Problems command is in the palette, as the plan's row says ("Removed; the Problems panel holds it") |
+
+**How the test reaches a run's warnings (UI-37):** they are rows of the
+Problems panel now; `run_warning_rows()` gives them with their tooltip.
+
+| Test | Before | Now |
+|---|---|---|
+| `test_results_widget.py::test_a_run_warning_gets_the_drift_explanation_only_when_it_is_a_drift_warning` | the note shown, its tooltip "" ; then the drift explanation in its tooltip | the warning's row, its tooltip ""; then the drift explanation in its row's tooltip |
+| `test_results_widget.py::test_a_run_warnings_tooltip_gives_each_warnings_rule` | the note's text "⚠ reentry\n⚠ drift"; its tooltip split in two rules | the rows' texts [reentry, drift]; each row's tooltip its rule; the rule assertions unchanged |
+| `test_stale_results_and_window_size.py::test_the_window_fits_1280_by_720_with_provenance_and_warning_lines` | the provenance line and the warning note shown; each at most two lines high | the provenance line shown and the run warning in its rows; the provenance line at most two lines high; the window's 1280 x 720 assertions unchanged. The warning note is gone, so its own height is not measured |
+
+**How the test reaches the values (UI-14):**
+
+| Test | Before | Now |
+|---|---|---|
+| `test_spacecraft_editor.py::test_unticked_control_gains_show_the_gains_the_engine_applies` | "K 0.03889, P 0.3333" in the legend's text | the sheet's "Attitude gain K" is "0.03889" and "Rate gain P" "0.3333"; the 160-character limit on its text is kept |
+| `test_chained_inputs.py::test_the_end_of_life_page_shows_the_chain_and_takes_the_edited_propellant` | the form row's label text "0.1 kg" | `value_text("fuel tank's propellant")`, the sheet's value and unit, "0.1 kg" |
+| `test_chained_inputs.py::test_the_budget_page_shows_what_the_last_run_gives` | "Run length" among the form's labels | among the sheet's names (`names()`) |
+| `test_idm_import_dialog.py::test_the_dialog_previews_the_import_and_offers_the_file_s_choices` | "38.7 kg imported", then "45.7 kg imported" in the preview's text | the sheet's "Mass imported" is "38.7" with "kg", then "45.7" |
+
+**Behaviour changed on purpose (UI-20):**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_results_overview.py::test_each_figure_is_a_card_with_its_value_and_unit` | the cards' figures are `run_summary.summarize(result)` | they are `run_summary.overview_figures(result)`: the same figures with the orbit's period and altitude after the run length | Results › Overview adds the orbit's cards (UI-20); `summarize` itself is unchanged |
+
 ## 2.12.0 windows and views
 
 ### PR-1: thermal results (decisions T-40 to T-42)

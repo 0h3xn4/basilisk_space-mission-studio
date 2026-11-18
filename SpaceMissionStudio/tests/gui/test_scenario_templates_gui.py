@@ -43,7 +43,8 @@ def test_template_round_trips_through_scenario_editor_widget(qtbot, path):
 
     scenario = load_scenario(path)
     widget.from_scenario(scenario)
-    assert "✓" in widget.validation_label.text(), widget.validation_label.text()
+    errors = [shown for severity, _text, shown in widget.problem_rows() if severity == "error"]
+    assert errors == [], errors
 
     got = widget.to_scenario()
     assert got.to_dict() == scenario.to_dict()

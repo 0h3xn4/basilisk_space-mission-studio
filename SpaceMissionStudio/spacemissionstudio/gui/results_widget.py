@@ -361,6 +361,15 @@ def warnings_tooltip(warnings: list[str]) -> str:
     return "\n\n".join(rules)
 
 
+def warning_tip(warning: str) -> str:
+    """One run warning's tooltip: its rule (``warnings_tooltip``), or for a
+    conservation drift warning without one, the drift explanation."""
+    lines = explanation_lines(warning)
+    if lines:
+        return "\n".join(lines)
+    return _DRIFT_WARNING_TOOLTIP if any(marker in warning for marker in _DRIFT_WARNING_MARKERS) else ""
+
+
 def _short_utc(timestamp: str) -> str:
     """"2026-10-07T14:33:38.434854+00:00" -> "2026-10-07 14:33 UTC" (the
     text unchanged if it doesn't parse)."""
@@ -530,6 +539,8 @@ class _ExportWorker(QThread):
 
 class ResultsWidget(QWidget):
     plot_drawn = Signal(bool)  # the page drew the latest figures (M6a); False: Plotly reported an error
+    # The shown run's warnings changed: the Problems panel lists them (run_warning_rows, UI audit UI-37).
+    run_warnings_changed = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -742,12 +753,10 @@ class ResultsWidget(QWidget):
         self.provenance_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.provenance_label)
 
-        # The conservation/drift diagnostic (engine.results.
-        # conservation_drift_warnings); hidden when there are none.
-        self.warnings_label = NoteList("warning")  # one row per warning, behind its icon
-        self.warnings_label.setVisible(False)
-        self.warnings_label.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        layout.addWidget(self.warnings_label)
+        # The run's warnings (engine.results.conservation_drift_warnings and
+        # the others) are rows of the Problems panel, not lines here: one
+        # place for a warning (UI audit UI-37; run_warning_rows).
+        self._run_warnings: list = []
         # Event kinds left off a plot because there were too many bands.
         self.events_note = NoteList("note")
         self.events_note.setVisible(False)
@@ -757,7 +766,7 @@ class ResultsWidget(QWidget):
         # at 90-130 px a one-line provenance line or warning took 4-5 lines
         # of the window's minimum height, and a second run left the window
         # at 1280 x 744. At 360 px each is at most two lines.
-        for note in (self.provenance_label, self.warnings_label, self.events_note):
+        for note in (self.provenance_label, self.events_note):
             note.setMinimumWidth(_NOTE_MIN_WIDTH_PX)
 
         self.catalog = PlotCatalog()
@@ -1072,14 +1081,22 @@ class ResultsWidget(QWidget):
     # -- labels -------------------------------------------------------------
 
     def _update_warnings_label(self) -> None:
-        warnings = self._result.warnings if self._result is not None else []
-        if not warnings:
-            self.warnings_label.setVisible(False)
-            self.warnings_label.set_notes([])
-            return
-        self.warnings_label.set_notes(warnings)
-        self.warnings_label.setToolTip(warnings_tooltip(warnings))
-        self.warnings_label.setVisible(True)
+        """The shown run's warnings changed: say so (the Problems panel lists them)."""
+        warnings = list(self._result.warnings) if self._result is not None else []
+        if warnings != self._run_warnings:
+            self._run_warnings = warnings
+            self.run_warnings_changed.emit()
+
+    def has_run_warning(self, text: str) -> bool:
+        """``text`` is one of the shown run's warnings."""
+        return any(str(w) == text for w in self._run_warnings)
+
+    def run_warning_rows(self) -> list[tuple[str, str, str, str, str]]:
+        """The shown run's warnings as Problems rows: (severity, text, shown
+        text, tooltip, object), the tooltip the warning's rule
+        (``warning_tip``), the object the run ("Run 2")."""
+        run = self._current_run.name if self._current_run is not None else "Shown run"
+        return [("warning", w, str(w), warning_tip(w), run) for w in self._run_warnings]
 
     def _update_provenance_label(self) -> None:
         provenance = self._result.provenance if self._result is not None else None
@@ -1586,7 +1603,10 @@ class ResultsWidget(QWidget):
         """The session's runs (``gui.run_history.RunRecord``) and the one shown;
         the others are offered under "Compare with"."""
         chosen = self.compare_combo.currentData()
+        named = self._current_run is not None and current is not None and self._current_run.name == current.name
         self._runs, self._current_run = list(runs), current
+        if self._run_warnings and not named:
+            self.run_warnings_changed.emit()  # their rows name the run shown
         others = [r for r in self._runs if current is None or r.number != current.number]
         self.compare_combo.blockSignals(True)
         self.compare_combo.clear()

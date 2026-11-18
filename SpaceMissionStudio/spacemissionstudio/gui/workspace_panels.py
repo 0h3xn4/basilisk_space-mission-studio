@@ -206,18 +206,21 @@ class Problem:
     shown: str
     field: str
     obj: str
+    tip: str = ""  # its tooltip's first part, when the row brings one (a run warning's rule)
 
 
 def problem_row(severity: str, text: str, shown: str, spacecraft: Sequence[str] = (),
-                stations: Sequence[str] = ()) -> Problem:
+                stations: Sequence[str] = (), tip: str = "", obj: str = "") -> Problem:
     """A problem with its ID (the field path it is about, "-" when it names
     none) and object (the scenario, the propagation setup, a spacecraft or
-    a ground station, the mission sequence or the JSON page)."""
+    a ground station, the mission sequence or the JSON page; ``obj`` when
+    given, e.g. the run a run warning comes from). ``tip``: the tooltip's
+    first part in place of the warning's rule."""
     location = locate(text, spacecraft, stations)
     if location is None:
-        return Problem(severity, text, shown, "-", "Scenario")
-    obj = _AREA_OBJECT.get(location.area, location.name)
-    return Problem(severity, text, shown, location.path or "-", obj)
+        return Problem(severity, text, shown, "-", obj or "Scenario", tip)
+    return Problem(severity, text, shown, location.path or "-", obj or _AREA_OBJECT.get(location.area, location.name),
+                   tip)
 
 
 class ProblemsModel(QAbstractTableModel):
@@ -261,7 +264,7 @@ class ProblemsModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.ToolTipRole:
             action = ("Double-click to open the 3D model editor" if _MODEL_MARK in problem.text
                       else "Double-click to go to where it is fixed")
-            rule = "\n".join(explanation_lines(problem.text))  # a warning's rule (engine.findings)
+            rule = problem.tip or "\n".join(explanation_lines(problem.text))  # a warning's rule (engine.findings)
             return f"{rule}\n\n{action}" if rule else action
         if role == SORT_ROLE:
             # Errors first; within a severity, as the scenario lists them.
@@ -369,13 +372,14 @@ class ProblemsWidget(QWidget):
 
     def set_problems(self, problems: list[tuple[str, ...]], spacecraft: Sequence[str] = (),
                      stations: Sequence[str] = ()) -> None:
-        """``problems``: ``(severity, text)`` or ``(severity, text, shown
-        text)``, severity "error" or "warning". ``text`` is the message as
-        raised, which says where it is fixed; the table shows the shown text.
+        """``problems``: ``(severity, text)``, ``(severity, text, shown
+        text)`` or ``(severity, text, shown text, tooltip, object)``,
+        severity "error" or "warning". ``text`` is the message as raised,
+        which says where it is fixed; the table shows the shown text.
         ``spacecraft`` and ``stations`` name the objects a message can be about."""
         self.problems = [(problem[0], problem[1]) for problem in problems]
         rows = [problem_row(problem[0], problem[1], problem[2] if len(problem) > 2 else problem[1],
-                            spacecraft, stations) for problem in problems]
+                            spacecraft, stations, *problem[3:5]) for problem in problems]
         self.model.set_rows(rows)
         if rows:
             self.table.resizeColumnToContents(0)

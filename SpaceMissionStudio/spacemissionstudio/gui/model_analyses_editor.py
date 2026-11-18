@@ -54,7 +54,8 @@ class ModelAnalysesGroup(QGroupBox):
         self.setCheckable(True)
         self.setChecked(config is not None)
         self.setToolTip("Analyses of a run made with the 3D model and the mounted equipment: their series, "
-                        "events and tables are in Results › Model Analyses (docs/models/model-analyses.md).")
+                        "events and tables are in Results › Model Analyses (user manual, section 6, "
+                        "\"Analyses built on the 3D model\").")
         c = config or ModelAnalysesConfig()
         layout = QVBoxLayout(self)
         form = QFormLayout()

@@ -34,6 +34,12 @@ def widget(qtbot):
     return w
 
 
+def _errors(widget) -> list:
+    """The editor's errors as the Problems panel shows them (the footer
+    that showed the first went in UI audit B5, UI-09)."""
+    return [shown for severity, _text, shown in widget.problem_rows() if severity == "error"]
+
+
 def _environment_labels(widget) -> list:
     """The field labels of the Environment page's form (the embedded
     PropagationSetupDialog that replaced the read-only summary, U-17),
@@ -51,8 +57,8 @@ def _environment_labels(widget) -> list:
 
 def test_default_state_is_invalid_with_no_spacecraft(widget):
     """A new editor shows a warning that the scenario has no spacecraft."""
-    assert "⚠" in widget.validation_label.text()
-    assert "spacecraft" in widget.validation_label.text().lower()
+    assert _errors(widget)
+    assert "spacecraft" in _errors(widget)[0].lower()
 
 
 def test_full_round_trip_matches_loaded_scenario(widget):
@@ -62,7 +68,7 @@ def test_full_round_trip_matches_loaded_scenario(widget):
 
     scenario = load_scenario(_SCENARIO_PATH)
     widget.from_scenario(scenario)
-    assert "✓" in widget.validation_label.text()
+    assert _errors(widget) == []
 
     got = widget.to_scenario()
     assert got.name == scenario.name
@@ -187,14 +193,14 @@ def test_live_validation_reacts_to_bad_edit(widget, qtbot):
     from spacemissionstudio.schema import load_scenario
 
     widget.from_scenario(load_scenario(_SCENARIO_PATH))
-    assert "✓" in widget.validation_label.text()
+    assert _errors(widget) == []
 
     with qtbot.waitSignal(widget.changed, timeout=1000):
         widget.name_edit.setText("")
-    assert "⚠" in widget.validation_label.text()
+    assert _errors(widget)
     # The message names the field by its label, not its schema path ("scenario.name"), and
     # the field itself is marked with it (docs/ux-audit.md U-12).
-    assert "Name must not be empty" in widget.validation_label.text()
+    assert "Name must not be empty" in _errors(widget)[0]
     from spacemissionstudio.gui.feedback import field_error_text
 
     assert field_error_text(widget.name_edit) == "Name must not be empty"
@@ -328,7 +334,7 @@ def test_a_scenario_loaded_is_validated_once_with_every_field_in(widget, monkeyp
     scenario = load_scenario(templates / "08_mission_sequence_orbit_raise.json")
     widget.from_scenario(scenario)
     assert validated == [scenario.name]
-    assert "✓" in widget.validation_label.text()
+    assert _errors(widget) == []
     rows = widget.problems
     widget.revalidate()
     assert widget.problems == rows

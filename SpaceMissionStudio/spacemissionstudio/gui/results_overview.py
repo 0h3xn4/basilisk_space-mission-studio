@@ -19,8 +19,10 @@
 """Results › Overview (UI overhaul M6a): the shown run's headline figures
 as metric cards, and its provenance one click away.
 
-The figures are :func:`engine.run_summary.summarize`'s, as Compare's
-summary has them, computed in a worker thread. A card is neutral unless
+The figures are :func:`engine.run_summary.overview_figures`: those of
+:func:`engine.run_summary.summarize`, as Compare's summary has them, with
+each spacecraft's orbital period and altitude after the run length (UI
+audit UI-20), computed in a worker thread. Every card has one height. A card is neutral unless
 the scenario sets its threshold (the brief: colour means something):
 
 - the lowest link margin below the required margin,
@@ -50,6 +52,7 @@ from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QPushButton, QScroll
 
 from ..config import registry
 from ..engine import run_summary
+from . import units
 from .calculation_panel import Explanation
 from .flow_layout import FlowLayout
 from .run_history_view import ProvenancePopover, provenance_text
@@ -130,7 +133,7 @@ class MetricCard(QFrame):
         self.value.setFont(numeric_font("page"))
         self.value.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         row.addWidget(self.value)
-        self.unit = set_role(QLabel("" if figure.unit == "-" else figure.unit), tone="secondary")
+        self.unit = set_role(QLabel(units.shown(figure.unit)), tone="secondary")  # "W*h" reads "Wh" (UI-20)
         row.addWidget(self.unit, 0, Qt.AlignmentFlag.AlignBottom)
         row.addStretch(1)
         layout.addLayout(row)
@@ -164,8 +167,15 @@ class MetricCard(QFrame):
         super().keyPressEvent(event)
 
 
+def _card_height(card: MetricCard) -> int:
+    """The height ``card`` needs at its width, with the style sheet's fonts."""
+    card.ensurePolished()  # the widget and its children
+    layout = card.layout()
+    return layout.totalHeightForWidth(CARD_WIDTH_PX) if layout.hasHeightForWidth() else card.sizeHint().height()
+
+
 class _SummaryWorker(QThread):
-    """:func:`run_summary.summarize` of one result, off the GUI thread."""
+    """:func:`run_summary.overview_figures` of one result, off the GUI thread."""
 
     def __init__(self, result, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -173,7 +183,7 @@ class _SummaryWorker(QThread):
         self.figures: list[run_summary.Figure] = []
 
     def run(self) -> None:
-        self.figures = run_summary.summarize(self.result)
+        self.figures = run_summary.overview_figures(self.result)
 
 
 class ResultsOverview(QWidget):
@@ -281,7 +291,11 @@ class ResultsOverview(QWidget):
             card.deleteLater()
         limits = CardLimits.of_run(self._result, self._scenario)
         self.cards = [MetricCard(figure, self.cards_holder, limits) for figure in figures]
+        # One height for every card (UI-20): a wrapped label or a status line
+        # made some cards taller than the others in the same row.
+        height = max((_card_height(card) for card in self.cards), default=0)
         for card in self.cards:
+            card.setFixedHeight(height)
             card.chosen.connect(self.show_calculation)
             self.cards_layout.addWidget(card)
             card.show()

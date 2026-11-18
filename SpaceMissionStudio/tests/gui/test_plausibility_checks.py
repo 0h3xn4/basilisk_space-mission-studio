@@ -78,7 +78,7 @@ def test_no_earth_orientation_files_is_flagged_when_the_frame_matters(monkeypatc
 
 
 def test_the_editor_shows_the_warnings_while_editing(qtbot):
-    """The scenario editor shows the checks under its validation line."""
+    """The scenario editor lists the checks while editing (the Problems panel shows its rows)."""
     from spacemissionstudio.gui.scenario_editor import ScenarioEditorWidget
 
     editor = ScenarioEditorWidget()
@@ -87,6 +87,5 @@ def test_the_editor_shows_the_warnings_while_editing(qtbot):
     scenario.spacecraft[0].orbit.semi_major_axis_km = 6300.0  # [km]
     editor.from_scenario(scenario)
     editor.revalidate()
-    assert "✓" in editor.validation_label.text()
-    assert not editor.plausibility_label.isHidden()
-    assert "below Earth's surface" in editor.plausibility_label.text()
+    assert not [row for row in editor.problem_rows() if row[0] == "error"]
+    assert any(row[0] == "warning" and "below Earth's surface" in row[2] for row in editor.problem_rows())

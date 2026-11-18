@@ -148,4 +148,4 @@ def test_a_waiting_form_problem_no_longer_hides_the_others(window):
     errors = [text for severity, text in editor.problems if severity == "error"]
     assert any("name must not be empty" in text for text in errors)
     assert any(text.startswith("scenario.epoch_utc") for text in errors)
-    assert "(and 1 more: see Problems)" in editor.validation_label.text()
+    assert sum(1 for severity, _text, _shown in editor.problem_rows() if severity == "error") == 2
