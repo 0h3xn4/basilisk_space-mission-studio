@@ -155,13 +155,13 @@ def test_every_view_opens_docked_with_its_button_and_no_window_opens_by_itself(u
     from spacemissionstudio.gui.breakout import BreakoutButton
 
     window = unopened
-    assert window.breakouts.ids() == list(_VIEWS)
+    assert window.breakouts.ids() == list(_VIEWS) + ["map"]  # 2.12.0 PR-3: the 3D View's 2D map
     assert not any(window.breakouts.is_detached(view_id) for view_id in _VIEWS)
     assert not [w for w in window.findChildren(QWidget) if w.isWindow() and w.isVisible()]
     for view_id in _VIEWS:
         view = window.breakouts.widget(view_id)
         assert not view.isWindow() and window.breakouts.placeholder(view_id).isHidden()
-        (button,) = [b for b in view.findChildren(BreakoutButton)]
+        (button,) = [b for b in view.findChildren(BreakoutButton) if b.view_id == view_id]  # the map's is inside
         assert button.toolButtonStyle() == Qt.ToolButtonStyle.ToolButtonIconOnly
         assert not button.icon().isNull()
         assert button.toolTip().startswith("Open in Own Window (Ctrl+Shift+D)")
@@ -176,7 +176,8 @@ def test_the_commands_are_in_the_view_menu_the_palette_and_the_shortcut_list(win
     menu = window.menus["Own Windows"]
     assert [a for a in menu.actions() if not a.isSeparator()] == [
         window.commands.action(command_id) for command_id in
-        ("view.breakout", "view.window.3d_view", "view.window.thermal", "view.window.budgets")]
+        ("view.breakout", "view.window.3d_view", "view.window.thermal", "view.window.budgets",
+         "view.window.map")]
     assert menu.menuAction() in window.menus["View"].actions()
     command = window.commands["view.breakout"]
     assert command.keys == "Ctrl+Shift+D" and "(Ctrl+Shift+D)" in command.action.toolTip()

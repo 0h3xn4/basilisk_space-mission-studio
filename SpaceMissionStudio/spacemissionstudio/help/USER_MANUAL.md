@@ -280,9 +280,9 @@ A few things to notice right away:
     as CCSDS... and Quit.
   * **Edit**: Undo, Redo and **Settings...** (`Ctrl+,`).
   * **View**: the Inspector, Calculation and Problems panels, Explain,
-    **Own Windows** (a view in a window of its own, below), the menu bar
-    itself, the rail as icons only, the theme, Reset Layout and the
-    command palette.
+    **Own Windows** (a view in a window of its own, below), **3D View**
+    (Show Globe, Show Map, Show Globe and Map), the menu bar itself, the
+    rail as icons only, the theme, Reset Layout and the command palette.
   * **Go**: the seven areas (`Ctrl+1` to `Ctrl+7`) and the **Time Cursor**
     moves of Results.
   * **Run**: Run, Cancel Run, the run mode, Live plot, End of Life,
@@ -411,7 +411,8 @@ its Scenario page ("Building your own scenario, step by step", below).
 
 Three bigger views can open in a window of their own, beside the main
 window or on a second screen: **Results › 3D View**, **Run › Thermal**
-and the **Budgets** area.
+and the **Budgets** area. The 3D View's 2D map can too, on its own
+(Section 9).
 
 * Show the view and press `Ctrl+Shift+D`, or click the **Open in Own
   Window** button at the right end of the view's toolbar (Budgets: at the
@@ -1637,9 +1638,14 @@ runs (below). It draws:
   trail (the last tenth of the run), its body axes (x red, y green, z
   blue), arrows to the Sun, to nadir and along its velocity, its
   instruments' fields of view and its thrusters' plumes;
-* the ground stations, with a line to each spacecraft they see above
-  their minimum elevation, and, if you switch it on, each spacecraft's
-  ground track;
+* the ground stations: a glyph (a triangle on a mast, outlined so it
+  shows on clouds and ice) with the station's name, a line to each
+  spacecraft it sees above its minimum elevation, and a ring on the
+  surface per spacecraft: the edge of what the station sees at that
+  spacecraft's altitude now, brighter and green while the spacecraft is
+  in view;
+* each spacecraft's ground track (geocentric latitude), on by default:
+  solid where it has flown, dashed where it is still to fly;
 * labels, and a panel with the time (ISO 8601 UTC), the time since the
   start, the playback speed and, when you follow a spacecraft, its
   altitude [km] and speed [km/s].
@@ -1670,13 +1676,45 @@ On a computer without a graphics card (a software renderer such as
 SwiftShader or llvmpipe) the view starts in reduced quality. A choice
 made in **Show** is kept over the view's own.
 
+### The 2D map
+
+**Globe**, **Map** and **Both** (the control beside the speed; keys `G`,
+`M` and `B` in the view; **View > 3D View**; the palette) show the globe,
+a flat map of the run, or both side by side. The choice is kept.
+
+The map is NASA's Blue Marble in an equirectangular projection
+(longitude -180° to 180° across, latitude 90° to -90° down). It draws:
+
+* each spacecraft's ground track in its colour, solid where flown and
+  dashed where still to fly, cut cleanly at the date line, and a dot
+  where the spacecraft is at the time shown; a legend names them;
+* each ground station's glyph and name, a line to each spacecraft it
+  sees, and its visibility circle per spacecraft: the points where that
+  spacecraft, at its altitude now, is at the station's minimum elevation
+  (Earth central angle `acos(R / (R + h) cos e) - e`, Wertz and Larson,
+  *Space Mission Analysis and Design*, section 5.2); green and thicker
+  while the spacecraft is in view;
+* the night side, shaded, and a 30° grid with its labels.
+
+Latitudes are geocentric, as on the globe. They differ from geodetic
+latitudes by at most about 0.19°. The map's **Show** menu switches the
+tracks, the stations, day and night, the grid and the labels (kept). It
+follows Play, the slider and the time cursor, and it is drawn live while
+a run runs. A worker draws it, so the window stays responsive.
+
+**Open in Own Window** on the map's bar (or **View > Own Windows > Open
+Map in Own Window**) puts the map in a window of its own, beside the
+globe or on another screen, with its own **Play** (Space), the time and
+**Go live** (End). Bring it back as any view (below); it then shows
+beside the globe.
+
 ### While it runs
 
 On the Run area's **Run** page, check **Show in 3D View while running**
 (remembered). Each single run then opens Results › 3D View and shows the
-run as it is computed: the spacecraft, their paths growing, the Earth
-turning and the Sun moving with the simulated time, and a **LIVE** badge
-in the panel. This works for ordinary runs, Mission Sequences and runs
+run as it is computed: the spacecraft, their paths and ground tracks
+growing, the Earth turning and the Sun moving with the simulated time,
+and a **LIVE** badge in the panel; the 2D map is drawn live too. This works for ordinary runs, Mission Sequences and runs
 longer than 100 days (run in segments); not in SIL mode.
 
 * **Pace:** **As fast as possible** (the default), or **1×**, **10×**,

@@ -23,9 +23,18 @@ with the Earth rotation angle, lit by the Sun, with its atmosphere's rim)
 under NASA's star map, the Moon, each spacecraft (its 3D model, turned by
 the run's attitude) with its path, trail, body axes, Sun, nadir and
 velocity arrows, its instruments' fields of view and its thrusters'
-plumes, the ground stations with their line of sight to each spacecraft
-they see, and the ground track; an overlay with the time (ISO 8601 UTC),
-the playback speed and the followed spacecraft's altitude and speed.
+plumes, the ground stations (a glyph and a name, a line to each
+spacecraft they see, and on the surface the visibility circle of their
+elevation mask at each spacecraft's altitude), and the ground track
+(geocentric latitude; on by default, decision "Ground tracks, stations
+and the live map": solid where flown, dashed where still to fly); an
+overlay with the time (ISO 8601 UTC), the playback speed and the followed
+spacecraft's altitude and speed.
+
+**Globe, Map or both** (the segmented control, ``G``, ``M``, ``B``; kept
+per user): beside the globe, the live 2D map
+(``gui.ground_map_widget.GroundMapWidget``) of the same scene, at the
+same time, which can also open in its own window (``gui.breakout``).
 
 Views (the View list, ``[`` and ``]``): **Whole orbit** (around the
 central body; the spacecraft drawn larger than they are, the factor
@@ -42,10 +51,13 @@ the menu is kept over the page's.
 **Live** (``start_live``, from Run › Run's "Show in 3D View while
 running"): the view shows the run as it is computed. The run's probe
 (``engine.live_view``) puts each spacecraft's state into a feed every few
-seconds of simulated time; a timer here (20 a second) drains it, extends
-the scene (``engine.scene3d.extend_scene``: the same Earth rotation, Sun,
-Moon, altitudes and line of sight as for a finished run) and appends the
-new frames to the page (``MV.append``), a few hundred at most per tick.
+seconds of simulated time; ``gui.live_scene.LiveScene`` drains it (20
+times a second) and, in its worker, extends the scene
+(``engine.scene3d.extend_scene``: the same Earth rotation, Sun, Moon,
+altitudes, ground tracks and line of sight as for a finished run) and
+makes the page's data for the new frames, a few hundred at most per
+tick. The globe sends that data to its page (``MV.append``) and the map
+paints the new segments: one consumer of the feed, its work done once.
 The view follows the newest state, with a LIVE badge; Pause, the slider
 or the time cursor leave it where it is while the run goes on; **Go
 live** (End) returns to the newest state, and Play catches up with it.
@@ -80,12 +92,14 @@ from pathlib import Path
 import numpy as np
 from PySide6.QtCore import QEvent, QPointF, QSettings, QThread, QTimer, QUrl, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QKeySequence, QLinearGradient, QPainter, QPen, QShortcut
-from PySide6.QtWidgets import (QComboBox, QFrame, QHBoxLayout, QLabel, QMenu, QPushButton, QSlider, QStackedWidget,
-                               QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QButtonGroup, QComboBox, QFrame, QHBoxLayout, QLabel, QMenu, QPushButton, QSlider,
+                               QSplitter, QStackedWidget, QToolButton, QVBoxLayout, QWidget)
 
 from ..constants import CENTRAL_BODY_EQUATORIAL_RADIUS_KM
 from ..engine import live_view, scene3d
 from ..schema.epochs import parse_epoch_utc
+from .ground_map_widget import GroundMapWidget
+from .live_scene import LIVE_BATCH, LIVE_BATCH_STATES, LIVE_TICK_MS, LiveScene, live_batch  # noqa: F401 -- public names
 from .theme import SPACE, TOKENS, current_theme, icon, mono_font, on_change, set_role
 from .theme.mission_view_style import mission_view_style
 from .theme.palettes import NO_TEMPERATURE_COLOUR, SPACE_COLOUR, TEMPERATURE_STOPS, temperature_rgb
@@ -95,9 +109,6 @@ PAGE = ASSETS / "mission_view.html"
 _TICK_MS = 40  # [ms] playback timer: 25 frames a second
 _ORBIT_CRAFT_FRACTION = 0.04  # [-] in Whole orbit, a spacecraft is drawn this fraction of the scene's half-width
 _REDUCE_ABOVE_MS = 50.0  # [ms] the page draws in reduced quality when a frame takes longer (under 20 fps)
-LIVE_TICK_MS = 50  # [ms] a live run's samples are drained this often (20 times a second)
-LIVE_BATCH = 400  # [-] at most this many samples drained, and frames sent to the page, per tick
-LIVE_BATCH_STATES = 2400  # [-] and at most this many spacecraft states (a tick stays under about 20 ms)
 _TRAIL_FRACTION = 0.1  # [-] of a run's frames drawn as each spacecraft's trail (as the page's own)
 #: Playback speeds offered: simulated seconds per real second.
 SPEEDS = (1, 10, 60, 300, 1800, 3600, 21600, 86400)
@@ -105,8 +116,10 @@ SPEEDS = (1, 10, 60, 300, 1800, 3600, 21600, 86400)
 TOGGLES = (("paths", "Paths"), ("trails", "Trails"), ("axes", "Body axes"),
            ("headings", "Sun, nadir and velocity arrows"), ("cones", "Fields of view and plumes"),
            ("stations", "Ground stations and line of sight"), ("labels", "Labels"), ("stars", "Stars"),
-           ("groundTrack", "Ground track"))
-_TOGGLES_OFF = ("groundTrack",)  # off until the user turns them on
+           ("groundTrack", "Ground track (geocentric latitude)"))
+_TOGGLES_OFF = ()  # off until the user turns them on (the ground track is on by default since 2.12.0, Q1)
+#: Globe, Map or both side by side: key, text, the key in the 3D View.
+LAYOUTS = (("globe", "Globe", "G"), ("map", "Map", "M"), ("both", "Both", "B"))
 _AXES = (("+x", (1, 0, 0)), ("+y", (0, 1, 0)), ("+z", (0, 0, 1)), ("-z", (0, 0, -1)))
 _SETTINGS_GROUP = "mission_view"
 MODEL_COLOURS = "Model colours"  # the Colours list's first entry; then "Temperature: <case>" per thermal case
@@ -147,6 +160,8 @@ def scene_payload(scene: scene3d.Scene) -> dict:
                      "c": _rows(colours.ravel(), 4)},
             "path": _rows(craft.path_km, 3),
             "track": None if craft.ground_track_deg is None else _rows(craft.ground_track_deg, 3),
+            "tt": None if craft.ground_track_deg is None or craft.path_times_s is None
+            else _rows(craft.path_times_s, 3),
             "equipment": [{"name": item["name"], "kind": item["kind"], "p": _rows(item["position_km"], 8),
                            "b": _rows(item["boresight"], 6), "fov": item["fov_deg"], "plume": item["plume_half_deg"]}
                           for item in craft.equipment]})
@@ -174,7 +189,8 @@ def frames_payload(scene: scene3d.Scene, start: int, stop: int) -> dict:
                "alt": None if craft.altitude_km is None else _rows(craft.altitude_km[window], 3),
                "dcm": None if craft.dcm_BN is None else _rows(craft.dcm_BN[window].reshape(-1, 9), 6),
                "path": _rows(craft.path_km[window], 3),
-               "track": None if craft.ground_track_deg is None else _rows(craft.ground_track_deg[window], 3)}
+               "track": None if craft.ground_track_deg is None else _rows(craft.ground_track_deg[window], 3),
+               "tt": None if craft.ground_track_deg is None else _rows(scene.times_s[window], 3)}
               for craft in scene.crafts]
     return {"times": _rows(scene.times_s[window], 3), "crafts": crafts,
             "rotation": None if scene.body_rotation_rad is None else _rows(scene.body_rotation_rad[window], 7),
@@ -232,30 +248,6 @@ class SceneBuilder(QThread):
         try:
             scene = scene3d.build_scene(self._scenario, self._result, base_dir=self._base_dir)
             payload = json.dumps(scene_payload(scene), separators=(",", ":"))
-        except Exception as exc:  # noqa: BLE001 -- shown in the view; the run itself is not affected
-            self.failed.emit(str(exc))
-            return
-        self.built.emit(scene, payload)
-
-
-class LiveSceneBuilder(QThread):
-    """Builds a live run's scene (the spacecraft's models, the first
-    frames) and its page data off the GUI thread."""
-
-    built = Signal(object, str)
-    failed = Signal(str)
-
-    def __init__(self, scenario, feed, samples, base_dir, trail_frames: int, parent=None):
-        super().__init__(parent)
-        self._scenario, self._feed, self._samples, self._base_dir = scenario, feed, samples, base_dir
-        self._trail_frames = trail_frames
-
-    def run(self) -> None:
-        try:
-            scene = live_scene(self._scenario, self._feed, self._samples, self._base_dir)
-            payload = scene_payload(scene)
-            payload["trail_frames"] = self._trail_frames
-            payload = json.dumps(payload, separators=(",", ":"))
         except Exception as exc:  # noqa: BLE001 -- shown in the view; the run itself is not affected
             self.failed.emit(str(exc))
             return
@@ -422,9 +414,9 @@ class MissionViewWidget(QWidget):
         self._scene_sent = False
         self._load_options = {}  # MV.load's options for the next scene (keepCamera after a live run)
         self._live: live_view.LiveFeed | None = None  # the feed of the run shown live
-        self._live_run = None  # (scenario, base_dir) of the live run
-        self._live_builder: LiveSceneBuilder | None = None
-        self._live_builders: set = set()  # every live builder still running, waited for on closing
+        self.live_scene: LiveScene | None = None  # its scene, made and extended in a worker (gui.live_scene)
+        self._live_scenes: list = []  # every live scene still to be waited for on closing
+        self._live_chunks: list = []  # (first frame, end, MV.append JSON) not yet sent to the page
         self.following = False  # a live run: the view shows its newest state
         self._sent = 0  # frames of a live scene the page has
         self._restore = None  # (view text, time [s] or None for the end): the live view's, kept by set_run
@@ -463,6 +455,26 @@ class MissionViewWidget(QWidget):
             self.speed_combo.addItem(_speed_text(speed), speed)
         self.speed_combo.currentIndexChanged.connect(lambda _index: self._send_playback())
         controls.addWidget(self.speed_combo)
+        self.layout_control = QFrame()  # Globe | Map | Both (a segmented control, as Run's mode)
+        self.layout_control.setObjectName("segmentedControl")
+        self.layout_control.setAccessibleName("Globe, map or both")
+        segments = QHBoxLayout(self.layout_control)
+        segments.setContentsMargins(0, 0, 0, 0)
+        segments.setSpacing(0)
+        self.layout_group = QButtonGroup(self)
+        self.layout_buttons: dict[str, QPushButton] = {}
+        for key, text, keys in LAYOUTS:
+            button = QPushButton(text)
+            button.setObjectName("segmentButton")
+            button.setCheckable(True)
+            button.setToolTip({"globe": "The globe only", "map": "The 2D map of the ground tracks only",
+                               "both": "The globe and the 2D map side by side"}[key] + f" ({keys})")
+            button.setAccessibleName(f"Show {text.lower()}" if key != "both" else "Show the globe and the map")
+            button.clicked.connect(lambda _checked=False, key=key: self.set_layout(key))
+            self.layout_group.addButton(button)
+            self.layout_buttons[key] = button
+            segments.addWidget(button)
+        controls.addWidget(self.layout_control)
         self.colour_combo = QComboBox()
         self.colour_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.colour_combo.addItem(MODEL_COLOURS)
@@ -515,7 +527,8 @@ class MissionViewWidget(QWidget):
         self.scale_note.setWordWrap(True)
         layout.addWidget(self.scale_note)
         for keys, slot in (("Space", self.toggle_play), ("[", lambda: self._step_view(-1)),
-                           ("]", lambda: self._step_view(1)), ("End", self.go_live)):
+                           ("]", lambda: self._step_view(1)), ("End", self.go_live)) + tuple(
+                (keys, lambda key=key: self.set_layout(key)) for key, _text, keys in LAYOUTS):
             shortcut = QShortcut(QKeySequence(keys), self)
             shortcut.setContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
             shortcut.activated.connect(slot)
@@ -526,7 +539,22 @@ class MissionViewWidget(QWidget):
         self.empty.setWordWrap(True)
         set_role(self.empty, tone="secondary")
         self.stack.addWidget(self.empty)
-        layout.addWidget(self.stack, 1)
+        # The globe and, beside it, the 2D map (in a slot of its own, so it can move to its own window).
+        self.ground_map = GroundMapWidget()
+        self.ground_map.play_requested.connect(self.toggle_play)
+        self.ground_map.live_requested.connect(self.go_live)
+        self.ground_map.installEventFilter(self)  # shown on its own: the run is built for it
+        self.map_slot = QWidget()
+        slot = QVBoxLayout(self.map_slot)
+        slot.setContentsMargins(0, 0, 0, 0)
+        slot.addWidget(self.ground_map)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.addWidget(self.stack)
+        self.splitter.addWidget(self.map_slot)
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 1)
+        layout.addWidget(self.splitter, 1)
         self.temperature_bar = TemperatureBar(self.stack)  # over the view, not one of the stack's pages
         self.temperature_bar.hide()
         self.stack.installEventFilter(self)
@@ -534,9 +562,8 @@ class MissionViewWidget(QWidget):
         self._timer = QTimer(self)
         self._timer.setInterval(_TICK_MS)
         self._timer.timeout.connect(self._tick)
-        self._live_timer = QTimer(self)
-        self._live_timer.setInterval(LIVE_TICK_MS)
-        self._live_timer.timeout.connect(self._live_tick)
+        self._layout = "globe"
+        self.set_layout(str(_settings().value(f"{_SETTINGS_GROUP}/layout", "globe")), remember=False)
         self._set_controls_enabled(False)
         on_change(self._on_theme_changed)
 
@@ -544,6 +571,46 @@ class MissionViewWidget(QWidget):
         """A button of the window's at the end of the view's controls (Open
         in Own Window: it moves with the view, gui.breakout)."""
         self._controls.addWidget(button)
+
+    # -- globe, map or both ------------------------------------------------------
+    def layout_mode(self) -> str:
+        """"globe", "map" or "both"."""
+        return self._layout
+
+    def set_layout(self, mode: str, remember: bool = True) -> None:
+        """Show the globe, the 2D map or both side by side (kept per user).
+        The globe's own controls (view, colours, Show) hide with it."""
+        if mode not in {key for key, _text, _keys in LAYOUTS}:
+            mode = "globe"
+        self._layout = mode
+        self.layout_buttons[mode].setChecked(True)
+        globe = mode != "map"
+        self.stack.setVisible(globe)
+        self.map_slot.setVisible(mode != "globe")
+        for widget in (self.colour_combo, self.view_combo, self.show_button):
+            widget.setVisible(globe)
+        self.scale_note.setVisible(globe)
+        if mode == "both":
+            half = max(1, self.splitter.width() // 2)
+            self.splitter.setSizes([half, half])
+        if remember:
+            _settings().setValue(f"{_SETTINGS_GROUP}/layout", mode)
+        if globe and self.isVisible() and self.scene is not None and self.web_view is None:
+            self._ensure_view()
+            self.stack.setCurrentWidget(self.web_view)
+            self._send_scene()
+        self._build_if_wanted()
+
+    def _globe_shown(self) -> bool:
+        return self.isVisible() and self._layout != "map"
+
+    def _wanted(self) -> bool:
+        """The globe or the map is on screen (the map maybe in its own window)."""
+        return self.isVisible() or self.ground_map.isVisible()
+
+    def _build_if_wanted(self) -> None:
+        if self._run is not None and self.scene is None and self._builder is None and self._wanted():
+            self._build()
 
     # -- the run ---------------------------------------------------------------
     def set_run(self, scenario, result, base_dir=None) -> None:
@@ -567,9 +634,9 @@ class MissionViewWidget(QWidget):
             self._epoch = None
         self.empty.setText("Building the 3D view...")
         self.stack.setCurrentWidget(self.empty)
+        self.ground_map.clear("Building the map...", "")
         self._set_controls_enabled(False)
-        if self.isVisible():
-            self._build()
+        self._build_if_wanted()
 
     def clear(self) -> None:
         self._end_live()
@@ -581,13 +648,14 @@ class MissionViewWidget(QWidget):
         self.scene = None
         self.empty.setText("Run a scenario to see it here in 3D.")
         self.stack.setCurrentWidget(self.empty)
+        self.ground_map.clear("No ground track yet")
         self._set_controls_enabled(False)
 
     def showEvent(self, event) -> None:  # noqa: N802 - Qt override
         super().showEvent(event)
         if self._run is not None and self.scene is None and self._builder is None:
             self._build()
-        elif self.scene is not None and self.web_view is None:  # a live run's scene, built while hidden
+        elif self.scene is not None and self.web_view is None and self._globe_shown():  # built while hidden
             self._ensure_view()
             self.stack.setCurrentWidget(self.web_view)
             self._send_scene()
@@ -597,7 +665,7 @@ class MissionViewWidget(QWidget):
         """Show the run feeding ``feed`` as it goes (its first state
         builds the scene, off the GUI thread)."""
         self.clear()
-        self._live, self._live_run = feed, (scenario, base_dir)
+        self._live = feed
         self.following = True
         try:
             self._epoch = parse_epoch_utc(scenario.epoch_utc)
@@ -605,9 +673,19 @@ class MissionViewWidget(QWidget):
             self._epoch = None
         self.empty.setText("Waiting for the run's first state...")
         self.stack.setCurrentWidget(self.empty)
+        self.ground_map.clear("Waiting for the run's first state...", "")
         self.live_button.show()
         self._set_play_text()
-        self._live_timer.start()
+        expected = feed.duration_s / feed.interval_used_s if feed.interval_used_s else 0.0
+        live = LiveScene(scenario, feed, base_dir, max(2, round(_TRAIL_FRACTION * expected) + 1), self)
+        live.started.connect(self._on_live_started)
+        live.extended.connect(self._on_live_extended)
+        live.failed.connect(self._on_failed)
+        self.live_scene = live
+        for earlier in [s for s in self._live_scenes if not s.is_active() and s.is_idle()]:
+            earlier.deleteLater()  # an earlier run's, done
+        self._live_scenes = [s for s in self._live_scenes if s.is_active() or not s.is_idle()] + [live]
+        live.start()
 
     def is_live(self) -> bool:
         """A run is shown as it is computed."""
@@ -621,76 +699,57 @@ class MissionViewWidget(QWidget):
     def _end_live(self) -> None:
         if self._live is None:
             return
-        self._live_timer.stop()
+        if self.live_scene is not None:
+            self.live_scene.stop()  # a frame still being made is dropped
+        self.live_scene = None
         self._live = None
-        self._live_run = None
+        self._live_chunks = []
         self.following = False
         self.live_button.hide()
         self._set_live_badge()
         self._set_play_text()
-        self._live_builder = None  # a scene still being built is no longer wanted (_on_live_built)
 
-    def _live_tick(self) -> None:
-        """Drain the feed: the first samples build the scene; later ones
-        extend it and go to the page (at most ``LIVE_BATCH`` a tick)."""
-        feed = self._live
-        if feed is None:
-            return
-        if self.scene is None:
-            if self._live_builder is None and feed.pending():
-                scenario, base_dir = self._live_run
-                expected = feed.duration_s / feed.interval_used_s if feed.interval_used_s else 0.0
-                builder = LiveSceneBuilder(scenario, feed, feed.drain(self._live_batch()), base_dir,
-                                           max(2, round(_TRAIL_FRACTION * expected) + 1), self)
-                builder.built.connect(lambda scene, payload, b=builder: self._on_live_built(b, scene, payload))
-                builder.failed.connect(self._on_failed)
-                builder.finished.connect(lambda b=builder: self._live_builder_done(b))
-                self._live_builder = builder
-                self._live_builders.add(builder)
-                builder.start()
-            return
-        samples = feed.drain(self._live_batch())
-        if samples is not None:
-            live_frames(self.scene, feed, samples)
-            last = len(self.scene.times_s) - 1
-            self.slider.blockSignals(True)
-            self.slider.setRange(0, last)
-            if self.following:
-                self.slider.setValue(last)
-                self._sim_time = float(self.scene.times_s[last])
-                self._update_time_label(last)
-            self.slider.blockSignals(False)
-        self._send_live_frames()
-
-    def _live_batch(self) -> int:
-        """Samples a tick takes: ``LIVE_BATCH``, fewer with many spacecraft."""
-        crafts = len(self._live.names) if self._live is not None and self._live.names else 1
-        return max(20, min(LIVE_BATCH, LIVE_BATCH_STATES // crafts))
-
-    def _live_builder_done(self, builder) -> None:
-        if self._live_builder is builder:
-            self._live_builder = None
-        self._live_builders.discard(builder)
-        builder.deleteLater()
-
-    def _on_live_built(self, builder, scene, payload: str) -> None:
-        if self._live is None or builder is not self._live_builder:  # an earlier live run's
+    def _on_live_started(self, scene, payload: str) -> None:
+        """The live run's first scene (gui.live_scene, from its worker)."""
+        if self._live is None or self.sender() is not self.live_scene:  # an earlier live run's
             return
         self._sent = len(scene.times_s)
+        self._live_chunks = []
         self._show_scene(scene, payload, ("", None))  # at its newest state
 
+    def _on_live_extended(self, scene, start: int, stop: int, frames: str) -> None:
+        """The live scene with frames ``start`` to ``stop`` more (made in
+        the worker, with their page data ``frames``): the slider, the time,
+        the map and the page follow; nothing is computed here."""
+        if self._live is None or self.sender() is not self.live_scene or self.scene is None:
+            return
+        self.scene = scene
+        self._live_chunks.append((start, stop, frames))
+        last = stop - 1
+        self.slider.blockSignals(True)
+        self.slider.setRange(0, last)
+        if self.following:
+            self.slider.setValue(last)
+            self._sim_time = float(scene.times_s[last])
+            self._update_time_label(last)
+        self.slider.blockSignals(False)
+        self.ground_map.extend(scene, start, stop)
+        if self.following:
+            self.ground_map.set_frame(last, True)
+        self._send_live_frames()
+
     def _send_live_frames(self) -> None:
-        """The frames the page does not have yet, a batch at a time."""
+        """The frames the page does not have yet: the worker's data, as made."""
         if self.scene is None or not self._page_ready or not self._scene_sent:
             return
-        count = len(self.scene.times_s)
-        if self._sent >= count:
-            return
-        stop = min(count, self._sent + self._live_batch())
-        frames = frames_payload(self.scene, self._sent, stop)
-        frames["follow"] = self.following
-        self._sent = stop
-        self.web_view.page().runJavaScript("MV.append(" + json.dumps(frames, separators=(",", ":")) + ");")
+        page = self.web_view.page()
+        follow = json.dumps(self._live is not None and self.following)
+        while self._live_chunks:
+            start, stop, frames = self._live_chunks.pop(0)
+            if stop <= self._sent:  # already in the scene the page loaded
+                continue
+            page.runJavaScript(f"MV.append({frames}, {follow});")
+            self._sent = stop
 
     def go_live(self) -> None:
         """Back to the newest state of the run being computed (End)."""
@@ -713,6 +772,7 @@ class MissionViewWidget(QWidget):
     def _set_live_badge(self) -> None:
         self.live_button.setEnabled(self._live is not None and not self.following)
         self._call(f"MV.setLive({json.dumps(self._live is not None and self.following)});")
+        self.ground_map.set_live(self._live is not None and self.scene is not None, self.following)
 
     def _build(self) -> None:
         scenario, result, base_dir = self._run
@@ -735,12 +795,15 @@ class MissionViewWidget(QWidget):
         for builder in list(self._temperature_builders):
             builder.wait()
         self._end_live()
-        for builder in list(self._live_builders):
-            builder.wait()
+        for live in self._live_scenes:
+            live.wait()
+        self._live_scenes = []
+        self.ground_map.wait()
 
     def _on_failed(self, message: str) -> None:
         self.empty.setText(f"The 3D view could not be built: {message}")
         self.stack.setCurrentWidget(self.empty)
+        self.ground_map.clear("The map could not be built", message)
 
     def _on_built(self, scene, payload: str) -> None:
         if self._run is None:
@@ -788,7 +851,10 @@ class MissionViewWidget(QWidget):
         self._set_controls_enabled(True)
         self._temperatures = None  # made again for this scene's frames
         self._on_colour_mode()
-        if self.isVisible():
+        live = self._live is not None
+        self.ground_map.set_scene(scene, live=live, following=live and self.following)
+        self.ground_map.set_frame(self.slider.value())
+        if self._globe_shown():
             self._ensure_view()
             self.stack.setCurrentWidget(self.web_view)
             self._send_scene()
@@ -860,6 +926,7 @@ class MissionViewWidget(QWidget):
             page.runJavaScript(f"MV.setTemperatures({self._temperatures[1]});")
         self._send_playback()
         self._set_live_badge()
+        self._send_live_frames()  # a live run's frames made while the page loaded
 
     def _call(self, script: str, callback=None) -> None:
         """Run ``script`` in the page once it shows the scene (else it is
@@ -930,6 +997,7 @@ class MissionViewWidget(QWidget):
         playing = self._timer.isActive() or (self._live is not None and self.following)
         self.play_button.setText("Pause" if playing else "Play")
         self.play_button.setToolTip("Pause (Space)" if playing else "Play the run (Space)")
+        self.ground_map.set_playing(playing)
 
     def is_playing(self) -> bool:
         return self._timer.isActive()
@@ -957,6 +1025,7 @@ class MissionViewWidget(QWidget):
         self.slider.blockSignals(False)
         self._update_time_label(frame)
         self._call(f"MV.setFrame({frame});")
+        self.ground_map.set_frame(frame, self._live is not None and self.following)
 
     def _on_slider(self, frame: int) -> None:
         if self.scene is None:
@@ -970,6 +1039,7 @@ class MissionViewWidget(QWidget):
         self._sim_time = float(self.scene.times_s[frame])
         self._update_time_label(frame)
         self._call(f"MV.setFrame({frame});")
+        self.ground_map.set_frame(frame, self._live is not None and self.following)
         if not self._timer.isActive():
             self._move_cursor()
 
@@ -991,6 +1061,7 @@ class MissionViewWidget(QWidget):
         seconds = float(self.scene.times_s[frame])
         moment = (self._epoch + timedelta(seconds=seconds)).strftime("%Y-%m-%dT%H:%M:%SZ") if self._epoch else ""
         self.time_label.setText(f"T+{_elapsed_text(seconds)}  {moment}")
+        self.ground_map.set_time_text(self.time_label.text())
 
     def _set_controls_enabled(self, enabled: bool) -> None:
         for widget in (self.play_button, self.slider, self.speed_combo, self.view_combo, self.show_button):
@@ -1079,6 +1150,8 @@ class MissionViewWidget(QWidget):
         if watched is self.stack and event.type() in (QEvent.Type.Resize, QEvent.Type.ChildAdded):
             if self.temperature_bar.isVisibleTo(self):
                 self._place_temperature_bar()
+        elif watched is self.ground_map and event.type() == QEvent.Type.Show:
+            self._build_if_wanted()  # the map shown in its own window: it needs the run too
         return super().eventFilter(watched, event)
 
     def _on_temperatures_failed(self, number: int, message: str) -> None:

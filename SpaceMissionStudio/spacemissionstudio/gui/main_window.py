@@ -106,7 +106,7 @@ from .run_history import RunHistory
 from .run_history_view import HistoryEntry, RunHistoryView, run_entry, utc_text
 from .results_overview import ResultsOverview
 from ..engine.live_view import LiveFeed
-from .mission_view_widget import MissionViewWidget
+from .mission_view_widget import LAYOUTS as MAP_LAYOUTS, MissionViewWidget
 from .run_page import RunModeControl, RunPage
 from .widgets import TabWidget, make_window, show_window
 from .theme import (CONTENT_MAX_WIDTH_PX, apply_theme, current_theme, follow_system, icon, resolve_theme,
@@ -431,9 +431,11 @@ class MainWindow(QMainWindow):
         self.budgets_views.spacecraft_changed.connect(self._on_budgets_spacecraft_changed)
         # Views that can open in a window of their own (gui.breakout; 2.12.0, decision "Breakout windows"):
         # the same widget moves, so nothing is built twice. They open docked ("Calm by default").
+        # The 2D map sits in the 3D View, beside the globe, and opens in its own window on its own (Q3).
         for view_id, widget, title in (("3d_view", self.mission_view_widget, "3D View"),
                                        ("thermal", self.thermal_widget, "Thermal"),
-                                       ("budgets", self.budgets_views, "Budgets")):
+                                       ("budgets", self.budgets_views, "Budgets"),
+                                       ("map", self.mission_view_widget.ground_map, "Map")):
             self.breakouts.register(view_id, widget, title)
             widget.add_tool_button(self.breakouts.button(view_id))
         self.breakouts.changed.connect(self._on_breakout_changed)
@@ -797,6 +799,15 @@ class MainWindow(QMainWindow):
                 area="global", keywords=("separate window", "detach", "dock", title),
                 tip=f"{title} in a window of its own, beside the main window, or back in the main window. "
                     f"{BREAKOUT_SHORTCUT} does it for the view shown.").setData(view_id)
+        # Results › 3D View: the globe, the 2D map or both (G, M and B in the view; its segmented control).
+        for key, label, keys in MAP_LAYOUTS:
+            add(f"view.3d_view.{key}", {"globe": "Show Globe", "map": "Show Map", "both": "Show Globe and Map"}[key],
+                self._on_3d_layout_command, category="3D View", area="results",
+                keywords=("ground track", "2D map", "globe", label.lower()),
+                tip={"globe": "Results › 3D View shows the globe only.",
+                     "map": "Results › 3D View shows the 2D map of the ground tracks only.",
+                     "both": "Results › 3D View shows the globe and the 2D map side by side."}[key]
+                    + f" Key in the 3D View: {keys}.").setData(key)
         self.menu_bar_action = add(
             "view.menu_bar", "&Menu Bar", self._on_menu_bar_toggled, category="View", area="global",
             checkable=True, checked=True, keywords=("menus", "File Edit View"),
@@ -953,7 +964,8 @@ class MainWindow(QMainWindow):
                           "run.clear_cursor", "tools.model_3d", "tools.ccsds_export",
                           "analyses.end_of_life", "analyses.budget", "analyses.design_checks",
                           "tools.flight_software", "view.explain", "budgets.add_item", "budgets.remove_item",
-                          "budgets.copy_csv", "view.window.3d_view", "view.window.thermal", "view.window.budgets")
+                          "budgets.copy_csv", "view.window.3d_view", "view.window.thermal", "view.window.budgets",
+                          "view.window.map", "view.3d_view.globe", "view.3d_view.map", "view.3d_view.both")
 
     def _on_go_to_area(self) -> None:
         self.shell.show_area(self.sender().data())
@@ -1142,9 +1154,10 @@ class MainWindow(QMainWindow):
 
     # -- views in a window of their own (gui.breakout) ------------------------------------------
     _BREAKOUT_TIP = ("Open the view shown (Results › 3D View, Run › Thermal or Budgets) in a window of its own, "
-                     "or bring it back to the main window. Closing its window brings it back too.")
+                     "or bring it back to the main window. Closing its window brings it back too. The 3D View's "
+                     "2D map has its own command.")
     # The area whose commands a view's window carries besides the global ones (Ctrl+K, Ctrl+S, Ctrl+R, ...).
-    _BREAKOUT_AREAS = {"3d_view": "results", "thermal": "run", "budgets": "budgets"}
+    _BREAKOUT_AREAS = {"3d_view": "results", "thermal": "run", "budgets": "budgets", "map": "results"}
 
     def _breakout_text(self, view_id: str) -> str:
         title = self.breakouts.title(view_id)
@@ -1185,9 +1198,16 @@ class MainWindow(QMainWindow):
         """View > Own Windows > Open <view> in Own Window, or Bring Back <view>."""
         self.breakouts.toggle(self.sender().data())
 
+    def _on_3d_layout_command(self) -> None:
+        """View > 3D View > Show Globe, Show Map or Show Globe and Map."""
+        self.mission_view_widget.set_layout(self.sender().data())
+        self.show_view(self.mission_view_widget)
+
     def _on_breakout_changed(self, view_id: str, detached: bool) -> None:
         """A view moved: the commands say what they do now; Budgets takes its
         spacecraft picker along (the area's header stays here)."""
+        if view_id == "map" and not detached and self.mission_view_widget.layout_mode() == "globe":
+            self.mission_view_widget.set_layout("both")  # the map brought back is shown, beside the globe
         if view_id == "budgets":
             selector = self.budgets_views.selector
             if detached:

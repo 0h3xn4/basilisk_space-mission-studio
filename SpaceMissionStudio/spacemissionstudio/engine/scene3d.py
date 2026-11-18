@@ -93,6 +93,7 @@ class Craft:
     equipment: list[dict] = field(default_factory=list)  # mounted items with a direction (body frame, km)
     part_names: list[str] = field(default_factory=list)  # the 3D model's visible parts, in the mesh's order
     part_of_triangle: np.ndarray | None = None  # (t,) index into part_names per triangle; -1: the cube (no model)
+    path_times_s: np.ndarray | None = None  # (m,) [s] the time of each point of path_km and ground_track_deg
 
 
 @dataclass
@@ -417,7 +418,7 @@ def empty_scene(scenario, crafts: list[tuple[object, bool]], *, base_dir=None) -
             face_rgb=_rgb_floats(colors), velocity_km_s=np.zeros((0, 3)),
             altitude_km=np.zeros(0) if radius_km > 0.0 else None,
             ground_track_deg=np.zeros((0, 2)) if earth else None, equipment=equipment(sc), part_names=part_names,
-            part_of_triangle=part_of_triangle))
+            part_of_triangle=part_of_triangle, path_times_s=np.zeros(0)))
         notes += craft_notes
 
     stations, ups, minimum = [], [], []
@@ -470,6 +471,8 @@ def extend_scene(scene: Scene, times_s: np.ndarray, position_km: np.ndarray, vel
                                                                                  scene.flattening)])
         if grow_path:
             craft.path_km = np.concatenate([craft.path_km, position])
+            if craft.path_times_s is not None:
+                craft.path_times_s = np.concatenate([craft.path_times_s, times_s])
             if craft.ground_track_deg is not None and rotation is not None:
                 craft.ground_track_deg = np.concatenate([craft.ground_track_deg, ground_track_deg(position, rotation)])
             if len(position):
@@ -527,6 +530,7 @@ def build_scene(scenario, result, *, base_dir=None, max_frames: int = MAX_FRAMES
     for craft, (_sc, position) in zip(scene.crafts, crafts_series):
         stride = max(1, len(position.time_s) // MAX_PATH_POINTS)
         craft.path_km = position.data[::stride, :3] / 1000.0
+        craft.path_times_s = np.asarray(position.time_s[::stride], dtype=float)
         if scene.body_rotation_rad is not None:
             path_jd = julian_date(epoch, position.time_s[::stride])
             craft.ground_track_deg = ground_track_deg(craft.path_km, earth_rotation_angle(path_jd))

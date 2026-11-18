@@ -89,6 +89,18 @@ NADIR_COLOUR = "#C9CED6"
 VELOCITY_COLOUR = "#35C2E0"
 STATION_COLOUR = "#F4F5F7"
 LINE_OF_SIGHT_COLOUR = "#5BD27A"
+# A ground station's glyph (a triangle on a mast, on the globe and the 2D
+# map) is outlined in this dark colour, so it reads on clouds, ice, sea and
+# the night side alike (2.12.0, decision "Ground tracks, stations and the
+# live map"). Its visibility circle takes the station's colour, and the
+# line-of-sight colour while a spacecraft is in view: depicted things, not
+# status, the same in both themes.
+STATION_OUTLINE_COLOUR = "#0B0D10"
+# The live 2D map (gui/ground_map_widget.py), over NASA's Blue Marble in
+# both themes: the night side's shade (drawn translucent) and the latitude
+# and longitude grid (drawn translucent).
+NIGHT_COLOUR = "#000814"
+MAP_GRID_COLOUR = "#FFFFFF"
 
 # Temperatures on a 3D model (Run › Thermal's 3D model and Results › 3D
 # View): ColorBrewer's diverging "RdBu" (Brewer, colorbrewer2.org),

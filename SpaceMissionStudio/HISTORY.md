@@ -18634,3 +18634,75 @@ in that process got a live one. The Windows job now also passes
 The app's own flags (`gui/webengine_setup.py`) do not change: this is a
 setting of the runner without a GPU. The 3D View, live-run, breakout and
 thermal-view tests pass with these exact flags here (61 tests).
+
+## 2.12.0 windows and views: ground tracks, stations and a live 2D map (2026-11-17)
+
+The third part of 2.12.0 (`docs/developer/windows-views-design.md`,
+section 3 and the answered questions; PR-3). The owner: "I am missing
+the ground-tracks on the earth surface". A ground station must be clearly
+visible on the globe. The 2D map lives in the 3D View and has its own
+breakout window.
+
+**What was wrong.** The globe could draw the ground track, but the
+toggle was off by default, so nobody saw it. A station was an 8 px
+near-white square (`THREE.Points`): it vanished on clouds and ice and
+had no shape. A live run was extended on the GUI thread: each tick ran
+`extend_scene` (Earth rotation, Sun, Moon, altitudes, line of sight, and
+`np.concatenate` over every array, which grows with the run) and built
+the page's JSON there.
+
+**The globe.** The ground track is on by default (Q1). It is solid
+where the spacecraft has flown and dashed where it is still to fly; the
+page splits it at the time shown with each point's time (`tt`, from the
+new display field `scene3d.Craft.path_times_s`). The dashes keep their
+length on screen at any zoom. A station is now a 14 px glyph (a triangle
+on a mast) with a dark outline and its name, drawn in the page's overlay
+as an SVG, hidden behind the Earth as the labels are. Each station has a
+ring per spacecraft on the surface: the visibility circle of its
+elevation mask at the spacecraft's altitude, `lambda = acos(R / (R + h)
+cos eps) - eps` (Wertz and Larson, SMAD 3rd ed., 5.2). The ring and the
+glyph take the line-of-sight colour while the spacecraft is in view.
+
+**The map.** `gui/ground_map_widget.py` paints an equirectangular map on
+the 3D View's Blue Marble image: the tracks (cut at the date line at the
+latitude where they cross), a marker per spacecraft, the stations with
+their lines of sight and visibility circles, the night side, a 30 deg
+grid and a legend. A worker paints the image, the grid, the night side
+and the tracks into a `QImage`. The flown track goes on a layer that the
+worker only adds to while time moves forward. Each Qt call holds the
+interpreter lock (about 1.5 ms a call, measured), so the worker draws a
+long line in pieces of 256 points. The GUI thread draws the image and the
+markers; a test holds that under 10 ms median. The map says that its
+latitude is geocentric (at most about 0.19 deg from geodetic), and its
+tooltip gives NASA's credit. A segmented control, Globe | Map | Both
+(`G`, `M`, `B`, View > 3D View, the palette), chooses what the 3D View
+shows; with Map alone no web view is made. The map is view "map" of
+`gui.breakout`: in its own window it has its own Play and time.
+
+**One feed, one worker.** `gui/live_scene.py: LiveScene` drains the
+feed 20 times a second. One serial worker builds or extends the scene
+and makes the `MV.append` JSON. It extends a shallow copy, because
+`extend_scene` puts new arrays in place of the old ones: the scene the
+GUI thread holds stays whole meanwhile. The globe sends the JSON; the
+map's worker paints the new segments. The design note's `Playback` class
+was not made: the 3D View's playback stays the one clock and the map
+follows it (decision "Ground tracks, stations and the live map").
+
+**Found on the way.** The first map widget kept its style in
+`self.style`, which hides `QWidget.style()`. `gui.breakout`'s
+`set_role` calls `widget.style()` when a view becomes a window, so the
+map could not open in its own window. The attribute is now `map_style`,
+and a test opens the map in its window.
+
+**Tests.** New: `tests/gui/test_ground_map.py` (22 tests, 32 cases: the projection, the
+date line, the visibility angle against SMAD's other form, the circle
+and the terminator against independent formulas, the track split, the
+style, the empty state, Globe | Map | Both with keys and memory, the
+worker's thread and image size, the GUI thread's paint time, the Show
+menu, the geocentric note and the credit, the track on by default and
+dashed, a station's glyph and ring in and out of contact, tracks and
+rings over a lost WebGL context, a live run drained once and extended
+off the GUI thread, the map alone needing no web view, the shallow copy,
+the View menu and palette commands, and the map in its own window).
+Three test lines changed (`docs/ui/TEST_CHANGES.md`). No golden file, no
+file format and no output changed.

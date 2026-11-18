@@ -452,7 +452,8 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Elided label | `app_shell.ElidedLabel` | One line that ends in "..." rather than widening the window; the whole text is its tooltip |
 | SVG plot | `svg_plot.SvgPlotView`: `set_image(svg, image)`, `load(svg)`, `target_rect()`, `size_settled`; `svg_plot.render_image` in a worker | A plot made as SVG (the thermal plots): drawn at its own aspect ratio, made again at the view's size once a resize ends |
 | Event table | `EventTimelineWidget.table`, a `DataTable` over `event_timeline_widget._EventRows` | Events, sortable; Ctrl+C copies the selection as TSV |
-| Own window | `breakout.Breakouts`: `register(id, widget, title)`, `button(id)` for the view's toolbar, `detach`, `attach`, `toggle`, `attach_all`; `breakout.BreakoutPlaceholder` | A bigger view in a window of its own and back (3D View, Thermal, Budgets; the live map next): the same widget, so nothing is built twice; its place shows the placeholder with Bring Back; Ctrl+Shift+D, View > Own Windows and the palette |
+| Own window | `breakout.Breakouts`: `register(id, widget, title)`, `button(id)` for the view's toolbar, `detach`, `attach`, `toggle`, `attach_all`; `breakout.BreakoutPlaceholder` | A bigger view in a window of its own and back (3D View, Thermal, Budgets, the 3D View's map): the same widget, so nothing is built twice; its place shows the placeholder with Bring Back; Ctrl+Shift+D, View > Own Windows and the palette |
+| Ground map | `ground_map_widget.GroundMapWidget`: `set_scene`, `extend`, `set_frame`, `set_live`; `ground_map_widget.MapRenderer` and `render_map` in a worker; the look in `theme/ground_map_style.py` | Ground tracks, stations and visibility circles on a flat Earth (Results › 3D View's Map), painted by a worker into a `QImage`; the GUI thread draws only that image and the markers; an `EmptyState` without a run |
 
 ## Patterns
 
