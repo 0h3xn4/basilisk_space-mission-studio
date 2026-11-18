@@ -94,7 +94,7 @@ class DesignChecksWidget(QWidget):
         top.addWidget(QLabel("Spacecraft"))
         self.spacecraft_combo = ComboBox()
         top.addWidget(self.spacecraft_combo, 1)
-        self.check_button = set_role(QPushButton("Check"), variant="primary")
+        self.check_button = QPushButton("Check")  # secondary: the top bar's Run is the one accent (UI-03)
         self.check_button.setToolTip("Check the spacecraft's 3D model: fields of view, thrusters and plumes, mass "
                                      "budget, launcher envelope")
         self.check_button.clicked.connect(self.check)

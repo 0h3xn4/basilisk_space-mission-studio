@@ -50,6 +50,15 @@ RADIUS = {"control": 6, "panel": 8}  # [px] controls; panels, popovers and dialo
 FOCUS_RING = 2  # [px]
 BORDER = 1  # [px]
 ICON_SIZE = {"ui": 16, "rail": 20}  # [px]
+# An area's header (its title and commands, gui.shell.AreaPage): one row of
+# controls with a small inset above and below, the same in every area, so
+# the tab rows under it start at one height (UI audit UI-17).
+AREA_HEADER_HEIGHT = CONTROL_HEIGHT["default"] + 2 * SPACE["sm"]  # [px]
+# The top bar narrower than this (1280 px with the Inspector shown): its
+# search field shows its icon and key only, so the subtitle keeps room for
+# the save state (UI audit UI-36). About a scenario name, the state and the
+# commands with the whole search field.
+TOP_BAR_COMPACT_BELOW = 1040  # [px]
 # Motion: hover, panel open/close and toasts. Never data values or plots.
 MOTION_MS = {"fast": 120, "slow": 180}  # [ms]
 

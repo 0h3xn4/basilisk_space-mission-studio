@@ -51,7 +51,7 @@ from PySide6.QtGui import QAction, QPainter
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QProgressBar, QPushButton, QSizePolicy, QToolButton,
                                QVBoxLayout, QWidget)
 
-from .theme import icon
+from .theme import ICON_SIZE, SPACE, TOP_BAR_COMPACT_BELOW, icon, set_role
 from .theme.icons import keep_icon
 from .widgets import EmptyState
 
@@ -221,10 +221,34 @@ class RunProgressStrip(QFrame):
                 layout.invalidate()
 
 
+class SteadyToolButton(QToolButton):
+    """A tool button as wide as the longest of its ``texts``, whichever it
+    shows: the run-mode button, so Run and the search beside it do not
+    move when the mode changes (UI audit UI-36)."""
+
+    def __init__(self, texts: list[str], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.texts = list(texts)
+
+    def sizeHint(self) -> QSize:  # noqa: N802 -- Qt API name
+        hint = super().sizeHint()
+
+        def width(text: str) -> int:  # as Qt measures a tool button's text
+            return self.fontMetrics().size(Qt.TextFlag.TextShowMnemonic, text).width()
+
+        widest = max((width(text) for text in self.texts), default=0)
+        return QSize(hint.width() - width(self.text()) + widest, hint.height())
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 -- Qt API name
+        return self.sizeHint()  # Qt's own is the size hint too: one width whatever the text
+
+
 class TopBar(QWidget):
-    """Scenario name · saved or not · source · last run, the breadcrumbs
-    under them; on the right the window's commands (:meth:`add_commands`)
-    and, while the scenario has any, its problem count."""
+    """Scenario name, then the save state (its icon and its words) ·
+    source · last run, the breadcrumbs under them; on the right, while the
+    scenario has any, its problem count, then the window's commands
+    (:meth:`add_commands`). The subtitle elides, its whole text in its
+    tooltip."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -237,13 +261,22 @@ class TopBar(QWidget):
         self.name_label.setObjectName("topBarName")
         self.detail_label = ElidedLabel()
         self.detail_label.setObjectName("topBarDetail")
+        # The save state's own icon, before the subtitle that says it in words (UI audit UI-36).
+        self.save_state_icon = QLabel()
+        self.save_state_icon.setObjectName("topBarSaveState")
+        self.save_state_icon.setFixedSize(ICON_SIZE["ui"], ICON_SIZE["ui"])
+        self.save_state_icon.setVisible(False)
         self.breadcrumb_label = ElidedLabel()
         self.breadcrumb_label.setObjectName("topBarBreadcrumbs")
         self.breadcrumb_label.setAccessibleName("Where you are")
         title_row = QHBoxLayout()
         title_row.setSpacing(12)  # [px]
         title_row.addWidget(self.name_label)
-        title_row.addWidget(self.detail_label, 1)
+        detail_row = QHBoxLayout()
+        detail_row.setSpacing(SPACE["xs"])
+        detail_row.addWidget(self.save_state_icon)
+        detail_row.addWidget(self.detail_label, 1)
+        title_row.addLayout(detail_row, 1)
         left = QVBoxLayout()
         left.setSpacing(0)
         left.addLayout(title_row)
@@ -257,11 +290,18 @@ class TopBar(QWidget):
         self._dirty = False
         self._source = ""
         self._last_run = ""
+        self._state = ""
 
     def add_commands(self, undo: QAction, redo: QAction, save: QAction, run: QAction, mode_button: QWidget,
                      palette: QAction) -> None:
-        """Undo and redo as icons, Save showing the save state, Run with its
-        mode beside it, and the command palette's search field."""
+        """The problem count (shown while the scenario has problems), undo
+        and redo as icons, Save, Run with its mode beside it, and the
+        command palette's search field. Nothing moves when the count shows
+        or the mode changes (UI audit UI-36): the count is first, so it
+        takes its room from the subtitle, and the mode button has the width
+        of its longest mode."""
+        self.problems_button = _problems_button("topBarProblems")
+        self.commands.addWidget(self.problems_button)
         for action, name in ((undo, "undo-2"), (redo, "redo-2")):
             button = QToolButton()
             button.setDefaultAction(action)
@@ -269,9 +309,11 @@ class TopBar(QWidget):
             keep_icon(button, icon(name, "text.secondary"))
             button.setAccessibleName(action.text().replace("&", ""))
             self.commands.addWidget(button)
-        # Not the action's own button: it shows the save state, not "Save".
+        # Not the action's own button: it stays enabled while the scenario is open, and its
+        # label is always "Save"; the save state is the subtitle's, with its icon (UI-36).
         self.save_button = QToolButton()
         self.save_button.setObjectName("topBarSave")
+        self.save_button.setText("Save")
         self.save_button.setIcon(icon("save", "text.secondary"))
         self.save_button.setToolTip(save.toolTip())
         self.save_button.setAccessibleName("Save")
@@ -289,17 +331,37 @@ class TopBar(QWidget):
         self.commands.addSpacing(8)  # [px]
         self.search_button = QToolButton()
         self.search_button.setObjectName("topBarSearch")
-        self.search_button.setText(f"Search...  {palette.shortcut().toString()}")
+        self._search_texts = (f"Search...  {palette.shortcut().toString()}", palette.shortcut().toString())
+        self.search_button.setText(self._search_texts[0])
         self.search_button.setToolTip(palette.toolTip())
         self.search_button.setAccessibleName("Search commands")
         self.search_button.setIcon(icon("search", "text.secondary"))
         self.search_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.search_button.clicked.connect(palette.trigger)
         self.commands.addWidget(self.search_button)
-        self.problems_button = _problems_button("topBarProblems")
-        self.commands.addWidget(self.problems_button)
         self.set_problem_counts(0, 0)
         self._refresh_detail()
+        self._fit()
+
+    @property
+    def compact(self) -> bool:
+        """Whether the search field shows its icon and key only (a top bar
+        narrower than ``theme.TOP_BAR_COMPACT_BELOW``)."""
+        return bool(self.search_button is not None and self.search_button.property("compact"))
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 -- Qt API name
+        super().resizeEvent(event)
+        self._fit()
+
+    def _fit(self) -> None:
+        """The whole search field, or its icon and key on a narrow bar: by
+        the bar's width only, so a mode or a problem count never changes it."""
+        if self.search_button is None:
+            return
+        compact = self.width() < TOP_BAR_COMPACT_BELOW
+        if compact != self.compact:
+            set_role(self.search_button, compact=compact or None)
+            self.search_button.setText(self._search_texts[1 if compact else 0])
 
     def set_problem_counts(self, errors: int, warnings: int) -> None:
         """The scenario's problem count, shown only while it has some."""
@@ -330,11 +392,17 @@ class TopBar(QWidget):
         self._last_run = text
         self._refresh_detail()
 
+    @property
+    def save_state(self) -> str:
+        """ "Unsaved changes", "Unchanged", "Saved", "Not saved yet", or ""
+        while nothing is open."""
+        return self._state
+
     def _refresh_detail(self) -> None:
         if getattr(self, "_nothing_open", False):
             self.detail_label.setText("Start one on Home: a new scenario, a file or a template")
+            self._show_state("")
             if self.save_button is not None:
-                self.save_button.setText("Save")
                 self.save_button.setEnabled(False)
             return
         if self.save_button is not None:
@@ -352,9 +420,21 @@ class TopBar(QWidget):
             parts.append(f"from {self._source}")
         parts.append(self._last_run or "not run yet")
         self.detail_label.setText(" · ".join(parts))
-        if self.save_button is not None:
-            # The save state on the Save button too: a click saves.
-            self.save_button.setText("Save" if self._dirty else state)
+        self._show_state(state)
+
+    # The save state's icon: a dot for changes to save, a tick for nothing to save, a new file for a
+    # scenario never saved. Muted: the state is not a status (design rule 1).
+    _STATE_ICONS = {"Unsaved changes": "circle-dot", "Unchanged": "circle-check", "Saved": "circle-check",
+                    "Not saved yet": "file-plus"}
+
+    def _show_state(self, state: str) -> None:
+        self._state = state
+        self.save_state_icon.setVisible(bool(state))
+        self.save_state_icon.setAccessibleName(state)
+        self.save_state_icon.setToolTip(state)
+        if state:
+            size = ICON_SIZE["ui"]
+            self.save_state_icon.setPixmap(icon(self._STATE_ICONS[state], "text.secondary").pixmap(size, size))
 
 
 def source_of(path: Path | None, templates_dir: Path) -> str:

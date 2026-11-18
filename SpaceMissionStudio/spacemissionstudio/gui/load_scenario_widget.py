@@ -768,6 +768,12 @@ class LoadScenarioWidget(QWidget):
     def selected_card(self) -> TemplateCard | None:
         return self._selected
 
+    def set_primary(self, primary: bool) -> None:
+        """Open template is Home's primary action, in the accent, while no
+        scenario is open; with one open, the top bar's Run is the one
+        accent and Open template is secondary (UI audit UI-03)."""
+        set_role(self.open_template_button, variant="primary" if primary else "secondary")
+
     def _select_card(self, card: TemplateCard) -> None:
         if card is self._selected:
             return
@@ -793,7 +799,7 @@ class LoadScenarioWidget(QWidget):
         buttons = QHBoxLayout()
         buttons.setSpacing(SPACE["xs"])
         self.open_template_button = QPushButton("Open template")
-        self.open_template_button.setProperty("primary", True)
+        self.set_primary(True)
         self.open_template_button.setEnabled(False)
         self.open_template_button.clicked.connect(self._on_open_template_clicked)
         self.customize_template_button = QPushButton("Customize...")

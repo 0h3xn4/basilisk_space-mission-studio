@@ -602,6 +602,7 @@ QToolButton#topBarSearch {{
     padding: {px(SPACE['xs'])} {px(SPACE['md'])} {px(SPACE['xs'])} {px(SPACE['sm'])};
     min-width: {px(SPACE['xxl'] * 5)};
 }}
+QToolButton#topBarSearch[compact="true"] {{ min-width: 0px; }}
 QToolButton#topBarSearch:hover {{ border-color: {t['border.strong']}; }}
 QFrame#navRail {{
     background-color: {t['bg.surface']};

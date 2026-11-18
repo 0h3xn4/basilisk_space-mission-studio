@@ -277,7 +277,7 @@ def test_a_spacecraft_without_a_section_offers_to_add_one(unopened, tmp_path, to
     assert page.stack.currentWidget() is page.empty_state
     assert page.empty_state.title_label.text() == "No equipment list"
     assert page.empty_state.button.text() == "Add Budgets Section"
-    assert page.empty_state.button.property("variant") == "primary"
+    assert page.empty_state.button.property("variant") != "primary"  # the top bar's Run is the accent (UI-03)
     assert unopened.budgets_views.power_page.empty_state.title_label.text() == "No power budget"
     page.empty_state.button.click()
     section = _section(unopened)

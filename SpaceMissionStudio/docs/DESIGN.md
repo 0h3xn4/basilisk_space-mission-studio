@@ -43,6 +43,14 @@ SpaceMissionStudio, SystemDesignStudio and HarnessDesignStudio
 from the table (`tokens.tokens(mode)`).
 
 - **Accent:** the primary action, the selection and the focus ring only.
+  **One accent button per view** (UI audit B2): the top bar's Run, while
+  a run can start. A page's own buttons are secondary (the Run area's
+  Run, Check, Estimate, the empty states' Run and Add, Bring Back). Two
+  exceptions, both while Run cannot start because no scenario is open:
+  Home's Open template and the work areas' New Scenario. A disabled Run
+  is grey, so such a view has no second accent
+  (`tests/gui/test_primary_action.py` walks every area, tab and Scenario
+  page).
 - **Surfaces, not lines:** areas differ by background (canvas, surface,
   raised) and spacing; borders are 1 px and subtle, for inputs, table
   headers, panels and splitters. Group boxes have no frame: their title
@@ -235,20 +243,35 @@ bar and no toolbar:
   until there is room again; the tooltips and accessible names keep the
   names (decision B-19).
 - **Area header:** the area's title and its commands as buttons (Run's
-  run controls, Scenario's 3D Model...).
+  run controls, Scenario's 3D Model...). Every area shows it, Home,
+  Reports and Settings too, and it has one height in every area
+  (`theme.AREA_HEADER_HEIGHT`, 48 px), so the tab rows under it start at
+  one height. The commands are one row; with no room for their names
+  they show their icons only, the names in their tooltips and
+  accessible names, until there is room again. With no scenario open
+  the title stays and the commands step aside for the empty state.
 - **Top bar:**
-  - the scenario name, its state (unsaved, from a template or a file)
-    and the last run, with the breadcrumbs (area › page) under them;
-  - Undo, Redo, Save (it shows the save state), Run (the one primary,
-    accent, button) with its mode, the command search (Ctrl+K) and,
-    while there are any, the problem count.
+  - the scenario name, then its save state (an icon and the words
+    "Unsaved changes", "Unchanged", "Saved" or "Not saved yet"), where it
+    came from and the last run, with the breadcrumbs (area › page, in
+    every area with pages) under them. The subtitle elides; its tooltip
+    has all of it;
+  - while there are any, the problem count, then Undo, Redo, Save (it
+    always reads Save), Run (the one primary, accent, button; disabled,
+    with the reason in its tooltip, while no run can start) with its
+    mode, and the command search (Ctrl+K). The count comes first and the
+    mode button is as wide as its longest mode, so no button moves when
+    the count shows or the mode changes. A top bar narrower than
+    `theme.TOP_BAR_COMPACT_BELOW` (1280 px with the Inspector shown)
+    shows the search's icon and key only.
 - **Home (M3, `gui/load_scenario_widget.py`):** while it asks, the
   reference-data card across the top (it replaced the start-up dialog);
   then three columns: Start (New blank scenario, the recent scenarios
   with their empty state, Open a scenario file...), the template cards in as many columns
   as fit (at least 264 px each) with a filter, and the selected card's
-  whole description with Open template (the page's one accent button)
-  and Customize. A card is a `card` surface: hover `bg.hover`, selected
+  whole description with Open template (the page's one accent button
+  while no scenario is open; with one open, the top bar's Run is the
+  accent and Open template is secondary) and Customize. A card is a `card` surface: hover `bg.hover`, selected
   `bg.selected` with an accent edge, focus the 2 px ring; its three
   lines (attitude mode, orbit, the description's first sentence) are
   read from the template file. The cards are one Tab stop; the arrow
@@ -280,7 +303,8 @@ bar and no toolbar:
   icon and a word), run, scenario, mode, start (ISO 8601 UTC with Z) and
   duration in JetBrains Mono, right-aligned duration, and whether it is
   saved; sortable, newest first, Ctrl+C copies TSV; an empty state with
-  Run as its primary action; the provenance in a popover (a card).
+  Run (secondary, and disabled with Run's reason while no run can
+  start); the provenance in a popover (a card).
 - **The Log's record of a run (M5a):** the GUI logs each run's start,
   end, warnings and where it is saved (`spacemissionstudio.run`), in
   JetBrains Mono, with the level filter, the search and Copy.
@@ -414,7 +438,8 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 - **Command buttons:** every button of the top bar and the area headers
   has an icon, the run-mode drop-downs aside
   (`tests/gui/test_theme.py::test_every_command_button_has_an_icon`): Run
-  in the accent, Cancel in critical, the rest in `text.secondary`.
+  in the accent, Cancel in critical, the rest in `text.secondary`. The
+  top bar's Run draws its icon in `text.on_accent` on the accent fill.
 - **App icon:** drawn in code (`gui/icons.py`) in `palettes.APP_ICON`: the
   Earth (the 3D view's Blue Marble texture), an orbit, a satellite with a
   link beam to a ground station, and the Sun, on a dark rounded-square
@@ -526,6 +551,12 @@ search) finds, by name or an older name ("events" finds the Timeline):
 - the panels (Inspector, Problems) and the Settings sections;
 - the templates;
 - the plotted series.
+
+A command that cannot run now is disabled in every place at once: the
+menu, the palette, the header or top-bar button and its shortcut. Its
+tooltip and its palette entry say why (`ActionRegistry.set_available`):
+Run with no scenario, with an error in the scenario or while a run goes;
+Clear Time Cursor while no cursor is set (UI audit B2).
 
 Commands with a **standard key** take the platform's own key for it
 (Qt's `QKeySequence.StandardKey`), so their keys differ between systems.
@@ -679,8 +710,11 @@ it, for example:
 - **A work area with no scenario open** (Scenario, Run, Results,
   Timeline, Reports; the window starts so): "No scenario is open", what
   the area works on, and New Scenario (the primary action), Open... and
-  Go to Home (`gui.app_shell.NoScenarioState`, in place of the area's
-  header and content: `AreaPage.show_empty`).
+  Go to Home (`gui.app_shell.NoScenarioState`, under the area's title in
+  place of its commands and content: `AreaPage.show_empty`).
+
+The other empty states' buttons are secondary: the top bar's Run is the
+view's one accent (UI audit B2).
 
 ### Views in their own windows
 
@@ -689,7 +723,7 @@ decision "Breakout windows" in `docs/DECISIONS.md`):
 
 - **The same widget moves.** Its tab or slot shows a
   `BreakoutPlaceholder`: "<view> is in its own window", **Bring Back**
-  (primary) and **Show Window**. The tab keeps its index and its text.
+  (secondary: the top bar's Run is the accent) and **Show Window**. The tab keeps its index and its text.
 - **Every view opens docked** at start ("Calm by default"); no window
   opens by itself. Closing the window brings the view back; so do Bring
   Back, the view's own button and Ctrl+Shift+D.

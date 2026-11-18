@@ -42,13 +42,15 @@ class PaletteEntry:
     shortcut: str = ""
     enabled: bool = True
     keywords: str = ""  # other names it is found by, not shown
+    reason: str = ""  # why it is disabled, when it is and the command says
 
 
 def command_entries(registry) -> list[PaletteEntry]:
     """One entry per command of ``registry`` (:class:`gui.actions.ActionRegistry`),
     named "Category > Command"."""
     return [PaletteEntry(f"{command.category} > {command.label}", command.action.trigger, command.keys,
-                         command.action.isEnabled(), " ".join(command.keywords)) for command in registry]
+                         command.action.isEnabled(), " ".join(command.keywords),
+                         "" if command.action.isEnabled() else command.unavailable) for command in registry]
 
 
 def matches(query: str, entries: list[PaletteEntry]) -> list[PaletteEntry]:
@@ -93,7 +95,7 @@ class CommandPalette(QDialog):
             item.setData(Qt.ItemDataRole.UserRole, entry)
             if not entry.enabled:
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
-                item.setToolTip("Not available right now.")
+                item.setToolTip(entry.reason or "Not available right now.")
             self.list.addItem(item)
         first = next((i for i in range(self.list.count()) if self.list.item(i).flags() & Qt.ItemFlag.ItemIsEnabled),
                      None)

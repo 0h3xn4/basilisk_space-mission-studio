@@ -155,11 +155,18 @@ def test_new_scenario_opens_one_and_enables_its_commands(window):
         assert not page.showing_empty and not page.empty_state.isVisibleTo(window)
     window.shell.show_area("run")
     assert window.shell.page("run").header.isVisible() and window.run_views.isVisible()
-    for command_id in ("file.save", "file.save_as", "run.run", "tools.model_3d", "view.explain"):
+    for command_id in ("file.save", "file.save_as", "tools.model_3d", "view.explain"):
         assert window.commands.action(command_id).isEnabled(), command_id
     assert window.run_mode_button.isEnabled()
     assert not window._dirty
     assert any(label.startswith("Go to > Scenario >") for label in (e.label for e in window.palette_entries()))
+    # Run once the blank scenario can run: it has an error until it has a spacecraft (UI-55).
+    from spacemissionstudio.schema.scenario import OrbitIC, SpacecraftConfig
+
+    window.scenario_editor.spacecraft_list.from_list([SpacecraftConfig(
+        name="sat-1", orbit=OrbitIC(type="cartesian", position_km=[7000, 0, 0], velocity_km_s=[0, 7.5, 0]))])
+    window.scenario_editor.changed.emit()
+    assert window.commands.action("run.run").isEnabled(), "run.run"
 
 
 def test_the_empty_state_opens_new_open_and_home(window, tmp_path, monkeypatch):

@@ -526,7 +526,7 @@ class EquipmentPage(QWidget):
         layout.setSpacing(SPACE["sm"])
         self.stack = QStackedWidget()
         layout.addWidget(self.stack)
-        self.empty_state = EmptyState("No spacecraft", primary=True)
+        self.empty_state = EmptyState("No spacecraft")  # its button secondary: Run is the one accent (UI-03)
         self.empty_state.button.clicked.connect(self.section_added)
         self.stack.addWidget(self.empty_state)
 
@@ -538,8 +538,7 @@ class EquipmentPage(QWidget):
             "Equipment list", "No equipment item yet",
             "Add an item for each unit: its mass, maturity, bus and power modes.", self.add_item_action,
             (self.add_item_action, self.remove_item_action), icon_only=False)
-        self.items_table.empty.button.setText("Add Item")
-        set_role(self.items_table.empty.button, variant="primary")  # the one action of an empty list
+        self.items_table.empty.button.setText("Add Item")  # secondary: Run is the one accent (UI-03)
         self.items_table.model.edited.connect(self._on_items_edited)
         self.items_table.view.selectionModel().currentRowChanged.connect(self._on_item_picked)
         self.modes_table = EditableTable(

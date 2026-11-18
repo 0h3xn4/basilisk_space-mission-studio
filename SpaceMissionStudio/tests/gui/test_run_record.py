@@ -143,7 +143,7 @@ def test_history_lists_a_run_with_its_status_mode_and_duration(window, qtbot):
     double-click shows Results. The empty state has Run."""
     view = window.history_view
     assert view.empty.isVisibleTo(view) and not view.table.isVisibleTo(view)
-    assert view.empty_run_button.property("variant") == "primary"
+    assert view.empty_run_button.property("variant") != "primary"  # the top bar's Run is the accent (UI-03)
     _finish_a_run(window)
     _saved(window, qtbot)
     entry = view.entries()[0]

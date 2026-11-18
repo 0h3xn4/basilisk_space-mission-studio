@@ -29,6 +29,23 @@ fixes bugs.
   short list. Run › Design Checks offers Check before the first check.
   Run › Thermal › Heat flows asks for a node in one compact line, so the
   table gets the room.
+- **One primary action, stable headers** (UI audit batch B2). Each view
+  now has at most one accent button: the top bar's Run. The Run area's
+  own Run, Check, Estimate and the empty states' buttons are plain
+  buttons. On Home, Open template is the accent until a scenario is open.
+- Run is disabled when no run can start: with no scenario, with an error
+  in the scenario or while a run goes. Its tooltip and its command
+  palette entry say why. Clear Time Cursor is enabled only while a time
+  cursor is set.
+- Every area shows its title in a header of one height, Reports, Home
+  and Settings too, so the tab rows no longer jump between areas. A
+  header without room for its buttons' names shows their icons. The
+  breadcrumb names the Reports page.
+- The top bar's Save always says Save; the save state stays in the line
+  beside the scenario name, now with its own icon. Run and the other
+  buttons no longer move when you change the run mode or when the
+  problem count appears. With the Inspector open at 1280 px the search
+  field shows only its icon and Ctrl+K, so the save state stays readable.
 
 ## 2.12.0 (2026-11-18)
 

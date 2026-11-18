@@ -34,7 +34,7 @@
   itself (:meth:`DataTable.set_presorted`) instead of through the proxy;
 - filtering is a predicate on the model's rows (:meth:`DataTable.set_row_filter`);
   columns can be hidden (:meth:`DataTable.set_hidden_columns`);
-- an empty state (its text, and a primary action when one is given)
+- an empty state (its text, and its action when one is given)
   instead of an empty grid.
 """
 
@@ -248,7 +248,7 @@ class _View(QTableView):
 
 class DataTable(QWidget):
     """A table of values (see the module docstring). ``action_requested``:
-    the empty state's primary action."""
+    the empty state's action."""
 
     action_requested = Signal()
     row_chosen = Signal(int)  # the model row picked (set_single_pick)
@@ -268,7 +268,7 @@ class DataTable(QWidget):
         self.empty_label.setWordWrap(True)
         self.empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(self.empty_label)
-        self.empty_button = set_role(QPushButton(action or ""), variant="primary")
+        self.empty_button = QPushButton(action or "")  # secondary: the top bar's Run is the one accent (UI-03)
         self.empty_button.setVisible(action is not None)
         self.empty_button.clicked.connect(self.action_requested)
         empty_layout.addWidget(self.empty_button, 0, Qt.AlignmentFlag.AlignHCenter)

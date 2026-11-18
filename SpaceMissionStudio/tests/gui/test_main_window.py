@@ -751,6 +751,7 @@ def test_run_finished_exception_still_stops_busy_indicator(window, monkeypatch):
     from spacemissionstudio.engine.results import ResultSet
     from spacemissionstudio.gui import main_window as main_window_module
 
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running test...")
     monkeypatch.setattr(
         window.results_widget, "set_live_result",
@@ -770,6 +771,7 @@ def test_run_cancelled_exception_still_stops_busy_indicator(window, monkeypatch)
     from spacemissionstudio.engine.results import ResultSet
     from spacemissionstudio.gui import main_window as main_window_module
 
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running test...")
     window.abort_action.setEnabled(True)
     monkeypatch.setattr(
@@ -844,6 +846,7 @@ def test_run_finished_stops_busy_indicator_and_reenables_actions(window):
     Carlo."""
     from spacemissionstudio.engine.results import ResultSet
 
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running test...")
     window._on_run_finished(ResultSet(scenario_name="test", series={}))
     assert not window._busy_timer.isActive()
@@ -857,6 +860,7 @@ def test_run_failed_stops_busy_indicator_and_reenables_actions(window, monkeypat
     from PySide6.QtWidgets import QMessageBox
 
     monkeypatch.setattr(QMessageBox, "critical", staticmethod(lambda *a, **k: None))
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running test...")
     window._on_run_failed("boom")
     assert not window._busy_timer.isActive()
@@ -1027,6 +1031,7 @@ def test_run_monte_carlo_asks_consent_for_script_blocks(window, monkeypatch, tmp
 def test_monte_carlo_finished_stops_busy_indicator_and_reenables_actions(window):
     """A finished Monte Carlo batch stops the busy indicator and enables both
     run actions."""
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running Monte Carlo test...")
     window._on_monte_carlo_finished([])
     assert not window._busy_timer.isActive()
@@ -1068,6 +1073,7 @@ def test_monte_carlo_failed_stops_busy_indicator_and_reenables_actions(window, m
     from PySide6.QtWidgets import QMessageBox
 
     monkeypatch.setattr(QMessageBox, "critical", staticmethod(lambda *a, **k: None))
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running Monte Carlo test...")
     window._on_monte_carlo_failed("boom")
     assert not window._busy_timer.isActive()
@@ -1333,6 +1339,7 @@ def test_run_cancelled_updates_results_widget_and_status(window):
     the run was cancelled."""
     from spacemissionstudio.engine.results import ResultSet, TimeSeries
 
+    _add_valid_spacecraft(window)  # Run is enabled again only for a scenario that can run (UI-55)
     window._start_busy("Running test...")
     window.abort_action.setEnabled(True)
     window._last_run_epoch_utc = "2032-01-01T00:00:00"

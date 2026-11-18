@@ -219,7 +219,7 @@ def test_detach_and_attach_keep_the_same_3d_view_its_page_and_its_state(window, 
     assert tabs.widget(index) is placeholder and tabs.tabText(index) == "3D View" and tabs.count() == count
     assert tabs.currentIndex() == index and placeholder.isVisible()
     assert placeholder.title_label.text() == "3D View is in its own window"
-    assert placeholder.button.text() == "Bring Back" and placeholder.button.property("variant") == "primary"
+    assert placeholder.button.text() == "Bring Back" and placeholder.button.property("variant") != "primary"
     assert view.web_view is web_view and view.scene is scene and view.slider.value() == 42
     view.slider.setValue(100)  # the page keeps drawing in the window
     qtbot.waitUntil(lambda: _js(qtbot, view, "MV.frame") == 100, timeout=10000)

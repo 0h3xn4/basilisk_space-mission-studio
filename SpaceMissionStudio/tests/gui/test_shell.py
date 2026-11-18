@@ -195,16 +195,17 @@ def test_the_breadcrumbs_say_where_the_window_is(unopened_window):
 
 
 def test_the_save_button_shows_the_save_state_and_saves(window, monkeypatch):
-    """The top bar's Save says whether the scenario is saved; a click is
-    the Save command (here asking where, and cancelled)."""
+    """The top bar says whether the scenario is saved, beside Save, which
+    always reads Save (UI-36); a click is the Save command (here asking
+    where, and cancelled)."""
     from PySide6.QtWidgets import QFileDialog
 
     monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(lambda *a, **k: ("", "")))
     saved = []
     window.save_action.triggered.connect(lambda: saved.append(True))
-    assert window.top_bar.save_button.text() == "Not saved yet"
+    assert window.top_bar.save_button.text() == "Save" and window.top_bar.save_state == "Not saved yet"
     window.scenario_editor.name_edit.setText("changed")
-    assert window.top_bar.save_button.text() == "Save"
+    assert window.top_bar.save_button.text() == "Save" and window.top_bar.save_state == "Unsaved changes"
     window.top_bar.save_button.click()
     assert saved == [True]
 

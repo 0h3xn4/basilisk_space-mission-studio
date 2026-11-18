@@ -36,6 +36,13 @@ def window(qtbot, monkeypatch):
     return w
 
 
+def _spacecraft():
+    from spacemissionstudio.schema.scenario import OrbitIC, SpacecraftConfig
+
+    return SpacecraftConfig(name="sat-1", orbit=OrbitIC(type="cartesian", position_km=[7000, 0, 0],
+                                                        velocity_km_s=[0, 7.5, 0]))
+
+
 def _items(menu):
     """(text without ampersands, action) of a menu's items, submenus by title."""
     return [(action.text().replace("&", ""), action) for action in menu.actions() if not action.isSeparator()]
@@ -85,9 +92,12 @@ def test_the_menus_put_the_commands_where_people_look_for_them(window):
 
 def test_menu_items_follow_their_commands_state(window):
     """With nothing open, Save and Run are disabled in their menus too;
-    New opens a scenario and they are enabled."""
+    New opens a scenario and they are enabled (Run once the scenario has a
+    spacecraft: a blank one has an error, UI-55)."""
     assert not window.commands.action("file.save").isEnabled()
     window.on_new()
+    window.scenario_editor.spacecraft_list.from_list([_spacecraft()])  # Run needs a scenario that can run (UI-55)
+    window.scenario_editor.changed.emit()
     assert window.commands.action("run.run").isEnabled()
     save = dict(_items(window.menus["File"]))["Save"]
     assert save is window.commands.action("file.save") and save.isEnabled()

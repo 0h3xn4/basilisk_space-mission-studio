@@ -71,7 +71,8 @@ from . import export_log
 from .actions import ActionRegistry
 from .menu_bar import build_menu_bar
 from .breakout import BACK_TEXT, OPEN_TEXT, SHORTCUT as BREAKOUT_SHORTCUT, Breakouts
-from .app_shell import NoScenarioState, RunProgressStrip, StatusBarItems, StatusChip, TopBar, source_of
+from .app_shell import (NoScenarioState, RunProgressStrip, StatusBarItems, StatusChip, SteadyToolButton, TopBar,
+                        source_of)
 from .feedback import StaleResultsBanner, report, show_toast
 from .icons import toolbar_icon
 from .data_panel_widget import NOT_READ, DataPanelWidget
@@ -111,7 +112,6 @@ from .run_page import RunModeControl, RunPage
 from .widgets import TabWidget, make_window, show_window
 from .theme import (CONTENT_MAX_WIDTH_PX, apply_theme, current_theme, follow_system, icon, resolve_theme,
                     set_theme_setting, theme_setting)
-from .theme.icons import keep_icon
 from .compare_widget import CompareWidget
 from .workspace_panels import InspectorWidget, LogViewWidget, ProblemsWidget, install_log_view
 
@@ -869,8 +869,10 @@ class MainWindow(QMainWindow):
         self._on_run_mode_changed()
 
     def _run_mode_button(self) -> QToolButton:
-        button = QToolButton()
+        # As wide as its longest mode: Run and the search beside it never move (UI audit UI-36).
+        button = SteadyToolButton([label for label, _doing in self._RUN_MODE_TEXT.values()])
         button.setObjectName("runModeButton")
+        button.setAccessibleName("Run mode")
         button.setMenu(self.run_mode_menu)
         button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         button.setToolTip("What Run starts: a single run, the Monte Carlo batch, or SIL")
@@ -919,8 +921,8 @@ class MainWindow(QMainWindow):
         self.shell.page("scenario").add_command(self.model_3d_action)
         self.shell.page("scenario").add_command(self.change_history_action)
         run = self.shell.page("run")
-        self.run_area_run_button = run.add_command(self.run_action, primary=True)
-        keep_icon(self.run_area_run_button, icon("play", "text.on_accent"))  # the accent icon would vanish on the fill
+        # The Run area's own Run is secondary: the one accent is the top bar's Run (UI audit UI-03).
+        self.run_area_run_button = run.add_command(self.run_action)
         # The mode as a segmented control (M5b); its options are on the Run page.
         self.run_mode_control = RunModeControl()
         self.run_mode_control.chosen.connect(self.set_run_mode)
@@ -949,7 +951,7 @@ class MainWindow(QMainWindow):
         self.shell.rail.collapsed_changed.connect(self.rail_collapse_action.setChecked)
         self.scenario_editor.page_tree.tree.currentItemChanged.connect(self._refresh_breadcrumbs)
         self.scenario_editor.mode_changed.connect(self._refresh_breadcrumbs)
-        for tabs in (self.results_views, self.run_views, self.budgets_views):
+        for tabs in (self.results_views, self.run_views, self.budgets_views, self.reports_views):
             tabs.currentChanged.connect(self._refresh_breadcrumbs)
         # The menu bar: the same commands, by menu (gui.menu_bar).
         self.menus = build_menu_bar(self.menuBar(), self.commands, self._on_recent_menu)
@@ -960,9 +962,10 @@ class MainWindow(QMainWindow):
     # The areas that work on an open scenario: an empty state while none is.
     _SCENARIO_AREAS = ("scenario", "run", "results", "budgets", "timeline", "reports")
     # The commands that need an open scenario: disabled while none is (Settings, Help, New and Open stay).
+    # Run and Clear Time Cursor have their own rules too (_refresh_run_command, _refresh_clear_cursor).
     _SCENARIO_COMMANDS = ("file.save", "file.save_as", "file.change_history", "run.run", "run.mode.single",
                           "run.mode.monte_carlo", "run.mode.sil", "run.live_plot", "run.open_monte_carlo",
-                          "run.clear_cursor", "tools.model_3d", "tools.ccsds_export",
+                          "tools.model_3d", "tools.ccsds_export",
                           "analyses.end_of_life", "analyses.budget", "analyses.design_checks",
                           "tools.flight_software", "view.explain", "budgets.add_item", "budgets.remove_item",
                           "budgets.copy_csv", "view.window.3d_view", "view.window.thermal", "view.window.budgets",
@@ -1019,6 +1022,9 @@ class MainWindow(QMainWindow):
         for action in self._scenario_commands():
             action.setEnabled(is_open)
         self._set_running(self._run_going())  # the run commands: not while a run goes either
+        self._refresh_clear_cursor()
+        # Home's own primary (Open template) while Run cannot start for want of a scenario (UI-03).
+        self.load_scenario_widget.set_primary(not is_open)
         self._update_undo_actions()
         if is_open and not was_open:
             self._error_count = None  # the problems of a scenario just opened only count (G8)
@@ -1096,8 +1102,9 @@ class MainWindow(QMainWindow):
                 names.insert(0, item.text(0))
                 item = item.parent()
             parts += names
-        elif area_id in ("results", "run", "budgets"):
-            tabs = {"results": self.results_views, "run": self.run_views, "budgets": self.budgets_views}[area_id]
+        elif area_id in ("results", "run", "budgets", "reports"):
+            tabs = {"results": self.results_views, "run": self.run_views, "budgets": self.budgets_views,
+                    "reports": self.reports_views}[area_id]
             parts.append(tabs.tabText(tabs.currentIndex()).replace("&", ""))
         self.top_bar.set_breadcrumbs(parts)
 
@@ -1489,6 +1496,7 @@ class MainWindow(QMainWindow):
             shown = {row[1] for row in rows}  # the scenario checks can name a finding already (shading)
             rows += [row for row in (thermal.problem_rows() if thermal is not None else []) if row[1] not in shown]
         editor = self.scenario_editor
+        self._refresh_run_command()  # an error in the scenario: Run cannot start (UI-55)
         self.problems_widget.set_scenario_open(self._scenario_open)  # no "valid" without a scenario (UI-24)
         self.problems_widget.set_problems(rows, [c.name for c in editor.spacecraft_list.to_list()],
                                           [g.name for g in editor.ground_station_list.to_list()])
@@ -2176,9 +2184,19 @@ class MainWindow(QMainWindow):
         self.show_view(self.results_widget)
 
     def _on_time_cursor_changed(self, time_s) -> None:
+        self._refresh_clear_cursor()
         self.time_cursor_label.setVisible(time_s is not None)
         if time_s is not None:
             self.time_cursor_label.setText("Cursor " + describe_time(time_s, self._last_run_epoch_utc))
+
+    def _refresh_clear_cursor(self) -> None:
+        """Clear Time Cursor only while a cursor is set (UI audit UI-41), in
+        the menu, the palette and the Results and Timeline headers."""
+        if not hasattr(self, "commands"):
+            return  # still being built
+        reason = ("" if self._scenario_open and self.time_cursor.time_s is not None
+                  else "No time cursor is set. Click a plot or the Timeline to set one.")
+        self.commands.set_available("run.clear_cursor", reason)
 
     def _confirm_discard_unsaved(self) -> bool:
         """Returns True if it's OK to proceed (no unsaved changes, the user
@@ -2401,14 +2419,37 @@ class MainWindow(QMainWindow):
         single run's worker was still using ``self._run_worker``, silently
         losing track of it. One run at a time.
         """
-        needs_scenario = {self.run_action, self.live_plot_action,
-                          *self.run_mode_group.actions()}  # and none is open: they stay disabled
-        for action in (self.run_action, self.live_plot_action, self.check_kernels_action,
-                       *self.run_mode_group.actions()):
+        self._running = running
+        needs_scenario = {self.live_plot_action, *self.run_mode_group.actions()}  # and none is open: disabled
+        for action in (self.live_plot_action, self.check_kernels_action, *self.run_mode_group.actions()):
             action.setEnabled(not running and (self._scenario_open or action not in needs_scenario))
         for button in (getattr(self, "run_mode_button", None), getattr(self, "run_mode_control", None)):
             if button is not None:
                 button.setEnabled(not running and self._scenario_open)
+        self._refresh_run_command()
+
+    def _run_blocker(self) -> str:
+        """Why Run cannot start now, or "" when it can (UI audit UI-55): a
+        run going, no scenario open, or an error in the scenario."""
+        if getattr(self, "_running", False):
+            return "A run is going. Wait for it to end, or cancel it (Esc)."
+        if not self._scenario_open:
+            return "No scenario is open. Open one on Home."
+        if any(severity == "error" for severity, _text in self.scenario_editor.problems):
+            return "The scenario has an error. The Problems panel (Ctrl+J) says what to fix."
+        return ""
+
+    def _refresh_run_command(self) -> None:
+        """Run enabled only when a run can start, else disabled with the
+        reason in its tooltip and palette entry; the empty states' Run
+        buttons follow it. A disabled Run is not drawn in the accent."""
+        if not hasattr(self, "commands") or "run.run" not in self.commands:
+            return  # still being built
+        reason = self._run_blocker()
+        self.commands.set_available("run.run", reason)
+        for button in (self.history_view.empty_run_button, self.results_overview.empty_run_button):
+            button.setEnabled(not reason)
+            button.setToolTip(reason or self.run_action.toolTip())
 
     def _start_busy(self, message: str, determinate: bool = False, cancellable: bool = True,
                     cancel_note: str = "") -> None:
@@ -2576,6 +2617,7 @@ class MainWindow(QMainWindow):
             self._refresh_run_page()
         self.commands.refresh_tooltip("run.run", tip=f"{doing}. Pick another mode beside it. The scenario must be "
                                                      "valid first: Problems says what to fix.")
+        self._refresh_run_command()  # the empty states' Run buttons take the new tooltip
 
     def _on_live_plot_toggled(self, checked: bool) -> None:
         self.live_plot_action.setText(f"Live plot: {'on' if checked else 'off'}")
