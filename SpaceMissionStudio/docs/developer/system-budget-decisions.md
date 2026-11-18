@@ -264,3 +264,15 @@ now says Budgets › Propellant › Copy as CSV. **Alternatives:** three new
 rows. **Why:** `test_reports_and_settings.py` pins the list of exports,
 and Q3 moved a tab; it did not add exports. A later version can add the
 rows with their test.
+
+## B-26 A Budgets area in its own window is shown (2026-11-17)
+
+**Chosen:** with the area in a window of its own (2.12.0, decision
+"Breakout windows" in `docs/DECISIONS.md`), the area and the page
+selected there count as shown for B-21 and B-23: they are computed after
+an edit, and Remove Equipment Item and Copy as CSV act on them from
+either window. A command from the main window brings the area's window
+to the front, not the Budgets area. **Alternatives:** count only the
+area in the main window. **Why:** the owner's answer to Q2 of
+`windows-views-design.md`; the page in its own window is the one the
+user sees.

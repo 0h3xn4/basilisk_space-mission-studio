@@ -18,6 +18,10 @@
  *                           (mission_view_widget.temperature_frames), or null for the model's own
  *   MV.state()              what is drawn, for the tests
  *
+ * A lost WebGL context (the view moved to a window of its own, gui/breakout.py;
+ * a driver reset) is recovered by the page itself: MV.recover makes a new
+ * renderer and loads the same scene again, camera, view, frame and colours kept.
+ *
  * Positions are kilometres in the run's inertial frame N (x, y, z of
  * three.js), held in double precision (JavaScript numbers). Every frame
  * they are taken relative to the camera's focus (the floating origin: the
@@ -36,7 +40,7 @@ const MV = {
             stars: true, groundTrack: false},
   loaded: {earth: '', stars: ''}, textures: {}, playback: {speed: '', playing: false}, live: false,
   crafts: [], stations: [], links: [], labels: [], lastRotation: 0, rendererName: '', software: false,
-  temperatures: null,
+  temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null, recoverTries: 0,
 };
 // No graphics card: start in reduced quality. Chromium's SwiftShader,
 // Mesa's llvmpipe/softpipe, Windows' WARP ("Microsoft Basic Render Driver").
@@ -45,6 +49,8 @@ const TRACK_REBUILD_MS = 500;  // [ms] a live ground track is rebuilt at most th
 const ZAXIS = new THREE.Vector3(0, 0, 1);
 const TRAIL_FRACTION = 0.1;  // [-] of the run's frames shown as each spacecraft's trail
 const ORBIT_VIEW = new THREE.Vector3(1.0, 1.0, 0.6).normalize();  // [-] Whole orbit looks from here without a Sun
+const RECOVER_AFTER_MS = 2000;  // [ms] a lost context not given back by then: a new renderer anyway
+const RECOVER_TRIES = 5;  // [-] new renderers tried, RECOVER_AFTER_MS apart, before the view says WebGL is gone
 
 // ---------------------------------------------------------------- setup
 MV.init = function () {
@@ -115,11 +121,23 @@ MV.createRenderer = function (options) {
   return new THREE.WebGLRenderer(options);
 };
 
+// No WebGL (no graphics driver and no software fallback): say so in the
+// view instead of failing on every frame.
+MV.showNoWebgl = function () {
+  const host = document.getElementById('view');
+  MV.webgl = false;
+  host.textContent = 'This computer could not start WebGL, which the 3D View draws with. ' +
+    'Update the graphics driver, or start the app where a graphics card or software rendering is available.';
+  host.className = 'no-webgl';
+  MV.makeControls();
+};
+
+
 // The WebGL renderer, made once: antialiased if the page starts in full
 // quality, not if it starts reduced (multisampling is most of a software
 // renderer's cost); a later quality switch keeps it. The logarithmic
 // depth buffer keeps millimetres and the Moon's distance in one view.
-MV.makeRenderer = function () {
+MV.makeRenderer = function (retrying) {
   const host = document.getElementById('view'), full = MV.quality === 'full';
   if (MV.renderer) {
     host.removeChild(MV.renderer.domElement);
@@ -130,26 +148,88 @@ MV.makeRenderer = function () {
   try {
     renderer = MV.createRenderer({antialias: full, logarithmicDepthBuffer: true});
   } catch (e) {
-    // No WebGL (no graphics driver and no software fallback): say so in
-    // the view instead of failing on every frame.
-    MV.webgl = false;
-    host.textContent = 'This computer could not start WebGL, which the 3D View draws with. ' +
-      'Update the graphics driver, or start the app where a graphics card or software rendering is available.';
-    host.className = 'no-webgl';
-    MV.makeControls();
-    return;
+    // A recovery while the GPU process is still starting again: the caller
+    // tries again later (MV.recover).
+    if (retrying) return false;
+    MV.showNoWebgl();
+    return false;
   }
   MV.webgl = true;
   renderer.setPixelRatio(full ? (window.devicePixelRatio || 1) : 1);
   renderer.setSize(host.clientWidth || window.innerWidth, host.clientHeight || window.innerHeight);
   host.appendChild(renderer.domElement);
   renderer.domElement.addEventListener('dblclick', function () { MV.resetView(); });
+  renderer.domElement.addEventListener('webglcontextlost', MV.onContextLost);
+  renderer.domElement.addEventListener('webglcontextrestored', MV.onContextRestored);
   MV.renderer = renderer;
   if (MV.style) renderer.setClearColor(new THREE.Color(MV.style.space), 1);
   const target = MV.controls ? MV.controls.target.clone() : null, enabled = MV.controls ? MV.controls.enabled : true;
   MV.makeControls();
   if (target) MV.controls.target.copy(target);
   MV.controls.enabled = enabled;
+  MV.dirty = true;
+  return true;
+};
+
+// The WebGL context went away (the web view moved to another native
+// window, a driver reset): stop drawing and ask for it back
+// (preventDefault); MV.recover runs when it is given back, or after
+// RECOVER_AFTER_MS with a new context of its own.
+MV.onContextLost = function (event) {
+  if (event) event.preventDefault();
+  if (MV.contextLost) return;
+  MV.contextLost = true;
+  clearTimeout(MV.recoverTimer);
+  MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS);
+};
+
+MV.onContextRestored = function () {
+  clearTimeout(MV.recoverTimer);
+  MV.recoverTimer = null;
+  MV.recover();
+};
+
+// A new renderer for the same scene. The scene is not loaded again: its
+// objects, materials and textures do not belong to a WebGL context, and the
+// new renderer uploads them on its first frame. So the camera, the view,
+// the frame, the time shown, the live state, the theme's materials and a
+// thermal case's colours stay as they were. (Loading the scene again reset
+// them; a software renderer on Windows loses and restores its context
+// during normal use.)
+//
+// No new context yet (the GPU process is still starting again, as on
+// Windows when the view moves to a window of its own): the view stays as
+// it is and tries again RECOVER_AFTER_MS later, RECOVER_TRIES times in all,
+// before it says that WebGL is gone.
+MV.recover = function () {
+  clearTimeout(MV.recoverTimer);
+  MV.recoverTimer = null;
+  if (!MV.contextLost) return;
+  if (!MV.makeRenderer(true)) {
+    MV.recoverTries += 1;
+    if (MV.recoverTries < RECOVER_TRIES) {
+      MV.recoverTimer = setTimeout(MV.recover, RECOVER_AFTER_MS);
+    } else {
+      MV.contextLost = false;
+      MV.showNoWebgl();
+    }
+    return;
+  }
+  MV.recoverTries = 0;
+  MV.contextLost = false;
+  if (MV.scene) {
+    MV.scene.traverse(function (object) {
+      const materials = !object.material ? [] : (Array.isArray(object.material) ? object.material : [object.material]);
+      materials.forEach(function (material) {
+        ['map', 'emissiveMap', 'normalMap', 'bumpMap', 'alphaMap'].forEach(function (key) {
+          if (material[key]) material[key].needsUpdate = true;
+        });
+        material.needsUpdate = true;
+      });
+    });
+  }
+  MV.resize();
+  MV.recoveries += 1;
   MV.dirty = true;
 };
 
@@ -918,9 +998,13 @@ MV.updateLabels = function () {
 
 // Without WebGL the scene is still updated (time, views, lines of sight,
 // labels), only not drawn.
+// The scene, the overlay and the labels follow the frame even while the
+// WebGL context is lost; only the draw call waits for a context. (Skipping
+// the whole frame left the time shown and the sky as they were: a software
+// renderer on Windows loses its context during normal use.)
 MV.render = function () {
   MV.update();
-  if (MV.renderer) MV.renderer.render(MV.scene, MV.camera);
+  if (MV.renderer && !MV.contextLost) MV.renderer.render(MV.scene, MV.camera);
   MV.updateLabels();
   MV.dirty = false;
 };
@@ -1069,6 +1153,8 @@ MV.state = function () {
     trackPoints: MV.crafts.map(function (c) { return c.data.track ? c.data.track.length : null; }),
     temperatures: MV.temperatures ? {craft: MV.temperatures.craft, case: MV.temperatures.case,
                                      frames: MV.temperatures.colours.length} : null,
+    contextLost: MV.contextLost, recoveries: MV.recoveries,
+    contextAlive: MV.renderer ? !MV.renderer.getContext().isContextLost() : null,
   };
 };
 

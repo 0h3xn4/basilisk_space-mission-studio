@@ -32,6 +32,11 @@ sent anywhere.
   frames are slow; your own choice is kept).
 - Drag to turn the view, scroll to zoom, right-drag to pan, double-click
   or Home to reset.
+- **Open in Own Window** (the last button of the row, or `Ctrl+Shift+D`):
+  the same view in a window of its own, with its run, camera and
+  playback; a run shown live goes on there. `Ctrl+Shift+D` in that
+  window, **Bring Back** or closing the window puts it back
+  ([Open a view in its own window](../../USER_MANUAL.md#open-a-view-in-its-own-window)).
 
 ## While it runs
 

@@ -18474,3 +18474,163 @@ replaces the satellite and keeps #276's plate, rim, hicolor sizes, SVG,
 - **Tests** (`tests/gui/test_icons.py`, `test_app.py`): land on the Earth
   (not only ocean), the Windows taskbars, the SVG inside the plate, the
   documentation files, and the app ID only on Windows.
+
+## 2.12.0 windows and views: breakout windows (2026-11-17)
+
+The second part of 2.12.0 (`docs/developer/windows-views-design.md`,
+section 2 and the answered questions; PR-2). The owner: "thermal
+simulation should have its own breakout window, similar to the 3d model
+window. basically, every 'bigger' feature inside SpaceMissionStudio
+should have its own breakout window", and "it would be great if the 3D
+viewer/render would be a separate window".
+
+**One mechanism.** The new `gui/breakout.py` moves Results › 3D View,
+Run › Thermal and the Budgets area into a window of their own and back.
+`Breakouts.register(id, widget, title)` is the whole API for a view; the
+live 2D map of PR-3 is one more call. The 3D model editor, the
+precedent, edits a copy with OK and Cancel. A view must stay the same
+live widget, so the mechanism moves the widget itself: the web view, the
+scene, the live timer, the playback and the time cursor stay, and a run
+shown live goes on in the window. Its place shows a placeholder, "<view>
+is in its own window", with **Bring Back** and **Show Window**; the tab
+keeps its index and text.
+
+**The view keeps its parent (measured).** The design note's first form
+put the view in a new top-level window. A new parent makes Qt restyle
+every widget of the view under the application's style sheet: 50 to 70
+ms for Budgets' 431 widgets, offscreen, over the 50 ms of "Never freeze".
+The view now leaves its tab or layout slot without a new parent and gets
+the window flags: 15 to 26 ms for Budgets, 4 to 13 ms for the 3D View and
+Thermal. A test holds every detach and attach under 50 ms, three times
+for each view, with the 3D View's page loaded. A tab page is transparent
+under the style sheet, and a transparent window draws black; a rule on
+the property `breakout="true"` gives the window `bg.canvas`.
+
+**Geometry.** Each view's window is kept in `layout.ini`, keys
+`breakout/<id>/geometry` and `breakout/<id>/maximized`. One write of the
+file took 50 to 220 ms on the GUI thread here (the lock file and
+`sync`), so the window's geometry is read with the layout at start,
+written by a worker when the view comes back, and written with the
+layout at quit. A rectangle whose top is on no screen (a monitor
+unplugged) gives only its size, centred on the main window; on Wayland
+only the size is used.
+
+**Commands.** `Ctrl+Shift+D` (free in 2.11.0) moves the view shown; in a
+view's window it brings that view back. **View > Own Windows** has it
+and one command per view, all in the palette, and each view has an icon
+button at the end of its toolbar (Budgets: in its tab bar's corner). Two
+Lucide icons came from the same 1.52.0 archive, its SHA-256 checked:
+external-link and square-arrow-down-left. A view's window carries the
+global commands, Run and Cancel Run and its area's commands, so `Ctrl+K`
+(over that window), `Ctrl+S` and `Ctrl+R` work there.
+
+**Rules.** Every view starts docked ("Calm by default"; D-191 is System
+Budget Studio's rule, not this app's). With no scenario open, and at
+quit before the layout is saved, every view comes back. Showing a view
+in its window (a command, the palette, a live run) brings the window to
+the front and leaves the main window's area as it was. Budgets in its
+own window counts as shown for B-21 (Q2, decision B-26): it is computed
+after an edit, Remove and Copy as CSV act on it, and its spacecraft
+picker goes with it.
+
+**WebGL.** A `QWebEngineView` that moves to another native window can
+lose its WebGL context on some drivers. `mission_view.js` had no handler.
+Now `webglcontextlost` stops drawing and asks for the context back;
+`webglcontextrestored`, or 2 s without it, makes a new renderer and loads
+the same scene with the camera, the frame and a thermal case's colours
+kept. Two tests lose the context through `WEBGL_lose_context`: one gives
+it back, one does not.
+
+**Tests.** New: `tests/gui/test_breakout.py` (19: docked at start with
+the buttons, the commands in the menu, the palette and the shortcut list,
+disabled with nothing open, the same 3D View and page with their state
+after detach and attach, close brings back, the main window keeps its
+area, scenario close and quit bring back, the geometry kept, a screen
+gone, Wayland, `Ctrl+Shift+D` from either window, the keyboard in the
+window, the button and the menu, a theme switch, the two context losses,
+Budgets counted as shown, the timing, and a live run in the detached 3D
+View). No existing test changed. No golden file, no file format and no
+engine change.
+
+**After the first CI run: no file write when a view comes back.** CI
+failed `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`: one
+move of the Budgets area took 146 ms (the others 4 to 29 ms). Here it
+took 168 ms once in three runs, always when a view came back. No garbage
+collection ran during that move. The profile showed the cause: each
+`attach` started a worker that wrote the window's geometry to
+`layout.ini` with `QSettings.sync`, and `sync` keeps the interpreter lock
+while it writes. A probe showed this alone: a 30 ms `sync` in a thread
+stopped a Python loop on the GUI thread for 36 ms. While the worker wrote,
+the Budgets area's own Python code in `show()` (its header and flow
+layout callbacks) waited for the lock. The geometry is now kept in memory
+and written with the rest of the layout at quit, which already happened.
+A crash loses the windows' places since the start, as it loses the rest
+of the layout. The geometry test now checks that a move writes nothing
+and that quitting writes the key (`docs/ui/TEST_CHANGES.md`).
+
+**Windows CI: the overlay stopped while a context was lost.** On the
+Windows runner the GPU process lost and gave back WebGL contexts by
+itself (its log: "Context lost during MakeCurrent", "Already being
+accessed for read" in the D3D shared-image backing). PR-2's frame loop
+skipped the whole frame while a context was lost, so the HUD's time,
+the sky and the labels kept their old state. That failed two tests of
+`test_mission_view.py` (the stars and the ISO time), and the recovery
+test read `00:00:00Z` before it took the context away. The loop now
+updates the scene, the overlay and the labels in every frame; only the
+draw call waits for a context, as before PR-2. The recovery tests wait
+for a live context before they take one away (a lost context has no
+`WEBGL_lose_context` to call), and the test of a context never given
+back checks that the overlay follows the frame while the context is
+lost. Two geometry tests expected a window of exactly the saved size; on
+Windows the Thermal view's own minimum is 714 px wide, so they now
+expect the saved size enlarged to the view's minimum.
+
+**Windows CI, second round: a recovery that came too early.** With the
+overlay fixed, three tests of `test_breakout.py` still failed on
+Windows. (1) After a move to its own window the 3D View had no renderer:
+the move lost the GPU context, and `MV.recover` asked for a new one while
+the GPU process was still starting again. `createRenderer` threw, and
+the page put up "could not start WebGL" for good. A user on Windows could
+have seen that. `MV.recover` now tries again `RECOVER_AFTER_MS` later,
+`RECOVER_TRIES` (5) times in all, and says that WebGL is gone only
+after that. A new test refuses the first new context and checks that
+the second try draws. (2) A window saved on a screen that is gone opened
+49 px off centre: it was centred at the saved width (620 px) and Qt then
+widened it to the Thermal view's minimum (714 px on Windows). `_place`
+now takes the view's minimum size into account before it centres the
+window. (3) The test of a context never given back found
+`Script error. (:0)` in the page's errors. The tests' own JavaScript
+(take the context away, give it back, hold the timer) now runs in a
+`try` block that returns the error's text, so a step that throws fails
+the test with its message and never shows as an error of the page.
+
+**Windows CI: the Budgets area is slow to show on the runner.** With the
+file write gone, `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+still failed on the Windows runner: every move of the Budgets area took
+50 to 81 ms (the 3D View 5 to 17 ms). Here, a move of the Budgets area
+takes 10 to 11 ms, and simply hiding and showing the area in place takes
+9 to 10 ms: the move adds about 1 ms. The swap into its layout slot is
+almost all of it (`show()` of the area's 435 widgets; Thermal, 228
+widgets in a tab, takes 1 ms). Removing the three hidden pages saved
+only 3 to 5 ms, so no one part dominates. The Windows runner shows the
+area about five times slower than this machine. The test now measures
+each view's own show time in place and allows a move under 50 ms, or
+under twice that show time plus 10 ms where showing the view alone takes
+longer. On Linux every limit stays 50 ms. A 60 ms stall added to
+`attach` still fails the test for all three views (checked by hand), so
+it still catches a restyle or a lock held by a worker. Making the Budgets
+area itself quicker to show is a backlog item.
+
+**Windows CI: a software compositor (the owner's decision, 2026-11-18).**
+Even with every fix above, the 3D View's WebGL tests failed on the
+Windows runner, and a different set in each run on nearly the same code:
+the detach test (no renderer), the recovery tests (no live context
+within 10 s). The runner has no GPU. WebGL already ran on SwiftShader,
+but Chromium's compositor still used Direct3D shared images, and their
+errors filled the log ("Already being accessed for read", "Context lost
+during MakeCurrent"). After one test took a context away, no later page
+in that process got a live one. The Windows job now also passes
+`--disable-gpu-compositing`, so the compositor draws in software too.
+The app's own flags (`gui/webengine_setup.py`) do not change: this is a
+setting of the runner without a GPU. The 3D View, live-run, breakout and
+thermal-view tests pass with these exact flags here (61 tests).

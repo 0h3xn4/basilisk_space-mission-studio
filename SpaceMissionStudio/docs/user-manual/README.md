@@ -16,6 +16,7 @@ New to the app? Do [Getting started](../getting-started.md) first.
 | Build a mission of my own? | [Build your own scenario](build-your-own-scenario.md) |
 | Edit the scenario as text, with completion, help, rename and quick fixes? | [The JSON page](../../USER_MANUAL.md#6-a-tour-of-the-scenario-editor) (**Form · JSON**) |
 | Read plots, events and exports? | [Read the results](read-the-results.md) |
+| Put the 3D View, Thermal or Budgets in a window of its own, on a second screen? | [Open a view in its own window](../../USER_MANUAL.md#open-a-view-in-its-own-window) (`Ctrl+Shift+D`) |
 | Run things without the GUI? | [Use the command line](command-line.md) |
 | Change a rule or margin an analysis uses, for my project? | [Change a parameter](project-configuration.md) |
 | See what changed in a scenario, when, by whom and why? | [The change history](change-history.md) |

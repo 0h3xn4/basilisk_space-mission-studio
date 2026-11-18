@@ -2176,3 +2176,40 @@ file. The new tests are in `tests/gui/test_thermal_views.py` (17) and
 | Test | Before | Now | Why |
 |---|---|---|---|
 | `test_thermal_pages.py::test_run_thermal_solves_shows_and_saves` | read `widget.model_view` right after the solve | selects the tab first, `widget.tabs.setCurrentWidget(widget.model_page)`, then reads `widget.model_view`; the assertions after it are unchanged | the web view is made when its tab is shown (T-41) |
+
+### PR-2: breakout windows (decision "Breakout windows", B-26)
+
+Results › 3D View, Run › Thermal and the Budgets area can open in a window
+of their own (`gui/breakout.py`). A view keeps its parent and its tab or
+slot while it is docked, and every view starts docked, so the tests reach
+every widget as before: `window.run_views.widget(index) is
+window.thermal_widget` and `window.shell.page("budgets").content is
+window.budgets_views` still hold. The View menu, the palette and the
+shortcut table get the new commands (DESIGN.md has the `Ctrl+Shift+D`
+row), so `test_menu_bar.py`, `test_shell_reachability.py` and
+`test_design_rules.py` pass unchanged. The new commands' category is
+"Own Windows" (their submenu), not "View", so the list of View commands
+that `test_workspace.py::test_the_view_analyses_and_tools_commands` pins
+stays as it is. No existing test changed, and no
+golden file. The new tests are in `tests/gui/test_breakout.py` (19).
+
+After the first CI run, one test of this PR changed (its own test, not an
+older one): the window's geometry is no longer written to `layout.ini` by
+a worker when the view comes back, because `QSettings.sync` keeps the
+interpreter lock and stopped the GUI thread (CI measured one move at
+146 ms, so `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+failed; that test is unchanged).
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_breakout.py::test_the_geometry_is_kept_per_view_and_used_again` | after `attach`, waited for the worker and read the key from `layout.ini` | after `attach`, reads `breakouts.saved_geometry` and asserts that the file has no key yet; after quit it asserts the file and the key, as before; "used again" and "read at start" are unchanged | no move writes the file now (decision "Breakout windows", geometry) |
+| `test_breakout.py::test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window`, `test_on_wayland_only_the_size_is_used` | the window's size equal to the saved size | equal to the saved size enlarged to the view's `minimumSizeHint()` | on Windows the Thermal view's minimum is 714 px wide, more than the saved 620 or 630 px; a window is never smaller than its content |
+| `test_breakout.py::_lose_context` (both recovery tests) | took the context away at once | waits for a live context first, and returns the recoveries counted so far; the tests wait for one more recovery than that, not for exactly one | Windows CI's GPU process loses and restores contexts by itself, and a lost context has no `WEBGL_lose_context` |
+| `test_breakout.py::test_the_3d_view_recovers_a_webgl_context_never_given_back` | lost, then one recovery | also: while lost (the page's timer held), a new frame changes the overlay's time; the recovery assertions are unchanged | the frame loop draws the overlay without a context now (HISTORY, "Windows CI") |
+| `test_breakout.py::_lose_context` and the recovery tests' own steps (second Windows round) | ran the test's JavaScript directly | run it through `_try_js`, which returns `"ok"` or the error's text; each step asserts `"ok"` | a step that throws (a context already lost by the GPU process) showed only as `Script error. (:0)` among the page's errors; now it fails with its own message |
+
+Also: before they read the overlay's time, the two recovery tests wait until the page has drawn the frame (`MV.dirty` false). The overlay follows `MV.frame` on the next animation frame, and on the Windows runner the test read it before that frame (it saw frame 0's time).
+
+New in the second round: `test_breakout.py::test_the_3d_view_tries_again_while_no_new_context_can_start` (the first new context is refused; the second try draws, with no error).
+
+| `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` | every move under 50 ms | every move under 50 ms, or under twice the view's own show time (hidden and shown in place, measured in the test) plus 10 ms where that is larger; the failure message lists the slowest move, the limit and the show time per view | the Windows runner takes 50 to 81 ms to move the Budgets area because it takes about as long to show it at all (here: 9 ms to show, 10 ms to move); the move adds nothing, which is what the test guards. On Linux the limit stays 50 ms for every view, and a 60 ms stall in `attach` still fails it for all three views |

@@ -75,9 +75,16 @@ provenance (the versions, the scenario's SHA-256 and the time).
 | `Ctrl+Del` | Remove the item picked (Budgets › Equipment only) |
 | `Ctrl+Shift+C` | Copy the page shown as CSV |
 | `Ctrl+C` | Copy the selected rows of a table as tab-separated text |
+| `Ctrl+Shift+D` | Open the Budgets area in its own window, or bring it back |
 
 The commands are also in **Tools > Budgets** and in the command palette
 (`Ctrl+K`, type "budget").
+
+The area can open in a window of its own (the button at the right of
+its tabs, `Ctrl+Shift+D` or **View > Own Windows**; [Open a view in its
+own window](../../USER_MANUAL.md#open-a-view-in-its-own-window)). There it
+counts as shown: it is computed after each edit, and the keys above act
+on it. Its **Spacecraft** list goes with it.
 
 ## The budgets section
 

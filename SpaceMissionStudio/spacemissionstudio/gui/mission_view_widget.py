@@ -507,6 +507,7 @@ class MissionViewWidget(QWidget):
         self.addAction(self.reset_action)
         self.show_button.setMenu(self.show_menu)
         controls.addWidget(self.show_button)
+        self._controls = controls  # add_tool_button: the window's Open in Own Window button goes last
         layout.addLayout(controls)
         self.scale_note = QLabel()
         set_role(self.scale_note, tone="secondary")
@@ -538,6 +539,11 @@ class MissionViewWidget(QWidget):
         self._live_timer.timeout.connect(self._live_tick)
         self._set_controls_enabled(False)
         on_change(self._on_theme_changed)
+
+    def add_tool_button(self, button: QWidget) -> None:
+        """A button of the window's at the end of the view's controls (Open
+        in Own Window: it moves with the view, gui.breakout)."""
+        self._controls.addWidget(button)
 
     # -- the run ---------------------------------------------------------------
     def set_run(self, scenario, result, base_dir=None) -> None:

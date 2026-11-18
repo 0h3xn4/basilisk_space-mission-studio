@@ -245,6 +245,7 @@ class ThermalWidget(QWidget):
                                     "and PNG), each with its provenance, to a folder")
         self.save_button.clicked.connect(self._save_clicked)
         top.addWidget(self.save_button)
+        self._toolbar = top  # add_tool_button: the window's Open in Own Window button goes last
         layout.addLayout(top)
 
         status = QHBoxLayout()
@@ -310,6 +311,11 @@ class ThermalWidget(QWidget):
         self._clear()
 
     # -- the tabs -----------------------------------------------------------------
+    def add_tool_button(self, button: QWidget) -> None:
+        """A button of the window's at the end of the page's top row (Open in
+        Own Window: it moves with the page, gui.breakout)."""
+        self._toolbar.addWidget(button)
+
     def _build_temperatures(self) -> None:
         page, layout = _page()
         self.temperature_plot = SvgPlotView("Temperatures", _DRAWING)
