@@ -286,10 +286,15 @@ jobs:
       # The Windows runner has no GPU and, offscreen, no WebGL context:
       # Chromium's software WebGL (ANGLE on SwiftShader) for the 3D View's
       # tests, with the app's own no-background-network flags
-      # (gui/webengine_setup.py), which this variable replaces.
+      # (gui/webengine_setup.py), which this variable replaces. The
+      # compositor draws in software too (--disable-gpu-compositing): its
+      # Direct3D shared images lost WebGL contexts at random, and after the
+      # 3D View's recovery tests took one away no later page got one back
+      # ("Already being accessed for read", "Context lost during
+      # MakeCurrent"; the owner's decision, 2026-11-18).
       QTWEBENGINE_CHROMIUM_FLAGS: >-
         --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist
-        --disable-domain-blocking-for-3d-apis --disable-gpu-process-crash-limit
+        --disable-domain-blocking-for-3d-apis --disable-gpu-process-crash-limit --disable-gpu-compositing
         --disable-background-networking --disable-component-update --disable-domain-reliability
         --no-pings --dns-prefetch-disable
     steps:

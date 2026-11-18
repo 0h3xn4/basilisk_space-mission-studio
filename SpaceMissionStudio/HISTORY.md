@@ -18620,3 +18620,17 @@ longer. On Linux every limit stays 50 ms. A 60 ms stall added to
 `attach` still fails the test for all three views (checked by hand), so
 it still catches a restyle or a lock held by a worker. Making the Budgets
 area itself quicker to show is a backlog item.
+
+**Windows CI: a software compositor (the owner's decision, 2026-11-18).**
+Even with every fix above, the 3D View's WebGL tests failed on the
+Windows runner, and a different set in each run on nearly the same code:
+the detach test (no renderer), the recovery tests (no live context
+within 10 s). The runner has no GPU. WebGL already ran on SwiftShader,
+but Chromium's compositor still used Direct3D shared images, and their
+errors filled the log ("Already being accessed for read", "Context lost
+during MakeCurrent"). After one test took a context away, no later page
+in that process got a live one. The Windows job now also passes
+`--disable-gpu-compositing`, so the compositor draws in software too.
+The app's own flags (`gui/webengine_setup.py`) do not change: this is a
+setting of the runner without a GPU. The 3D View, live-run, breakout and
+thermal-view tests pass with these exact flags here (61 tests).

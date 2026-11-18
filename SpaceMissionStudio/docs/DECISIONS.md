@@ -3509,6 +3509,14 @@ window".
   thread for 36 ms), and CI measured one move at 146 ms. A crash now
   loses the windows' places since the start, as it loses the rest of the
   layout.
+- **Decision:** the Windows CI job draws Chromium's compositor in
+  software (`--disable-gpu-compositing` in its `QTWEBENGINE_CHROMIUM_FLAGS`),
+  as it already drew WebGL (SwiftShader). The app's own flags do not
+  change. **Why:** the runner has no GPU, and the compositor's Direct3D
+  shared images lost WebGL contexts at random; after a recovery test took
+  one away, no later 3D View in that process got one back, so a different
+  set of WebGL tests failed in each run. The owner chose this
+  (2026-11-18) over a deeper study on a Windows machine with a GPU.
 - **Decision:** when a lost WebGL context comes back too early (no new
   context can start yet), the 3D View tries again 2 s later, five times
   in all, before it says that WebGL is gone. **Why:** on Windows a move
