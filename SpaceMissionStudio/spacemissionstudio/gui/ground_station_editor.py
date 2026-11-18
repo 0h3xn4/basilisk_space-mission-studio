@@ -266,6 +266,7 @@ class GroundStationListWidget(QWidget):
         self.remove_button.clicked.connect(self._on_remove)
         self.list_widget.itemDoubleClicked.connect(lambda _item: self._on_edit())
         self.list_widget.currentRowChanged.connect(lambda _row: self._update_buttons())
+        self.list_stack.hide_while_empty(self.add_button, self.edit_button, self.remove_button)
         self._update_buttons()
 
     def _update_buttons(self) -> None:

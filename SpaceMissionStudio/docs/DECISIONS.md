@@ -3670,6 +3670,13 @@ open in its own window.
   accent while the list is empty: its empty state's Add spacecraft is
   the action there, a secondary button. **Why:** UI-05; a tree's height
   changes as its steps open and close; one accent per view is batch B2's.
+- **Decision:** while a list shows its empty state, the list's own Add
+  and the buttons that need a row are hidden (`EmptyStack.hide_while_empty`):
+  Add, Edit and Remove on the ground station and spacecraft lists, and
+  the whole step row of the mission sequence. Other actions stay (New
+  from template... and the three generators). **Why:** the first
+  screenshots showed two Add buttons on each of these pages, one in the
+  empty state and one just under it.
 - **Decision:** Results › Plots shows its empty state over the plot page,
   which stays loaded under it (`QStackedLayout.StackAll`). **Why:** the
   page's size, its loading and its "drawn" signal stay as they were;

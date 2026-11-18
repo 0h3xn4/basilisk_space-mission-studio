@@ -18809,8 +18809,11 @@ when a search leaves no plot, with Clear search. The ground station and
 spacecraft lists are as tall as their rows (`fit_rows`). Edit and
 Remove on the ground station list are now off until a station is
 selected, as they already were on the spacecraft list. The mission
-sequence hides its form pane while there is no step. B1 had already
-fixed the model editor's Equipment tab.
+sequence hides its form pane while there is no step. While a list
+shows its empty state, its own Add and the buttons that need a row are
+hidden (`EmptyStack.hide_while_empty`), so the page has one Add, not
+two; New from template... and the generators stay. B1 had already fixed
+the model editor's Equipment tab.
 
 **End of Life (UI-10).** Before an estimate the page showed a 260 px
 empty plot box; after one, the plot was below the fold at 1280 x 720.

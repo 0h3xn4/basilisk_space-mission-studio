@@ -823,6 +823,9 @@ class MissionSequenceEditorWidget(QWidget):
             edit_row.addWidget(button)
         edit_row.addStretch(1)
         steps_layout.addLayout(edit_row)
+        # No step: the empty state's Add step is the page's only one; the others need a step.
+        self.steps_stack.hide_while_empty(self.add_button, self.add_child_button, self.duplicate_button,
+                                          self.remove_button, self.move_up_button, self.move_down_button)
         self.splitter.addWidget(steps)
 
         self.form_stack = QStackedWidget()

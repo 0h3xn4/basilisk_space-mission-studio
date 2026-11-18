@@ -3280,6 +3280,8 @@ class SpacecraftListWidget(QWidget):
         self.generate_roe_formation_button.clicked.connect(self._on_generate_roe_formation)
         self.list_widget.itemDoubleClicked.connect(lambda _item: self._on_edit())
         self.list_widget.currentRowChanged.connect(lambda _row: self._update_list_state())
+        # One Add while the list is empty: the empty state's (New from template... and the generators stay).
+        self.list_stack.hide_while_empty(self.add_button, self.edit_button, self.remove_button)
         self._update_list_state()
 
     def _update_list_state(self) -> None:

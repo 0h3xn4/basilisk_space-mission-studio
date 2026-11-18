@@ -140,9 +140,12 @@ def test_the_ground_station_list_has_an_empty_state_and_selection_actions(qtbot)
     widget.show()
     assert widget.list_stack.showing_empty() and widget.empty_state.button.text() == "Add ground station"
     assert not widget.edit_button.isEnabled() and not widget.remove_button.isEnabled()
+    # One Add on the page: the list's own buttons are hidden while the empty state shows.
+    assert all(button.isHidden() for button in (widget.add_button, widget.edit_button, widget.remove_button))
     widget.from_list([GroundStationConfig(name="gs-1", latitude_deg=48.0, longitude_deg=11.0),
                       GroundStationConfig(name="gs-2", latitude_deg=-30.0, longitude_deg=150.0)])
     assert not widget.list_stack.showing_empty()
+    assert not any(button.isHidden() for button in (widget.add_button, widget.edit_button, widget.remove_button))
     assert not widget.edit_button.isEnabled() and not widget.remove_button.isEnabled()
     assert widget.list_stack.height() < 200  # two rows, not the page's height
     widget.list_widget.setCurrentRow(0)
@@ -159,8 +162,12 @@ def test_the_mission_sequence_has_an_empty_state_with_add_step(qtbot):
     assert widget.steps_stack.showing_empty() and widget.form_stack.isHidden()
     assert widget.empty_state.button.menu() is widget.add_button.menu()
     assert not widget.remove_button.isEnabled() and not widget.duplicate_button.isEnabled()
+    row = (widget.add_button, widget.add_child_button, widget.duplicate_button, widget.remove_button,
+           widget.move_up_button, widget.move_down_button)
+    assert all(button.isHidden() for button in row)  # the empty state's Add step is the only one
     widget.add_step("propagate")
     assert not widget.steps_stack.showing_empty() and not widget.form_stack.isHidden()
+    assert not any(button.isHidden() for button in row)
 
 
 def test_the_spacecraft_list_has_an_empty_state_with_add(qtbot, monkeypatch):
@@ -175,8 +182,11 @@ def test_the_spacecraft_list_has_an_empty_state_with_add(qtbot, monkeypatch):
     monkeypatch.setattr(widget, "_on_add", lambda: added.append(True))
     widget.empty_state.button.click()
     assert added == [True] and not widget.edit_button.isEnabled()
+    assert all(button.isHidden() for button in (widget.add_button, widget.edit_button, widget.remove_button))
+    assert not widget.new_from_template_button.isHidden()  # not what the empty state's Add stands in for
     widget.from_list(_template("01").spacecraft)
     assert not widget.list_stack.showing_empty() and widget.list_stack.height() < 200
+    assert not any(button.isHidden() for button in (widget.add_button, widget.edit_button, widget.remove_button))
 
 
 def test_the_idm_devices_table_has_an_empty_state_with_browse(qtbot):

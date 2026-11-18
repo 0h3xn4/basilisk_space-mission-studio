@@ -526,7 +526,11 @@ class EmptyStack(QStackedWidget):
     does not fill the page with blank rows) and as tall as the empty
     state while there are none; the owner puts a stretch below it. A view
     whose emptiness is not its row count (a search that hides every row)
-    calls :meth:`refresh` with ``empty``."""
+    calls :meth:`refresh` with ``empty``.
+
+    :meth:`hide_while_empty`: the owner's list buttons that the empty
+    state's own action stands in for (Add) or that need a row (Edit,
+    Remove) are hidden while it shows, so the page has one Add, not two."""
 
     def __init__(self, view: QAbstractItemView, empty: EmptyState, fit_rows: bool = False,
                  parent: QWidget | None = None) -> None:
@@ -534,6 +538,7 @@ class EmptyStack(QStackedWidget):
         self.view = view
         self.empty = empty
         self.fit_rows = fit_rows
+        self._hidden_while_empty: tuple[QWidget, ...] = ()
         self._empty: bool | None = None  # what the owner said last; None: the row count
         self.addWidget(view)
         self.addWidget(empty)
@@ -548,6 +553,11 @@ class EmptyStack(QStackedWidget):
     def showing_empty(self) -> bool:
         return self.currentWidget() is self.empty
 
+    def hide_while_empty(self, *widgets: QWidget) -> None:
+        """``widgets`` hidden while the empty state shows, shown with the view."""
+        self._hidden_while_empty = widgets
+        self.refresh(self._empty)
+
     def refresh(self, empty: bool | None = None) -> None:
         """The empty state when ``empty`` (None: when the view has no row),
         else the view; with ``fit_rows`` the height follows."""
@@ -555,6 +565,8 @@ class EmptyStack(QStackedWidget):
         if empty is None:
             empty = self.view.model().rowCount() == 0
         self.setCurrentWidget(self.empty if empty else self.view)
+        for widget in self._hidden_while_empty:
+            widget.setHidden(empty)
         if self.fit_rows:
             self.setMaximumHeight(self.empty.sizeHint().height() if empty else self._rows_height())
 
