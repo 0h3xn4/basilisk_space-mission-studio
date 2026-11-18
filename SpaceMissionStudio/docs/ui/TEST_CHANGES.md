@@ -2159,6 +2159,17 @@ Budgets area's own reachability is tested in
 | `test_shell_reachability.py` rows "**Analyses** › End of Life, Budget" and "Scenario › Analyses › End of Life, Budget" | `_shown(w, w.budget_widget, "run")` | `_shown(w, w.budget_widget, "budgets")` | the same; the plan's row texts are unchanged |
 | `test_panels.py::test_a_keyboard_only_walk_of_the_shell` | docstring "Ctrl+1 to Ctrl+6 reach the areas" | "Ctrl+1 to Ctrl+7"; the loop over `_AREAS` is unchanged | the same (wording only) |
 
+## UI audit B3: empty states
+
+While a list shows its empty state, the list's own Add and the buttons
+that need a row are hidden (`widgets.EmptyStack.hide_while_empty`). One
+existing test changed how it reaches a widget; no assertion is removed
+or weakened. The new tests are in `tests/gui/test_empty_states.py`.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_wide_screen.py::test_list_buttons_keep_their_own_width` | measured the ground station list's Add with no station | gives the list one station first and waits until Add is visible; the assertion (`width() < 200`) is unchanged | an empty list now shows its empty state and hides its own Add, and a hidden button is never laid out (the Windows job read Qt's default 640 px). With a station the button is shown and measured as before |
+
 ## 2.12.0 windows and views
 
 ### PR-1: thermal results (decisions T-40 to T-42)
