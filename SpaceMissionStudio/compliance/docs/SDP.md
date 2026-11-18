@@ -66,7 +66,7 @@ views: Results › 3D View, Run › Thermal and the Budgets area in windows
 of their own, ground tracks, ground stations and a live 2D map, the
 thermal results as tabs and on the 3D View, dialogs that fit a
 1280 x 720 screen and a new app icon, with the scenario format
-unchanged (prepared 2026-11-18); before it 2.11.0, the System
+unchanged (published 2026-11-18); before it 2.11.0, the System
 Budget Studio merge's phase 1: the equipment list, the static power
 budget and the Budgets area, at scenario schema version 5 (published
 2026-11-17), 2.10.0, mission operations planning (published

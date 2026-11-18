@@ -532,6 +532,16 @@ scenario schema is still version 5 and `schema/` is unchanged since
 for byte the same, and each version opens and validates all 37 files of
 the other with no message. The space weather was not refreshed (not
 tried), so 2.12.0 carries 2.8.0's file (observations to 2026-11-14).
+It was published on 2026-11-18 at 09:01 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 44). CI on the release
+pull request first failed the breakout windows' timing test (a full
+garbage collection in one move); the test was fixed in the pull request
+(`docs/ui/TEST_CHANGES.md`). After #284's merge, CI passed on `2718e78`
+([run 44260636345](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44260636345)); the tag workflow
+([run 44265090291](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44265090291)) passed the release check and tagged it
+at 08:14; the release workflow ([run 44265254780](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44265254780)) built,
+installed and checked every file, attached the eleven and published the
+release 47 minutes later. It was never a public release without files.
 
 ---
 

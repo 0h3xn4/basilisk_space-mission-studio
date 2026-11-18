@@ -1,10 +1,10 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 43, 2026-11-18. Remediation R14.
+Document: SMS-SRelD, issue 44, 2026-11-18. Remediation R14.
 
-**Status:** release **2.12.0**, prepared 2026-11-18, to be tagged with
-the tag workflow: the 2.12.0 windows and views
+**Status:** release **2.12.0**, published 2026-11-18 (09:01 UTC): the
+2.12.0 windows and views
 (`docs/developer/windows-views-design.md`), with the 2.11.0 publication
 recorded (#279). Results › 3D View, Run › Thermal and the Budgets area
 can each open in a window of their own and come back (#281; decision
@@ -34,6 +34,47 @@ space weather is 2.8.0's (K-13: not refreshed). Known limits added:
 K-40 to K-43. Basilisk is unchanged; outside `SpaceMissionStudio/`
 only SpaceMissionStudio's own workflows, `.claude/settings.json` and the
 front-page `README.md`'s SpaceMissionStudio part changed (section 4).
+The release pull request (#284) was merged at 07:39 UTC; as the owner
+asked, the assistant tagged and published it with the tag workflow.
+- CI on the release pull request first failed one test on its first
+  commit `24b402f`: in the Linux job one move of the Budgets area into
+  its own window took 60 ms, over the 50 ms limit, because a full
+  garbage collection fell in it. The second commit `044c1d8` makes the
+  timing test take the objects that exist before the moves out of the
+  full collections, as the app does after start-up; the limits are
+  unchanged (`docs/ui/TEST_CHANGES.md`). CI then passed on every check.
+- CI ("SpaceMissionStudio") passed on `develop`'s head `2718e78`, the
+  merge of #284, at 08:11 UTC ([run 44260636345](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44260636345)). The tag
+  workflow ([run 44265090291](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44265090291)), started at 08:13:04 UTC with publish
+  on, ran the release check on that commit and passed.
+- Tagged `spacemissionstudio-v2.12.0` (annotated, not signed, D-13) on
+  commit `2718e78` (`2718e7807439f2338a4eecd971268b8b7afa19f6`), the
+  merge of #284 into `develop`, by the tag workflow (github-actions) at
+  08:14 UTC. GitHub release "SpaceMissionStudio 2.12.0", published by
+  the release workflow at 09:01:35 UTC, after it had counted its eleven
+  files attached, with the notes written from the CHANGELOG
+  (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.12.0>); it was never public
+  without its files.
+- Its eleven files were built, installed, checked and attached by the
+  release workflow ([run 44265254780](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44265254780)) at 09:01. GitHub's
+  SHA-256 digests: `.deb` (`spacemissionstudio_2.12.0_amd64.deb`,
+  440 688 084 bytes) `c3a41f58...ef5e`, setup program
+  (`spacemissionstudio-2.12.0-setup.exe`, 386 952 305 bytes)
+  `df4bb857...d166`, wheel (8 943 641 bytes) `95c90fcd...dcc1`, sdist
+  (9 231 488 bytes) `b560e5c3...617c`, the `.deb`'s bill of materials
+  (`spacemissionstudio_2.12.0_amd64.cdx.json`, 35 359 bytes)
+  `9eb877b3...4fa7`, the setup program's
+  (`spacemissionstudio-2.12.0-setup.cdx.json`, 36 459 bytes)
+  `927642db...9329`, `SHA256SUMS-linux` `4db15a94...ae9f`,
+  `SHA256SUMS-windows` `1f7f4922...480b`, and the LGPL sources, the same
+  as 2.11.0's: `qt-everywhere-src-6.11.2.tar.xz` (1 019 661 552 bytes)
+  `6dcfbca2...6f33`, `pyside-setup-everywhere-src-6.11.2.tar.xz`
+  (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
+  `1301daba...e6f6`. The `.deb`'s, the setup program's and the LGPL
+  sources' digests equal the checksums in `SHA256SUMS-*`, and the
+  `.deb`'s and the setup program's also those in the release notes; the
+  wheel, the sdist and both bills of materials, downloaded from the
+  release, pass `sha256sum -c`.
 
 **Previous release:** 2.11.0, published 2026-11-17 (17:54 UTC):
 phase 1 of the System Budget Studio merge, the
@@ -820,7 +861,7 @@ This SRelD describes release 2.12.0 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.12.0 release pull request (the changes of #276 and #278 to #283 and the release's records), to be tagged `spacemissionstudio-v2.12.0` with the tag workflow. Previous release: 2.11.0, commit `d387dc5` (`d387dc547a472c95b22a9645cdd3ce95e3f43740`), tagged `spacemissionstudio-v2.11.0`. |
+| Baseline | `develop` after the 2.12.0 release pull request (the changes of #276 and #278 to #283 and the release's records), tagged `spacemissionstudio-v2.12.0` on `2718e78` (`2718e7807439f2338a4eecd971268b8b7afa19f6`) by the tag workflow. Previous release: 2.11.0, commit `d387dc5` (`d387dc547a472c95b22a9645cdd3ce95e3f43740`), tagged `spacemissionstudio-v2.11.0`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 47 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble (also under the 2D map and in the app icon) and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
 | Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.12.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.12.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.12.0_amd64.cdx.json`, `spacemissionstudio-2.12.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |

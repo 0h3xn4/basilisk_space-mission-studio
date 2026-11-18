@@ -18751,3 +18751,30 @@ Tests on the release's code, Linux, Python 3.14, four workers, run
 apart: 3476 passed outside `tests/gui/` and 2048 passed in it, 5524 in
 all (5386 at 2.11.0), none failed. The timing test of the breakout
 windows passed in the full GUI run.
+
+## Release 2.12.0 published (2026-11-18)
+
+CI on the release pull request #284 failed one test on its first
+commit `24b402f`. In the Linux job one move of the Budgets area into
+its own window took 60 ms; the limit is 50 ms. A full garbage
+collection fell in that move: in the test process it walks the objects
+of every earlier test (45 to 70 ms on this machine). The app takes its
+start-up objects out of the full collections (UI overhaul M6a), and the
+test now does the same before it times the moves (`044c1d8`). The
+limits are unchanged. CI then passed on every check, and #284 was
+merged at 07:39 UTC.
+
+CI passed on `develop`'s merge commit `2718e78` at 08:11
+([run 44260636345](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44260636345)). As the owner asked, the assistant
+started the tag workflow at 08:13 with version 2.12.0, ref `develop` and
+**publish** on. The release check passed and the workflow tagged
+`2718e78` at 08:14 ([run 44265090291](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44265090291)). The release
+workflow it started ([run 44265254780](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44265254780)) passed every test on
+Linux and Windows, built, installed and ran both installers, attached
+the eleven files and published the release at 09:01:35, so it was never
+public without its files. The digests of the `.deb`, the setup program
+and the LGPL sources equal the checksums in `SHA256SUMS-*`, and those of
+the `.deb` and the setup program also the checksums in its notes; the
+wheel, the sdist and both bills of materials, downloaded from the
+release, pass `sha256sum -c`. SRelD issue 44, the SDP, H05 and
+`releasing.md` record the tag, the runs and the files' digests.
