@@ -239,7 +239,9 @@ A few things to notice right away:
     scenario's SHA-256 and the time, in the file or beside it; the 3D
     model has none), and when this computer last
     wrote one, in UTC (hover for the path). Double-click a row, or select
-    it and press `Enter`, to open the view that makes it.
+    it and press `Enter`, to open the view that makes it. The table fits
+    the window: a text too long for its column ends in "…", and the
+    pointer over it shows it whole.
   * **Settings**, at the bottom: **Appearance** (**Theme**, three
     segments: **System**, light or dark as your desktop is, the default;
     **Light** or **Dark**; a new theme applies at once, to every open
@@ -1089,7 +1091,13 @@ heat each unit dissipates, thermostatic heaters and each node's limits.
 Its tables are on six tabs: **Nodes**, **Faces**, **Couplings**
 (conductors, heat pipes, radiative links), **Heat loads** (dissipation,
 heaters), **Cases** (with the thermal Monte Carlo) and **Solver** (the
-environment and the solver).
+environment and the solver). The headings are short, with the unit:
+**C [J/K]** is the capacitance, **cp** the specific heat, **G** a
+conductance, **L** the length, **A** the cross-section, **Ac** and
+**hc** the contact area and coefficient, **cp(T)** and **k(T)** the
+tables by temperature. The pointer over a heading names it in full. A
+table too wide for the window (the conductors or the nodes, with the
+Inspector open at 1280 px) scrolls sideways on its own.
 After a run, **Run › Thermal** solves it in a nominal, a hot and a cold
 case (NASA/TM-2001-211221), or the cases you define, from the run's
 orbit, attitude and eclipses: sunlight, the planet's albedo (Basilisk's
@@ -1582,9 +1590,12 @@ it is showing.
 
 The **Reference data** window (the status bar's reference data entry,
 **Settings > Reference data** or **Check Reference Data** (the Run area)) lists every reference data file the app uses (SPICE kernels,
-gravity field, magnetic model, space weather, Earth orientation, ITU-R
-P.676-13 Part 1) with its status, the dates it covers, where it came from and its SHA-256.
-Files that are missing or out of date are marked. This is the only place
+gravity field, magnetic model, albedo maps, atmosphere tables, space
+weather, Earth orientation, ITU-R P.676-13 Part 1) with its kind, its
+status (a word and its icon: **Present**, **Out of date**, **Missing**,
+**Not downloaded**), the dates it covers ("–" for data without dates),
+where it came from and its SHA-256. The kind is the one Basilisk files it
+under. Files that are missing or out of date are marked. This is the only place
 the app downloads anything: **Download...** asks first, naming the
 source, the files and their size, and afterwards says what changed.
 **Import file...** installs a space-weather, Earth orientation or ITU-R

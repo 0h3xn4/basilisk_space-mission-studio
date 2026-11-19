@@ -466,8 +466,9 @@ def test_the_monte_carlo_page_keeps_its_lines_at_the_top(window, qtbot):
 def test_the_thermal_editor_fits_the_page(window, qtbot):
     """Template 33's 3D model section at 1280 x 720: the thermal editor's
     tab row shows every tab whole (it was cut at "Mon"), its tables are
-    model/view grids without grid lines, as tall as their rows, and
-    neither the page nor a table scrolls sideways."""
+    model/view grids without grid lines, as tall as their rows, a table
+    is wider than the page only when its headings alone do not fit, and
+    the page never scrolls sideways."""
     from PySide6.QtWidgets import QScrollArea, QTableView, QTableWidget
 
     from spacemissionstudio.gui.thermal_editor import TAB_TITLES
@@ -489,7 +490,14 @@ def test_the_thermal_editor_fits_the_page(window, qtbot):
             if not view.isVisible():
                 continue
             assert not view.showGrid()
-            assert view.horizontalHeader().length() <= view.viewport().width()
+            # A table is wider than its page only when its headings alone
+            # do not fit (B9: a heading is never cut; the table then
+            # scrolls itself, the page never does). Heading widths depend
+            # on the platform's fonts, so the test asks for that relation.
+            header = view.horizontalHeader()
+            if header.length() > view.viewport().width():
+                floors = sum(view._widths(c)[0] for c in range(header.count()))
+                assert floors > view.viewport().width(), group.tabs.tabText(index)
             assert view.verticalScrollBar().maximum() == 0  # as tall as its rows
         sideways = [area for area in window.scenario_editor.findChildren(QScrollArea)
                     if area.isVisible() and area.horizontalScrollBar().maximum() > 0]

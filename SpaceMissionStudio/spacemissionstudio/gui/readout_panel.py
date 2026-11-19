@@ -37,6 +37,7 @@ from PySide6.QtWidgets import QHeaderView, QLabel, QTableWidget, QTableWidgetIte
 
 from ..engine.results import TimeSeries
 from .theme import set_role
+from .widgets import set_table_look
 
 
 def _is_stepped(column: np.ndarray) -> bool:
@@ -89,6 +90,7 @@ class ReadoutPanel(QWidget):
         self.table.setHorizontalHeaderLabels(["Series", "Value", "Unit"])
         self.table.setAccessibleName("Readout")
         self.table.verticalHeader().setVisible(False)
+        set_table_look(self.table, numeric=(1,))  # the DataTable look (UI audit B9); Value right, as its numbers
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setWordWrap(False)

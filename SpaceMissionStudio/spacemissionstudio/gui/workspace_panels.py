@@ -46,8 +46,8 @@ from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication
 from ..engine.findings import explanation_lines
 from .feedback import row_label
 from .problem_location import JSON_VIEW, MISSION_SEQUENCE, PROPAGATION, SCENARIO, SPACECRAFT, locate
-from .theme import ROW_HEIGHT, SPACE, TOKENS, icon, mono_font
-from .widgets import ComboBox, EmptyState
+from .theme import SPACE, TOKENS, icon, mono_font
+from .widgets import ComboBox, EmptyState, set_table_look
 
 
 def _plain(text: str) -> str:
@@ -333,7 +333,9 @@ class ProblemsWidget(QWidget):
         self.table.setWordWrap(False)
         self.table.setTabKeyNavigation(False)  # Tab leaves the table; the arrows move in it
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
+        # The DataTable look (UI audit B9): headings on the left, no grid lines, rows at ROW_HEIGHT, and no frame
+        # of its own in the dock (no box in a box). The sort indicator and the severity icons stay.
+        set_table_look(self.table, docked=True)
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)

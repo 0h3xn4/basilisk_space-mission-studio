@@ -66,9 +66,9 @@ from ..schema.budgets import (MASS_COLUMNS, BudgetBusConfig, BudgetEquipmentConf
 from .badges import SUCCESS, WARNING, set_badge
 from .data_table import DataTable, Row
 from .feedback import show_toast
-from .theme import ROW_HEIGHT, SPACE, icon, numeric_font, set_role
+from .theme import SPACE, icon, numeric_font, set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, EmptyState, TabWidget, exact_number_text
+from .widgets import ComboBox, EmptyState, TabWidget, exact_number_text, set_table_look
 
 PLACEHOLDER_TEXT = "TBD"  # what a placeholder reads in a table cell
 UNKNOWN_TEXT = "unknown"  # a result a placeholder or a missing number leaves unknown
@@ -366,7 +366,7 @@ class EditableTable(QWidget):
         self.view.setItemDelegate(_Delegate(self.view))
         self.view.setAccessibleName(title)
         self.view.verticalHeader().setVisible(False)
-        self.view.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
+        set_table_look(self.view)  # no grid lines, headings left (a number's right), rows at ROW_HEIGHT (B9)
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectItems)
         self.view.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.view.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked

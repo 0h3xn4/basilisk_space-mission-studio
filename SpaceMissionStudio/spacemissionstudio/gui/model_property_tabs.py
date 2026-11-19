@@ -43,7 +43,7 @@ from ..schema.scenario import (LAUNCHER_SHAPES, MATERIAL_FIELDS, MODEL_SHAPE_FAC
                                LauncherConfig, MassBudgetConfig, MaterialConfig)
 from .model_equipment_tabs import _OptionalNumber, _Vector
 from .theme import set_role
-from .widgets import ComboBox
+from .widgets import ComboBox, set_table_look
 
 _NO_MATERIAL = "(none)"
 # [-] characters a material drop-down is sized for: the longest entry (a name and its description) made the
@@ -254,6 +254,7 @@ class FacePropertiesTable(QTableWidget):
         self._loading = True
         self.setHorizontalHeaderLabels(["Face", "Material", "Diffuse", "Specular"])
         self.verticalHeader().setVisible(False)
+        set_table_look(self, rows=False)  # the DataTable look (UI audit B9); a material is a drop-down list in its cell
         self.setToolTip("Blank: the part's own material and coefficients. A face's diffuse and specular "
                         "reflection must sum to at most 1.")
         for face in MODEL_SHAPE_FACES[part.shape]:
@@ -362,6 +363,7 @@ class BudgetLauncherTab(QWidget):
         self.profile = QTableWidget(0, 2)
         self.profile.setHorizontalHeaderLabels(["Height [m]", "Radius [m]"])
         self.profile.verticalHeader().setVisible(False)
+        set_table_look(self.profile)  # the DataTable look (UI audit B9)
         self.profile.setToolTip("Points of an axisymmetric envelope, from the separation plane up: rising heights")
         profile_buttons = QHBoxLayout()
         add_point = QPushButton("Add point")

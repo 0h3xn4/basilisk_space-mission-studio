@@ -62,6 +62,7 @@ from .roe_diagram_widget import RoeDiagramWidget
 from . import units
 from .shell import INSET_INSIDE
 from .theme import PAGE_INSET, SPACE, set_role
+from .widgets import set_table_look
 
 _LOG = logging.getLogger(__name__)
 
@@ -222,7 +223,7 @@ class ScenarioExplainerWidget(QWidget):
         self._table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._table.verticalHeader().setVisible(False)  # the Spacecraft column already names each row
         self._table.horizontalHeader().setStretchLastSection(True)
-        self._table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        set_table_look(self._table)  # the DataTable look: headings left, no grid lines, rows at ROW_HEIGHT (B9)
         self._table.installEventFilter(self)  # refit the height when the width changes
         self._table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)

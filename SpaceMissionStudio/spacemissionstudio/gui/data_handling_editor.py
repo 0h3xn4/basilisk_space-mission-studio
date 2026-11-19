@@ -26,6 +26,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget
 
 from ..schema.scenario import InstrumentConfig
+from .widgets import set_table_look
 
 # (header, attribute, display factor: shown = stored * factor)
 _INSTRUMENT_COLUMNS = (
@@ -47,6 +48,7 @@ class _TableEditor(QWidget):
         self.table.setHorizontalHeaderLabels(headers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.verticalHeader().setVisible(False)
+        set_table_look(self.table)  # the DataTable look (UI audit B9)
         self.table.setMinimumHeight(120)  # [px]
         layout.addWidget(self.table)
         buttons = QHBoxLayout()

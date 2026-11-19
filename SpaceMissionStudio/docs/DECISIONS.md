@@ -4239,6 +4239,88 @@ open in its own window.
   of the line under it. A group box's title already started at the page
   inset; its glyphs are bolder, about 1 px.
 
+## One table style, no cut headings (UI audit B9, 2026-11-19)
+
+- **Decision:** Reports › Exports and the Reference data window fit
+  their columns to the view's width (`DataTable.set_fit_width`,
+  `data_table.fit_widths`). Each column gets its content's width when
+  all fit. Else the widest columns are cut to one width, never below
+  their heading's width, and their texts are elided. **Why:** UI-27. At
+  1280 px the Exports table scrolled sideways and its last column was
+  out of view. Cutting the widest columns to one width keeps the short
+  columns ("Last written", "Default destination") whole. Proportional
+  shrinking would elide every column. The Reference data window had its
+  own pixel caps per column (B4); the shared rule replaces them.
+- **Decision:** a cell whose text is elided shows the whole text on
+  hover. A cell with its own tooltip keeps that tooltip. **Why:** UI-27
+  asks for elided text with a tooltip. One delegate does it for every
+  `DataTable`, so no view writes a tooltip per cell.
+- **Decision:** the elision of Reports › Exports stays in the middle, as
+  in every `DataTable`. **Why:** the end of a "Made in" path is the
+  button that makes the export ("… › Save PNG..."). The middle keeps the
+  area and the button.
+- **Decision:** the remark "The files are the same as in 1.1.0, byte for
+  byte" over the Exports table is gone. The line now says what the table
+  lists and how to open a view. **Why:** UI-27. The remark was a
+  developer's note. The export tests keep the files byte-identical; the
+  user needs no version number for that.
+- **Decision:** a `DataTable` row is `theme.ROW_HEIGHT` (26 px) high, a
+  row with a second line 26 px plus a line of the monospace font. Qt's
+  own height was about 30 px. **Why:** the design rule is "table rows
+  26 px"; Settings › Keyboard and the Budgets grids already used it.
+- **Decision:** the kind of a support-data file comes from the class of
+  Basilisk's registry it is in (`reference_data.SUPPORT_DATA_KINDS`):
+  `EphemerisData` is "SPICE kernel", `AtmosphereData` "atmosphere
+  table", and the other six classes have a name each. A class that is
+  not named shows "support data file". **Why:** UI-49. B4 named four
+  classes and called every other one a SPICE kernel. That was a guess:
+  the atmosphere tables were SPICE kernels before B4, and a new class
+  would be one again. A test checks that every class of the installed
+  Basilisk has a kind.
+- **Decision:** the status words of the Reference data window stay
+  "Present", "Out of date", "Missing" and "Not downloaded" (B4), each
+  with its icon. Covers shows "–" for data without dates and is hidden
+  when no file has dates. **Why:** the audit asked for "OK" or "Needs
+  attention" or similar words in sentence case; B4's words are more
+  exact and already in sentence case. The SPICE kernels' own coverage
+  is not read: that needs a SPICE reader in the GUI's inventory.
+- **Decision:** the Problems panel's table has the DataTable look
+  (`widgets.set_table_look(..., docked=True)`): headings on the left, no
+  grid lines, rows at `ROW_HEIGHT`, and no frame of its own (the style
+  sheet's `QTableView[role="docked"]`). Its sort indicator and severity
+  icons stay. **Why:** found in the B8 review. The table had centred
+  headings, grid lines and a frame inside the dock, a box in a box.
+- **Decision:** a thermal table's column is never narrower than its
+  heading as the style draws it (`QHeaderView.sectionSizeHint`). The
+  headings are short, with the unit ("C [J/K]", "cp [J/(kg·K)]",
+  "G [W/K]", "L [m]", "A [m²]", "Ac [m²]", "hc [W/(m²·K)]", "cp(T)",
+  "k(T)", "G off [W/K]", "σ or half-width", "Tolerance [K]"), and name
+  the field in full on hover. A table whose headings still do not fit
+  scrolls sideways itself, every value whole; the page does not.
+  **Why:** found in the B6 review. With the Inspector open at 1280 px,
+  "Capacitance [J/K]" read "Ca…". The short headings make every table
+  fit at 1280 px without the Inspector. With the Inspector, the
+  conductors (twelve columns) and the nodes (ten) cannot fit even with
+  one-letter headings, so they scroll. The heading's size comes from
+  the style, not from a font measured in code: the style sheet's header
+  font, padding and margins need about 34 px more than the text.
+- **Decision:** the Flight Software card names the pointing mode by its
+  label ("Pointing mode: Sun pointing"), from `field_text.mode_label`,
+  the same labels as the spacecraft's FSW mode field. The code
+  ("fsw_mode: sunSafePoint") is the line's tooltip. **Why:** a B4
+  left-over, found in the B6 review.
+- **Decision:** every other table takes the DataTable look through
+  `widgets.set_table_look`: the Budgets grids, Run › History, the
+  readouts, the scenario overview's table, the SIL comparison, the
+  facet and data-handling editors, the model analyses' observers, the
+  3D model's face properties and envelope, the IDM-CIC import's two
+  tables and the input differences dialog. The tables whose cells hold
+  controls (the face properties, the IDM-CIC import) keep Qt's row
+  height. They stay `QTableWidget`s. **Why:** the batch's sweep. Grid
+  lines and centred headings were the only differences that a small
+  change fixes. Moving them to `DataTable` (copy, column menu, fitting)
+  is a larger change for a later batch.
+
 ## Distinct series colours and display units in plots (UI audit B10, 2026-11-19)
 
 - **Decision:** the categorical palette is new in both themes. The

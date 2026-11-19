@@ -36,7 +36,13 @@ rows and its columns fitted to the page, so the page never scrolls sideways
 (UI audit UI-13). The kinds of record are six tabs that fit the page at
 1280 x 720: Nodes, Faces, Couplings (conductors, heat pipes, radiative
 links), Heat loads (dissipation, heaters), Cases (the cases and the thermal
-Monte Carlo) and Solver (the environment and the solver)."""
+Monte Carlo) and Solver (the environment and the solver).
+
+A heading is never cut (UI audit B9): a column is at least as wide as its
+heading, which is short, with its unit ("C [J/K]"), and names the field in
+full on hover (``_HEADING_TIPS``). A table whose headings do not fit the
+page (the conductors and the nodes, with the Inspector open at 1280 px)
+scrolls sideways itself; the page never does."""
 
 from __future__ import annotations
 
@@ -59,28 +65,30 @@ from PySide6.QtWidgets import (
 )
 
 from ..schema import thermal as thermal_schema
+from .data_table import fit_widths
 from .theme import ROW_HEIGHT, SPACE, numeric_font, set_role
 from .widgets import EmptyStack, EmptyState, TabWidget
 
 # Column kinds: "s" text, "f" number, "f?" number or blank, "i" whole number, "b" yes/no, "L" names "a, b",
 # "R?" a range "low, high" or blank, "R" a range, "J" JSON or blank.
-_NODE = (("name", "Name", "s"), ("parts", "Parts", "L"), ("capacitance_j_k", "Capacitance [J/K]", "f?"),
-         ("mass_kg", "Mass [kg]", "f?"), ("specific_heat_j_kg_k", "Specific heat [J/(kg·K)]", "f?"),
-         ("material", "Material", "s"), ("specific_heat_table", "cp table [[°C, J/(kg·K)], ...]", "J"),
+# A heading is short, with its unit; _HEADING_TIPS names it in full on hover (UI audit B9).
+_NODE = (("name", "Name", "s"), ("parts", "Parts", "L"), ("capacitance_j_k", "C [J/K]", "f?"),
+         ("mass_kg", "Mass [kg]", "f?"), ("specific_heat_j_kg_k", "cp [J/(kg·K)]", "f?"),
+         ("material", "Material", "s"), ("specific_heat_table", "cp(T)", "J"),
          ("operating_c", "Operating [°C]", "R?"),
          ("survival_c", "Survival [°C]", "R?"), ("initial_c", "Initial [°C]", "f?"))
 _FACE = (("part", "Part", "s"), ("face", "Face", "s"), ("node", "Node", "s"), ("coating", "Coating", "s"),
          ("absorptance", "Absorptance", "f?"), ("emissivity", "Emissivity", "f?"),
          ("mli_effective_emittance", "MLI e*", "f?"), ("radiator", "Radiator", "b"))
 _CONDUCTOR = (("name", "Name", "s"), ("a", "Node a", "s"), ("b", "Node b", "s"), ("kind", "Kind", "s"),
-              ("conductance_w_k", "Conductance [W/K]", "f?"), ("material", "Material", "s"),
-              ("conductivity_w_m_k", "k [W/(m·K)]", "f?"), ("length_m", "Length [m]", "f?"),
-              ("section_m2", "Section [m²]", "f?"), ("contact_area_m2", "Contact area [m²]", "f?"),
-              ("contact_coefficient_w_m2_k", "Contact h [W/(m²·K)]", "f?"),
-              ("conductivity_table", "k table [[°C, W/(m·K)], ...]", "J"))
+              ("conductance_w_k", "G [W/K]", "f?"), ("material", "Material", "s"),
+              ("conductivity_w_m_k", "k [W/(m·K)]", "f?"), ("length_m", "L [m]", "f?"),
+              ("section_m2", "A [m²]", "f?"), ("contact_area_m2", "Ac [m²]", "f?"),
+              ("contact_coefficient_w_m2_k", "hc [W/(m²·K)]", "f?"),
+              ("conductivity_table", "k(T)", "J"))
 _HEAT_PIPE = (("name", "Name", "s"), ("a", "Node a", "s"), ("b", "Node b", "s"),
-              ("conductance_w_k", "Conductance [W/K]", "f"), ("operating_c", "Operating [°C]", "R"),
-              ("off_conductance_w_k", "Outside it [W/K]", "f"))
+              ("conductance_w_k", "G [W/K]", "f"), ("operating_c", "Operating [°C]", "R"),
+              ("off_conductance_w_k", "G off [W/K]", "f"))
 _LINK = (("name", "Name", "s"), ("a", "Node a", "s"), ("b", "Node b", "s"),
          ("effective_area_m2", "ε·A·F [m²]", "f"))
 _DISSIPATION = (("name", "Name", "s"), ("node", "Node", "s"), ("power_w", "Power [W]", "f?"),
@@ -91,10 +99,30 @@ _CASE = (("name", "Name", "s"), ("preset", "Preset", "s"), ("overrides", "Overri
 _ENVIRONMENT = (("solar_flux_w_m2", "Solar flux at 1 AU [W/m²]", "f?"), ("albedo", "Albedo", "f?"),
                 ("planet_ir_w_m2", "Planet IR [W/m²]", "f?"), ("albedo_model", "Albedo model", "s"))
 _MONTE_CARLO = (("runs", "Runs", "i"), ("seed", "Seed", "i"), ("case", "Case", "s"))
-_DISPERSION = (("path", "Parameter path", "s"), ("sigma", "Sigma (normal) or half-width (uniform)", "f"),
+_DISPERSION = (("path", "Parameter path", "s"), ("sigma", "σ or half-width", "f"),
                ("distribution", "Distribution", "s"), ("relative", "Relative", "b"))
-_SOLVER = (("time_step_s", "Time step [s]", "f"), ("start", "Start", "s"), ("tolerance_k", "Periodic tolerance [K]", "f"),
+_SOLVER = (("time_step_s", "Time step [s]", "f"), ("start", "Start", "s"), ("tolerance_k", "Tolerance [K]", "f"),
            ("max_orbits", "Max orbits", "i"), ("initial_c", "Initial [°C]", "f?"))
+# A heading's full name, on hover (UI audit B9); a heading not listed is its own.
+_HEADING_TIPS = {
+    "C [J/K]": "C [J/K]: the capacitance (blank: mass × specific heat)",
+    "cp [J/(kg·K)]": "cp [J/(kg·K)]: the specific heat",
+    "cp(T)": "cp(T): the specific heat by temperature, as JSON [[°C, J/(kg·K)], ...]",
+    "Operating [°C]": "Operating [°C]: the operating range, 'lowest, highest'",
+    "Survival [°C]": "Survival [°C]: the survival range, 'lowest, highest'",
+    "MLI e*": "MLI e*: the effective emittance of a multi-layer insulation blanket on the face",
+    "G [W/K]": "G [W/K]: the conductance",
+    "k [W/(m·K)]": "k [W/(m·K)]: the material's thermal conductivity",
+    "L [m]": "L [m]: the length",
+    "A [m²]": "A [m²]: the cross-section",
+    "Ac [m²]": "Ac [m²]: the contact area",
+    "hc [W/(m²·K)]": "hc [W/(m²·K)]: the contact coefficient",
+    "k(T)": "k(T): the conductivity by temperature, as JSON [[°C, W/(m·K)], ...]",
+    "G off [W/K]": "G off [W/K]: the conductance outside the operating range",
+    "ε·A·F [m²]": "ε·A·F [m²]: the effective area (emittance, area and view factor)",
+    "σ or half-width": "σ or half-width: the sigma of a normal distribution, or the half-width of a uniform one",
+    "Tolerance [K]": "Tolerance [K]: the periodic tolerance (the change over an orbit that ends the solve)",
+}
 
 TABLES = (("nodes", "Nodes", thermal_schema.ThermalNodeConfig, _NODE),
           ("faces", "Faces", thermal_schema.ThermalFaceConfig, _FACE),
@@ -218,8 +246,10 @@ class RecordModel(QAbstractTableModel):
         if orientation != Qt.Orientation.Horizontal or not 0 <= section < len(self.columns):
             return None
         _name, label, kind = self.columns[section]
-        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole):
+        if role == Qt.ItemDataRole.DisplayRole:
             return label
+        if role == Qt.ItemDataRole.ToolTipRole:
+            return _HEADING_TIPS.get(label, label)
         if role == Qt.ItemDataRole.TextAlignmentRole:
             return int((Qt.AlignmentFlag.AlignRight if kind in _NUMERIC_KINDS else Qt.AlignmentFlag.AlignLeft)
                        | Qt.AlignmentFlag.AlignVCenter)
@@ -259,7 +289,9 @@ class RecordModel(QAbstractTableModel):
 class RecordTable(QTableView):
     """A list of records of one dataclass, a row each, edited in place.
     Its columns share the page's width (a long value elided, whole on
-    hover): it never scrolls sideways (UI audit UI-13)."""
+    hover; UI audit UI-13); a column is never narrower than its heading
+    (UI audit B9), so a table whose headings do not fit the page scrolls
+    sideways itself."""
 
     _COLUMN_MAX_PX = 15 * SPACE["lg"]  # [px] the widest a column starts, before it is fitted to the page
     _COLUMN_MIN_PX = SPACE["xxl"] + SPACE["sm"]  # [px] the narrowest a column is fitted to
@@ -279,12 +311,13 @@ class RecordTable(QTableView):
         self.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked | QAbstractItemView.EditTrigger.EditKeyPressed
                              | QAbstractItemView.EditTrigger.AnyKeyPressed
                              | QAbstractItemView.EditTrigger.SelectedClicked)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)  # only when its headings do not fit
+        self.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # as tall as its rows
         header = self.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        header.setTextElideMode(Qt.TextElideMode.ElideRight)  # a heading too long for its column ends in "…"
+        header.setTextElideMode(Qt.TextElideMode.ElideRight)
         for signal in (self.model_.modelReset, self.model_.rowsInserted, self.model_.rowsRemoved,
                        self.model_.dataChanged):
             signal.connect(self._fit)
@@ -346,37 +379,31 @@ class RecordTable(QTableView):
         self._fit()
 
     def _widths(self, column: int) -> tuple[int, int]:
-        """[px] what column ``column`` needs for its widest cell, and for its
-        heading too, each within the column's limits."""
-        metrics = self.fontMetrics()
+        """[px] what column ``column`` needs for its heading (the floor it
+        is never narrower than), and for its widest cell too."""
         padding = 2 * SPACE["md"]
-        cells = max([metrics.horizontalAdvance(row[column]) for row in self.model_.rows] + [0]) + padding
-        heading = metrics.horizontalAdvance(self.columns[column][1]) + padding
-        cells = max(self._COLUMN_MIN_PX, min(cells, self._COLUMN_MAX_PX))
-        return cells, max(cells, min(heading, self._COLUMN_MAX_PX))
+        # The heading's own size, as the style draws it (the style sheet's font and padding, the header's margins).
+        heading = max(self.horizontalHeader().sectionSizeHint(column), self._COLUMN_MIN_PX)
+        cells = max([self.fontMetrics().horizontalAdvance(row[column]) for row in self.model_.rows] + [0]) + padding
+        return heading, max(heading, min(cells, self._COLUMN_MAX_PX))
 
     def _fit(self, *_args) -> None:
-        """The columns fitted to the page's width: each as wide as its
-        heading and cells need when they all fit; else the cells keep
-        their width and the headings share what is left (a heading is
-        elided, whole on hover); a table too wide even for its cells is
-        scaled down. The height follows the rows."""
+        """The columns fitted to the page's width (``data_table.fit_widths``):
+        each as wide as its heading and cells need when they all fit (the
+        last takes what is left); else the longest values are elided
+        (whole on hover); a heading is never cut, so a table whose headings
+        do not fit scrolls sideways, every value whole. The height follows
+        the rows, and the scroll bar when it shows."""
         room = self.viewport().width()
         if room > 0 and self.columns:
             pairs = [self._widths(c) for c in range(len(self.columns))]
-            cells, wanted = [c for c, _w in pairs], [w for _c, w in pairs]
-            if sum(wanted) <= room:
-                widths = wanted
-            elif sum(cells) <= room:
-                spare, missing = room - sum(cells), sum(wanted) - sum(cells)
-                widths = [c + int((w - c) * spare / missing) for c, w in pairs]
-            else:
-                widths = [max(1, int(c * room / sum(cells))) for c in cells]
-            widths[-1] += room - sum(widths)  # the last takes what is left, so the row fills the table
+            widths = fit_widths([w for _h, w in pairs], [h for h, _w in pairs], room)
             for column, width in enumerate(widths):
                 self.setColumnWidth(column, max(1, width))
         header = self.horizontalHeader()
         height = header.sizeHint().height() + self.model_.rowCount() * ROW_HEIGHT + 2 * self.frameWidth()
+        if room > 0 and header.length() > room:
+            height += self.horizontalScrollBar().sizeHint().height()
         self.setFixedHeight(height)
 
 

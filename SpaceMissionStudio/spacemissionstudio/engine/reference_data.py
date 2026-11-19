@@ -99,6 +99,30 @@ DOWNLOADS: dict[str, Download] = {
 }
 
 
+# The kind of a support-data file, by the class of Basilisk's support-data
+# registry (``dataFetcher.DataFile``) it belongs to: what the file is, read
+# from where Basilisk files it, never guessed from its name (UI audit B4 and
+# B9, UI-49). A class Basilisk adds later shows the unknown kind until it is
+# named here (a test checks that every class is).
+SUPPORT_DATA_KINDS = {
+    "EphemerisData": "SPICE kernel",
+    "LocalGravData": "gravity field",
+    "MagneticFieldData": "magnetic model",
+    "AlbedoData": "albedo map",
+    "AtmosphereData": "atmosphere table",
+    "AtmRadioFreqDampData": "radio attenuation table",
+    "DentonGEOData": "plasma model table",
+    "SkyBrightnessData": "sky brightness map",
+}
+UNKNOWN_SUPPORT_DATA_KIND = "support data file"
+
+
+def support_data_kind(entry) -> str:
+    """The kind of support-data file ``entry`` (a member of one of
+    ``dataFetcher.DataFile``'s classes)."""
+    return SUPPORT_DATA_KINDS.get(type(entry).__name__, UNKNOWN_SUPPORT_DATA_KIND)
+
+
 def _sha256(path: Path) -> str:
     """SHA-256 of a file, as the run's provenance records it (a large file
     hashed once and its hash kept, :func:`dependencies.file_record`); empty
@@ -121,14 +145,10 @@ def _support_files() -> list[ReferenceFile]:
     except ImportError:
         return [ReferenceFile("support data", "SPICE kernels, gravity field, magnetic model", "missing",
                               note="Basilisk is not installed")]
-    # The kind of each support-data file by its Basilisk enum; the rest are SPICE kernels. The tabular
-    # atmosphere's published profiles are CSV tables, not kernels (UI audit B4, UI-49).
-    kinds = {"LocalGravData": "gravity field", "MagneticFieldData": "magnetic model", "AlbedoData": "albedo map",
-             "AtmosphereData": "atmosphere table"}
     files = []
     for kernel, status in zip(kernels.ALL_SUPPORT_DATA_FILES, kernels.cached_statuses()):
         rel = dataFetcher.relpath(kernel)
-        kind = kinds.get(type(kernel).__name__, "SPICE kernel")
+        kind = support_data_kind(kernel)  # by its registry class (UI-49)
         source = dataFetcher.POOCH.get_url(rel)
         if not status.available:
             files.append(ReferenceFile(kind, kernel.value, "missing", source, note=status.error or ""))
