@@ -970,3 +970,26 @@ class RowHeightDelegate(QStyledItemDelegate):
 
     def sizeHint(self, option, index) -> QSize:  # noqa: N802 -- Qt's name
         return super().sizeHint(option, index).expandedTo(QSize(0, ROW_HEIGHT))
+
+
+def set_table_look(view: QTableView, numeric=(), rows: bool = True, docked: bool = False) -> QTableView:
+    """The look of a :class:`gui.data_table.DataTable` for a table built
+    another way (a ``QTableWidget``, a view over its own model; UI audit
+    B9): no grid lines (surfaces, not lines), headings on the left and a
+    numeric column's on the right (``numeric``, a ``QTableWidget``'s
+    columns; a model aligns its own), rows at the table-row height
+    (``rows``; not for a table with controls in its cells), and no frame of
+    its own when it fills a dock or a panel (``docked``). Returns ``view``."""
+    view.setShowGrid(False)
+    header = view.horizontalHeader()
+    header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+    item_of = getattr(view, "horizontalHeaderItem", None)
+    for column in numeric:
+        item = item_of(column) if item_of is not None else None
+        if item is not None:
+            item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    if rows:
+        view.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
+    if docked:
+        set_role(view, role="docked")
+    return view

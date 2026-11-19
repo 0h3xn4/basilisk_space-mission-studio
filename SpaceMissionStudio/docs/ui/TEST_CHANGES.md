@@ -2476,3 +2476,12 @@ No golden file changed. The new tests are in
 named the old limit, 1600 px; it names 1440 px now. The test reads the
 limit from `main_window._INSPECTOR_MIN_SCREEN_PX`, so its code is
 unchanged.
+
+## UI audit B9: one table style, no cut headings
+
+B9 fits Reports › Exports to its width (UI-27), names the reference data
+kinds from Basilisk's registry (UI-49), gives the Problems panel and the
+other tables the DataTable look, keeps every thermal heading whole and
+names the Flight Software card's pointing mode. No existing test
+changed. The new tests are in `tests/gui/test_tables.py`. No golden file
+changed.

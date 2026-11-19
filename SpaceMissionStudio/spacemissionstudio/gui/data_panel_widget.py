@@ -31,8 +31,9 @@ The table is a :class:`gui.data_table.DataTable` (UI audit B4, UI-49):
 each status is a word with its status icon ("Present", "Out of date"),
 a file without dates shows "–" under Covers (the column is hidden when no
 file has dates), and the columns fit the window at 1280 x 720 without a
-horizontal scroll bar: a long name, date range or source is elided, and
-whole on hover.
+horizontal scroll bar (``DataTable.set_fit_width``, UI audit B9): a long
+name, date range or source is elided, and whole on hover; no heading is
+cut.
 """
 
 from __future__ import annotations
@@ -59,10 +60,6 @@ STATUS_SHOWN = {
     "out of date": ("Out of date", "triangle-alert", "status.caution", "status.caution.text"),
     reference_data.NOT_DOWNLOADED: ("Not downloaded", "circle-minus", "text.secondary", "text.secondary"),
 }
-# [px] the widest a column of long texts takes at first (drag it wider); the
-# columns then fit the window at 1280 x 720 (UI-49). Elided in the middle,
-# whole on hover.
-_LONG_COLUMN_PX = {"Kind": 170, "File": 200, "Covers": 200}
 
 
 def status_text(status: str) -> str:
@@ -279,6 +276,7 @@ class DataPanelWidget(QWidget):
         layout.addLayout(status_row)
         # Model/view, no grid lines; Ctrl+C copies the rows (UI-49). Long URLs keep both ends (elided in the middle).
         self.table = DataTable("Reading the reference data files...")
+        self.table.set_fit_width()  # the columns share the window's width (UI-49, B9)
         layout.addWidget(self.table)
 
         row = QHBoxLayout()
@@ -398,9 +396,6 @@ class DataPanelWidget(QWidget):
                 marks={status: mark[1:]} if mark is not None else {}))
         self.table.set_table(_COLUMNS, rows, stretch=_COLUMNS.index("Source"),
                              code=(_COLUMNS.index("SHA-256"),))
-        for name, width in _LONG_COLUMN_PX.items():
-            column = _COLUMNS.index(name)
-            self.table.view.setColumnWidth(column, min(self.table.view.columnWidth(column), width))
         self.table.set_hidden_columns([covers] if not any(f.covers for f in files) else [])
         problems = [f for f in files if reference_data.needs_attention(f)]
         optional = [f for f in files if f.status == reference_data.NOT_DOWNLOADED]

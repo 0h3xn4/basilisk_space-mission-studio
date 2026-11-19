@@ -62,7 +62,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QDialog, QDialogBut
 from . import units
 from .theme import SPACE, set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, EmptyStack, EmptyState
+from .widgets import ComboBox, EmptyStack, EmptyState, set_table_look
 
 CREDIT = ("Reads IDM-CIC models (IDM-CIC is © CNES) with SpaceMissionStudio's own reader. SpaceMissionStudio "
           "is not affiliated with or endorsed by CNES.")
@@ -212,6 +212,7 @@ class IdmImportDialog(QDialog):
         self.devices_table.setTabKeyNavigation(False)
         self.devices_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.devices_table.horizontalHeader().setStretchLastSection(True)
+        set_table_look(self.devices_table, rows=False)  # the DataTable look (B9); its cells hold controls
         # No file yet, or none of its equipment is a device: the empty state, not a blank table (UI audit UI-05).
         self.devices_empty = EmptyState("No model file", "Choose an .idm file: the sensors and actuators its "
                                         "equipment names are listed here.", "Browse...", compact=True)
@@ -233,6 +234,7 @@ class IdmImportDialog(QDialog):
         self.properties_table.setTabKeyNavigation(False)
         self.properties_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.properties_table.horizontalHeader().setStretchLastSection(True)
+        set_table_look(self.properties_table, rows=False)  # the DataTable look (B9); its cells hold controls
         properties_layout.addWidget(self.properties_table, 1)
         self._property_rows: list = []  # (name, value type, kinds)
         power_page = QWidget()

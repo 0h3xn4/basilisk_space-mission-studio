@@ -192,7 +192,7 @@ from .feedback import report
 from .theme import SERIES_COLORS, SIZE, SPACE, TOKENS, WEB_FONT_STACK, on_change, set_role
 from .theme import plotly_template as pt
 from .value_sheet import NoteList
-from .widgets import ComboBox, EmptyState, make_window, show_window
+from .widgets import ComboBox, EmptyState, make_window, set_table_look, show_window
 
 # Categorical series colours: the theme's categorical palette (theme/
 # palettes.py has its validation), the same list object, so a figure built
@@ -1655,6 +1655,7 @@ class ResultsWidget(QWidget):
                                          f"Run {other.number}" if other else "-"])
         table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         table.verticalHeader().setVisible(False)
+        set_table_look(table)  # the DataTable look (UI audit B9)
         for row, (path, mine, theirs) in enumerate(rows):
             for column, text in enumerate((path, short(mine), short(theirs))):
                 item = QTableWidgetItem(text)

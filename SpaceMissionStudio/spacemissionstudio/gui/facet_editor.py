@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
 
 from ..engine.facets import box_facets
 from ..schema.scenario import FacetConfig
-from .widgets import PreciseDoubleSpinBox, finish_form
+from .widgets import PreciseDoubleSpinBox, finish_form, set_table_look
 
 # (header, FacetConfig attribute, vector index or None)
 _COLUMNS = [
@@ -127,6 +127,7 @@ class FacetTableWidget(QWidget):
         self.table.setHorizontalHeaderLabels([header for header, _, _ in _COLUMNS])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.verticalHeader().setVisible(False)
+        set_table_look(self.table)  # the DataTable look (UI audit B9)
         layout.addWidget(self.table)
         buttons = QHBoxLayout()
         self.add_button = QPushButton("Add")

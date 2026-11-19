@@ -43,7 +43,14 @@
 - filtering is a predicate on the model's rows (:meth:`DataTable.set_row_filter`);
   columns can be hidden (:meth:`DataTable.set_hidden_columns`);
 - an empty state (its text, and its action when one is given)
-  instead of an empty grid.
+  instead of an empty grid;
+- rows at the theme's table-row height (``ROW_HEIGHT``, UI audit B9);
+- a table that fits its width (:meth:`DataTable.set_fit_width`, UI audit
+  UI-27): the columns share the width of the view, the longest texts
+  elided first and never a heading cut (:func:`fit_widths`); it scrolls
+  sideways only when even its headings do not fit;
+- a cell whose text is elided shows it whole on hover (its own tooltip
+  first).
 """
 
 from __future__ import annotations
@@ -52,14 +59,14 @@ from dataclasses import dataclass, field
 from collections.abc import Callable, Sequence
 from collections.abc import Sequence as SequenceABC
 
-from PySide6.QtCore import QAbstractTableModel, QObject, QSortFilterProxyModel, Qt, Signal
+from PySide6.QtCore import QAbstractTableModel, QEvent, QObject, QSortFilterProxyModel, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QKeySequence, QPalette
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLabel, QMenu, QPushButton,
                                QStackedWidget, QStyle, QStyledItemDelegate, QStyleOptionViewItem, QTableView,
-                               QVBoxLayout, QWidget)
+                               QToolTip, QVBoxLayout, QWidget)
 
 from . import units
-from .theme import TOKENS, icon, mono_font, numeric_font, set_role, ui_font
+from .theme import ROW_HEIGHT, TOKENS, icon, mono_font, numeric_font, set_role, ui_font
 
 _SORT_ROLE = Qt.ItemDataRole.UserRole  # a cell's sort key (Row.keys)
 NOTE_ROLE = Qt.ItemDataRole.UserRole + 1  # a cell's muted second line (Row.notes)
@@ -68,6 +75,34 @@ _CELL_PAD_PX = 16  # [px] beside a cell's text (the style sheet's padding and th
 _HEADER_PAD_PX = 28  # [px] beside a heading (its padding and the sort indicator)
 _ICON_PAD_PX = 24  # [px] a status icon (16 px) and its gap, before a marked cell's text
 _MAX_COLUMN_PX = 480  # [px] a long text is elided past this; the column can still be dragged wider
+
+
+def fit_widths(wanted: Sequence[int], floors: Sequence[int], room: int, grow: int = -1) -> list[int]:
+    """[px] column widths that share ``room`` (UI audit B9): each column
+    ``wanted`` wide when they all fit, column ``grow`` taking what is left;
+    else the widest are cut down to one width (their text elided), never
+    below their ``floors`` (a heading's width); when even the floors do not
+    fit, ``wanted`` (the table then scrolls sideways, and nothing need be
+    elided)."""
+    floors = [min(floor, want) for floor, want in zip(floors, wanted)]
+    if not wanted:
+        return []
+    if sum(wanted) <= room:
+        widths = list(wanted)
+        widths[grow] += room - sum(widths)
+        return widths
+    if sum(floors) >= room:
+        return list(wanted)
+    low, high = 0, max(wanted)  # the one width the widest columns are cut to: the largest that fits
+    while low < high:
+        cap = (low + high + 1) // 2
+        if sum(max(floor, min(want, cap)) for floor, want in zip(floors, wanted)) <= room:
+            low = cap
+        else:
+            high = cap - 1
+    widths = [max(floor, min(want, low)) for floor, want in zip(floors, wanted)]
+    widths[grow] += room - sum(widths)  # the pixels the rounding left
+    return widths
 
 
 @dataclass
@@ -284,7 +319,31 @@ class _Direct:
         pass
 
 
-class _NoteDelegate(QStyledItemDelegate):
+def _elided(view: QTableView, index) -> bool:
+    """Whether the text of cell ``index`` is wider than its column leaves it."""
+    text = index.data(Qt.ItemDataRole.DisplayRole)
+    if not text:
+        return False
+    font = index.data(Qt.ItemDataRole.FontRole) or view.font()
+    room = view.columnWidth(index.column()) - _CELL_PAD_PX
+    if index.data(Qt.ItemDataRole.DecorationRole) is not None:
+        room -= _ICON_PAD_PX
+    return QFontMetrics(font).horizontalAdvance(str(text)) > room
+
+
+class _CellDelegate(QStyledItemDelegate):
+    """A cell as usual; on hover, its tooltip, or its whole text when the
+    column elides it (UI audit B9)."""
+
+    def helpEvent(self, event, view, option, index) -> bool:  # noqa: N802 -- Qt API name
+        if event.type() == QEvent.Type.ToolTip and index.isValid() and not index.data(Qt.ItemDataRole.ToolTipRole) \
+                and _elided(view, index):
+            QToolTip.showText(event.globalPos(), str(index.data(Qt.ItemDataRole.DisplayRole)), view)
+            return True
+        return super().helpEvent(event, view, option, index)
+
+
+class _NoteDelegate(_CellDelegate):
     """Paints a cell with a second line (:data:`NOTE_ROLE`): its text, and
     under it the note in the monospace font and the secondary colour, each
     elided to the cell's width; any other cell as usual."""
@@ -322,6 +381,12 @@ class _NoteDelegate(QStyledItemDelegate):
 
 class _View(QTableView):
     copy_requested = Signal()
+    resized = Signal()  # its width changed: a table that fits its width fits again
+
+    def resizeEvent(self, event):  # noqa: N802 -- Qt API name
+        super().resizeEvent(event)
+        if event.size().width() != event.oldSize().width():
+            self.resized.emit()
 
     def keyPressEvent(self, event):  # noqa: N802 -- Qt API name
         if event.matches(QKeySequence.StandardKey.Copy):
@@ -373,8 +438,20 @@ class DataTable(QWidget):
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.view.setWordWrap(False)
         self.view.setShowGrid(False)  # surfaces, not lines (UI audit B4)
-        self._one_line_px = self.view.verticalHeader().defaultSectionSize()  # [px] Qt's row height for the font
+        self._one_line_px = ROW_HEIGHT  # [px] the theme's table row (UI audit B9; Qt's own was about 30 px)
+        self.view.verticalHeader().setDefaultSectionSize(self._one_line_px)
+        self._cells = _CellDelegate(self.view)
+        self.view.setItemDelegate(self._cells)
         self._notes = _NoteDelegate(self.model._code_font, self.view)
+        self._fit_width = False  # set_fit_width
+        self._natural: list[int] = []  # [px] each column's width for its heading and text (_size_columns)
+        self._floors: list[int] = []  # [px] each column's heading width
+        self._grow = -1  # the column that takes the width left
+        # Fitted again once the view's width, or its vertical scroll bar (the viewport's width), changes.
+        self._fit_timer = QTimer(self)
+        self._fit_timer.setSingleShot(True)
+        self._fit_timer.setInterval(0)
+        self._fit_timer.timeout.connect(self._fit_columns)
         self.view.setTabKeyNavigation(False)  # read-only: Tab leaves the table; the arrows move in it (M9)
         self.view.setTextElideMode(Qt.TextElideMode.ElideMiddle)
         self.view.copy_requested.connect(lambda: QGuiApplication.clipboard().setText(self.copy_text()))
@@ -400,7 +477,9 @@ class DataTable(QWidget):
             header.setSectionResizeMode(column, QHeaderView.ResizeMode.Stretch if column == stretch
                                         else QHeaderView.ResizeMode.Interactive)
             self.view.setColumnHidden(column, False)
-        self._size_columns(stretch)
+        self._grow = stretch
+        self._size_columns(-2 if self._fit_width else stretch)  # fitted: every column measured
+        self._fit_columns()
         self._show_notes()
         self._update_spans()
         self.view.setUpdatesEnabled(True)
@@ -416,10 +495,17 @@ class DataTable(QWidget):
         plain, numbers = QFontMetrics(self.view.font()), QFontMetrics(self.model._numeric_font)
         codes = QFontMetrics(self.model._code_font)
         bold = QFontMetrics(self.model._heading_font)
+        self._natural, self._floors = [], []
+        header = self.view.horizontalHeader()
         for column, heading in enumerate(self.model.headers):
+            # The heading's width, and at least its size as the style draws it (font, padding, margins, sort arrow).
+            floor = max(max(header_metrics.horizontalAdvance(line) for line in units.label(heading).split("\n"))
+                        + _HEADER_PAD_PX, header.sectionSizeHint(column))
+            self._floors.append(floor)
             if column == stretch:
+                self._natural.append(floor)
                 continue
-            width = max(header_metrics.horizontalAdvance(line) for line in heading.split("\n")) + _HEADER_PAD_PX
+            width = floor
             metrics = numbers if column in self.model.numeric else codes if column in self.model.code else plain
             for index in sample:
                 row = rows[index]
@@ -428,7 +514,45 @@ class DataTable(QWidget):
                 font = bold if row.bold else plain if column in row.plain else metrics
                 width = max(width, font.horizontalAdvance(row.cells[column]) + _CELL_PAD_PX
                             + (_ICON_PAD_PX if column in row.marks else 0))
-            self.view.setColumnWidth(column, min(width, _MAX_COLUMN_PX))
+            self._natural.append(min(width, _MAX_COLUMN_PX))
+            self.view.setColumnWidth(column, self._natural[-1])
+
+    def set_fit_width(self, on: bool = True) -> None:
+        """Fit the columns to the view's width (UI audit UI-27): call before
+        :meth:`set_table`. The longest texts are elided first (whole on
+        hover), a heading is never cut, the ``stretch`` column takes what
+        is left; only a table whose headings alone are too wide scrolls
+        sideways."""
+        if on and not self._fit_width:
+            self.view.resized.connect(self._fit_timer.start)
+            self.view.verticalScrollBar().rangeChanged.connect(lambda *_range: self._fit_timer.start())
+        self._fit_width = on
+
+    def _fit_columns(self) -> None:
+        """The shown columns fitted to the view's width (:func:`fit_widths`)."""
+        if not self._fit_width or not self._natural:
+            return
+        columns = self.shown_columns()
+        room = self.view.viewport().width()
+        if not columns or room <= 0:
+            return
+        grow = columns.index(self._grow) if self._grow in columns else -1
+        widths = fit_widths([self._natural[c] for c in columns], [self._floors[c] for c in columns], room, grow)
+        for column, width in zip(columns, widths):
+            if column != self._grow:  # the stretching column takes the rest itself
+                self.view.setColumnWidth(column, width)
+
+    def cell_elided(self, row: int, column: int) -> bool:
+        """Whether the shown row ``row``'s cell in ``column`` is elided (too long for its column)."""
+        return _elided(self.view, self.proxy.index(row, column))
+
+    def hover_text(self, row: int, column: int) -> str | None:
+        """What hovering the shown row ``row``'s cell shows: its tooltip, or
+        its whole text when it is elided (None: nothing)."""
+        tooltip = self.cell_tooltip(row, column)
+        if tooltip:
+            return tooltip
+        return self.cell(row, column) if self.cell_elided(row, column) else None
 
     def _show_notes(self) -> None:
         """Rows two lines high, painted by the note delegate, while a row has a note."""
@@ -437,7 +561,7 @@ class DataTable(QWidget):
             self.view.verticalHeader().setDefaultSectionSize(
                 self._one_line_px + QFontMetrics(self.model._code_font).height())
         elif self.view.itemDelegate() is self._notes:
-            self.view.setItemDelegate(QStyledItemDelegate(self.view))
+            self.view.setItemDelegate(self._cells)
             self.view.verticalHeader().setDefaultSectionSize(self._one_line_px)
 
     def _header_font(self):
@@ -463,6 +587,7 @@ class DataTable(QWidget):
         hidden = set(columns)
         for column in range(self.model.columnCount()):
             self.view.setColumnHidden(column, column in hidden)
+        self._fit_columns()
 
     def set_single_pick(self) -> None:
         """One row at a time is picked; ``row_chosen`` carries it (a model row)."""
@@ -596,6 +721,10 @@ class DataTable(QWidget):
             action.setCheckable(True)
             action.setChecked(not self.view.isColumnHidden(column))
             action.setEnabled(column != 0)  # the first column names the row
-            action.toggled.connect(lambda on, c=column: self.view.setColumnHidden(c, not on))
+            action.toggled.connect(lambda on, c=column: self._show_column(c, on))
         menu.popup(self.view.horizontalHeader().mapToGlobal(at))
         self.column_menu = menu  # kept while it is open
+
+    def _show_column(self, column: int, shown: bool) -> None:
+        self.view.setColumnHidden(column, not shown)
+        self._fit_columns()

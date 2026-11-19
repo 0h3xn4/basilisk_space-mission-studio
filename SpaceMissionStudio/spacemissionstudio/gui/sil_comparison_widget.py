@@ -34,7 +34,7 @@ from . import export_log
 from .scenario_explainer_widget import _stat_tile
 from .feedback import report
 from .theme import set_role
-from .widgets import TabWidget
+from .widgets import TabWidget, set_table_look
 
 # "Unit": the signal's, as Basilisk's payload header writes it (SignalStats.unit); the residual, RMS and
 # reference columns are in it. Kept last so the columns before stay where they were.
@@ -103,6 +103,9 @@ class SilComparisonWidget(QWidget):
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.verticalHeader().setVisible(False)
+        # The DataTable look (UI audit B9): the headings of the number columns on the right, as their numbers.
+        set_table_look(self.table, numeric=[i for i, name in enumerate(_COLUMNS) if name not in ("Signal", "Kind",
+                                                                                                     "Unit")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setStretchLastSection(True)
         signals_layout.addWidget(self.table, 1)
