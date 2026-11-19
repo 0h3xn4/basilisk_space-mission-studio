@@ -3976,3 +3976,113 @@ open in its own window.
   JSON keys, the command line's output and the file formats keep their
   spelling; text the core makes (the pass summary's "peak 61 deg", the
   value-mark consequences' "deg/day") is unchanged.
+
+## One form grid and page inset (UI audit B6, 2026-11-19)
+
+- **Decision:** one page inset, `theme.PAGE_INSET` = 16 px
+  (`SPACE["lg"]`), from a page's left and top edges, for every page of
+  every area: each tab of Run, Results, Budgets and Reports, Home,
+  Timeline, Settings, each page of the Scenario tree and the JSON page.
+  `AreaPage` applies it (`shell.inset_page`, `inset_stack`; pages added
+  later too); a page draws no margin of its own. **Why:** UI-16; 16 px is
+  the area header's inset of its title, so a page's content lines up
+  under the title. The pages had 0, 9, 12, 16, 18, 24 or 25 px.
+- **Decision:** a page that scrolls itself is marked `INSET_INSIDE` and
+  puts the inset inside its scroll area (the Run page, Overview, Home,
+  the embedded spacecraft, ground station and Environment forms); the
+  others get it around them, their tables and scroll bars inside it.
+  The tab rows and the Scenario tree stay flush with the page's edges.
+  **Why:** a scroll bar 16 px from the window's edge looks misplaced; the
+  tab rows and the tree are navigation, not content.
+- **Decision:** the Scenario area's first form is "General"; its page
+  has no group title. The node is found by its item
+  (`scenario_item`), never by its text, so nothing else changed; the
+  manual and the user guide say General. **Why:** UI-52 ("Scenario" was
+  the area's title, the node and the group's title); "General" is the
+  usual name of a document's first settings page.
+- **Decision:** the Scenario tree is as wide as its longest node needs
+  (its indentation, text, padding, frame and scroll bar), between 170 and
+  340 px (`theme.PAGE_TREE_WIDTH`), as the tree's minimum width, measured
+  with the font in use. "Power / propulsion / link budget" keeps its
+  name. **Why:** UI-18. Renaming the section would change the manual,
+  the user guide, the flight-software export's traceability text and the
+  tests that name it; the tree needs 287 px for it on Linux. A
+  minimum width, not a start width: a layout saved with 220 px is
+  restored at the width the names need.
+- **Decision:** one form grid per page (`widgets.FormGrid`, installed by
+  `finish_form`): the label column of every form of a page is as wide as
+  the page's longest label needs, at most 224 px
+  (`theme.LABEL_COLUMN_MAX_PX`); a longer label wraps onto a second line.
+  The grid is measured from the forms' positions, so forms in groups and
+  nested widgets line up; it follows the page (a section built, a group
+  opened) on the next turn of the event loop. A grid inside another
+  page's (the orbit widget's) leaves the line-up to the page's. A form
+  inside another form's field keeps its own column. The labels may be
+  QLabels or a parameter's include check box. **Why:** UI-26: separate
+  QFormLayouts each sized their own label column. Without the cap, one
+  label of 300 px ("sigma_BN (MRP, body B relative to EME2000 N)")
+  pushed every field of Orbit / mass to the right.
+- **Decision:** field widths: a drop-down list at most 320 px
+  (`theme.FIELD_WIDTH["choice"]`), a number field at most 224 px
+  (`["number"]`, the M4a value, moved to the theme), set by
+  `limit_field_widths` for every field under a finished form. An entry
+  longer than the drop-down list ends in "…" (`widgets.ComboBox`); the
+  open list shows it whole. A button alone in a form row or a column
+  keeps its own width at the left; rows with a button and a field get a
+  stretch at their end. Text fields (a name, a path, the description)
+  keep the form's width. **Why:** UI-26 (combos 770-960 px, "Look ahead"
+  820 px, the LTAN 435 px, a button 880 px).
+- **Decision:** Run › End of Life's numbers are `NumberField`s ("30
+  years", "250 km", "0.000 kg"), and the page is a finished form. **Why:**
+  UI-26 named it; its spin boxes were plain ones with a hand-made
+  suffix.
+- **Decision:** a disabled input's tooltip starts "Off:", says why and
+  names what turns it on; `widgets.set_off_reason(widget, enabled,
+  reason)` keeps the input's own tooltip after the reason and shows it
+  alone while the input is on (`own_tooltip` changes it). Every input the
+  test found off without one has one now: the five of the audit (Pace,
+  Degree/order, Gravity from the shape model, the dry mass, centre of
+  mass, inertia and facets a 3D model gives, the re-entry Estimate), the
+  albedo check box, the space-weather fields of a model that does not
+  read them, the atmosphere table, the comms-pointing Sun axis, Edit and
+  Remove of the spacecraft and station lists, Scenario › Assumptions'
+  value, Set and Reset to default, Run › Plan's Save plan... and Compare,
+  End of Life's deorbit perigee and propellant, the re-entry density and
+  Save..., and Reports › Flight Software's Export... and Open folder.
+  The test needs no allow-list. A child of a disabled widget with a
+  tooltip says why through it (Qt shows the parent's tooltip). **Why:**
+  UI-42.
+- **Decision:** the thermal editor's ten kinds of record are six tabs:
+  Nodes, Faces, Couplings (conductors, heat pipes, radiative links), Heat
+  loads (dissipation, heaters), Cases (the cases and the thermal Monte
+  Carlo) and Solver (the environment and the solver). A tab of several
+  kinds shows each under its heading. **Why:** UI-13: ten tabs needed
+  about 930 px and were cut at "Mon"; six need about 430 px and fit with
+  the Inspector open too. Sections in the page tree would need a third level
+  of nodes under a spacecraft's section; a segmented control of ten would
+  not fit either. "Couplings" and "Heat loads" are the thermal analyst's
+  names (conductive and radiative couplings, heat loads).
+- **Decision:** the thermal tables are the editable model/view grid of
+  the GUI (`thermal_editor.RecordModel`, a `QAbstractTableModel` with
+  `ItemIsEditable`, in a `QTableView`), not `DataTable`: every table is
+  edited. No grid lines, numbers right-aligned in tabular figures, no row
+  numbers, as tall as their rows (no inner scroll bar), the columns
+  fitted to the page: each at its heading's and cells' width when they
+  fit; else the cells keep theirs and the headings share the rest
+  (elided, whole on hover); a table too wide even for its cells is scaled
+  down. A list without a row shows its compact empty state with Add
+  (`EmptyStack`). The table's API is `row_count`, `cell`, `set_cell`,
+  `current_row`, `set_current_row`, `remove_current`, `add_record`,
+  `set_records`, `records`. Generate, Conductance, the JSON view and the
+  file are unchanged. **Why:** UI-13 (QTableWidgets with grid lines, a
+  table scrolling sideways inside the page's scroll area).
+- **Decision:** the third bodies stay a `QListWidget` of checkable items
+  with the role `checklist`: no frame, the form's background, a row per
+  body at the table-row height (`RowHeightDelegate`), as tall as its
+  rows, no scroll bar. **Why:** UI-53; it looks like check boxes in the
+  form, keeps the keyboard (arrows, Space) and the item data the tests
+  and the code read. A `DataTable` with a check column would be a table
+  of six rows in a form.
+- **Decision:** Scenario › Monte Carlo is a top page (`_page(top=True)`):
+  the switch and the line on what it does at the top, a stretch below.
+  **Why:** UI-04.

@@ -213,7 +213,7 @@ _ROWS = {
                                                              "plausibility_label"), _command(w, "view.problems")),
     "**Scenario tab** › Templates": lambda w: _shown(w, w.load_scenario_widget, "home"),
     "Scenario › Scenario, Environment, Spacecraft…, Ground stations…, Mission sequence, Monte Carlo": lambda w: [
-        _tree(w, path) for path in ("Scenario", "Environment", "Spacecraft", "Ground stations", "Mission sequence",
+        _tree(w, path) for path in ("General", "Environment", "Spacecraft", "Ground stations", "Mission sequence",
                                     "Monte Carlo")],
     "Scenario › JSON": lambda w: (_in_the_header(w, w.scenario_editor.json_button, "scenario"),
                                   _shown(w, w.scenario_editor.json_page, "scenario")),

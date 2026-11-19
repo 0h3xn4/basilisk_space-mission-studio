@@ -115,10 +115,11 @@ from .orbit_ic_widget import ANOMALY_LABELS, ORBIT_TYPE_LABELS, OrbitIcWidget
 from .param_form import ParamForm
 from .problem_location import SPACECRAFT, locate
 from .sensor_actuator_editor import SensorActuatorListWidget
-from .theme import set_role
+from .theme import PAGE_INSET, set_role
 from . import units
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row
+from .widgets import (ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row,
+                      set_off_reason)
 
 _FSW_MODE_NONE_LABEL = "(none – no attitude control)"
 
@@ -415,6 +416,8 @@ class SpacecraftEditorDialog(QDialog):
         self._orbit_only = simulation_mode == "orbit_only"
 
         outer_layout = QVBoxLayout(self)
+        if embedded:  # a page of the Scenario tree: each section insets its content inside its scroll area (UI-16)
+            outer_layout.setContentsMargins(0, 0, 0, 0)
         # What is wrong, when the dialog is opened at a problem or OK finds one (U-12).
         self.problem_banner = ProblemBanner()
         outer_layout.addWidget(self.problem_banner)
@@ -1832,6 +1835,8 @@ class SpacecraftEditorDialog(QDialog):
             if self._orbit_only:
                 self._apply_orbit_only()
             if self._finish_each_section:
+                if page.layout() is not None:  # the page's content at the page inset (UI audit UI-16)
+                    page.layout().setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, PAGE_INSET)
                 finish_form(page)  # units in the fields, optional groups collapse (M4a)
             self.section_built.emit(page)
             if title == through:
@@ -2077,7 +2082,8 @@ class SpacecraftEditorDialog(QDialog):
 
     def _on_cp_sun_axis_default_toggled(self, checked: bool) -> None:
         for box in (self.cp_sun_axis_x, self.cp_sun_axis_y, self.cp_sun_axis_z):
-            box.setEnabled(not checked)
+            set_off_reason(box, not checked, "Off: the solar-panel normal is the Sun axis. Untick Sun axis: use the "
+                                             "solar-panel normal to give another axis.")
 
     @staticmethod
     def _form_params(form: ParamForm, field_label: str) -> dict:
@@ -2296,13 +2302,15 @@ class SpacecraftEditorDialog(QDialog):
         """Fields the model fills are shown but not editable while it does."""
         mass_locked = self._model is not None and self._model.apply_mass_properties
         facets_locked = self._model is not None and self._model.apply_facets and not self._orbit_only
-        tip = "From the 3D model (3D model tab)."
+        # Off with the reason and what turns it on, in the tooltip (UI audit UI-42).
+        mass_tip = ("Off: the 3D model gives this value (3D model tab). To type it here, untick 'Apply the mass "
+                    "properties to the spacecraft' in the 3D model editor, or remove the model.")
         for box in (self.dry_mass_kg, self.com_x, self.com_y, self.com_z, self.ixx, self.iyy, self.izz):
-            box.setEnabled(not mass_locked)
-            if mass_locked:
-                box.setStatusTip(tip)
-        self.facet_table.setEnabled(not facets_locked)
-        self.facet_table.setToolTip(tip if facets_locked else "")
+            set_off_reason(box, not mass_locked, mass_tip)
+            box.setStatusTip(mass_tip if mass_locked else "")
+        set_off_reason(self.facet_table, not facets_locked,
+                       "Off: the 3D model gives the facets (3D model tab). To edit them here, untick 'Apply the "
+                       "facets' in the 3D model editor, or remove the model.")
 
     def _on_orbit_imported(self, path: str, file_format: str) -> None:
         """An orbit read from a CCSDS OPM or OMM: its import record (the
@@ -3296,8 +3304,8 @@ class SpacecraftListWidget(QWidget):
         empty = not self._configs
         self.list_stack.refresh(empty)
         selected = self.list_widget.currentRow() >= 0
-        self.edit_button.setEnabled(selected)
-        self.remove_button.setEnabled(selected)
+        for button in (self.edit_button, self.remove_button):
+            set_off_reason(button, selected, "Off: select a spacecraft in the list first.")
 
     def set_central_body_provider(self, provider) -> None:
         """``provider`` is a zero-argument callable returning the

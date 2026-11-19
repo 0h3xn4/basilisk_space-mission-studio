@@ -95,7 +95,7 @@ Where each piece lives in the app, and which template shows it best:
 
 | Piece | Where you edit it | Learn it from template |
 |---|---|---|
-| Simulation mode, epoch | Scenario tree > **Scenario** | 01 (orbit only), 06 (attitude) |
+| Simulation mode, epoch | Scenario tree > **General** | 01 (orbit only), 06 (attitude) |
 | Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18 |
 | A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22 |
 | Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14 |
@@ -185,7 +185,7 @@ A few things to notice right away:
     selected template's description on the right.
   * **Scenario**: the scenario tree on the left and the page of the node
     you pick beside it: **Overview** (Explain: what the scenario does, end
-    of Section 7), **Scenario**, **Environment**, **Spacecraft** with
+    of Section 7), **General**, **Environment**, **Spacecraft** with
     a node per spacecraft, and under each one a node per part of its page
     (**Orbit / mass**, **Sensors / actuators**, **Attitude control**,
     **Power / propulsion / link budget**, **3D model**,
@@ -321,7 +321,7 @@ A few things to notice right away:
   sequence, or the run a run warning comes from) and **Message**. Errors come first; click a column's heading
   to sort by it, and `Ctrl+C` copies the selected rows. Double-click a row,
   or select it and press `Enter`, to go where it is fixed: the field on
-  its page of the Scenario area (the **Scenario** or **Environment** page,
+  its page of the Scenario area (the **General** or **Environment** page,
   a spacecraft's or ground station's page, the mission sequence step), or
   a spacecraft's 3D model editor, with the problem named at the top and
   under the field. A new window starts without it: an edit that makes the
@@ -462,7 +462,7 @@ and the **Budgets** area. The 3D View's 2D map can too, on its own
    explaining what it demonstrates and what to look for.
 2. Click **Open template** (or the card's **Open**, or double-click the
    card). The
-   app shows the mission's **Scenario** page – you don't need to look at
+   app shows the mission's **General** page – you don't need to look at
    or understand it yet, just confirm something loaded (its name appears
    in the "Name" field at the top).
 3. Click **Run** in the top bar (or press `Ctrl+R`).
@@ -553,7 +553,7 @@ it back), and a page whose values do not validate marks the field, lists
 it in **Problems**, and keeps the scenario from running until it is
 fixed:
 
-* **Scenario** – the mission's name, its **Simulation mode**
+* **General** – the mission's name, its **Simulation mode**
   ("Full attitude" if you need sensors/actuators/pointing control, or
   the simpler "Orbit only" if you just care about trajectories; a blank
   scenario starts in Orbit only), the **Epoch** (the real calendar
@@ -1064,6 +1064,10 @@ editor's **3D model** page, group **Thermal model**): a node per part,
 generated from the model with its masses, materials and contacts, then
 the optics of every face, MLI, radiators, conductors, heat pipes, the
 heat each unit dissipates, thermostatic heaters and each node's limits.
+Its tables are on six tabs: **Nodes**, **Faces**, **Couplings**
+(conductors, heat pipes, radiative links), **Heat loads** (dissipation,
+heaters), **Cases** (with the thermal Monte Carlo) and **Solver** (the
+environment and the solver).
 After a run, **Run › Thermal** solves it in a nominal, a hot and a cold
 case (NASA/TM-2001-211221), or the cases you define, from the run's
 orbit, attitude and eclipses: sunlight, the planet's albedo (Basilisk's

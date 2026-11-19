@@ -48,7 +48,7 @@ from .chained_inputs_panel import ChainedInputsPanel
 from .scenario_explainer_widget import _clear_layout, _stat_tile
 from .theme import CONTENT_MAX_WIDTH_PX, PALETTE, set_role
 from .value_sheet import FoldSection, NoteList
-from .widgets import ComboBox, EmptyState, PreciseDoubleSpinBox
+from .widgets import ComboBox, EmptyState, NumberField, finish_form, set_off_reason
 
 _FROM_START = "Start of scenario"
 _FROM_LAST_RUN = "End of last run"
@@ -216,12 +216,12 @@ class LifetimeWidget(QWidget):
         deorbit_row = QHBoxLayout()
         self.deorbit_check = QCheckBox("Lower perigee to")
         self.deorbit_check.setToolTip("One retrograde burn at apogee with the orbit thruster.")
-        self.deorbit_perigee_spin = PreciseDoubleSpinBox()
-        self.deorbit_perigee_spin.setRange(130.0, 2000.0)
-        self.deorbit_perigee_spin.setDecimals(0)
-        self.deorbit_perigee_spin.setSuffix(" km")
-        self.deorbit_perigee_spin.setEnabled(False)
-        self.deorbit_check.toggled.connect(self.deorbit_perigee_spin.setEnabled)
+        # A number field like every other (UI audit UI-26).
+        self.deorbit_perigee_spin = NumberField("km", 130.0, 2000.0, decimals=0, value=250.0)
+        self.deorbit_perigee_spin.setToolTip("The perigee the burn lowers the orbit to.")
+        self.deorbit_check.toggled.connect(lambda on: set_off_reason(
+            self.deorbit_perigee_spin, on, "Off: no deorbit burn. Tick Lower perigee to, to plan one."))
+        set_off_reason(self.deorbit_perigee_spin, False, "Off: no deorbit burn. Tick Lower perigee to, to plan one.")
         deorbit_row.addWidget(self.deorbit_check)
         deorbit_row.addWidget(self.deorbit_perigee_spin)
         deorbit_row.addStretch(1)
@@ -240,22 +240,20 @@ class LifetimeWidget(QWidget):
         for label, _value in self._drag_items:
             self.drag_combo.addItem(label)
         form.addRow("Drag coefficient", self.drag_combo)
-        self.horizon_spin = PreciseDoubleSpinBox()
-        self.horizon_spin.setRange(1.0, 100.0)
-        self.horizon_spin.setDecimals(0)
-        self.horizon_spin.setSuffix(" years")
+        self.horizon_spin = NumberField("years", 1.0, 100.0, decimals=0, value=30.0)
         form.addRow("Look ahead", self.horizon_spin)
         # The propellant at the start, edited before computing (Phase 8b): in place of the run's or the scenario's.
         propellant_row = QHBoxLayout()
         self.propellant_check = QCheckBox("Set to")
         self.propellant_check.setToolTip("Use this propellant at the start of the decay in place of what the last "
                                          "run left (or the scenario's); the calculation records it as edited")
-        self.propellant_spin = PreciseDoubleSpinBox()
-        self.propellant_spin.setRange(0.0, 1.0e5)
-        self.propellant_spin.setDecimals(3)
-        self.propellant_spin.setSuffix(" kg")
-        self.propellant_spin.setEnabled(False)
-        self.propellant_check.toggled.connect(self.propellant_spin.setEnabled)
+        self.propellant_spin = NumberField("kg", 0.0, 1.0e5, decimals=3)
+        self.propellant_spin.setToolTip("The propellant at the start of the decay.")
+        self.propellant_check.toggled.connect(lambda on: set_off_reason(
+            self.propellant_spin, on, "Off: the estimate uses the propellant that the last run left, "
+                                      "or the scenario's. Tick Set to, to give another value."))
+        set_off_reason(self.propellant_spin, False, "Off: the estimate uses the propellant that the last run "
+                                                    "left, or the scenario's. Tick Set to, to give another value.")
         propellant_row.addWidget(self.propellant_check)
         propellant_row.addWidget(self.propellant_spin)
         propellant_row.addStretch(1)
@@ -330,6 +328,7 @@ class LifetimeWidget(QWidget):
 
         self.reentry_section = ReentrySection()
         layout.addWidget(self.reentry_section)
+        finish_form(self)  # choices and numbers at their widths, one label column (UI audit UI-26)
         self._defaults = None  # the configuration's defaults the controls were last set to
         self._apply_defaults(None)
         self._update_from_choices()

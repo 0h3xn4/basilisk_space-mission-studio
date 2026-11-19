@@ -43,13 +43,15 @@ from __future__ import annotations
 import math
 from decimal import Decimal
 
-from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QValidator
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QComboBox, QDoubleSpinBox, QFormLayout,
-                               QGroupBox, QHBoxLayout, QLabel, QLayout, QPushButton, QScrollArea, QSizePolicy, QSpinBox,
-                               QStackedWidget, QStyledItemDelegate, QTabBar, QTableView, QTabWidget, QVBoxLayout, QWidget)
+from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer
+from PySide6.QtGui import QPalette, QValidator
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QBoxLayout, QCheckBox, QComboBox,
+                               QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLayout,
+                               QPushButton, QScrollArea, QSizePolicy, QSpinBox, QStackedWidget, QStyle,
+                               QStyledItemDelegate, QStyleOptionComboBox, QStylePainter, QTabBar, QTableView,
+                               QTabWidget, QVBoxLayout, QWidget)
 
-from .theme import ROW_HEIGHT, SPACE, set_role
+from .theme import FIELD_WIDTH, LABEL_COLUMN_MAX_PX, ROW_HEIGHT, SPACE, set_role
 
 # The flags of a window of its own: a title bar with the system menu,
 # minimise, maximise and close (the 3D model editor, the viewers).
@@ -179,7 +181,27 @@ class DoubleSpinBox(_IgnoreWheel, _KeepsOutOfRange, QDoubleSpinBox):
 
 
 class ComboBox(_IgnoreWheel, QComboBox):
-    """A QComboBox the mouse wheel doesn't change (its open list still scrolls)."""
+    """A QComboBox the mouse wheel doesn't change (its open list still
+    scrolls). An entry longer than the field (a field is at most
+    :data:`CHOICE_FIELD_MAX_WIDTH_PX` wide, UI audit UI-26) ends in "…"
+    instead of being cut; the open list shows it whole."""
+
+    def paintEvent(self, _event) -> None:  # noqa: N802 -- Qt API name
+        painter = QStylePainter(self)  # QComboBox.paintEvent, with the text elided
+        painter.setPen(self.palette().color(QPalette.ColorRole.Text))
+        option = QStyleOptionComboBox()
+        self.initStyleOption(option)
+        painter.drawComplexControl(QStyle.ComplexControl.CC_ComboBox, option)
+        if self.currentIndex() < 0 and self.placeholderText():
+            option.palette.setBrush(QPalette.ColorRole.ButtonText, option.palette.placeholderText())
+            option.currentText = self.placeholderText()
+        field = self.style().subControlRect(QStyle.ComplexControl.CC_ComboBox, option,
+                                            QStyle.SubControl.SC_ComboBoxEditField, self)
+        room = field.width() - option.iconSize.width() * (not option.currentIcon.isNull()) - SPACE["md"]
+        if self.fontMetrics().horizontalAdvance(option.currentText) > room:
+            option.currentText = self.fontMetrics().elidedText(option.currentText, Qt.TextElideMode.ElideRight,
+                                                               max(room, 0))
+        painter.drawControl(QStyle.ControlElement.CE_ComboBoxLabel, option)
 
 
 class _TabBar(_IgnoreWheel, QTabBar):
@@ -266,9 +288,10 @@ def exact_number_text(value: float) -> str:
 
 # -- number fields with their unit (UI overhaul M4a) --------------------------------
 
-NUMBER_FIELD_MAX_WIDTH_PX = 224  # [px] a number sits beside its label, not across the page
-VECTOR_FIELD_MAX_WIDTH_PX = 128  # [px] each number of a row of several (x, y, z)
-VECTOR_FIELD_MIN_WIDTH_PX = 72  # [px] what one of them shrinks to on a narrow page
+NUMBER_FIELD_MAX_WIDTH_PX = FIELD_WIDTH["number"]  # [px] a number sits beside its label, not across the page
+VECTOR_FIELD_MAX_WIDTH_PX = FIELD_WIDTH["vector"]  # [px] each number of a row of several (x, y, z)
+VECTOR_FIELD_MIN_WIDTH_PX = FIELD_WIDTH["vector_min"]  # [px] what one of them shrinks to on a narrow page
+CHOICE_FIELD_MAX_WIDTH_PX = FIELD_WIDTH["choice"]  # [px] a drop-down list: as wide as a long entry (UI-26)
 FULL_LABEL = "sms_full_label"  # a label's text with its unit, kept when the unit moves into the field
 
 
@@ -412,11 +435,219 @@ def collapse_optional_groups(root: QWidget) -> None:
 
 
 def finish_form(root: QWidget) -> None:
-    """The form rules of M4a for everything under ``root``: units as the
-    fields' suffixes (:func:`units_into_fields`) and optional groups that
-    collapse when off (:func:`collapse_optional_groups`)."""
+    """The form rules of M4a and of the UI audit's B6 for everything under
+    ``root``: units as the fields' suffixes (:func:`units_into_fields`),
+    optional groups that collapse when off (:func:`collapse_optional_groups`),
+    fields at their widths and buttons at their own (:func:`limit_field_widths`),
+    and one label column for every form under ``root`` (:class:`FormGrid`)."""
     units_into_fields(root)
     collapse_optional_groups(root)
+    limit_field_widths(root)
+    FormGrid.of(root)
+
+
+# -- field widths and the form grid (UI audit UI-26) ------------------------------
+
+def _in_item_view(widget: QWidget, root: QWidget) -> bool:
+    """Whether ``widget`` is an item view's editor or part of a spin box or
+    combo box (its line edit), not a field of the form."""
+    parent = widget.parentWidget()
+    while parent is not None and parent is not root:
+        if isinstance(parent, (QAbstractItemView, QAbstractSpinBox, QComboBox)):
+            return True
+        parent = parent.parentWidget()
+    return False
+
+
+def _holding_layout(widget: QWidget) -> QLayout | None:
+    """The layout that holds ``widget``: its parent's layout or one nested in it."""
+    parent = widget.parentWidget()
+    layout = parent.layout() if parent is not None else None
+    if layout is None:
+        return None
+    pending = [layout]
+    while pending:
+        current = pending.pop()
+        if current.indexOf(widget) >= 0:
+            return current
+        pending += current.findChildren(QLayout, options=_DIRECT)
+    return None
+
+
+def limit_field_widths(root: QWidget) -> None:
+    """Every field under ``root`` at its width (UI audit UI-26): a drop-down
+    list at most :data:`CHOICE_FIELD_MAX_WIDTH_PX`, a number at most
+    :data:`NUMBER_FIELD_MAX_WIDTH_PX` (a row of several keeps its own,
+    smaller limit), and a button alone in a row of a form or a column at
+    its own width, at the left, never stretched across the page."""
+    for combo in root.findChildren(QComboBox):
+        if not _in_item_view(combo, root) and combo.maximumWidth() > CHOICE_FIELD_MAX_WIDTH_PX:
+            combo.setMaximumWidth(CHOICE_FIELD_MAX_WIDTH_PX)
+    for box in root.findChildren(QAbstractSpinBox):
+        if not _in_item_view(box, root) and box.maximumWidth() > NUMBER_FIELD_MAX_WIDTH_PX:
+            box.setMaximumWidth(NUMBER_FIELD_MAX_WIDTH_PX)
+    for button in root.findChildren(QPushButton):
+        if _in_item_view(button, root) or isinstance(button.parentWidget(), QDialogButtonBox):
+            continue
+        layout = _holding_layout(button)
+        column = isinstance(layout, QBoxLayout) and layout.direction() in (QBoxLayout.Direction.TopToBottom,
+                                                                           QBoxLayout.Direction.BottomToTop)
+        if isinstance(layout, QFormLayout) or column:
+            button.setSizePolicy(QSizePolicy.Policy.Maximum, button.sizePolicy().verticalPolicy())
+            if column:
+                layout.setAlignment(button, Qt.AlignmentFlag.AlignLeft)
+
+
+def _shown_in(widget: QWidget, root: QWidget) -> bool:
+    return widget is root or (widget.isVisible() and root.isAncestorOf(widget))
+
+
+def grid_forms(root: QWidget) -> list:
+    """The forms under ``root`` that share its label column: every shown
+    :class:`QFormLayout`, but one inside another form's field (its rows are
+    a part of that field)."""
+    forms = [form for form in root.findChildren(QFormLayout)
+             if form.parentWidget() is not None and _shown_in(form.parentWidget(), root)]
+    fields = set()
+    for form in forms:
+        for roles in form_rows(form).values():
+            field = roles.get(QFormLayout.ItemRole.FieldRole)
+            if isinstance(field, QWidget):
+                fields.add(id(field))
+    top = []
+    for form in forms:
+        widget, nested = form.parentWidget(), False
+        while widget is not None and widget is not root:
+            if id(widget) in fields:
+                nested = True
+                break
+            widget = widget.parentWidget()
+        if not nested:
+            top.append(form)
+    return top
+
+
+def grid_labels(form: QFormLayout) -> list:
+    """``form``'s shown row labels: the labels and the check boxes (a
+    parameter's "include" box) in its label column."""
+    labels = []
+    for roles in form_rows(form).values():
+        label = roles.get(QFormLayout.ItemRole.LabelRole)
+        if isinstance(label, (QLabel, QCheckBox)) and not label.isHidden():
+            labels.append(label)
+    return labels
+
+
+class FormGrid(QObject):
+    """One label column for every form on a page (UI audit UI-26): the
+    fields of all the forms under ``root`` start at one x, whatever group
+    or section a form sits in. The column is as wide as the page's longest
+    label needs; each form's labels are widened to reach it. It follows
+    the page: a section built, a group opened or a row shown lines up again
+    (on the next turn of the event loop, after the layouts have settled).
+    :meth:`of` gives a page its grid once."""
+
+    def __init__(self, root: QWidget) -> None:
+        super().__init__(root)
+        self.root = root
+        self._timer = QTimer(self)
+        self._timer.setSingleShot(True)
+        self._timer.setInterval(0)
+        self._timer.timeout.connect(self.align)
+        self._mark = f"sms_form_grid_{id(self)}"  # set on each widget this grid watches
+        self._watch(root)
+
+    @classmethod
+    def of(cls, root: QWidget) -> FormGrid:
+        grid = root.findChild(FormGrid, options=_DIRECT)
+        return grid if grid is not None else cls(root)
+
+    def _watch(self, widget: QWidget) -> None:
+        if not widget.property(self._mark):
+            widget.setProperty(self._mark, True)
+            widget.installEventFilter(self)
+
+    def eventFilter(self, _watched, event):  # noqa: N802 -- Qt API name
+        if event.type() in (QEvent.Type.Show, QEvent.Type.Resize, QEvent.Type.LayoutRequest):
+            self._timer.start()
+        return False
+
+    @staticmethod
+    def _natural(label: QWidget) -> int:
+        """[px] the width ``label`` needs on one line; a text label's at most
+        the label column's limit (``theme.LABEL_COLUMN_MAX_PX``: it wraps)."""
+        if not isinstance(label, QLabel):
+            return label.sizeHint().width()
+        return min(label.fontMetrics().horizontalAdvance(label.text()) + 2 * label.margin() + 1, LABEL_COLUMN_MAX_PX)
+
+    def column_x(self) -> int | None:
+        """[px] where the fields start, in ``root``'s coordinates; None
+        without a shown form row."""
+        needed = None
+        for form in grid_forms(self.root):
+            labels = grid_labels(form)
+            if not labels:
+                continue
+            left = _form_left(form, self.root)
+            widest = max(self._natural(label) for label in labels)
+            x = left + widest + max(form.horizontalSpacing(), 0)
+            needed = x if needed is None else max(needed, x)
+        return needed
+
+    def outer(self) -> bool:
+        """Whether no widget above ``root`` has a grid of its own: a grid
+        inside another's page (a widget that finished its own form) leaves
+        the line-up to the page's."""
+        widget = self.root.parentWidget()
+        while widget is not None:
+            if widget.findChild(FormGrid, options=_DIRECT) is not None:
+                return False
+            widget = widget.parentWidget()
+        return True
+
+    def align(self) -> None:
+        """Widen each form's labels so that its fields start at the page's one x."""
+        if not self.root.isVisible() or not self.outer():
+            return
+        forms = grid_forms(self.root)
+        for form in forms:
+            self._watch(form.parentWidget())
+        column = self.column_x()
+        if column is None:
+            return
+        for form in forms:
+            width = max(column - _form_left(form, self.root) - max(form.horizontalSpacing(), 0), 0)
+            for label in grid_labels(form):
+                # A label longer than the column wraps onto a second line.
+                if (isinstance(label, QLabel) and not label.wordWrap()
+                        and label.fontMetrics().horizontalAdvance(label.text()) > width):
+                    label.setWordWrap(True)
+                if label.minimumWidth() != width or label.maximumWidth() != width:
+                    label.setFixedWidth(width)
+
+
+def _form_left(form: QFormLayout, root: QWidget) -> int:
+    """[px] the left edge of ``form``'s label column, in ``root``'s coordinates."""
+    rect = form.contentsRect()
+    return form.parentWidget().mapTo(root, QPoint(rect.x(), rect.y())).x()
+
+
+def set_off_reason(widget: QWidget, enabled: bool, reason: str) -> None:
+    """Enable or disable ``widget``; while it is off its tooltip says why
+    and what turns it on (``reason``), before its own tooltip (UI audit
+    UI-42). On again, it shows its own tooltip alone."""
+    if widget.property("sms_own_tip") is None:
+        widget.setProperty("sms_own_tip", widget.toolTip())
+    own = widget.property("sms_own_tip") or ""
+    widget.setEnabled(enabled)
+    widget.setToolTip(own if enabled else (f"{reason}\n\n{own}" if own else reason))
+
+
+def own_tooltip(widget: QWidget, tip: str) -> None:
+    """Set the tooltip ``widget`` shows while it is on (see :func:`set_off_reason`)."""
+    widget.setProperty("sms_own_tip", tip)
+    if widget.isEnabled():
+        widget.setToolTip(tip)
 
 
 def flow_row(*widgets: QWidget, spacing: int = 6) -> QWidget:

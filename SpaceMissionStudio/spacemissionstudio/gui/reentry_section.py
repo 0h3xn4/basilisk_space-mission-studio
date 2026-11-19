@@ -31,7 +31,7 @@ from . import export_log
 from .data_table import DataTable, Row
 from .theme import set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, NumberField
+from .widgets import ComboBox, NumberField, set_off_reason
 
 PRELIMINARY = ("Preliminary estimate (DAS-like, simplified): not a substitute for DAS, DRAMA or SESAM. "
                "See the user manual, section 6, \"Analyses built on the 3D model\".")
@@ -76,16 +76,19 @@ class ReentrySection(QGroupBox):
         self.density_check.setToolTip("People per km² under the re-entry: no default (model-analyses decision D-16)")
         row.addWidget(self.density_check)
         self.density_field = NumberField("/km²", minimum=0.0, maximum=1.0e5, decimals=2)
-        self.density_field.setEnabled(False)
-        self.density_check.toggled.connect(self.density_field.setEnabled)
+        self.density_field.setToolTip("People per km² under the re-entry.")
+        self.density_check.toggled.connect(self._show_density)
+        self._show_density(False)
         row.addWidget(self.density_field)
         self.compute_button = QPushButton("Estimate")  # secondary: the top bar's Run is the one accent (UI-03)
         self.compute_button.clicked.connect(self.compute)
         row.addWidget(self.compute_button)
         self.save_button = QPushButton("Save...")
-        self.save_button.setEnabled(False)
+        self.save_button.setToolTip("Write the estimate shown to a file.")
+        set_off_reason(self.save_button, False, "Off: there is no estimate to save. Press Estimate first.")
         self.save_button.clicked.connect(self._save_clicked)
         row.addWidget(self.save_button)
+        row.addStretch(1)  # the buttons at their own widths (UI audit UI-26)
         layout.addLayout(row)
         self.table = DataTable("Estimate breaks the 3D model's parts up at the break-up altitude and follows each "
                                "to the ground.")
@@ -110,10 +113,17 @@ class ReentrySection(QGroupBox):
                 self.spacecraft_combo.setCurrentText(current)
         self._update_enabled()
 
+    def _show_density(self, on: bool) -> None:
+        set_off_reason(self.density_field, on, "Off: the estimate gives the casualty area without a casualty "
+                                               "expectation. Tick Population density to give one.")
+
     def _update_enabled(self) -> None:
-        self.compute_button.setEnabled(self.spacecraft_combo.count() > 0 and self._worker is None)
-        self.compute_button.setToolTip("" if self.spacecraft_combo.count() else
-                                       "Needs a spacecraft with a 3D model (Scenario › 3D Model...)")
+        if self._worker is not None:
+            reason = "Off: an estimate is running."
+        else:
+            reason = ("Off: no spacecraft has a 3D model. Build one with Scenario › 3D Model..., then come back."
+                      if not self.spacecraft_combo.count() else "")
+        set_off_reason(self.compute_button, not reason, reason)
 
     def compute(self) -> None:
         name = self.spacecraft_combo.currentText()
@@ -163,7 +173,7 @@ class ReentrySection(QGroupBox):
         self.result_label.setText(text)
         set_role(self.result_label, role="strong", tone="critical" if estimate.compliant is False else None)
         self.notes_label.set_notes(estimate.notes)
-        self.save_button.setEnabled(True)
+        set_off_reason(self.save_button, True, "")
 
     def _save_clicked(self) -> None:
         path, _filter = QFileDialog.getSaveFileName(self, "Save the re-entry estimate", "reentry.json", "JSON (*.json)")

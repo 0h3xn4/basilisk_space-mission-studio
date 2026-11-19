@@ -49,6 +49,7 @@ from . import units
 from .data_table import DataTable, Row
 from .field_text import area_label, parameter_label
 from .theme import SPACE, set_role
+from .widgets import set_off_reason
 
 _HEADERS = ("Parameter", "Value", "Default", "Unit", "Source")
 _VALUE, _DEFAULT, _UNIT, _SOURCE = 1, 2, 3, 4
@@ -312,11 +313,13 @@ class AssumptionsPage(QWidget):
         self.edit_error.setText("")
         name = self._selected
         editable = name is not None and self.file_path() is not None and self._configuration is not None
-        self.value_edit.setEnabled(name is not None)
-        self.set_button.setEnabled(editable)
-        self.reset_button.setEnabled(editable and name in self.overrides())
-        tip = "" if editable else "Choose or create a configuration file to change a value"
-        self.set_button.setToolTip(tip)
+        # Off with the reason and what turns it on, in the tooltip (UI audit UI-42).
+        set_off_reason(self.value_edit, name is not None, "Off: select a parameter in the table first.")
+        no_file = "Off: choose or create a configuration file to change a value."
+        set_off_reason(self.set_button, editable, no_file if name is not None else
+                       "Off: select a parameter in the table first.")
+        set_off_reason(self.reset_button, editable and name in self.overrides(),
+                       no_file if not editable else "Off: the value is its default already.")
         if name is None:
             self.detail_label.setText("Select a parameter to see what it controls and to change it.")
             self.value_edit.clear()

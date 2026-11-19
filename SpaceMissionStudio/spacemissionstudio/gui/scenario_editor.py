@@ -81,8 +81,9 @@ from .monte_carlo_editor import SCALAR_DISPERSION_QUANTITIES, MonteCarloGroupWid
 from .problem_location import (GROUND_STATION, JSON_VIEW, MISSION_SEQUENCE, PROPAGATION, SCENARIO, SPACECRAFT,
                                locate)
 from .spacecraft_editor import SpacecraftEditorDialog, SpacecraftLabels, SpacecraftListWidget, tab_titles
+from .shell import INSET_INSIDE, inset_page, inset_stack
 from .theme import CONTENT_MAX_WIDTH_PX
-from .widgets import ComboBox, out_of_range_boxes
+from .widgets import ComboBox, finish_form, out_of_range_boxes
 from .workspace_panels import field_label
 
 
@@ -91,7 +92,9 @@ def _page(widget: QWidget, top: bool = False) -> QScrollArea:
     """``widget`` as a page of the tree: in a scroll area, so a long form
     never sets the window's height, and no wider than
     :data:`CONTENT_MAX_WIDTH_PX`. ``top``: at its own height at the top of
-    the page; a form's rows were spread over a tall window."""
+    the page; a form's rows were spread over a tall window, and a short
+    one's lines floated in the middle of the page (UI audit UI-04). The
+    area insets it (``shell.inset_page``)."""
     widget.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
     holder = QWidget()
     layout = QVBoxLayout(holder)
@@ -197,8 +200,10 @@ class ScenarioEditorWidget(QWidget):
         self.environment_page = self._build_propagation_group()
         self.spacecraft_page = _page(self._build_spacecraft_group())
         self.ground_station_page = _page(self._build_ground_station_group())
-        self.mission_sequence_page = self._build_mission_sequence_group()  # its tree and form scroll themselves
-        self.monte_carlo_page = _page(self._build_monte_carlo_group())
+        # Its tree and form scroll themselves: in a plain page, which the area insets.
+        self.mission_sequence_page = QWidget()
+        QVBoxLayout(self.mission_sequence_page).addWidget(self._build_mission_sequence_group())
+        self.monte_carlo_page = _page(self._build_monte_carlo_group(), top=True)
         # The project configuration (transparency plan, Phase 3d): its own
         # table scrolls, so the page is not put in a scroll area.
         self.assumptions_page = AssumptionsPage()
@@ -215,7 +220,8 @@ class ScenarioEditorWidget(QWidget):
         self.mode_stack.addWidget(self.json_page)
         self.mode_toggle = self._build_mode_toggle()
         tree = self.page_tree
-        self.scenario_item = tree.add_page("Scenario", self.scenario_page)
+        # "General", not "Scenario": the area and the breadcrumb already say Scenario (UI audit UI-52).
+        self.scenario_item = tree.add_page("General", self.scenario_page)
         self.environment_item = tree.add_page("Environment", self.environment_page)
         self.spacecraft_item = tree.add_page("Spacecraft", self.spacecraft_page)
         self.ground_station_item = tree.add_page("Ground stations", self.ground_station_page)
@@ -248,9 +254,13 @@ class ScenarioEditorWidget(QWidget):
         self.revalidate()
 
     # -- construction ------------------------------------------------------
-    def _build_identity_group(self) -> QGroupBox:
-        group = QGroupBox("Scenario")
+    def _build_identity_group(self) -> QWidget:
+        """The General page: the scenario's name, mode, epoch and
+        description. No group title: the node is General and the area
+        Scenario (UI audit UI-52)."""
+        group = QWidget()
         form = QFormLayout(group)
+        form.setContentsMargins(0, 0, 0, 0)
         self.name_edit = QLineEdit("new scenario")
         self.name_edit.textChanged.connect(self.changed)
         form.addRow("Name", self.name_edit)
@@ -314,6 +324,7 @@ class ScenarioEditorWidget(QWidget):
         self.description_edit.setFixedHeight(220)
         self.description_edit.textChanged.connect(self.changed)
         form.addRow("Description", self.description_edit)
+        finish_form(group)  # the choice at its width, one label column (UI audit UI-26)
         return group
 
     def _build_propagation_group(self) -> QWidget:
@@ -337,9 +348,17 @@ class ScenarioEditorWidget(QWidget):
         self._sim_settings = SimSettings()
         self._space_weather = SpaceWeatherConfig()
         page = QWidget()
+        page.setProperty(INSET_INSIDE, True)  # its form scrolls itself and insets its content inside
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         return page
+
+    def inset_pages(self) -> None:
+        """The Scenario area's pages at the page inset (UI audit UI-16): the
+        tree's pages and the JSON page. The tree stays flush: it is the
+        area's navigation."""
+        inset_stack(self.page_tree.stack)
+        inset_page(self.json_page)
 
     def _rebuild_environment_form(self) -> None:
         """A new Environment form from the current settings (after a load or
@@ -452,6 +471,7 @@ class ScenarioEditorWidget(QWidget):
             holder = QWidget()
             QVBoxLayout(holder).setContentsMargins(0, 0, 0, 0)
             holder.setProperty("formKind", kind)
+            holder.setProperty(INSET_INSIDE, True)  # its form scrolls itself and insets its content inside
             node = _FormNode(self.page_tree.add_page(config.name, holder, parent_item), holder, config)
             for title in tabs:
                 self.page_tree.add_section(title, title, node.item)

@@ -187,7 +187,7 @@ def test_the_toggle_is_in_the_scenario_areas_header(window):
     assert window.top_bar.breadcrumb_label.text() == "Scenario › JSON"
     editor.form_button.click()
     assert not editor.json_mode and editor.mode_stack.currentWidget() is editor.page_tree
-    assert window.top_bar.breadcrumb_label.text() == "Scenario › Scenario"
+    assert window.top_bar.breadcrumb_label.text() == "Scenario › General"
 
 
 def test_back_to_form_applies_a_waiting_edit(window):

@@ -2393,3 +2393,34 @@ file. The new tests are in `tests/gui/test_ground_map.py` (22 tests, 32 cases).
 | `test_breakout.py::test_every_view_opens_docked_with_its_button_and_no_window_opens_by_itself` | `breakouts.ids() == list(_VIEWS)`; `(button,) = view.findChildren(BreakoutButton)` | `== list(_VIEWS) + ["map"]`; the button found among the view's children by its `view_id` | The map is one more registered view (Q3), and its own button is inside the 3D View: how the test reaches the 3D View's button changed, not what it checks |
 | `test_breakout.py::test_the_commands_are_in_the_view_menu_the_palette_and_the_shortcut_list` | View > Own Windows lists the three views' commands | lists `view.window.map` too, at the end | The same: one more registered view |
 | `test_ground_map.py::test_tracks_and_rings_survive_a_lost_webgl_context` (a test of this PR) | took the context away at once and waited for exactly one recovery | waits for a live context first, then for one recovery more than before; its own JavaScript steps run through `_try_js` (as PR-2's); the assertions on the kept objects are unchanged | Windows CI's GPU process loses and restores contexts by itself, as in PR-2's recovery tests |
+
+## UI audit B6: one form grid and page inset
+
+The owner's batch B6 gives every page one inset (UI-16), one label
+column per page and fields at their widths (UI-26), renames the Scenario
+area's first node General (UI-52), fits the tree (UI-18), gives disabled
+inputs a reason (UI-42), and rebuilds the thermal editor's tables and
+tabs (UI-13). Five existing GUI test files changed. Two reach the same
+widget another way: the General node by its new name, and the thermal
+tables through their model/view API instead of `QTableWidget`'s. Each
+asserts what it asserted before, as strictly. Three assert the node's
+new name, as UI-52 asks. No test outside
+`tests/gui/` changed. No golden file changed. The new tests are in
+`tests/gui/test_form_grid.py`.
+
+**How the test reaches the widget:**
+
+| Test | Before | Now |
+|---|---|---|
+| `test_shell_reachability.py::test_every_row_is_reachable_in_the_shell[Scenario › Scenario, Environment, ...]` | `_tree(w, "Scenario")` | `_tree(w, "General")`; the row's name is the plan's, unchanged |
+| `test_thermal_pages.py::test_the_group_round_trips_the_section_exactly` | `group.tables["nodes"].rowCount()` | `group.tables["nodes"].row_count()` |
+| `test_thermal_pages.py::test_a_cell_that_does_not_read_names_its_place` | `nodes.item(1, column).setText("0")` | `nodes.set_cell(1, column, "0")` (as an edit in the cell does: the model's `setData`) |
+| `test_thermal_pages.py::test_the_conductance_button_shows_the_selected_conductors_value` | `table.setCurrentCell(table.rowCount() - 1, 0)` | `table.set_current_row(table.row_count() - 1)` |
+
+**Behaviour changed on purpose (UI-52):**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_workspace.py::test_the_areas_and_what_they_hold` | the tree's paths start "Overview", "Scenario", "Environment" | "Overview", "General", "Environment" | UI-52: the node is General |
+| `test_scenario_tree.py::test_a_scenario_problem_counts_on_its_node` | the node reads "Scenario (1)", then "Scenario" | "General (1)", then "General" | UI-52 |
+| `test_editing_flow.py::test_the_toggle_is_in_the_scenario_areas_header` | back in Form mode the breadcrumb reads "Scenario › Scenario" | "Scenario › General" | UI-52 |

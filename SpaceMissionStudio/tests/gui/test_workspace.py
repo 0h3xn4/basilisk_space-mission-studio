@@ -87,7 +87,7 @@ def test_the_areas_and_what_they_hold(window):
     assert window.shell.areas["help"].page is None and window.shell.areas["help"].action is window.manual_action
     assert window.shell.page("home").content is window.load_scenario_widget
     assert [path for path, _page in window.scenario_editor.page_tree.paths()] == [
-        "Overview", "Scenario", "Environment", "Spacecraft", "Spacecraft > my-sat",
+        "Overview", "General", "Environment", "Spacecraft", "Spacecraft > my-sat",
         *(f"Spacecraft > my-sat > {tab}" for tab in ("Orbit / mass", "Power / propulsion / link budget", "3D model",
                                                      "Budget (AD10)")),
         "Ground stations",

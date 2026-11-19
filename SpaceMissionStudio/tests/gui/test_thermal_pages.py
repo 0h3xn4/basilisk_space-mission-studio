@@ -76,7 +76,7 @@ def test_the_group_round_trips_the_section_exactly(qtbot):
     group = ThermalGroup(copy.deepcopy(thermal))
     qtbot.addWidget(group)
     assert group.to_config() == thermal
-    assert group.tables["nodes"].rowCount() == len(thermal.nodes)
+    assert group.tables["nodes"].row_count() == len(thermal.nodes)
     group.setChecked(False)
     assert group.to_config() is None
     assert ThermalGroup(None).to_config() is None
@@ -88,7 +88,7 @@ def test_a_cell_that_does_not_read_names_its_place(qtbot):
     qtbot.addWidget(group)
     nodes = group.tables["nodes"]
     column = [name for name, _label, _kind in nodes.columns].index("operating_c")
-    nodes.item(1, column).setText("0")
+    nodes.set_cell(1, column, "0")
     with pytest.raises(ValueError, match=r"thermal\.nodes\[1\]\.operating_c: give 'lowest, highest'"):
         group.to_config()
     assert group.field_widget("nodes[1].operating_c") is nodes
@@ -126,7 +126,7 @@ def test_the_conductance_button_shows_the_selected_conductors_value(qtbot):
     group._on_conductance()
     assert group.conductance_label.text() == "Select a conductor."
     table = group.tables["conductors"]
-    table.setCurrentCell(table.rowCount() - 1, 0)
+    table.set_current_row(table.row_count() - 1)
     group._on_conductance()
     assert group.conductance_label.text().startswith("strap: 0.1367 W/K")  # 410 W/(m K) * 1e-4 m^2 / 0.3 m
 

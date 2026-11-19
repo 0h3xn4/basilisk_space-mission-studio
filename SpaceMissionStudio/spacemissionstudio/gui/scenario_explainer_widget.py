@@ -60,7 +60,8 @@ from .badges import ACCENT, DANGER, MUTED, SUCCESS, WARNING, set_badge
 from .formation_diagram_widget import FormationDiagramWidget
 from .roe_diagram_widget import RoeDiagramWidget
 from . import units
-from .theme import SPACE, set_role
+from .shell import INSET_INSIDE
+from .theme import PAGE_INSET, SPACE, set_role
 
 _LOG = logging.getLogger(__name__)
 
@@ -192,7 +193,9 @@ class ScenarioExplainerWidget(QWidget):
 
         content = QWidget()
         self._content_layout = QVBoxLayout(content)
+        self._content_layout.setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, PAGE_INSET)
         scroll.setWidget(content)
+        self.setProperty(INSET_INSIDE, True)  # it scrolls itself: the page inset is inside (UI audit UI-16)
 
         self._placeholder_label = QLabel(
             "The scenario has a problem (see Problems): fix it to see its summary here."

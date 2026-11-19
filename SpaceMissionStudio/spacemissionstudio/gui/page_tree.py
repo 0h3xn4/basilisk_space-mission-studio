@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (QAbstractButton, QAbstractSpinBox, QComboBox, QDi
                                QHBoxLayout, QLineEdit, QListWidget, QPlainTextEdit, QSplitter, QStackedWidget,
                                QTableWidget, QTreeWidget, QTreeWidgetItem, QWidget)
 
-from .theme import on_change
+from .theme import PAGE_TREE_WIDTH, SPACE, on_change
 from .theme.items import retint, tint
 
 _WIDGET_ROLE = Qt.ItemDataRole.UserRole
@@ -73,8 +73,25 @@ class _UpKeys(QObject):
         self.up = False
 
 
+class _Refit(QObject):
+    """The tree's width again once its font or style is known or changes."""
+
+    def __init__(self, tree: PageTree) -> None:
+        super().__init__(tree)
+        self._tree = tree
+
+    def eventFilter(self, _watched, event):  # noqa: N802 -- Qt API name
+        if event.type() in (QEvent.Type.Show, QEvent.Type.FontChange, QEvent.Type.StyleChange,
+                            QEvent.Type.Polish):
+            self._tree.fit_width_later()
+        return False
+
+
 class PageTree(QWidget):
-    """A tree of nodes beside the page of the selected one."""
+    """A tree of nodes beside the page of the selected one. The tree is as
+    wide as its longest node needs (UI audit UI-18), between
+    ``theme.PAGE_TREE_WIDTH["min"]`` and ``["max"]``; a node longer than
+    that is elided, whole on hover."""
 
     page_shown = Signal(object)  # the page's widget
     section_shown = Signal(object, str)  # the page's widget and the section's key, after page_shown
@@ -88,17 +105,52 @@ class PageTree(QWidget):
         on_change(self._retint)
         self.tree.setObjectName("pageTree")
         self.tree.setHeaderHidden(True)
-        self.tree.setMinimumWidth(170)  # [px]
+        self.tree.setMinimumWidth(PAGE_TREE_WIDTH["min"])
         self.stack = QStackedWidget()
         self.stack.page_tree = self  # MainWindow.show_view finds pages through it
         self.splitter.addWidget(self.tree)
         self.splitter.addWidget(self.stack)
         self.splitter.setStretchFactor(1, 1)
-        self.splitter.setSizes([220, 900])  # [px]
+        self.splitter.setSizes([PAGE_TREE_WIDTH["start"], 900])  # [px]
         layout.addWidget(self.splitter)
         self.tree.currentItemChanged.connect(self._on_current_item)
         self._keys = _UpKeys(self)
         self.tree.installEventFilter(self._keys)
+        self._fit_timer = QTimer(self)
+        self._fit_timer.setSingleShot(True)
+        self._fit_timer.setInterval(0)
+        self._fit_timer.timeout.connect(self.fit_width)
+        self.tree.installEventFilter(_Refit(self))
+
+    # -- its width (UI audit UI-18) ------------------------------------------------------------------------------
+
+    def needed_width(self) -> int:
+        """[px] the width the tree needs to show every node whole, the nodes
+        of closed branches too: its indentation, the text, the item's
+        padding, the frame and room for the scroll bar."""
+        tree = self.tree
+        metrics = tree.fontMetrics()
+        indentation = tree.indentation()
+        widest = 0
+        pending = [(tree.invisibleRootItem().child(i), 0) for i in range(tree.topLevelItemCount())]
+        while pending:
+            item, depth = pending.pop()
+            level = depth + (1 if tree.rootIsDecorated() else 0)
+            widest = max(widest, level * indentation + metrics.horizontalAdvance(item.text(0)))
+            pending += [(item.child(i), depth + 1) for i in range(item.childCount())]
+        padding = 2 * (SPACE["xs"] + 2) + SPACE["sm"]  # the item's padding (theme/qss.py) and a little air
+        return widest + padding + 2 * tree.frameWidth() + tree.verticalScrollBar().sizeHint().width()
+
+    def fit_width(self) -> None:
+        """The tree at least as wide as its longest node needs, within
+        ``PAGE_TREE_WIDTH``; a splitter position the user chose that is
+        wider is kept."""
+        width = max(PAGE_TREE_WIDTH["min"], min(self.needed_width(), PAGE_TREE_WIDTH["max"]))
+        if self.tree.minimumWidth() != width:
+            self.tree.setMinimumWidth(width)
+
+    def fit_width_later(self) -> None:
+        self._fit_timer.start()
 
     # -- building --------------------------------------------------------------------------------------------
 
@@ -154,6 +206,7 @@ class PageTree(QWidget):
         owner.insertChild(owner.childCount() if index is None else index, item)
         if parent is not None:
             parent.setExpanded(True)
+        self.fit_width_later()
         return item
 
     def remove(self, item: QTreeWidgetItem) -> None:
@@ -167,6 +220,7 @@ class PageTree(QWidget):
             widget.deleteLater()
         owner = item.parent() or self.tree.invisibleRootItem()
         owner.removeChild(item)
+        self.fit_width_later()
 
     def set_title(self, item: QTreeWidgetItem, title: str) -> None:
         item.setData(0, _TITLE_ROLE, title)
@@ -194,6 +248,7 @@ class PageTree(QWidget):
         warnings = self.warning_count(item)
         errors = count - warnings
         item.setText(0, f"{title} ({count})" if count else title)
+        self.fit_width_later()
         tint(item, ("status.critical.text" if errors else "status.caution.text") if count else None)
         parts = [f"{n} {word}{'s' if n != 1 else ''}" for n, word in ((errors, "error"), (warnings, "warning")) if n]
         tip = f"{' and '.join(parts)} here: see Problems" if count else ""

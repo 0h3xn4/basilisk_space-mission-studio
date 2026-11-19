@@ -83,7 +83,8 @@ from .feedback import report
 from .mission_guide import StartFromScratchCard
 from .startup_fetch_dialog import ReferenceDataCard
 from .template_wizard import TemplateCustomizeWizard, get_wizard_spec
-from .theme import SPACE, TOKENS, icon, items, set_role, ui_font
+from .shell import INSET_INSIDE
+from .theme import PAGE_INSET, SPACE, TOKENS, icon, items, set_role, ui_font
 from .value_sheet import FoldSection
 from .widgets import EmptyState
 from .theme.richtext import css
@@ -552,14 +553,20 @@ class LoadScenarioWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        # Its columns start at the page inset themselves, inside their scroll areas (UI audit UI-16).
+        self.setProperty(INSET_INSIDE, True)
         # The reference-data question, across the page while it asks: it
         # replaced the start-up dialog (plan §5.2), so it is the first thing
         # seen, and its items keep their whole names.
         self.reference_card = ReferenceDataCard()
-        band = QHBoxLayout()
-        band.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["lg"], 0)
+        # Its band takes no room while the card is hidden: the columns then start at the page inset.
+        self.reference_band = QWidget()
+        band = QHBoxLayout(self.reference_band)
+        band.setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, 0)
         band.addWidget(self.reference_card)
-        layout.addLayout(band)
+        self.reference_band.setVisible(not self.reference_card.isHidden())
+        self.reference_card.installEventFilter(self)
+        layout.addWidget(self.reference_band)
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.addWidget(self._build_start())
@@ -578,7 +585,7 @@ class LoadScenarioWidget(QWidget):
     def _build_start(self) -> QWidget:
         body = QWidget()
         column = QVBoxLayout(body)
-        column.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["sm"], SPACE["lg"])
+        column.setContentsMargins(PAGE_INSET, PAGE_INSET, SPACE["sm"], PAGE_INSET)
         column.setSpacing(SPACE["md"])
         # The first choice: a mission from scratch (the user: "one of the
         # most important features to have"; it was File > New only).
@@ -670,7 +677,10 @@ class LoadScenarioWidget(QWidget):
         self.refresh_recent()
 
     def eventFilter(self, watched, event) -> bool:
-        if (watched is self.recent_list and event.type() == QEvent.Type.KeyPress
+        if watched is self.reference_card and event.type() in (QEvent.Type.ShowToParent, QEvent.Type.HideToParent):
+            self.reference_band.setVisible(event.type() == QEvent.Type.ShowToParent)
+            return False
+        if (watched is getattr(self, "recent_list", None) and event.type() == QEvent.Type.KeyPress
                 and event.key() in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace)):
             item = self.recent_list.currentItem()
             if item is not None:
@@ -692,7 +702,7 @@ class LoadScenarioWidget(QWidget):
     def _build_templates(self) -> QWidget:
         holder = QWidget()
         column = QVBoxLayout(holder)
-        column.setContentsMargins(SPACE["sm"], SPACE["lg"], SPACE["sm"], 0)
+        column.setContentsMargins(SPACE["sm"], PAGE_INSET, SPACE["sm"], 0)
         column.setSpacing(SPACE["sm"])
         header = QHBoxLayout()
         header.setSpacing(SPACE["sm"])
@@ -789,7 +799,7 @@ class LoadScenarioWidget(QWidget):
     def _build_details(self) -> QWidget:
         card = QWidget()
         column = QVBoxLayout(card)
-        column.setContentsMargins(SPACE["sm"], SPACE["lg"], SPACE["lg"], SPACE["lg"])
+        column.setContentsMargins(SPACE["sm"], PAGE_INSET, PAGE_INSET, PAGE_INSET)
         column.setSpacing(SPACE["sm"])
         self.description_title = set_role(QLabel(), role="section-title")
         self.description_title.setWordWrap(True)

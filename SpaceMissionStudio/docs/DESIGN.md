@@ -277,7 +277,24 @@ bar and no toolbar:
   read from the template file. The cards are one Tab stop; the arrow
   keys, Home and End move between them, Enter opens.
 - **Scenario area:** the scenario tree on the left. Each spacecraft has a
-  node per part of its editor.
+  node per part of its editor. The first form is **General** (name,
+  mode, epoch, description): the area and the breadcrumb already say
+  Scenario (UI audit UI-52). The tree is as wide as its longest node
+  needs, between 170 and 340 px (`theme.PAGE_TREE_WIDTH`; UI-18): its
+  minimum width follows its nodes, so a restored narrower splitter
+  position cannot cut a name; a longer one is elided, whole on hover.
+- **Page inset (UI audit UI-16):** every page of every area starts its
+  content `theme.PAGE_INSET` (16 px) from its left and top edges, as the
+  area header's title is inset: each tab of a tabbed area, the area
+  itself when it has no tabs, each page of the Scenario tree and the
+  JSON page. The area applies it (`shell.inset_page`, from `AreaPage`),
+  so a page draws no margin of its own around its content. A page that
+  scrolls itself (the Run page, Overview, Home, the embedded spacecraft,
+  station and Environment forms) is marked `shell.INSET_INSIDE` and puts
+  the inset inside its scroll area, so its scroll bar stays at the
+  page's edge. The tab rows and the Scenario tree stay flush with the
+  edges: they are navigation. `tests/gui/test_form_grid.py` measures
+  every page.
 - **Forms (M4a, `gui/widgets.py`, `gui/units.py`):** a number field
   (`NumberField`, or any spin box `finish_form` styles) carries its unit as
   a suffix, typeset ("550.0 km", "97.59°", "1.000 m²", "300.00 Wh"),
@@ -288,6 +305,30 @@ bar and no toolbar:
   its label. An optional (checkable) group shows only its title while
   off. Rows of buttons or boxes wrap (`flow_row`) instead of widening the
   page. No framed panel and no scroll area inside a page.
+- **One form grid (UI audit UI-26, `widgets.finish_form`):** all the
+  forms of a page share one label column (`widgets.FormGrid`): the fields
+  start at one x, whatever group or section holds them, as wide as the
+  page's longest label needs, at most 224 px
+  (`theme.LABEL_COLUMN_MAX_PX`); a longer label wraps onto a second line.
+  A drop-down list is at most 320 px (`theme.FIELD_WIDTH["choice"]`; an
+  entry longer than the field ends in "…", whole in the open list), a
+  number field at most 224 px (`FIELD_WIDTH["number"]`), and a button
+  alone in a row keeps its own width at the left. The grid lines up again
+  when a section is built, a group opens or a row shows. A form inside
+  another form's field keeps its own column. Every Scenario page and
+  Run › End of Life (its numbers are `NumberField`s) is checked at
+  1280 x 720.
+- **A disabled input says why (UI audit UI-42):** a field or button that
+  is off has a tooltip that starts "Off:", says why and names what turns
+  it on ("Off: the central body is a point mass. Tick Enable
+  spherical-harmonics gravity to set it."): `widgets.set_off_reason`
+  keeps the input's own tooltip after the reason and shows it alone
+  while the input is on. Every disabled input on the Scenario pages and
+  the Run and Reports tabs has one (a test walks them).
+- **Check boxes in a form (UI audit UI-53):** a list of choices to tick
+  (the third bodies) is a `QListWidget` with the role `checklist`: no
+  frame, the form's background, a row per choice at the table-row height
+  (`RowHeightDelegate`), as tall as its rows, no scroll bar.
 - **Inspector, on the right:** one dock, the focused field (Ctrl+I). No
   tabs. Explain is the Scenario tree's first node, Overview (M4b): asked
   for 250 ms after an edit and computed in a `QThread`, an overtaken
@@ -359,6 +400,16 @@ bar and no toolbar:
   context menu shows and hides columns; columns sized once when filled;
   an empty state with its action. Output, Monte Carlo, Budget, Compare,
   Scenario › Assumptions and the Reference data window use it.
+- **Editable tables:** a table edited in place is a model/view grid too
+  (a `QAbstractTableModel` with `ItemIsEditable`): Budgets' grids
+  (`budgets_area.GridModel`) and the 3D model's thermal records
+  (`thermal_editor.RecordTable`, UI audit UI-13): no grid lines, numbers
+  right-aligned in tabular figures, as tall as their rows, their columns
+  fitted to the page (a heading or a value too long is elided, whole on
+  hover), so a page never scrolls sideways; a list without a row shows
+  its compact empty state with Add. The thermal model's ten kinds of
+  record are six tabs that fit 1280 x 720: Nodes, Faces, Couplings, Heat
+  loads, Cases and Solver.
 - **Run › Run (M5b):** the run mode as a segmented control in the Run
   area's header (`gui.run_page.RunModeControl`, the same `segmentedControl`
   look as Form · JSON); the Run page (`RunPage`) shows what the next run
@@ -428,8 +479,11 @@ bar and no toolbar:
 | Focus ring | 2 px, the accent | `theme/qss.py` |
 | Smallest window the views are checked at | 1280 x 720 px | `scripts/capture_screenshots.py --size` |
 | Widest a form or a list editor grows | 960 px (`theme.CONTENT_MAX_WIDTH_PX`) | `scenario_editor._page`, the embedded forms, End of Life |
-| Number field | at most 224 px; 128 px each in a row of several, 72 px at least | `widgets.NUMBER_FIELD_MAX_WIDTH_PX`, `VECTOR_FIELD_MAX_WIDTH_PX`, `VECTOR_FIELD_MIN_WIDTH_PX` |
-| Scenario tree | at least 170 px, 220 px to start | `gui/page_tree.py` |
+| Page inset | 16 px from a page's left and top edges, every page of every area | `theme.PAGE_INSET` |
+| Number field | at most 224 px; 128 px each in a row of several, 72 px at least | `theme.FIELD_WIDTH` (`widgets.NUMBER_FIELD_MAX_WIDTH_PX`, `VECTOR_FIELD_MAX_WIDTH_PX`, `VECTOR_FIELD_MIN_WIDTH_PX`) |
+| Drop-down list in a form | at most 320 px | `theme.FIELD_WIDTH["choice"]` |
+| Form label column | one per page, at most 224 px (a longer label wraps) | `theme.LABEL_COLUMN_MAX_PX`, `widgets.FormGrid` |
+| Scenario tree | as wide as its longest node, 170 to 340 px; 220 px to start | `theme.PAGE_TREE_WIDTH`, `gui/page_tree.py` |
 | Results plot list | 16 % of the pane, 250 to 400 px, until the user drags the divider | `gui/results_widget.py` |
 | Toast | at most 360 px wide, 16 px from the window's edge, 8 px apart | `gui/feedback.py` |
 
@@ -477,6 +531,9 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Embedded form | `page_tree.embed_dialog`, then `setMaximumWidth(CONTENT_MAX_WIDTH_PX)` | A dialog's form shown as a page: no window, no OK/Cancel, long rows wrap |
 | Form fields | `widgets.SpinBox`, `DoubleSpinBox`, `PreciseDoubleSpinBox`, `ComboBox` | Numbers and choices: they ignore the mouse wheel unless focused, keep a value from a file that is outside their range (and mark it), and show full precision |
 | Field map | each form's `field_widget(path)`, `field_title(code)`, `problem_text(message)` | Where a field is, and what it is called, for Problems and for messages |
+| Finished form | `widgets.finish_form(root)`: units into the fields, optional groups that collapse, `limit_field_widths`, a `FormGrid` | Every form, dialog or page: fields at their widths and one label column per page (UI audit UI-26) |
+| Off reason | `widgets.set_off_reason(widget, enabled, reason)`, `own_tooltip(widget, tip)` | An input that can be off: its tooltip says "Off:", why and what turns it on, before its own (UI audit UI-42) |
+| Page inset | `shell.inset_page(page)`, `inset_stack(stack)`, the `shell.INSET_INSIDE` property | A page's content at `theme.PAGE_INSET` from its edges; `AreaPage` applies it to its pages (UI audit UI-16) |
 | List editor | a list with Add / Edit / Remove at their own width, left-aligned | Spacecraft, stations, sensors, actuators, dispersions |
 | Empty state | `widgets.EmptyState(title, text, action, primary=, compact=)`: `set_text`, `add_action`, `add_detail`, `text()` | The one empty state of every view, list and panel: a title, a line of text and the action that fills it. The full form sits in the middle of its area; `compact=True` is as tall as its lines, for a panel, a short list or the room beside a table |
 | Empty list | `widgets.EmptyStack(view, empty_state, fit_rows=)`: `refresh(empty=None)`, `showing_empty()` | A list, tree or table, or its `EmptyState` while it has no row; `fit_rows=True` makes a short list as tall as its rows. Edit, Remove and the other actions on a row are off until a row is selected |

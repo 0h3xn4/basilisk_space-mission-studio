@@ -23,7 +23,8 @@ left and the area shown beside it.
   icons only. Settings and Help sit at its bottom.
 * :class:`AreaPage`: an area's page, a header (its title and the
   commands of the area, one height in every area) over the screen it
-  hosts.
+  hosts, whose pages start their content at one inset
+  (:func:`inset_page`, ``theme.PAGE_INSET``).
 * :class:`AreaStack`: the pages, one shown at a time.
 * :class:`Shell`: the rail and the stack. :meth:`Shell.register` adds an
   area, so a later area (Operations) is one more call, with no change to
@@ -39,10 +40,44 @@ from dataclasses import dataclass
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import (QButtonGroup, QFrame, QHBoxLayout, QLabel, QSizePolicy, QStackedWidget, QToolButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QButtonGroup, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QStackedWidget,
+                               QTabWidget, QToolButton, QVBoxLayout, QWidget)
 
-from .theme import AREA_HEADER_HEIGHT, ICON_SIZE, SPACE, icon, set_role
+from .theme import AREA_HEADER_HEIGHT, ICON_SIZE, PAGE_INSET, SPACE, icon, set_role
+
+
+def page_body(page: QWidget) -> QWidget:
+    """The widget whose layout holds ``page``'s content: a scroll area's
+    widget (its scroll bar stays at the page's edge), else the page."""
+    if isinstance(page, QScrollArea) and page.widget() is not None:
+        return page.widget()
+    return page
+
+
+# A page whose form scrolls itself (an embedded editor): it puts the inset
+# inside its own scroll areas, so their scroll bars stay at the page's edge.
+INSET_INSIDE = "insetInside"
+
+
+def inset_page(page: QWidget) -> QWidget:
+    """``page``'s content at ``theme.PAGE_INSET`` from the page's edges (UI
+    audit UI-16): the one inset of every page of every area, as the area
+    header's title is inset. A page draws no margin of its own around its
+    content; the area gives it this one. A page marked :data:`INSET_INSIDE`
+    applies it itself. Returns ``page``."""
+    if page.property(INSET_INSIDE):
+        return page
+    layout = page_body(page).layout()
+    if layout is not None:
+        layout.setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, PAGE_INSET)
+    return page
+
+
+def inset_stack(stack: QStackedWidget) -> None:
+    """Every page of ``stack`` at the page inset, the pages added later too."""
+    for index in range(stack.count()):
+        inset_page(stack.widget(index))
+    stack.widgetAdded.connect(lambda index, stack=stack: inset_page(stack.widget(index)))
 
 
 @dataclass
@@ -71,7 +106,13 @@ class AreaPage(QWidget):
     (``header``) are one row beside the title. When the row has no room
     for their names, the buttons show their icons only (``squeezed``),
     each with its name as tooltip and accessible name; the names come back
-    when there is room."""
+    when there is room.
+
+    Its pages start their content at one inset (``theme.PAGE_INSET``; UI
+    audit UI-16): each tab of a tabbed area, the area itself when it has no
+    tabs, or the pages a screen names with ``inset_pages()`` (the Scenario
+    tree's pages and the JSON page). The tab rows and the Scenario tree
+    stay flush with the page's edges."""
 
     def __init__(self, area_id: str, title: str, content: QWidget, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -102,8 +143,20 @@ class AreaPage(QWidget):
         self.squeezed = False
         layout.addWidget(self.title_bar)
         layout.addWidget(content, 1)
+        self._inset_content()
         self.empty_state: QWidget | None = None
         self.showing_empty = False
+
+    def _inset_content(self) -> None:
+        content = self.content
+        if isinstance(content, QTabWidget):
+            stack = content.findChild(QStackedWidget, "qt_tabwidget_stackedwidget")
+            if stack is not None:
+                inset_stack(stack)
+        elif hasattr(content, "inset_pages"):
+            content.inset_pages()
+        else:
+            inset_page(content)
 
     def add_command(self, action: QAction) -> QToolButton:
         """A button for ``action`` in the header: its text, icon and

@@ -374,6 +374,7 @@ class OrbitIcWidget(QWidget):
         )
         raan_ltan_row.addWidget(sso_raan_button)
         raan_ltan_row.addWidget(self.sso_ltan_hour)
+        raan_ltan_row.addStretch(1)  # the button and the hour at their own widths (UI audit UI-26)
         form.addRow(raan_ltan_row)
 
         form.addRow("RAAN [deg]", self.raan_deg)

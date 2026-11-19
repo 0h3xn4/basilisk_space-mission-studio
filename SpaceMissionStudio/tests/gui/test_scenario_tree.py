@@ -111,12 +111,12 @@ def test_a_form_that_does_not_validate_blocks_the_scenario(window):
 
 
 def test_a_scenario_problem_counts_on_its_node(window):
-    """An invalid epoch puts a count on the Scenario node."""
+    """An invalid epoch puts a count on the General node."""
     editor = window.scenario_editor
     editor.epoch_edit.setText("2030-13-45T99:00:00")
-    assert editor.scenario_item.text(0) == "Scenario (1)"
+    assert editor.scenario_item.text(0) == "General (1)"
     editor.epoch_edit.setText("2030-01-01T08:30:00")
-    assert editor.scenario_item.text(0) == "Scenario"
+    assert editor.scenario_item.text(0) == "General"
 
 
 def test_edit_in_the_list_goes_to_the_node(window, monkeypatch):
