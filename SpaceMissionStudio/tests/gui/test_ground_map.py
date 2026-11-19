@@ -220,15 +220,17 @@ def test_the_track_is_split_at_the_time_shown():
 
 
 def test_the_map_style_comes_from_the_theme():
-    """Spacecraft colours from the categorical palette, panels and text from the tokens, depicted colours from the palettes."""
+    """Spacecraft colours from the categorical palette's dark steps (drawn on
+    the Earth's image), panels and text from the tokens, depicted colours
+    from the palettes."""
     from spacemissionstudio.gui.theme.ground_map_style import ground_map_style
     from spacemissionstudio.gui.theme.palettes import (LINE_OF_SIGHT_COLOUR, STATION_COLOUR, STATION_OUTLINE_COLOUR,
-                                                       categorical)
+                                                       depicted)
     from spacemissionstudio.gui.theme.tokens import tokens
 
     for mode in ("light", "dark"):
         style = ground_map_style(mode)
-        assert style["crafts"] == categorical(mode) and style["panel"] == tokens(mode)["bg.raised"]
+        assert style["crafts"] == depicted() and style["panel"] == tokens(mode)["bg.raised"]
         assert style["text"] == tokens(mode)["text.primary"]
         assert (style["station"], style["station_outline"], style["link"]) == (
             STATION_COLOUR, STATION_OUTLINE_COLOUR, LINE_OF_SIGHT_COLOUR)

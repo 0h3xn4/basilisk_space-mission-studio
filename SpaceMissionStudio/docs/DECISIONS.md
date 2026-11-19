@@ -4321,6 +4321,105 @@ open in its own window.
   change fixes. Moving them to `DataTable` (copy, column menu, fitting)
   is a larger change for a later batch.
 
+## Distinct series colours and display units in plots (UI audit B10, 2026-11-19)
+
+- **Decision:** the categorical palette is new in both themes. The
+  order is indigo, olive, brick, teal, magenta, violet, plum, orchid;
+  each slot keeps its hue family in both themes.
+  - light on `#FFFFFF`: `#4C32D4 #839A0D #922116 #0AA39C #B40677 #9780F7
+    #7D4E9D #D042C9`;
+  - dark on `#111418`: `#5B4AEA #929D03 #9D4B46 #15A8AE #BE1099 #B76CE9
+    #72579D #C642D0`.
+  **Why:** UI-12. Slots 1 and 3 (a plot's x and z) were orchid and
+  purple: CIEDE2000 Delta E 18.8 in the light theme and 12.3 in the dark
+  theme, and 2.8 in the dark theme with protanopia. The old palette was
+  checked for neighbouring slots only. No reordering of the old eight
+  colours passes an all-pairs check, so the colours changed.
+- **Decision:** the floors. Every pair of the first six slots
+  (`palettes.SHOWN_TOGETHER`) has CIEDE2000 Delta E 18 or more with
+  normal vision, 10 or more with simulated protanopia and deuteranopia,
+  and 7.5 or more with tritanopia (Machado, Oliveira and Fernandes 2009,
+  severity 1.0, on linear sRGB). The first three slots (x, y, z) have 30
+  or more, and 20 or more with each deficiency. Every colour is 3:1 or
+  more against `bg.surface`. Measured minimums: normal 25.1 (light) and
+  19.1 (dark); protan and deutan 12.3 and 10.4; tritan 10.3 and 8.1; x,
+  y, z 36.6 or more with normal vision and 21.4 or more with each
+  deficiency. `tests/gui/test_theme.py` checks the floors with its own
+  CIEDE2000 code, which it checks against Sharma, Wu and Dalal's (2005)
+  test data. **Why:** six is the most series a standard plot shows in
+  their own colours: x, y and z, a quaternion's four parts, four
+  reaction wheels, the event timeline's six kinds. A Monte Carlo plot
+  draws its runs in one colour. CIEDE2000 18 is a difference that reads
+  at a glance on a thin line. The deficiency floors are lower because a
+  simulated deficiency at severity 1 removes one colour axis; the
+  legend stays the second cue.
+- **Decision:** the palette also passes the data-visualisation
+  validator (OKLab, the same CVD model) in both themes: for adjacent
+  pairs of all eight slots and for all pairs of the first six; the
+  lightness band and the chroma floor too. The earlier rules stay:
+  OKLab Delta E 15 or more between neighbouring slots, and 8 or more
+  from every status colour and the accent (the search used 9, and kept a
+  colour closer than 15 to a status colour only with a hue 15 degrees
+  away). **Why:** the status colours take red, orange, amber, green and
+  sky blue, and the accent takes blue. The search ran on an OKLCH grid
+  with these rules, then took the best six for the light theme and the
+  same hue families for the dark theme.
+- **Decision:** the 3D View and the live map take the dark steps for the
+  spacecraft in both themes (`palettes.depicted()`). **Why:** they draw
+  on black space and on the Earth's image in both themes. The light
+  steps are made for white: the new light indigo has 2.7:1 against
+  black. Every dark step has 3.5:1 or more against black.
+- **Decision:** a position (`position_N`) stays in m and velocity and
+  delta-V in m/s in both Plot units choices. Altitudes and semi-major
+  axes stay in km in the display units. **Why:** the owner's rule
+  (HISTORY, "Result plots: titles/axes/legends ... a per-category unit
+  policy"): "delta-V shall always be displayed in m/s"; "altitudes,
+  semi-major axes shall be displayed in km"; "state vector elements
+  shall be displayed in meters for position and m/s for velocity". The
+  display units are the default, so a km position would break the rule
+  for every user. UI-12 called the m axis a defect; the review found
+  that the setting's name was wrong, not the plot. A first version of
+  this batch showed position in km; it was reverted before the merge.
+- **Decision:** the display choice is called "Display units (altitudes
+  in km, °, h)" (it was "Display units (km, °, h)"). Its tooltip lists
+  the units in full: altitudes, semi-major axes and distances in km,
+  position in m, velocity and delta-V in m/s, angles in degrees, elapsed
+  time in hours. **Why:** the old name promised km for every length. The
+  new name is short enough for the 320 px drop-down list without "…"
+  (207 px of text at the default font; the test checks it is whole).
+- **Decision:** with the display units a body rate and a gyroscope show
+  in deg/s and a wheel speed in RPM; "As recorded" shows rad/s. **Why:**
+  the setting says angles in degrees. RPM is the unit of the wheel's own
+  fields (`Omega_max`, the wizard's wheel biases). Small quantities keep
+  m in both choices: the navigation errors, the relative semi-major axis
+  and the ROE diagram's metres.
+- **Decision:** the Mission sequence Output table takes the same display
+  units as the plots but does not follow Plot units. **Why:** it is a
+  table, not a plot; its CSV export is SI.
+- **Decision:** the Thermal plots on screen follow Plot units on their
+  time axis: hours, or seconds as recorded. Temperatures stay in °C and
+  heat in W: the thermal CSV files hold them so. The exported SVG and
+  PNG keep hours (T-31), byte for byte. **Why:** one choice for every
+  plot; the exports stay fixed.
+- **Decision:** a plot's axis title writes its unit through
+  `units.axis_title`: "Inclination [°]", "Torque [N·m]", "Charge [Wh]";
+  "[-]" stays for an axis without a name. The readout takes the same
+  form. **Why:** the plots were the last place that showed "deg", "N*m"
+  and "W*hr" (UI-35). Only the display changes.
+- **Decision:** End of Life's altitude chart draws perigee and apogee in
+  the first two categorical colours, adds "Re-entry altitude" (dotted)
+  to its legend and titles its axis "Altitude [km]". **Why:** the
+  perigee line was in the accent, which is for the primary action and
+  selection only; the dotted line had no name; the axis said only "km".
+- **Left as it is:** the Results plots' event bands take the timeline's
+  kind colours at 16 % opacity, so a band can share a hue with a line.
+  The bands are named in the band note and lie behind the lines. The
+  timeline draws model-analysis, thermal and plan kinds in the accent.
+  A nearly constant series (template 01's osculating inclination, which
+  moves by 1e-11 degrees) gets tick labels such as "97.03000000000399":
+  the axis shows no offset or exponent notation by an earlier user
+  request. All three are listed for a later batch.
+
 ## Home, command palette, run pages, log and dialogs (UI audit B12, 2026-11-19)
 
 - **Decision B12-1:** the window writes a path with "›" only. The

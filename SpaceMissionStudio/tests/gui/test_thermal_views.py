@@ -204,6 +204,23 @@ def test_the_exports_are_still_2_11_s_pictures(qtbot, solved, tmp_path):
 
 
 @pytest.mark.requires_basilisk
+def test_the_screen_plots_time_axis_follows_the_plot_units(qtbot, solved):
+    """UI audit B10: with Settings > Plot units "As recorded" the screen
+    copy of a thermal plot runs over seconds, with the display units over
+    hours; the exported picture keeps hours (T-31) either way."""
+    from spacemissionstudio.gui import units
+    from spacemissionstudio.thermal import plots
+
+    for choice, title in (("display", "start [h]"), ("recorded", "start [s]")):
+        units.set_plot_units(choice)
+        widget = _page(qtbot, solved)
+        qtbot.waitUntil(lambda w=widget: _picture_made(w), timeout=20000)
+        assert title in widget.temperature_plot.svg()
+        case = widget.analysis.case(widget.case_combo.currentText())
+        assert widget.temperature_svg == plots.temperature_svg(case) and "[h]" in widget.temperature_svg
+
+
+@pytest.mark.requires_basilisk
 @pytest.mark.parametrize("mode", ["light", "dark"])
 def test_the_page_is_tabs_that_fit_1280_by_720(qtbot, solved, restored_theme, mode):
     """No group box and no scroll area: the toolbar, one status line, the

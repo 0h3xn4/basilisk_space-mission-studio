@@ -238,8 +238,10 @@ class SettingsPage(QScrollArea):
         for value, text in units.PLOT_UNITS:
             self.plot_units.addItem(text, value)
         self.plot_units.setCurrentIndex(self.plot_units.findData(units.plot_units()))
-        self.plot_units.setToolTip("The units the plots and the run comparison show: the display units, or the "
-                                   "values as recorded and exported (SI: m, rad, s). The exports are always SI.")
+        self.plot_units.setToolTip("The units the plots and the run comparison show. Display units: altitudes, "
+                                   "semi-major axes and distances in km, position in m, velocity and delta-V in "
+                                   "m/s, angles in degrees, elapsed time in hours. As recorded: the values as "
+                                   "recorded and exported (SI: m, rad, s). The exports are always SI.")
         self.plot_units.setAccessibleName("Plot units")
         self.plot_units.currentIndexChanged.connect(self._on_plot_units)
         self.plot_units_note = set_role(QLabel(""), tone="secondary")

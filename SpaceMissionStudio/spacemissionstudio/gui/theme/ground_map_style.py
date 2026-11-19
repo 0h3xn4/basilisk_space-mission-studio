@@ -17,7 +17,8 @@
 #
 """The look of the live 2D map (``gui/ground_map_widget.py``), as data:
 the colours of what it depicts (the same in both themes, as the 3D
-View's), each spacecraft's colour (the categorical palette, in order),
+View's), each spacecraft's colour (the categorical palette's dark steps
+in order, in both themes: they are drawn on the Earth's image),
 the theme's surfaces and text for its labels, legend and margins, and
 its line widths and marker sizes. The map's module holds no colour or
 size of its own."""
@@ -25,7 +26,7 @@ size of its own."""
 from __future__ import annotations
 
 from .palettes import (LINE_OF_SIGHT_COLOUR, MAP_GRID_COLOUR, NIGHT_COLOUR, STATION_COLOUR, STATION_OUTLINE_COLOUR,
-                       categorical)
+                       depicted)
 from .tokens import tokens
 from .typography import BORDER, RADIUS, SPACE
 
@@ -45,7 +46,7 @@ def ground_map_style(mode: str) -> dict:
     """Everything the map draws with, for theme ``mode``."""
     t = tokens(mode)
     return {
-        "mode": mode, "crafts": categorical(mode), "station": STATION_COLOUR, "station_outline": STATION_OUTLINE_COLOUR,
+        "mode": mode, "crafts": depicted(), "station": STATION_COLOUR, "station_outline": STATION_OUTLINE_COLOUR,
         "link": LINE_OF_SIGHT_COLOUR, "grid": MAP_GRID_COLOUR, "grid_alpha": _GRID_ALPHA, "night": NIGHT_COLOUR,
         "night_alpha": _NIGHT_ALPHA, "future_alpha": _FUTURE_ALPHA, "ring_alpha": _RING_ALPHA,
         "margin": t["bg.canvas"], "panel": t["bg.raised"], "panel_border": t["border.subtle"],

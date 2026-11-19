@@ -49,6 +49,7 @@ from dataclasses import dataclass, replace
 from .engine.results import TimeSeries
 
 _RAD2DEG = 180.0 / math.pi
+_RAD_S_TO_RPM = 30.0 / math.pi  # [RPM per rad/s]
 
 # "x"/"y"/"z" columns mean the same thing (an inertial-frame or body-frame
 # vector component) everywhere they appear in this app's own series
@@ -87,14 +88,14 @@ class SeriesDisplay:
 def _vector_display(name: str) -> SeriesDisplay | None:
     """State-vector and attitude/actuator vector series -- every one of
     these already has ("x","y","z") or equivalent columns in
-    ``engine.service``. Position/velocity display in raw meters/m-s (NOT
-    km/km-s) per explicit user request ("state vector elements shall be
-    displayed in meters for position and m/s for velocity") -- a REVERSAL
-    of an earlier blanket km-conversion decision for exactly these two
-    series, which real user feedback showed went too far (see
-    :func:`legacy_display`). Body rate/torque/etc. are left in
-    Basilisk's own native units -- only position/velocity/delta-V/
-    altitude/semi-major axis were named in that feedback.
+    ``engine.service``. Position and velocity display in m and m/s in
+    both Plot units choices, by the owner's rule ("state vector elements
+    shall be displayed in meters for position and m/s for velocity"; a
+    reversal of an earlier blanket km rule, see :func:`legacy_display`).
+    In the display units (Settings > Appearance > Plot units) a body rate
+    shows in deg/s and a wheel speed in RPM, the unit of the wheel's own
+    fields (UI audit B10); "As recorded" shows them in rad/s
+    (:func:`shown`). Torque and the other series keep Basilisk's units.
     """
     if name.endswith(".position_N"):
         return SeriesDisplay("Inertial Position (ECI)", "Position", "m", 1.0, dict(_XYZ_LABELS))
@@ -107,7 +108,7 @@ def _vector_display(name: str) -> SeriesDisplay | None:
     if name.endswith(".attitude_sigma_BN"):
         return SeriesDisplay("Attitude (MRP, Body to Inertial)", "MRP component", "-")
     if name.endswith(".body_rate_omega_BN_B"):
-        return SeriesDisplay("Body Angular Rate", "Angular rate", "rad/s", 1.0, dict(_XYZ_LABELS))
+        return SeriesDisplay("Body Angular Rate", "Angular rate", "deg/s", _RAD2DEG, dict(_XYZ_LABELS))
     if name.endswith(".sun_heading_body"):
         return SeriesDisplay("Sun Heading (Body Frame)", "Unit vector component", "-", 1.0, dict(_XYZ_LABELS))
     navigation = re.search(r"\.navigation_error\.(attitude|rate|sun_heading|position|velocity)$", name)
@@ -125,7 +126,7 @@ def _vector_display(name: str) -> SeriesDisplay | None:
     if name.endswith(".control_torque"):
         return SeriesDisplay("Commanded Control Torque", "Torque", "N*m", 1.0, dict(_XYZ_LABELS))
     if name.endswith(".rw_speeds"):
-        return SeriesDisplay("Reaction Wheel Speeds", "Wheel speed", "rad/s")
+        return SeriesDisplay("Reaction Wheel Speeds", "Wheel speed", "RPM", _RAD_S_TO_RPM)
     if name.endswith(".thruster_on_time"):
         return SeriesDisplay("Thruster On-Times", "Commanded on-time", "s")
     if name.endswith(".fuel_mass_remaining"):
@@ -429,6 +430,9 @@ def _sensor_display(name: str, series: TimeSeries) -> SeriesDisplay | None:
                               1.0, {"albedo": "Albedo"})
     if name.endswith(".gyro"):
         sensor_name = name[: -len(".gyro")].rsplit(".sensor.", 1)[-1]
+        if series.units == "rad/s":  # display units: deg/s, as the body rate (UI audit B10)
+            return SeriesDisplay(f"IMU Gyroscope: {sensor_name}", "Angular rate", "deg/s", _RAD2DEG,
+                                  dict(_XYZ_LABELS))
         return SeriesDisplay(f"IMU Gyroscope: {sensor_name}", "Angular rate", series.units, 1.0,
                               dict(_XYZ_LABELS))
     sensor_name = name.rsplit(".sensor.", 1)[-1]

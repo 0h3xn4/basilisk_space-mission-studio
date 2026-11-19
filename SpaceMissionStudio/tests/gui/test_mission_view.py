@@ -368,7 +368,7 @@ def test_the_page_data_and_style_come_from_the_scene_and_the_theme():
     from spacemissionstudio.gui.mission_view_widget import scene_payload
     from spacemissionstudio.gui.theme.tokens import tokens
     from spacemissionstudio.gui.theme.mission_view_style import mission_view_style
-    from spacemissionstudio.gui.theme.palettes import AXIS_COLOURS, categorical
+    from spacemissionstudio.gui.theme.palettes import AXIS_COLOURS, depicted
 
     scenario, result = _run(stations=True)
     scene = scene3d.build_scene(scenario, result)
@@ -383,7 +383,7 @@ def test_the_page_data_and_style_come_from_the_scene_and_the_theme():
                                    - datetime(1970, 1, 1)).total_seconds() * 1000.0
     for mode in ("light", "dark"):
         style = mission_view_style(mode)
-        assert style["crafts"] == categorical(mode) and style["axes"] == list(AXIS_COLOURS)
+        assert style["crafts"] == depicted() and style["axes"] == list(AXIS_COLOURS)
         assert tokens(mode)["bg.raised"] in style["css"] and tokens(mode)["text.primary"] in style["css"]
         assert style["fov"] == tokens(mode)["accent"] and style["plume"] == tokens(mode)["status.caution"]
 

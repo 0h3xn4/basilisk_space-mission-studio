@@ -252,10 +252,14 @@ A few things to notice right away:
     90, 100, 110 or 125 %, from the next start, unless the
     `QT_SCALE_FACTOR` environment variable sets one; **Reduce motion**:
     notifications appear and go without fading; **Plot units**: the
-    plots and the run comparison in display units, km, degrees and hours,
-    the default, or **As recorded**, the values and units the run
-    recorded and the CSV exports hold, SI, with the elapsed time in
-    seconds; the exports are SI either way), **Reference data**,
+    plots, the run comparison and the Thermal plots' time axis in
+    **Display units (altitudes in km, °, h)**, the default: altitudes,
+    semi-major axes and distances in km, angles in degrees, body rates in
+    degrees per second, wheel speeds in RPM and the elapsed time in hours
+    (position stays in m, velocity and delta-V in m/s); or
+    **As recorded**, the values and units the run recorded and the CSV
+    exports hold, SI (m, rad, rad/s), with the elapsed time in seconds;
+    the exports are SI either way), **Reference data**,
     **Network** (**Work offline**: no download can start; locked, with
     the reason, when your administrator or the
     `SPACEMISSIONSTUDIO_OFFLINE` environment variable sets it; the hosts

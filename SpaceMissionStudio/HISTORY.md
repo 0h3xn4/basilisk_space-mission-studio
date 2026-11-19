@@ -19425,6 +19425,76 @@ Reports › Exports, the Flight Software card, each thermal tab, the
 Problems panel, the Reference data window, Settings, the Budgets grids,
 the scenario overview's table and the 3D model's face properties.
 
+## UI audit batch B10: distinct series colours and display units in plots (2026-11-19)
+
+Branch `ui/plots`. The audit's UI-12 found two faults in one plot. The x
+and z lines of a position plot were near-identical purples, and the
+position axis read m although Settings › Plot units said km. The
+second part was the setting's fault, not the plot's: the owner's rule
+keeps position in metres (see "Result plots: titles/axes/legends ... a
+per-category unit policy" above), so the setting's name changed.
+
+**The palette.** The old palette was checked for neighbouring slots
+only. Slots 1 and 3, a plot's x and z, were orchid and purple: CIEDE2000
+Delta E 12.3 in the dark theme, 2.8 with protanopia. No order of the old
+eight colours passes a check of every pair, so the colours changed. A
+search on an OKLCH grid kept the earlier rules (3:1 against the plot
+background, distance from every status colour and the accent, the
+validator's lightness band and chroma floor). It then took the six
+colours with the largest smallest difference over every pair, with
+normal vision and with simulated protanopia and deuteranopia. The dark
+theme took the same hue families. Slots 7 and 8 come last, for their
+neighbours. The order is indigo, olive, brick, teal, magenta, violet,
+plum, orchid. `tests/gui/test_theme.py` checks every pair of the first
+six against fixed floors with its own CIEDE2000 and Machado (2009) code
+(`docs/DECISIONS.md` has the numbers). The 3D View and the live map now
+take the dark steps in both themes, because they draw on black space and
+on the Earth's image.
+
+**The units.** The display choice is now called "Display units
+(altitudes in km, °, h)". It keeps the owner's rule: position in m,
+velocity and delta-V in m/s, altitudes and semi-major axes in km. A first
+version of this batch showed position in km; the review reverted it,
+because the display units are the default and the owner's rule wins over
+an audit note. The display units now show a body rate and a gyroscope in
+deg/s and a wheel speed in RPM. "As recorded" shows rad/s, as the CSV
+files hold them. The Thermal plots' time
+axis follows the choice on screen; the exported pictures keep hours.
+Axis titles and the readout write the unit as the rest of the window
+does, through `units.axis_title` and `units.plot_unit`.
+
+**The plot paths and the setting:**
+
+| Plot | Follows Plot units | Note |
+|---|---|---|
+| Results › Plots (and the live plot, the same view during a run) | yes | values, axis titles, the elapsed-time axis, the readout |
+| Results › Compare | yes | |
+| Results › Monte Carlo › Plots | yes | an embedded Results view; offsets and altitude km or m |
+| Run › Thermal, Temperatures and Heat flows, also in its own window | time axis | °C and W in both: the thermal CSV holds them so; the window holds the same widget |
+| Run › End of Life | no | altitude in km and time in years: no SI choice that reads |
+| Results › Output (Mission sequence reports) | display units only | a table; position in m, as before |
+| Timeline, Run › Plan (Gantt) | no unit to convert | UTC time axes |
+| ROE diagram | no | metres in both: a formation's scale |
+| 3D View and the map, also in their own windows | no unit to convert | depicted things |
+| Budgets | no chart | |
+
+**The sweep.** Tick labels, axis titles and legends use
+`text.secondary` on `bg.surface` (7:1 and more in both themes). The grid
+uses `border.subtle`, quieter than the 2 px lines. End of Life drew its
+perigee in the accent and labelled its axis "km" only; it now draws
+perigee and apogee in the first two categorical colours, names the
+re-entry line and titles the axis "Altitude [km]". Points that stay open:
+the Results plots' event bands share the timeline's kind colours with
+the lines (behind them, at 16 % opacity), and the timeline draws model
+analysis, thermal and plan events in the accent. A third stays open: a
+nearly constant angle gets tick labels such as "97.03000000000399",
+because the axis shows no offset notation.
+
+Tests: `tests/gui/test_plot_units.py` (4), three in `test_theme.py`,
+one in `test_lifetime_widget.py` and one in `test_thermal_views.py`.
+Three existing GUI tests changed; `docs/ui/TEST_CHANGES.md` lists them.
+The golden files and the exported files are unchanged.
+
 ## UI audit batch B12: Home, command palette, run pages, log and dialogs (2026-11-19)
 
 The screenshot audit of 2026-11-17 found seven defects in these views.

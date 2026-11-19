@@ -46,7 +46,7 @@ from .feedback import report
 from .calculation_panel import Explanation
 from .chained_inputs_panel import ChainedInputsPanel
 from .scenario_explainer_widget import _clear_layout, _stat_tile
-from .theme import CONTENT_MAX_WIDTH_PX, PALETTE, set_role
+from .theme import CONTENT_MAX_WIDTH_PX, PALETTE, SERIES_COLORS, set_role
 from .value_sheet import FoldSection, NoteList
 from .widgets import ComboBox, EmptyState, NumberField, finish_form, set_off_reason
 
@@ -83,7 +83,11 @@ class _LifetimeWorker(QThread):
 
 class AltitudeChart(QWidget):
     """Perigee and apogee altitude against years, with the 5- and 25-year
-    marks and the re-entry altitude."""
+    marks and the re-entry altitude. The two altitudes take the first two
+    categorical colours (data, not the accent: UI audit B10); the axis
+    title carries the unit."""
+
+    AXIS_TITLE = "Altitude [km]"
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -105,6 +109,15 @@ class AltitudeChart(QWidget):
         self._data = None
         self.update()
 
+    @staticmethod
+    def legend_entries() -> list[tuple[str, str, Qt.PenStyle]]:
+        """(name, colour, line style) of each line the chart draws, in the
+        theme in use: perigee and apogee in the categorical palette's first
+        two slots, the re-entry altitude dotted in the muted text colour."""
+        return [("Perigee altitude", SERIES_COLORS[0], Qt.PenStyle.SolidLine),
+                ("Apogee altitude", SERIES_COLORS[1], Qt.PenStyle.SolidLine),
+                ("Re-entry altitude", PALETTE["text_muted"], Qt.PenStyle.DotLine)]
+
     def paintEvent(self, event) -> None:  # noqa: N802 -- Qt override
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -119,7 +132,8 @@ class AltitudeChart(QWidget):
         span_years = years[-1] * 1.05 if years[-1] > 0.0 else 1.0
         top_km = max(apogee) * 1.04
         bottom_km = min(reentry_km, min(perigee)) * 0.9
-        plot = QRectF(52.0, 12.0, self.width() - 64.0, self.height() - 40.0)
+        title_height = float(painter.fontMetrics().height())  # [px] the axis title's line above the plot
+        plot = QRectF(52.0, title_height + 6.0, self.width() - 64.0, self.height() - 34.0 - title_height)
 
         def point(year, km):
             return QPointF(plot.left() + plot.width() * year / span_years,
@@ -142,7 +156,7 @@ class AltitudeChart(QWidget):
             painter.setPen(text_pen)
             painter.drawText(QRectF(x - 30.0, plot.bottom() + 4.0, 60.0, 16.0), Qt.AlignmentFlag.AlignHCenter,
                              f"{year * 12.0:g} mo" if span_years < 1.0 else f"{year:g} y")
-        painter.drawText(QRectF(4.0, 0.0, 120.0, 12.0), Qt.AlignmentFlag.AlignLeft, "km")
+        painter.drawText(QRectF(4.0, 0.0, plot.right(), title_height), Qt.AlignmentFlag.AlignLeft, self.AXIS_TITLE)
 
         # the disposal-rule marks and the re-entry altitude
         rule_pen = QPen(QColor(PALETTE["warning"]))
@@ -160,16 +174,17 @@ class AltitudeChart(QWidget):
         painter.drawLine(QPointF(plot.left(), y), QPointF(plot.right(), y))
 
         legend_x = plot.right() - 150.0
-        for row, (label, color) in enumerate((("Perigee", PALETTE["accent"]), ("Apogee", PALETTE["text_muted"]))):
+        entries = self.legend_entries()
+        for row, (label, color, style) in enumerate(entries):
             y = plot.top() + 12.0 + 16.0 * row
             pen = QPen(QColor(color))
             pen.setWidthF(2.0)
+            pen.setStyle(style)
             painter.setPen(pen)
             painter.drawLine(QPointF(legend_x, y), QPointF(legend_x + 18.0, y))
             painter.setPen(text_pen)
-            painter.drawText(QRectF(legend_x + 24.0, y - 8.0, 120.0, 16.0), Qt.AlignmentFlag.AlignVCenter,
-                             f"{label} altitude")
-        for series, color in ((apogee, PALETTE["text_muted"]), (perigee, PALETTE["accent"])):
+            painter.drawText(QRectF(legend_x + 24.0, y - 8.0, 120.0, 16.0), Qt.AlignmentFlag.AlignVCenter, label)
+        for series, color in ((apogee, entries[1][1]), (perigee, entries[0][1])):
             path = QPainterPath(point(years[0], series[0]))
             for year, km in zip(years[1:], series[1:]):
                 path.lineTo(point(year, km))
