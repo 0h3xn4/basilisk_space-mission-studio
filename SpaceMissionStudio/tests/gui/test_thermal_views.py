@@ -239,14 +239,15 @@ def test_the_page_is_tabs_that_fit_1280_by_720(qtbot, solved, restored_theme, mo
     assert hint.width() <= 1280 and hint.height() <= 720
     assert widget.stack.currentWidget() is widget.tabs and widget.choices.isVisible()
     for control in (widget.spacecraft_combo, widget.size_check, widget.solve_button, widget.save_button,
-                    widget.case_combo, widget.node_combo, widget.save_svg_button, widget.save_png_button):
+                    widget.case_combo, widget.node_combo):
         assert control.isVisible()  # above the tabs
+    assert {widget.save_svg_action, widget.save_png_action} <= set(widget.save_button.menu().actions())  # UI-44
     reached = {"Temperatures": (widget.temperature_plot,),
                "Heat flows": (widget.tables["flows"][1],),
                "Summary": (widget.summary_table,),
                "Heaters and radiators": (widget.tables["heaters"][1], widget.tables["radiators"][1]),
                "3D model": (widget.colour_combo, widget.time_slider, widget.view_3d_button),
-               "Studies": (widget.sweep_path, widget.sweep_values, widget.sweep_button, widget.sensitivity_button,
+               "Studies": (widget.sweep_parameter, widget.sweep_values, widget.sweep_button, widget.sensitivity_button,
                            widget.monte_carlo_button),
                "Notes": (widget.notes_list,)}
     for tab, controls in reached.items():

@@ -107,27 +107,37 @@ beta range.
 2. **Run › Thermal**, pick the spacecraft, press **Solve**. Each case
    takes seconds; sizing the heaters takes longer (untick **Size the
    heaters** to skip it).
-3. Read the status line: how many orbits each case needed to repeat
-   itself, and the run's beta angle. The findings (limit violations, the
-   shading warning, a start that did not converge, a step that is too
-   long) are in the **Problems** panel; the page says how many there are,
-   and **Show in Problems** opens the panel.
+3. The status line says how many cases were solved. The findings (limit
+   violations, the shading warning, a start that did not converge, a
+   step that is too long) are in the **Problems** panel. The chip beside
+   the status line counts them (a warning triangle and "2 findings"), and
+   the **Show in Problems** button opens the panel (`Ctrl+J`).
 4. Pick the **Case** and the **Node** above the tabs; every tab shows
-   them. **Save SVG...** and **Save PNG...** beside them save the
-   temperature plot at 900 x 420 on white, as before. The tabs:
+   them. The tabs:
    - **Temperatures**: every node, or the node picked with its operating
      band (green) and survival band (amber), each named in the legend.
      The plot fills the tab at any window size and follows the light or
      dark theme;
    - **Heat flows**: the node's heat flows by kind (pick a node first),
      over the **Orbit-average heat flows** of every node (positive into
-     the node);
-   - **Summary**: each node's minimum, maximum and mean in each case, and
-     its margins to the operating range;
+     the node). The table is as tall as its rows; the plot takes the rest
+     of the tab. A kind of heat flow that is zero for every node of the
+     case is hidden; the table header's context menu shows it again;
+   - **Summary**: each node's minimum, maximum and mean in each case, its
+     operating range, its margins to that range, and its **Status**: an
+     icon and words (**Within limits**, **Below operating**, **Above
+     operating**, **Below survival**, **Above survival** or **No
+     limits**). The pointer over a status gives the operating and
+     survival ranges;
    - **Heaters and radiators**: the heaters' duty, energy, orbit-average
      and sized power, and the heat the radiators reject;
-   - **3D model**, **Studies** and **Notes** (where each case's values
-     come from, the energy balance and the step check): see below.
+   - **3D model** and **Studies**: see below;
+   - **Notes**: the **Solution per case** table (how each case started,
+     the orbits it needed to repeat itself, the energy balance's residual
+     and throughput, and how much half the time step changes the
+     temperatures), the beta angle over the run, and the notes: where
+     each case's environment comes from and the values a case overrides.
+     A note that several cases share is listed once, with their names.
 5. A node outside its range appears on the **Timeline** as a `thermal
    limit` event (the **Thermal limits** box).
 6. **Open in Own Window** (the last button of the top row, or
@@ -190,18 +200,25 @@ the thermal analysis runs after the run.
 
 ## Study the case: sweeps, sensitivity, Monte Carlo
 
-Under **Studies on the case shown**, each study solves the case again on
+On the **Studies** tab, each study solves the case shown again on
 the same run. Nothing runs in Basilisk again, so a study takes seconds.
 
-- **Sweep**: type a **Parameter** path (`faces[radiator].absorptance`)
-  and its **Values** (`0.1, 0.2, 0.3`), then press **Sweep**. The table
-  gives every node's minimum, maximum and mean at each value.
+- **Sweep**: choose the **Parameter** in the list. Each entry is named
+  by its record and field, with its unit ("Face radiator: absorptance",
+  "Heater battery heater A: power [W]"); the pointer over it gives its
+  path in the thermal model (`faces[radiator].absorptance`). For a
+  parameter that is not in the list (`environment.albedo`), choose
+  **Other parameter, by its path** and type the path, as in a case's
+  overrides. Type the **Values** (`0.1, 0.2, 0.3`), then press
+  **Sweep**. The table gives every node's minimum and maximum at each
+  value.
 - **Sensitivity**: press **Sensitivity**. Each optic, conductance, heat
   pipe, dissipation, heater power, the sunlight and the infrared moves
   10 % up and down, one at a time. The table ranks them by the largest
   change they cause. Parameters without a number (a dissipation that
   follows the power budget) are listed as left out.
-- **Monte Carlo...**: first set the runs, the seed, the case and the
+- **Monte Carlo...**: it is off while the thermal model has no Monte
+  Carlo section, and its tooltip says so. First set the runs, the seed, the case and the
   dispersions under **Monte Carlo** on the thermal model's **Cases** tab (a path, a
   sigma, normal or uniform, absolute or relative to the value). Press
   **Monte Carlo...** and pick a folder. The batch opens in the Monte Carlo
@@ -226,11 +243,16 @@ From Python: `api.thermal_sweep`, `api.thermal_sensitivity` and
 
 ## Save and export
 
-- **Save...** writes `thermal.json` (the record: inputs, every case's
-  results, the findings, the provenance), the tables and every series as
-  CSV, and the plots as SVG and PNG, each with a `.provenance.json`
-  beside it. Reports › Exports lists it.
-- **Save SVG...** and **Save PNG...** save the plot shown.
+**Save...** in the top row opens a menu with every export of the page:
+
+- **Everything to a folder...** writes `thermal.json` (the record:
+  inputs, every case's results, the findings, the provenance), the
+  tables and every series as CSV, and the plots as SVG and PNG, each
+  with a `.provenance.json` beside it. Reports › Exports lists it.
+- **Temperature plot as SVG...** and **Temperature plot as PNG...** save
+  the temperature plot of the case and node shown at 900 x 420 on
+  white, as before. (They were the **Save SVG...** and **Save PNG...**
+  buttons.)
 - From the command line:
 
 ```

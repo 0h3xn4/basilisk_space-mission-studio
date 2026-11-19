@@ -185,8 +185,10 @@ def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path, monkeypatch):
     widget.size_check.setChecked(False)
     widget.solve()
     qtbot.waitUntil(lambda: widget.analysis is not None and widget._worker is None, timeout=240000)
-    assert widget.status_label.text().startswith("Solved nominal: periodic after")
-    assert "Beta angle over the run:" in widget.status_label.text()
+    assert widget.status_label.text() == "Solved 3 cases."  # one short line (UI audit UI-07)
+    assert [row[0] for row in widget.solution_table.rows] == ["nominal", "hot", "cold"]
+    assert widget.solution_table.rows[0][1] == "Periodic"  # it read "Solved nominal: periodic after ..."
+    assert widget.environment_sheet.value("Beta angle, lowest")
     assert widget.summary_table.row_count() == 3 * len(sc.thermal.nodes)
     assert [widget.case_combo.itemText(i) for i in range(widget.case_combo.count())] == ["nominal", "hot", "cold"]
     assert ET.fromstring(widget.temperature_svg).tag.endswith("svg") and widget.flow_plot.isHidden()
@@ -215,11 +217,12 @@ def test_run_thermal_solves_shows_and_saves(qtbot, tmp_path, monkeypatch):
     assert widget.time_label.text().endswith(" h") and widget.time_slider.isEnabled()
     # Studies on the case shown: a sweep, a sensitivity (one parameter), a Monte Carlo into the Monte Carlo view.
     widget.case_combo.setCurrentText("cold")
-    widget.sweep_path.setText("faces[battery].emissivity")
+    widget.choose_parameter("faces[battery].emissivity")  # by its label in the list (UI audit UI-30)
     widget.sweep_values.setText("0.5, 0.9")
     widget.run_sweep()
     qtbot.waitUntil(lambda: widget._study_worker is None and not widget.study_table.isHidden(), timeout=120000)
-    assert widget.study_table.row_count() == 2 and widget.study_label.text().startswith("Sweep of faces[battery]")
+    assert widget.study_table.row_count() == 2
+    assert widget.study_label.text().startswith("Sweep of Face battery: emissivity")
     monkeypatch.setattr("spacemissionstudio.thermal.sweeps.default_parameters",
                         lambda thermal: ["dissipations[battery-loss].power_w"])
     widget.run_sensitivity()

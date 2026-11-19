@@ -107,12 +107,15 @@ def label(text: str) -> str:
     """A heading or label as the window shows it: each "[unit]" of a known
     unit in its display form ("Field of view [deg]" -> "Field of view [°]",
     "Off-nadir [deg]" in a table's header), a dimensionless "[-]" left out.
-    A bracket that is not a unit ("[deg, dBi]") stays as it is."""
+    A bracket that is not a unit ("[deg, dBi]") stays as it is. A unit on
+    a heading's second line ("Conduction\n[W]") stays there (UI audit B11:
+    it was joined back onto the first)."""
     def shown_unit(match: re.Match) -> str:
         known = display(match.group("unit"))
         if known is None:
             return match.group(0)
-        return f" [{known}]" if known else ""
+        before = "\n" if "\n" in match.group(0)[:match.group(0).index("[")] else " "
+        return f"{before}[{known}]" if known else ""
 
     return _BRACKETED.sub(shown_unit, text)
 
@@ -157,3 +160,19 @@ def set_plot_units(value: str) -> None:
     settings = _settings()
     settings.setValue(PLOT_UNITS_KEY, value)
     settings.sync()
+
+
+# A number and a unit in the code's spelling inside a sentence the core
+# wrote ("S 1367 W/m^2", "at beta 17 deg"): the units whose spelling
+# differs from their display, longest first, so "deg C" is not read as "deg".
+_IN_TEXT = re.compile(r"(?<=\d) ?(?P<unit>" + "|".join(
+    re.escape(unit) for unit in sorted((u for u, shown_as in _DISPLAY.items() if shown_as and shown_as != u
+                                        and not u.isalpha()), key=len, reverse=True)) + r"|deg C|degC|deg)(?![\w^])")
+
+
+def in_text(text: str) -> str:
+    """A sentence from the core with each number's unit as the window shows
+    it (UI audit B11, Run › Thermal's notes): "S 1367 W/m^2" -> "S 1367
+    W/m²", "beta 17 deg" -> "beta 17°". Words, paths and units that read
+    the same stay as they are."""
+    return _IN_TEXT.sub(lambda match: suffix(match.group("unit")), text)

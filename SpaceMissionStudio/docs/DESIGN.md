@@ -502,6 +502,22 @@ bar and no toolbar:
   scenario) for a Monte Carlo batch, the spacecraft and the program for
   a SIL run. Forms that were dialogs are embedded (`embed_dialog`) and
   applied as edited; no OK.
+- **Run › Thermal (UI audit B11):** the top row is the spacecraft (a
+  drop-down list at its 320 px width), Size the heaters, Solve and one
+  **Save...** button whose menu holds every export of the page
+  (everything to a folder, the temperature plot as SVG or PNG): a page
+  has one save entry point, never a button per format. The second row
+  is the case and node lists, a one-line status ("Solved 4 cases."), the
+  findings as a `badges.StatusBadge` (an icon and words) and **Show in
+  Problems**, a framed button. Values are tables: Summary has a Status
+  column (an icon and words), the Notes tab each case's solution
+  checks in a `ValueTable`. Heat flows' table asks for its rows' height
+  and the plot takes the rest (at least 160 px). A study's parameter is
+  chosen by its label and unit, its path on hover, with "Other
+  parameter, by its path" for any other.
+- **A heading in two lines:** a table heading may put its unit on a
+  second line ("Conduction\n[W]"), so a table of many numbers fits;
+  `units.label` keeps it there.
 - **Problems panel, at the bottom (Ctrl+J):** a `QTableView` over
   `ProblemsModel`: Severity (icon and word), ID (the field path), Object,
   Message; errors first, any column sorts, Ctrl+C copies TSV, Enter or a
@@ -646,6 +662,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Empty list | `widgets.EmptyStack(view, empty_state, fit_rows=)`: `refresh(empty=None)`, `showing_empty()` | A list, tree or table, or its `EmptyState` while it has no row; `fit_rows=True` makes a short list as tall as its rows. Edit, Remove and the other actions on a row are off until a row is selected |
 | Table look | `widgets.set_table_look(view, numeric=(), rows=True, docked=False)`; `DataTable.set_fit_width()`, `hover_text(row, column)`, `data_table.fit_widths(wanted, floors, room, grow)` | The DataTable look for a table built another way (no grid lines, headings left, a number's right, rows at `ROW_HEIGHT`, no frame in a dock); a table that shares its view's width without cutting a heading (UI audit B9) |
 | Badge / tag | `badges.set_badge(label, badges.SUCCESS)` and the other kinds | A state in a word: Explain, the dashboard, rule results |
+| Status badge with an icon | `badges.StatusBadge(kind, text)`: `set_text`, `text()`, `icon_name()` | A status count beside the commands that act on it ("2 findings" behind the caution triangle, Run › Thermal): the status's icon and words on its soft tint, never the colour alone; not a control (UI audit UI-44) |
 | Role | `theme.set_role(widget, role=..., tone=..., badge=...)` | A label's or frame's look from the style sheet: caption, heading, section-title, mono, hint, card; a status tone |
 | Toast | `feedback.report(widget, text, kind)` | Something finished or failed, not tied to a field |
 | Problem banner | `feedback.ProblemBanner` | Above a form: what is wrong in it |

@@ -1196,7 +1196,12 @@ class MainWindow(QMainWindow):
 
     def show_problems(self) -> None:
         """The Problems panel, shown and focused (the status bar's and the
-        top bar's problem count)."""
+        top bar's problem count, Run › Thermal's Show in Problems). Asked
+        from a view in its own window, the main window comes to the front
+        with it (UI audit B11)."""
+        if self._active_breakout_window() is not None:
+            self.raise_()
+            self.activateWindow()
         self.show_panel(self.problems_dock)
 
     # -- views in a window of their own (gui.breakout) ------------------------------------------

@@ -1109,7 +1109,11 @@ the heat flows, the summary, the heaters' duty and sized power and the
 heat the radiators reject; limit violations go to the Timeline, and the
 findings and checks (including faces that other parts can shade, which
 the model does not account for) to the Problems panel. The plots fill
-their tab and follow the theme. Everything exports with its provenance.
+their tab and follow the theme. The summary gives each node a status (an
+icon and words such as **Below operating**), and the **Notes** tab has
+each case's solution checks in a table. A chip counts the findings, and
+**Show in Problems** opens the panel. Everything exports with its
+provenance, from the one **Save...** menu of the page.
 
 On the same run, without running Basilisk again, you can sweep any
 parameter, rank the parameters by their effect (a one-at-a-time
