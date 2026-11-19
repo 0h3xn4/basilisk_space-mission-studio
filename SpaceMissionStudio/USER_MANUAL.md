@@ -312,8 +312,9 @@ A few things to notice right away:
   picks, `Esc` closes.
 * The **Inspector** panel on the right (`Ctrl+I`): the field you are in,
   its value, the range it accepts and its help (a button or tab shows
-  nothing there). On a screen narrower than 1600 pixels a new window
-  starts without it, to leave the room to the page. **Explain**, a live
+  nothing there). A new window narrower than 1440 pixels, or on a
+  narrower screen, starts without it, to leave the room to the page;
+  `Ctrl+I` shows it. **Explain**, a live
   summary of what the scenario does, is the scenario tree's **Overview**
   (end of Section 7); its name in the tree says how many things there are
   to check.
@@ -353,12 +354,17 @@ A few things to notice right away:
   the calculation on the clipboard as text, as the command line's
   `--explain` prints it. A new window starts without it.
 * `Ctrl+I` and `Ctrl+J` show and hide their panel, and a panel they show
-  takes the keyboard. Drag a panel elsewhere, close it, or put them all
+  takes the keyboard. Each panel's title bar has two buttons: **Float**
+  puts the panel in a window of its own (its button then reads **Dock**
+  and puts it back), and **Close** hides it. `Tab` reaches them and
+  `Space` presses them; point at one to read what it does. Drag a panel
+  by its title elsewhere, or put them all
   back as a new window has them with **Settings > Layout > Reset
   Layout**. The app remembers the layout (the panels, the rail, the
   dividers' positions) for each scenario file: open a file again and its
   layout comes back. A file without one keeps the layout on screen.
-* A **top bar** above the area names the scenario and says whether it
+* A **top bar** across the window, under the menu bar and above the
+  panels, names the scenario and says whether it
   has unsaved changes ("Unsaved changes", "Unchanged", "Saved" or "Not
   saved yet", with an icon), where it came from ("from template 22", or
   the file's name) and when it last ran, how it ended and how long it
@@ -366,7 +372,8 @@ A few things to notice right away:
   Point at the line to read all of it when it is cut. On its right:
   while the scenario has any, the number of problems (a click opens
   **Problems**), then **Undo** and **Redo**, **Save**, **Run** with its
-  mode and the search field of the command palette. **Run** is the one
+  mode and the search field of the command palette. **Undo**, **Redo**
+  and **Save** are framed buttons; **Run** is the one
   blue button. It is grey when no run can start (no scenario open, an
   error in the scenario, a run going); point at it to read why.
 * Every area has its title at the top, with its commands beside it. When
@@ -375,7 +382,9 @@ A few things to notice right away:
   ("Run 2, 12:19"): the top bar, the plots' provenance line and the
   traces of a comparison name them.
 * When a run ends, a note at the bottom right says so: "Run 2 complete
-  in 6 s: 4 passes, 15 eclipses". A run that cannot start once it is
+  in 6 s: 4 passes, 15 eclipses". A note sits in the work area, above
+  the status bar and beside or above the panels, and moves up so that it
+  covers no button or field; a click on it goes to what is under it. A run that cannot start once it is
   asked for (Monte Carlo turned off, for example) or that
   fails says why in a note and the status bar and opens where it is
   dealt with: **Problems** at the field, the Monte Carlo page, or the
@@ -385,8 +394,13 @@ A few things to notice right away:
   ("Propagating: day 0.4 of 1"), a progress bar, the time so far and an
   estimate of the time left, and **Cancel** (`Esc`). When no run is going,
   a tag there says how the last one went: **No run yet**, **Run 2: done
-  in 6 s**, **Failed** or **Run 2: cancelled**. It always shows the problems ("1 error · 2 warnings", or
-  "No problems"; click it to open **Problems**), the Basilisk
+  in 6 s**, **Failed** or **Run 2: cancelled**. While a scenario is open
+  it shows the problems ("1 error · 2 warnings", or
+  "No problems"; click it to open **Problems**); with none open, neither
+  the tag nor the problems show. A message that names a file shows the
+  file's name; a longer message is shortened in the middle, so its end
+  stays in view, and pointing at the bar shows all of it. It always
+  shows the Basilisk
   version ("(not qualified)" when it is not the verified 2.12.0), the
   reference data ("all OK", or how many files need attention; click it
   to open the **Reference data** window), how far the Earth orientation data is high

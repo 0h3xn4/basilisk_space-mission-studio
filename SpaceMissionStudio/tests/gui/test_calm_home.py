@@ -76,6 +76,9 @@ def test_the_details_fold_the_headed_parts(window):
 
 
 def test_the_status_bar_shows_what_needs_attention(window):
+    from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
+
+    assert window.open_path(TEMPLATES_DIR / "01_two_body_circular_orbit.json")  # the count shows with a scenario (B8)
     items = window.status_items
     items._needs_attention.clear()
     items.set_details(False)

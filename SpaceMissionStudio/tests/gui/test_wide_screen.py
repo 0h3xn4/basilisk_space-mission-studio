@@ -69,6 +69,25 @@ def _show(qtbot, window, page) -> None:
     qtbot.wait(50)
 
 
+def _form_width(form) -> int:
+    """How wide an embedded form's content is: inside its scroll areas,
+    which take the page's width so their scroll bars sit at its edge (UI
+    audit UI-56), or the form itself when it does not scroll."""
+    from PySide6.QtWidgets import QScrollArea
+
+    def outermost(area) -> bool:
+        parent = area.parentWidget()
+        while parent is not None and parent is not form:
+            if isinstance(parent, QScrollArea):
+                return False
+            parent = parent.parentWidget()
+        return True
+
+    bodies = [area.widget() for area in form.findChildren(QScrollArea)
+              if area.isVisible() and area.widget() is not None and outermost(area)]
+    return max((body.width() for body in bodies), default=form.width())
+
+
 def test_forms_stay_at_a_readable_width(qtbot, window):
     """The Scenario, Environment and spacecraft forms and the End of Life
     settings are no wider than the content width on a 2560 px window,
@@ -80,10 +99,10 @@ def test_forms_stay_at_a_readable_width(qtbot, window):
     assert editor.scenario_page.viewport().width() > CONTENT_MAX_WIDTH_PX + 300  # [px] the page has room to spare
     assert editor.name_edit.width() < CONTENT_MAX_WIDTH_PX
     _show(qtbot, window, editor.environment_page)
-    assert 0 < editor._environment_form.width() <= CONTENT_MAX_WIDTH_PX
+    assert 0 < _form_width(editor._environment_form) <= CONTENT_MAX_WIDTH_PX
     editor.show_spacecraft(0)
     qtbot.waitUntil(lambda: editor._spacecraft_nodes[0].form is not None and editor._spacecraft_nodes[0].form.isVisible())
-    assert editor._spacecraft_nodes[0].form.width() <= CONTENT_MAX_WIDTH_PX
+    assert 0 < _form_width(editor._spacecraft_nodes[0].form) <= CONTENT_MAX_WIDTH_PX
     eol = window.lifetime_widget
     window.show_view(eol)
     qtbot.waitUntil(eol.isVisible)

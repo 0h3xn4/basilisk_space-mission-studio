@@ -19260,3 +19260,92 @@ reach the shortcut table through the `DataTable` API now;
 Screenshots at 1280 x 720, light and dark, before and after, show each
 Settings section and the headers of Scenario, Run, Results, Budgets and
 Reports.
+
+## UI audit batch B8: top bar, panels, status bar and toasts (2026-11-19)
+
+The screenshot audit of 2026-11-17 found five defects in the window's
+shell. The Inspector took the full height beside the top bar, and at
+1280 px the top bar's state read "Unch…" (UI-06). The status bar
+printed an absolute path, clipped at its first entry (UI-09; B5 removed
+the footer and named opened and saved files). The panels had Qt's own
+10 px Float and Close buttons, without a tooltip (UI-39). A toast
+covered a link of the scenario guide (UI-54). At 1920 px the Inspector
+was 380 px wide for one line of placeholder text, and 220 px of nothing
+lay between the form's scroll bar and the Inspector (UI-56). The B7
+review added three more: section titles started 2 to 4 px right of the
+line under them, the top bar's Undo, Redo and Save were frameless, and
+the status bar said "No problems" with no scenario open.
+
+**The top bar spans the window (UI-06).** The top bar was the first row
+of the central widget, so the right dock area began at the window's
+top, beside it. The window's menu widget is now a header that holds the
+menu bar and the top bar (`QMainWindow.setMenuWidget`). Qt lays the
+menu widget out above the docks and the central widget, so the
+Inspector and the rail start under the top bar. `MainWindow.menuBar()`
+returns the menu bar inside the header: Qt's own `menuBar()` would have
+put a new, empty menu bar in the header's place. A `QToolBar` would also
+span the window, but the app has had no toolbars since M2a. At 1280 px
+with the Inspector shown, the subtitle now reads "Unchanged · from
+template 01 · not run yet" whole. The window's least height grew by the
+top bar's, 46 px, because the top bar is above the rail now: 592 px
+with a scenario open, still inside a 720 px screen.
+
+A new window narrower than 1440 px (`theme.INSPECTOR_MIN_WINDOW_PX`), or
+on a narrower screen, starts without the Inspector; before, the rule was
+a screen narrower than 1600 px. Ctrl+I shows it. The app does not hide
+an open Inspector when the user makes the window narrower.
+
+**The Inspector's width and the strip beside it (UI-56).** The
+Inspector opens 320 px wide (`theme.INSPECTOR_WIDTH`). The Environment
+form and a spacecraft's sections were capped at 960 px whole, their
+scroll bars included, so at 1920 px the scroll bar stood in the middle
+of the window. `scenario_editor._cap_form` now caps the form inside each
+of its scroll areas, as the Run page does, and the scroll areas take
+the page's width. The form keeps its width and the left edge; its
+scroll bar sits beside the Inspector.
+
+**The panels' title bars (UI-39).** Each dock has its own title bar,
+`app_shell.DockTitleBar`: the panel's title, then Float (Dock while it
+floats) and Close, compact tool buttons with 16 px Lucide icons. Their
+tooltips and accessible names name the panel ("Float Inspector",
+"Close Inspector (Ctrl+I)"). Tab reaches them and Space presses them.
+The title follows the dock's ("Problems (3)"). A drag or a double-click
+on the title still moves or floats the panel, because the bar leaves
+those mouse events to the dock. The layout version is 6: a layout of
+version 5, with Qt's title bars and the 380 px Inspector, opens the
+default layout once, without an error.
+
+**Toasts (UI-54).** A toast was placed at the window's bottom right,
+over whatever was there, before the page it announced was even shown.
+It now sits in the work area, the main window's central widget: above
+the status bar and a docked Problems panel, left of the Inspector. The
+stack moves up 4 px at a time until it covers no button, field,
+drop-down list, tab bar or link, with 4 px to spare. It looks again
+after the page is laid out, when the work area changes size, and every
+150 ms while it shows; one look takes about a millisecond. A click on a
+toast goes to the widget under it. A toast is as wide as its text on one
+line, at most 360 px, so "New blank scenario" no longer breaks over two
+lines.
+
+**The status bar (UI-09, B7 review).** Every message goes through
+`feedback.show_status`. It is elided in the middle to the room left of
+the permanent entries, and the whole text is the tooltip while it shows.
+A report that names a long path keeps its file name in view. The run
+state chip and the problem count show only while a scenario is open.
+
+**Section titles and the top bar's buttons (B7 review).** A section
+title's padding gives its label a frame, and Qt indents the text of a
+label with a frame by half an "x", 4 px. The style sheet sets
+`qproperty-indent: 0` on section titles, so "Appearance" starts where
+the line under it starts. The top bar's Undo, Redo and Save are
+secondary buttons with an edge, as the area headers' commands; Run is
+still the one accent button.
+
+Tests: the new file `tests/gui/test_shell_chrome.py` has 16 tests. 14
+failed before the fixes. The other two check that View > Menu Bar still
+works in the header and that B5's part of UI-09 holds. Four existing
+GUI tests changed; `docs/ui/TEST_CHANGES.md` lists them. The golden
+files are unchanged. Screenshots at 1280 x 720 and 1920 x 1080, light
+and dark, before and after, show Home, Scenario with the Inspector,
+Run, Results, Settings, the panels' title bars and the New blank
+scenario toast.

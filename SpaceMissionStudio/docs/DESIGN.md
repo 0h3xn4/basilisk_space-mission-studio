@@ -253,20 +253,26 @@ bar and no toolbar:
   they show their icons only, the names in their tooltips and
   accessible names, until there is room again. With no scenario open
   the title stays and the commands step aside for the empty state.
-- **Top bar:**
+- **Top bar:** across the window, under the menu bar and above the
+  panels (UI audit UI-06): the window's menu widget (`windowHeader`)
+  holds the menu bar and the top bar, so the Inspector and the rail start
+  under it and never take its width. `MainWindow.menuBar()` returns the
+  menu bar inside the header.
   - the scenario name, then its save state (an icon and the words
     "Unsaved changes", "Unchanged", "Saved" or "Not saved yet"), where it
     came from and the last run, with the breadcrumbs (area › page, in
     every area with pages) under them. The subtitle elides; its tooltip
     has all of it;
   - while there are any, the problem count, then Undo, Redo, Save (it
-    always reads Save), Run (the one primary, accent, button; disabled,
+    always reads Save; the three are secondary buttons with an edge, as
+    the area headers' commands, UI audit B8), Run (the one primary, accent, button; disabled,
     with the reason in its tooltip, while no run can start) with its
     mode, and the command search (Ctrl+K). The count comes first and the
     mode button is as wide as its longest mode, so no button moves when
     the count shows or the mode changes. A top bar narrower than
-    `theme.TOP_BAR_COMPACT_BELOW` (1280 px with the Inspector shown)
-    shows the search's icon and key only.
+    `theme.TOP_BAR_COMPACT_BELOW` (1040 px: the top bar is as wide as the
+    window) shows the search's icon and key only. At 1280 px with the
+    Inspector shown the subtitle is whole.
 - **Home (M3, `gui/load_scenario_widget.py`):** while it asks, the
   reference-data card across the top (it replaced the start-up dialog);
   then three columns: Start (New blank scenario, the recent scenarios
@@ -297,7 +303,10 @@ bar and no toolbar:
   the inset inside its scroll area, so its scroll bar stays at the
   page's edge. The tab rows and the Scenario tree stay flush with the
   edges: they are navigation. `tests/gui/test_form_grid.py` measures
-  every page.
+  every page. A section title starts at the inset too, where the line
+  under it starts: the style sheet sets `qproperty-indent: 0` on
+  `QLabel[role="section-title"]`, since its padding gave it a frame and
+  Qt then indented its text by half an "x" (4 px; UI audit B8).
 - **Forms (M4a, `gui/widgets.py`, `gui/units.py`):** a number field
   (`NumberField`, or any spin box `finish_form` styles) carries its unit as
   a suffix, typeset ("550.0 km", "97.59°", "1.000 m²", "300.00 Wh"),
@@ -350,7 +359,14 @@ bar and no toolbar:
   frame, the form's background, a row per choice at the table-row height
   (`RowHeightDelegate`), as tall as its rows, no scroll bar.
 - **Inspector, on the right:** one dock, the focused field (Ctrl+I). No
-  tabs. Explain is the Scenario tree's first node, Overview (M4b): asked
+  tabs. It opens `theme.INSPECTOR_WIDTH` (320 px) wide (UI audit UI-56;
+  it was 380 px for one line of placeholder text). A new window narrower
+  than `theme.INSPECTOR_MIN_WINDOW_PX` (1440 px), or on a narrower
+  screen, starts without it, so it never squeezes a 1280 px window
+  (UI-06); Ctrl+I shows it. An embedded Scenario form that scrolls
+  itself keeps its scroll area as wide as the page and caps the form
+  inside it (`scenario_editor._cap_form`), so its scroll bar sits beside
+  the Inspector, with no strip between them that belongs to nothing. Explain is the Scenario tree's first node, Overview (M4b): asked
   for 250 ms after an edit and computed in a `QThread`, an overtaken
   answer dropped.
 - **Form · JSON:** a segmented control in the Scenario area's header;
@@ -456,9 +472,26 @@ bar and no toolbar:
 - **Status bar:** the run job (phase, progress, time so far and left,
   Cancel) while a run goes, the run state chip otherwise; then the problem count
   (it opens Problems), Basilisk version, reference data, Earth
-  orientation data, frames. A message about a file names the file
-  ("Opened 01_two_body_circular_orbit.json"), elided in the middle to
-  the room left, with the whole path as the bar's tooltip while it shows.
+  orientation data, frames. The run state chip and the problem count show
+  only while a scenario is open: "No run yet" and "No problems" say
+  nothing about no scenario (UI audit B8). A message about a file names the file
+  ("Opened 01_two_body_circular_orbit.json"), with the whole path as the
+  bar's tooltip while it shows. Every message (`feedback.show_status`,
+  which `report` uses too) is elided in the middle to the room left of
+  the permanent entries, so its end, a file name, stays in view and
+  nothing is clipped at the first entry (UI-09); the whole text is then
+  the tooltip.
+- **Panels' title bars (UI audit UI-39):** each dock (Inspector,
+  Problems, Calculation) has its own title bar (`app_shell.DockTitleBar`,
+  `theme.DOCK_TITLE_HEIGHT`): its title (it follows the dock's, "Problems
+  (3)"), then **Float** (**Dock** while it floats) and **Close** as
+  compact icon buttons with 16 px icons, each with a tooltip and an
+  accessible name that name the panel ("Float Inspector", "Close
+  Inspector (Ctrl+I)"), reachable with Tab and pressed with Space. Qt's
+  own buttons were about 10 px, with no tooltip. A drag or a double-click
+  on the title still moves or floats the panel. The layout version is 6:
+  a layout saved with Qt's title bars (version 5) opens the default
+  layout.
 - **Layout memory:** Settings > Layout > Reset Layout restores the panels
   and the rail. The layout (docks, rail, the main splitters) is kept per
   scenario file, and for the window between sessions (`layout.ini`).
@@ -506,7 +539,9 @@ bar and no toolbar:
 | Form label column | one per page, at most 224 px (a longer label wraps) | `theme.LABEL_COLUMN_MAX_PX`, `widgets.FormGrid` |
 | Scenario tree | as wide as its longest node, 170 to 340 px; 220 px to start | `theme.PAGE_TREE_WIDTH`, `gui/page_tree.py` |
 | Results plot list | 16 % of the pane, 250 to 400 px, until the user drags the divider | `gui/results_widget.py` |
-| Toast | at most 360 px wide, 16 px from the window's edge, 8 px apart | `gui/feedback.py` |
+| Toast | as wide as its text on one line, at most 360 px; 16 px from the work area's edge, 8 px apart | `theme.TOAST`, `gui/feedback.py` |
+| Inspector | 320 px; a new window under 1440 px starts without it | `theme.INSPECTOR_WIDTH`, `theme.INSPECTOR_MIN_WINDOW_PX` |
+| A panel's title bar | a compact button's height and 4 px; 16 px icons on 28 px buttons | `theme.DOCK_TITLE_HEIGHT` |
 
 **What keeps the full width:** plots, tables, the event timeline, the
 JSON view, Compare and the model editor. A form keeps the left edge, and
@@ -534,6 +569,8 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
   (`tests/gui/test_theme.py::test_every_command_button_has_an_icon`): Run
   in the accent, Cancel in critical, the rest in `text.secondary`. The
   top bar's Run draws its icon in `text.on_accent` on the accent fill.
+  The top bar's Undo, Redo and Save are secondary buttons
+  (`variant="secondary"`), as the area headers' commands.
 - **App icon:** drawn in code (`gui/icons.py`) in `palettes.APP_ICON`: the
   Earth (the 3D view's Blue Marble texture), an orbit, a satellite with a
   link beam to a ground station, and the Sun, on a dark rounded-square
@@ -623,7 +660,8 @@ with spaces (" – "), never "--"; a figure the run does not give is "–"
 
 **One line first.**
 
-- A toast shows the message's first line whole.
+- A toast shows the message's first line whole, on one line when it fits
+  its 360 px.
 - Long paths wrap inside its 360 px (a zero-width space after each `/`
   or `\`, in the displayed text only).
 - A multi-line error or warning adds "(more in the Log)", and the Log
@@ -655,6 +693,17 @@ earlier export?"). They are the only message boxes the app uses.
 | success | 3 s |
 
 **Status bar:** `report` also writes the message there.
+
+**Where a toast sits (UI audit UI-54):** at the bottom right of the
+work area (`feedback.toast_area`: a main window's central widget), so
+never over the top bar, a panel (it sits beside the Inspector and above
+Problems) or the status bar. It covers no control: the stack moves up,
+4 px at a time, until no button, field, drop-down list, tab bar or link
+is under it (with 4 px to spare); with no such place it stays at the
+bottom. It looks again when the window or the work area changes size and,
+while it shows, every 150 ms (a page laid out or scrolled after its
+toast), about a millisecond each time. A click on a toast reaches what is
+under it (`WA_TransparentForMouseEvents`): it has nothing to click.
 
 ### Keyboard
 

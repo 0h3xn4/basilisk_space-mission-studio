@@ -119,8 +119,12 @@ QToolTip {{
 QLabel[role="caption"] {{ font-size: {px(SIZE['caption'])}; color: {t['text.secondary']}; }}
 QLabel[role="small"] {{ font-size: {px(SIZE['small'])}; }}
 QLabel[role="heading"], QLabel[role="strong"] {{ font-weight: {semibold}; }}
+/* A title's padding gives the label a frame width, and Qt then indents its
+   text by half an "x" (4 px): a section title started right of the line
+   under it (UI audit B8). No indent: it starts at the page inset. */
 QLabel[role="section-title"], QLabel#sectionTitle {{
     font-size: {px(SIZE['section'])}; font-weight: {semibold}; padding: {px(SPACE['xs'])} 0px;
+    qproperty-indent: 0;
 }}
 QLabel[role="page-title"] {{ font-size: {px(SIZE['page'])}; font-weight: {semibold}; }}
 QLabel[role="display"] {{ font-size: {px(SIZE['display'])}; font-weight: {semibold}; }}
@@ -611,6 +615,13 @@ QDockWidget::title {{
     padding: {px(SPACE['xs'] + 2)} {px(SPACE['sm'])};
     border-bottom: {px(BORDER)} solid {t['border.subtle']};
 }}
+/* A panel's own title bar (UI audit UI-39): its title, Float and Close. */
+QWidget#dockTitleBar {{
+    background-color: {t['bg.surface']};
+    border-bottom: {px(BORDER)} solid {t['border.subtle']};
+}}
+QLabel#dockTitle {{ font-weight: {medium}; }}
+QToolButton#dockTitleButton {{ padding: 0px; }}
 
 /* ---- app shell ---------------------------------------------------------------- */
 QWidget#topBar {{

@@ -54,11 +54,24 @@ ICON_SIZE = {"ui": 16, "rail": 20}  # [px]
 # controls with a small inset above and below, the same in every area, so
 # the tab rows under it start at one height (UI audit UI-17).
 AREA_HEADER_HEIGHT = CONTROL_HEIGHT["default"] + 2 * SPACE["sm"]  # [px]
-# The top bar narrower than this (1280 px with the Inspector shown): its
-# search field shows its icon and key only, so the subtitle keeps room for
-# the save state (UI audit UI-36). About a scenario name, the state and the
-# commands with the whole search field.
+# The top bar narrower than this: its search field shows its icon and key
+# only, so the subtitle keeps room for the save state (UI audit UI-36).
+# About a scenario name, the state and the commands with the whole search
+# field. The top bar spans the window (UI audit UI-06), so only a window
+# narrower than this shows the short search field.
 TOP_BAR_COMPACT_BELOW = 1040  # [px]
+# The Inspector (UI audit UI-06, UI-56): the width it opens at, enough for
+# its labels and a wrapped line of help, and the narrowest window it opens
+# in by itself. A narrower new window starts without it (Ctrl+I shows it),
+# so it never squeezes a 1280 px window.
+INSPECTOR_WIDTH = 320  # [px]
+INSPECTOR_MIN_WINDOW_PX = 1440  # [px]
+# A dock's title bar (UI audit UI-39): its title and its Float and Close
+# buttons, icons of the interface size on compact buttons.
+DOCK_TITLE_HEIGHT = CONTROL_HEIGHT["compact"] + SPACE["xs"]  # [px]
+# Toasts (UI audit UI-54): at most this wide, the margin from the edge of
+# the area they sit in, and the gap between two.
+TOAST = {"max_width": 360, "margin": SPACE["lg"], "gap": SPACE["sm"]}  # [px]
 # Motion: hover, panel open/close and toasts. Never data values or plots.
 MOTION_MS = {"fast": 120, "slow": 180}  # [ms]
 
