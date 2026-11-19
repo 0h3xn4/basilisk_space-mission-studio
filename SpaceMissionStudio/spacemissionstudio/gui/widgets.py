@@ -44,13 +44,40 @@ import math
 from decimal import Decimal
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer
-from PySide6.QtGui import QAction, QPalette, QValidator
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QBoxLayout, QButtonGroup, QCheckBox,
-                               QComboBox, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QHBoxLayout,
-                               QLabel, QLayout, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QStackedWidget, QStyle,
-                               QStyledItemDelegate, QStyleOptionComboBox, QStylePainter, QTabBar, QTableView,
-                               QTabWidget, QVBoxLayout, QWidget)
-from shiboken6 import isValid
+from PySide6.QtGui import QAction, QPalette, QValidator, QWindow
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QAbstractSpinBox,
+    QApplication,
+    QBoxLayout,
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialogButtonBox,
+    QDoubleSpinBox,
+    QFormLayout,
+    QFrame,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSpinBox,
+    QStackedWidget,
+    QStyle,
+    QStyledItemDelegate,
+    QStyleOptionComboBox,
+    QStylePainter,
+    QTabBar,
+    QTableView,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
+from shiboken6 import createdByPython, invalidate, isValid
 
 from .theme import FIELD_WIDTH, LABEL_COLUMN_MAX_PX, ROW_HEIGHT, SPACE, set_role
 
@@ -80,7 +107,11 @@ def show_window(widget: QWidget) -> None:
     if not widget.isVisible() and QApplication.activeModalWidget() is None:
         widget.winId()  # the native window, so that its transient parent can be cleared before it shows
         handle = widget.windowHandle()
-        if handle is not None:
+        if handle is not None and not isinstance(handle, QWindow):
+            # A stale wrapper at the native window's address (see read_layout_item): drop it and ask again.
+            invalidate(handle)
+            handle = widget.windowHandle()
+        if isinstance(handle, QWindow):
             handle.setTransientParent(None)
     if widget.isMinimized():
         widget.showNormal()
@@ -342,6 +373,51 @@ class NumberField(PreciseDoubleSpinBox):
 # for it can then be handed out for a new object at that address (on CI, a
 # QMenu's new QAction came back as a QWidgetItem).
 _DIRECT = Qt.FindChildOption.FindDirectChildrenOnly
+
+
+def read_layout_item(layout: QLayout, read, *where):
+    """``read(item)`` for ``layout``'s item at ``where`` (an index; a row and
+    role of a QFormLayout; a row and column of a QGridLayout), or None when
+    there is none. Read layout items only through this function.
+
+    PySide keeps the wrapper of a layout item that is not a QObject (a
+    ``QWidgetItem``, a spacer) for as long as its layout's wrapper lives,
+    and it is not told when Qt deletes the item. The wrapper then stays
+    registered at a freed address, and a later object at that address gets
+    it: ``windowHandle()`` returned a ``QWidgetItem`` in place of the new
+    ``QWindow`` (2.13.0, Windows CI). The wrapper is released here once
+    ``read`` has returned, so no wrapper outlives its read."""
+    if len(where) == 2 and isinstance(layout, QGridLayout):
+        item = layout.itemAtPosition(*where)
+    else:
+        item = layout.itemAt(*where)
+    if item is None:
+        return None
+    try:
+        return read(item)
+    finally:
+        release_layout_item(item)
+
+
+def release_layout_item(item) -> None:
+    """Unregister the wrapper of a layout item that Qt owns (see
+    :func:`read_layout_item`). A nested layout is a QObject, which PySide
+    follows itself, and an item made in Python (a FlowLayout keeps its
+    own) stays as it is."""
+    if not isinstance(item, QObject) and isValid(item) and not createdByPython(item):
+        invalidate(item)
+
+
+def layout_item_widget(layout: QLayout, *where) -> QWidget | None:
+    """The widget of ``layout``'s item at ``where`` (see
+    :func:`read_layout_item`), or None."""
+    return read_layout_item(layout, lambda item: item.widget(), *where)
+
+
+def layout_item_widgets(layout: QLayout) -> list:
+    """The widget of each of ``layout``'s items, in order; None for an item
+    that holds none (a spacer, a nested layout)."""
+    return [layout_item_widget(layout, index) for index in range(layout.count())]
 
 
 def layout_widgets(layout: QLayout) -> list:

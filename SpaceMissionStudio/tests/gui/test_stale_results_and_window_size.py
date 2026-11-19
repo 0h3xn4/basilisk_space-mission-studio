@@ -25,6 +25,8 @@ from pathlib import Path
 
 import pytest
 
+from spacemissionstudio.gui.widgets import read_layout_item
+
 pytestmark = pytest.mark.requires_gui
 
 _TEMPLATES = Path(__file__).resolve().parents[2] / "spacemissionstudio" / "scenarios" / "templates"
@@ -188,6 +190,6 @@ def test_the_window_fits_1280_by_720_with_provenance_and_warning_lines(app_theme
     assert (window.width(), window.height()) == (1280, 720)
     rw = window.results_widget
     for note in (rw.provenance_label,):
-        item = rw.layout().itemAt(rw.layout().indexOf(note))
-        assert item.minimumSize().height() <= 2 * note.fontMetrics().lineSpacing() + 4, note.text()  # [px]
+        least = read_layout_item(rw.layout(), lambda item: item.minimumSize(), rw.layout().indexOf(note))
+        assert least.height() <= 2 * note.fontMetrics().lineSpacing() + 4, note.text()  # [px]
         assert note.height() >= note.fontMetrics().height()  # still shown in full at the window's width

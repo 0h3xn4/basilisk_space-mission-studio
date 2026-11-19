@@ -23,14 +23,16 @@ by a unique descriptive name)."""
 import pytest
 from PySide6.QtWidgets import QFormLayout, QLabel
 
+from spacemissionstudio.gui.widgets import layout_item_widget
+
 
 def _form_labels(widget) -> list:
     labels = []
     for form in widget.findChildren(QFormLayout):
         for row in range(form.rowCount()):
-            item = form.itemAt(row, QFormLayout.ItemRole.LabelRole)
-            if item is not None and isinstance(item.widget(), QLabel):
-                labels.append(item.widget().text())
+            label = layout_item_widget(form, row, QFormLayout.ItemRole.LabelRole)
+            if isinstance(label, QLabel):
+                labels.append(label.text())
     return labels
 
 

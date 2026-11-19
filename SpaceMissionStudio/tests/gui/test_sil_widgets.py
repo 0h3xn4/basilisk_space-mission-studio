@@ -29,6 +29,8 @@ from pathlib import Path
 
 import pytest
 
+from spacemissionstudio.gui.widgets import layout_item_widgets
+
 pytestmark = pytest.mark.requires_gui
 
 _TEMPLATES = Path(__file__).resolve().parents[2] / "spacemissionstudio" / "scenarios" / "templates"
@@ -124,8 +126,7 @@ def test_the_comparison_panel_shows_the_numbers_and_saves_the_report(qtbot, tmp_
     report = _report()
     report.log_tail = "fsw_host: connected\n"
     panel.show_report(report)
-    tiles = [panel.tiles_row.itemAt(i).widget() for i in range(panel.tiles_row.count())
-             if panel.tiles_row.itemAt(i).widget() is not None]
+    tiles = [tile for tile in layout_item_widgets(panel.tiles_row) if tile is not None]
     texts = [label.text() for tile in tiles for label in tile.findChildren(type(panel.title_label))]
     assert "3" in texts and "Max |residual|" in texts and "Round trip p99" in texts
     assert "2 (rw_torqueOutMsg.torque[0])" in texts  # the worst signal named: the signals' units differ
@@ -176,7 +177,6 @@ def test_the_comparison_table_shows_each_signals_unit(qtbot):
     units = {panel.table.item(row, 0).text(): panel.table.item(row, len(header) - 1).text()
              for row in range(panel.table.rowCount())}
     assert units[report.signals[0].name] == "Nm" and set(units.values()) <= {"Nm", "-"}
-    tiles = [panel.tiles_row.itemAt(i).widget() for i in range(panel.tiles_row.count())
-             if panel.tiles_row.itemAt(i).widget() is not None]
+    tiles = [tile for tile in layout_item_widgets(panel.tiles_row) if tile is not None]
     texts = [label.text() for tile in tiles for label in tile.findChildren(type(panel.title_label))]
     assert f"2 Nm ({report.signals[0].name})" in texts

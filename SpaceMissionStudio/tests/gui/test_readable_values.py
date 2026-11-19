@@ -21,6 +21,8 @@ dialogs that never cut off their own text (gui.theme.dialogs)."""
 
 import pytest
 
+from spacemissionstudio.gui.widgets import layout_item_widget
+
 pytestmark = pytest.mark.requires_gui
 
 
@@ -31,9 +33,9 @@ def test_a_value_sheet_gives_each_value_its_row(qtbot):
 
     sheet = ValueSheet("Mass", [("Mass", "86", "kg"), ("Eccentricity", "0.001", "")], note="From B")
     qtbot.addWidget(sheet)
-    value = sheet.grid.itemAtPosition(0, 1).widget()
+    value = layout_item_widget(sheet.grid, 0, 1)
     assert value.text() == "86" and value.alignment() & Qt.AlignmentFlag.AlignRight
-    assert sheet.grid.itemAtPosition(0, 2).widget().text() == "kg"
+    assert layout_item_widget(sheet.grid, 0, 2).text() == "kg"
     assert sheet.value("Eccentricity") == "0.001"
     assert sheet.text() == "Mass\nMass: 86 kg\nEccentricity: 0.001\nFrom B"
     empty = ValueSheet("Page", empty="No values yet.")
@@ -48,8 +50,8 @@ def test_a_value_table_aligns_numbers_right(qtbot):
 
     table = ValueTable("Inertia [kg m²]", ["", "x", "y"], [["x", "14.0", "0"], ["y", "0", "12.5"]], numeric=(1, 2))
     qtbot.addWidget(table)
-    assert table.grid.itemAtPosition(1, 1).widget().alignment() & Qt.AlignmentFlag.AlignRight
-    assert table.grid.itemAtPosition(1, 0).widget().alignment() & Qt.AlignmentFlag.AlignLeft
+    assert layout_item_widget(table.grid, 1, 1).alignment() & Qt.AlignmentFlag.AlignRight
+    assert layout_item_widget(table.grid, 1, 0).alignment() & Qt.AlignmentFlag.AlignLeft
     assert table.text().splitlines()[1:] == ["\tx\ty", "x\t14.0\t0", "y\t0\t12.5"]
 
 
@@ -133,7 +135,7 @@ def test_text_values_in_a_sheet_keep_the_body_font(qtbot):
     sheet = ValueSheet("Launcher", [("Envelope", "Fairing A", ""), ("Faceting error", "0.42", "mm"),
                                     ("Offset", "-.5", "m"), ("Iterations", "4", "")])
     qtbot.addWidget(sheet)
-    numeric = [bool(sheet.grid.itemAtPosition(row, 1).widget().property("smsNumeric")) for row in range(4)]
+    numeric = [bool(layout_item_widget(sheet.grid, row, 1).property("smsNumeric")) for row in range(4)]
     assert numeric == [False, True, True, True]
 
 

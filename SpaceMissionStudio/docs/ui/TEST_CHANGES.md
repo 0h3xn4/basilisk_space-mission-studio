@@ -2606,3 +2606,28 @@ Reference data window shows the bundled file's own range in that row.
 
 The three tests in `tests/test_spaceweather.py` that pin the shipped
 file's raw lines read the new lines, as at the 2.8.0 refresh.
+
+## Release 2.13.0: layout items read through the helpers
+
+A Python `itemAt()` or `itemAtPosition()` call on a layout left the
+item's wrapper registered after Qt deleted the item, and a later object
+could get it (HISTORY.md, "2.13.0: stale layout item wrappers"). These
+tests read layout items with `gui.widgets.layout_item_widget`,
+`layout_item_widgets` or `read_layout_item` now. Each reads the same
+item as before; no assertion changed.
+
+| Test (file) | Before | Now |
+|---|---|---|
+| `test_field_errors.py` | `form.itemAt(1, FieldRole).widget()` | `layout_item_widget(form, 1, FieldRole)` |
+| `test_frame_tags.py` (`_form_labels`) | `form.itemAt(row, LabelRole)` | `layout_item_widget(form, row, LabelRole)` |
+| `test_main_window.py` | `_tiles_row.itemAt(i).widget()` | `layout_item_widgets(_tiles_row)` |
+| `test_mission_guide.py` | `layout.itemAt(0).widget()` | `layout_item_widget(layout, 0)` |
+| `test_monte_carlo_results_widget.py` | `tiles_row.itemAt(i).widget()` | `layout_item_widgets(tiles_row)` |
+| `test_readable_values.py` | `grid.itemAtPosition(r, c).widget()` | `layout_item_widget(grid, r, c)` |
+| `test_scenario_editor.py` (labels helper) | `form.itemAt(row, LabelRole)` | `layout_item_widget(form, row, LabelRole)` |
+| `test_shell.py` | `top.itemAt(i).widget()` | `layout_item_widgets(top)` |
+| `test_sil_widgets.py` (two tests) | `tiles_row.itemAt(i).widget()` | `layout_item_widgets(tiles_row)` |
+| `test_stale_results_and_window_size.py` | `layout.itemAt(index).minimumSize()` | `read_layout_item(layout, lambda item: item.minimumSize(), index)` |
+| `test_thermal_page_audit.py` | `layout.itemAt(i).minimumSize()`, `.widget()` | `read_layout_item(...)` for each |
+
+Added: `tests/gui/test_layout_items.py` (4 tests).

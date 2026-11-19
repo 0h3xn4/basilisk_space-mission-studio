@@ -20,6 +20,8 @@ from pathlib import Path
 
 import pytest
 
+from spacemissionstudio.gui.widgets import layout_item_widget
+
 pytestmark = pytest.mark.requires_gui
 
 _SCENARIO_PATH = Path(__file__).resolve().parent.parent.parent / "spacemissionstudio" / "scenarios" / "two_body_validation.json"
@@ -49,9 +51,9 @@ def _environment_labels(widget) -> list:
     labels = []
     for form in widget._environment_form.findChildren(QFormLayout):
         for row in range(form.rowCount()):
-            item = form.itemAt(row, QFormLayout.ItemRole.LabelRole)
-            if item is not None and isinstance(item.widget(), QLabel):
-                labels.append(item.widget().property("sms_full_label") or item.widget().text())
+            label = layout_item_widget(form, row, QFormLayout.ItemRole.LabelRole)
+            if isinstance(label, QLabel):
+                labels.append(label.property("sms_full_label") or label.text())
     return labels
 
 
@@ -174,7 +176,7 @@ def test_an_invalid_environment_edit_leaves_state_unchanged(widget, monkeypatch)
 
 def test_third_body_perturbers_round_trip(widget):
     """The Sun and Moon as third bodies come back from the editor."""
-    from spacemissionstudio.schema.scenario import GravityConfig, Scenario, SpacecraftConfig, OrbitIC
+    from spacemissionstudio.schema.scenario import GravityConfig, OrbitIC, Scenario, SpacecraftConfig
 
     scenario = Scenario(
         name="t", epoch_utc="2030-01-01T00:00:00",

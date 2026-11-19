@@ -262,6 +262,10 @@ reworked, and the bundled space weather is current again.
   whole at 1280 px with the Inspector open. The Budgets grids fit the
   window at 1280 px: long headings are two lines, and the three grids
   under the equipment list share the row by what each needs.
+- Moving a view into its own window no longer fails now and then with an
+  error about a "QWidgetItem". Reading a layout's items left stale
+  references behind, and a new window could pick one of them up. The
+  window now reads layout items in a way that leaves nothing behind.
 
 ### Who should update
 
