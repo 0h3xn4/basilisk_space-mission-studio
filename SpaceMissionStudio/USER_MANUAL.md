@@ -249,10 +249,11 @@ A few things to notice right away:
     90, 100, 110 or 125 %, from the next start, unless the
     `QT_SCALE_FACTOR` environment variable sets one; **Reduce motion**:
     notifications appear and go without fading; **Plot units**: the
-    plots, the run comparison and the Thermal plots' time axis in display
-    units, the default: positions, altitudes and distances in km, angles
-    in degrees, body rates in degrees per second, wheel speeds in RPM and
-    the elapsed time in hours (velocity and delta-V stay in m/s); or
+    plots, the run comparison and the Thermal plots' time axis in
+    **Display units (altitudes in km, °, h)**, the default: altitudes,
+    semi-major axes and distances in km, angles in degrees, body rates in
+    degrees per second, wheel speeds in RPM and the elapsed time in hours
+    (position stays in m, velocity and delta-V in m/s); or
     **As recorded**, the values and units the run recorded and the CSV
     exports hold, SI (m, rad, rad/s), with the elapsed time in seconds;
     the exports are SI either way), **Reference data**,

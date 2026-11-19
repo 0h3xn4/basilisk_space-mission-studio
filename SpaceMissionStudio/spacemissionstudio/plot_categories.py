@@ -88,16 +88,17 @@ class SeriesDisplay:
 def _vector_display(name: str) -> SeriesDisplay | None:
     """State-vector and attitude/actuator vector series -- every one of
     these already has ("x","y","z") or equivalent columns in
-    ``engine.service``. In the display units (Settings > Appearance >
-    Plot units, "Display units (km, °, h)"), position shows in km, a body
-    rate in deg/s and a wheel speed in RPM, as the wheel's own fields
-    (UI audit B10). Velocity stays in m/s, as the user asked ("state
-    vector elements shall be displayed in meters for position and m/s for
-    velocity"); "As recorded" shows position in m and the rates in rad/s
+    ``engine.service``. Position and velocity display in m and m/s in
+    both Plot units choices, by the owner's rule ("state vector elements
+    shall be displayed in meters for position and m/s for velocity"; a
+    reversal of an earlier blanket km rule, see :func:`legacy_display`).
+    In the display units (Settings > Appearance > Plot units) a body rate
+    shows in deg/s and a wheel speed in RPM, the unit of the wheel's own
+    fields (UI audit B10); "As recorded" shows them in rad/s
     (:func:`shown`). Torque and the other series keep Basilisk's units.
     """
     if name.endswith(".position_N"):
-        return SeriesDisplay("Inertial Position (ECI)", "Position", "km", 1e-3, dict(_XYZ_LABELS))
+        return SeriesDisplay("Inertial Position (ECI)", "Position", "m", 1.0, dict(_XYZ_LABELS))
     if name.endswith(".velocity_N"):
         return SeriesDisplay("Inertial Velocity (ECI)", "Velocity", "m/s", 1.0, dict(_XYZ_LABELS))
     if name.endswith(".position_P"):

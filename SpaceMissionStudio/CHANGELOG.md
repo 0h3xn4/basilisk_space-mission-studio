@@ -166,10 +166,12 @@ fixes bugs.
   the first six colours differs clearly in both themes, also with a
   red-green or a blue-yellow colour-vision deficiency, and each colour
   reads against the plot background.
-- With Settings › Plot units "Display units (km, °, h)", a position plot
-  reads km (it read m), a body rate and a gyroscope degrees per second,
-  and a wheel speed RPM. "As recorded" shows m, rad/s and seconds. The
-  Thermal plots' time axis follows the choice too. Axis titles write the
+- Settings › Plot units says what it does: "Display units (altitudes in
+  km, °, h)". Position stays in m and velocity and delta-V in m/s, by
+  the owner's rule. With the display units a body rate and a gyroscope
+  now read degrees per second, and a wheel speed RPM. "As recorded"
+  shows rad/s and seconds. The Thermal plots' time axis follows the
+  choice too. Axis titles write the
   unit as the rest of the window does ("Inclination [°]", "Torque
   [N·m]"). The exported files do not change.
 - End of Life draws perigee and apogee in plot colours instead of the

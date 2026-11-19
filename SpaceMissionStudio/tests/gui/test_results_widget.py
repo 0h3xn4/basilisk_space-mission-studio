@@ -774,13 +774,10 @@ def test_typing_an_exact_series_name_and_pressing_enter_redraws_the_plot(widget,
 def test_position_series_plots_in_raw_meters(widget):
     """Regression guard for a real, explicit user request ("state vector
     elements shall be displayed in meters for position and m/s for
-    velocity"): with Settings > Plot units "As recorded" the position
-    plots in raw metres. The display units show it in km (UI audit B10,
-    tests/gui/test_plot_units.py); see _vector_display()'s docstring.
+    velocity") that REVERSED this module's own earlier km-conversion
+    decision for exactly these two series -- see results_widget's module
+    docstring and _vector_display()'s own docstring.
     """
-    from spacemissionstudio.gui import units
-
-    units.set_plot_units("recorded")
     rs = _sample_result_set()
     raw_x_m = rs.series["sat-1.position_N"].data[:, 0]
 

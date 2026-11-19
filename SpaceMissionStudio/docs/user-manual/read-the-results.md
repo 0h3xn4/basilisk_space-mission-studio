@@ -96,11 +96,11 @@ commands). **Clear Time Cursor**, at the top of Results and the Timeline
 
 ## Units
 
-Every axis and number shows its unit. The plots use display units:
-positions, altitudes and semi-major axes in km, angles in degrees, body
-rates in degrees per second, wheel speeds in RPM, the elapsed time in
-hours since t0 (TDB, the simulation's clock). Velocity and delta-V stay
-in m/s. To see the values as the run recorded them, in SI (m, rad,
+Every axis and number shows its unit. The plots use display units
+(**Display units (altitudes in km, °, h)**): altitudes and semi-major
+axes in km, angles in degrees, body rates in degrees per second, wheel
+speeds in RPM, the elapsed time in hours since t0 (TDB, the simulation's
+clock). Position stays in m, velocity and delta-V in m/s. To see the values as the run recorded them, in SI (m, rad,
 rad/s, s), as the CSV exports hold them, choose **Settings > Appearance >
 Plot units > As recorded**. The Thermal plots' time axis follows the same
 choice. The exports are SI either way.

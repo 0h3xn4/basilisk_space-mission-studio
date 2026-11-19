@@ -96,10 +96,11 @@ unambiguous, not follow a plot-only display preference):
   category's own explicit unit choice, and only an uncategorized/future
   series (``_legacy_display()``) falls back to the old blanket rule.
   Since Settings > Appearance > Plot units the display units are
-  one of two choices: "Display units (km, °, h)" shows position in km,
-  angles and rates in degrees and a wheel speed in RPM (UI audit B10);
-  "As recorded" shows every series in the SI unit it records (position
-  in metres, as the request above asked), as the CSV export does.
+  one of two choices: "Display units (altitudes in km, °, h)" keeps the
+  rules above (position in m, velocity and delta-V in m/s, altitudes and
+  semi-major axes in km) and shows angles and rates in degrees and a
+  wheel speed in RPM (UI audit B10); "As recorded" shows every series in
+  the SI unit it records, as the CSV export does.
   Orbital angle elements (inclination/RAAN/argument of periapsis/true
   anomaly, osculating and mean alike) additionally display in degrees,
   not Basilisk's native radians -- matching every angle INPUT field this

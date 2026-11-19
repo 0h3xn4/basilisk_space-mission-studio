@@ -223,8 +223,9 @@ exported files keep their fixed 900 x 420 look.
 units, written as the window writes them (`units.axis_title`: "Inclination
 [°]", "Torque [N·m]"; "[-]" for a dimensionless axis without a name). The
 values and units follow Settings > Appearance > Plot units
-(`plot_categories.shown`): the display units (km, °, h; body rates in °/s,
-wheel speeds in RPM, velocity and delta-V in m/s) or as recorded (SI); the
+(`plot_categories.shown`): the display units (altitudes and semi-major
+axes in km, °, h; body rates in °/s, wheel speeds in RPM; position in m,
+velocity and delta-V in m/s, the owner's rule) or as recorded (SI); the
 Thermal plots' time axis follows it too, and no exported file changes. The
 time cursor is drawn in the accent: it is a selection.
 

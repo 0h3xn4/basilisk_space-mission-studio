@@ -96,7 +96,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `tests/gui/test_phasing_formation_dialog.py` | Tests for gui.phasing_formation_dialog.PhasingFormationDialog. | 15 | integration | Qt (offscreen) |
 | `tests/gui/test_plan_page.py` | Run › Plan (SRS-F-30): the Gantt chart (rows, bars, a drag held within the window), the page (Plan on a background thread, the tables, the status at the time cursor, lock, unlock, delete, move, lose a pass, robustness, e | 10 | integration | Qt (offscreen) |
 | `tests/gui/test_plausibility_checks.py` | Plausibility checks while editing (UX/UI guidelines): a perigee below the surface, an inconsistent state, a run outside the installed data. | 5 | integration | Qt (offscreen) |
-| `tests/gui/test_plot_units.py` | The plots' units (UI audit B10, UI-12): with Settings > Appearance > Plot units "Display units (km, °, h)" a position axis reads km, angles and rates degrees and time hours; "As recorded" reads the SI unit each series re | 4 | integration | Qt (offscreen) |
+| `tests/gui/test_plot_units.py` | The plots' units (UI audit B10): with Settings > Appearance > Plot units "Display units (altitudes in km, °, h)" angles and rates read degrees, a wheel speed RPM and time hours, while position stays in m and velocity in  | 4 | integration | Qt (offscreen) |
 | `tests/gui/test_plot_view.py` | The plot view of Results (UI overhaul M6a): one persistent page, plotly.js loaded once, each change sent to it; each plot's figure built once and kept until what it shows changes; the layout saved after the click; the st | 5 | integration | Qt (offscreen) |
 | `tests/gui/test_plot_workspace.py` | The Results plot workspace (docs/ux-audit.md U-24 to U-30): the catalog, the grid with linked x axes, the readout, the orbit-number axis, event bands, the epoch subtitle, Export all and the layout kept per scenario. | 22 | integration | Qt (offscreen) |
 | `tests/gui/test_primary_action.py` | One primary action, stable headers (UI audit batch B2). | 15 | integration | Qt (offscreen) |
@@ -1606,8 +1606,8 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 
 | Test case | Purpose | Requirements | Level |
 |---|---|---|---|
-| `test_the_display_units_are_km_degrees_and_rpm_and_as_recorded_is_si` | Each series in the two choices: (unit, factor) in the display units, then as recorded. | - | integration |
-| `test_a_position_plot_reads_km_and_follows_the_setting` | UI-12: the position axis was in m although Plot units said km. | - | integration |
+| `test_the_display_units_are_degrees_and_rpm_and_as_recorded_is_si` | Each series in the two choices: (unit, factor) in the display units, then as recorded. | - | integration |
+| `test_a_position_plot_stays_in_metres_and_its_time_axis_follows_the_setting` | The owner's rule: a position plots in raw metres with either choice. | - | integration |
 | `test_axis_titles_carry_the_unit_as_the_window_writes_it` | "[deg]" reads "[°]", "N*m" "N·m", "W*hr" "Wh", a rate "°/s"; an axis without a name keeps "[-]". | - | integration |
 | `test_the_plot_units_leave_the_exported_data_unchanged` | The CSV files are the same bytes with either choice, and the same as the result's own export: the units change only the display. | - | integration |
 
@@ -1801,7 +1801,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_user_series_change_is_never_throttled_during_a_live_run` | A user-initiated series change must redraw immediately even while still inside a live run's throttle window -- switching series is exactly the interaction the throttle must never block. | - | integration |
 | `test_clicking_a_plot_name_in_the_catalog_redraws_the_plot` | Real user report (from the old series box): picking a series left the OLD plot on screen. | - | integration |
 | `test_typing_an_exact_series_name_and_pressing_enter_redraws_the_plot` | Same real report, other path: typing a plot's title in the catalog's search and pressing Enter shows it. | - | integration |
-| `test_position_series_plots_in_raw_meters` | Regression guard for a real, explicit user request ("state vector elements shall be displayed in meters for position and m/s for velocity"): with Settings > Plot units "As recorded" the position plots in raw metres. | - | integration |
+| `test_position_series_plots_in_raw_meters` | Regression guard for a real, explicit user request ("state vector elements shall be displayed in meters for position and m/s for velocity") that REVERSED this module's own earlier km-conversion decision for exactly these | - | integration |
 | `test_velocity_series_plots_in_raw_m_s` | Velocity is plotted unconverted, in m/s. | - | integration |
 | `test_delta_v_series_always_plots_in_m_s_not_km_s` | Regression guard for the explicit "delta-V shall always be displayed in m/s" request -- delta-V shares the literal "m/s" unit string with velocity, which is exactly why the old blanket unit-string-keyed conversion got th | - | integration |
 | `test_altitude_and_semi_major_axis_series_plot_in_km` | "altitudes, semi-major axes shall be displayed in km" -- both are recorded in raw meters by engine.service (matching every other Basilisk-facing SI field), so the km conversion is display-only here. | - | integration |

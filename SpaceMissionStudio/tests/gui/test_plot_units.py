@@ -15,11 +15,12 @@
 #
 #
 #
-"""The plots' units (UI audit B10, UI-12): with Settings > Appearance >
-Plot units "Display units (km, °, h)" a position axis reads km, angles and
-rates degrees and time hours; "As recorded" reads the SI unit each series
-records. Axis titles carry the unit as the window writes it ("[°]"). The
-exported data never changes with the choice."""
+"""The plots' units (UI audit B10): with Settings > Appearance > Plot
+units "Display units (altitudes in km, °, h)" angles and rates read
+degrees, a wheel speed RPM and time hours, while position stays in m and
+velocity in m/s (the owner's rule); "As recorded" reads the SI unit each
+series records. Axis titles carry the unit as the window writes it
+("[°]"). The exported data never changes with the choice."""
 
 import numpy as np
 import pytest
@@ -50,16 +51,17 @@ def _result() -> ResultSet:
     return result
 
 
-def test_the_display_units_are_km_degrees_and_rpm_and_as_recorded_is_si():
+def test_the_display_units_are_degrees_and_rpm_and_as_recorded_is_si():
     """Each series in the two choices: (unit, factor) in the display units,
-    then as recorded."""
+    then as recorded. Position, velocity and semi-major axis keep the
+    owner's units in the display units."""
     result = _result()
     result.add(_series("sat-1.sensor.imu-1.gyro", ("x", "y", "z"), "rad/s", 1.0e-3))
-    result.add(_series("ephemeris.sun.position_N", ("x", "y", "z"), "m", 1.5e11))
+    result.add(_series("sat-1.orbit_elements.semi_major_axis", ("a",), "m", 7.0e6))
     expected = {
-        "sat-1.position_N": (("km", 1e-3), ("m", 1.0)),
-        "ephemeris.sun.position_N": (("km", 1e-3), ("m", 1.0)),
-        "sat-1.velocity_N": (("m/s", 1.0), ("m/s", 1.0)),  # the user's request: velocity in m/s
+        "sat-1.position_N": (("m", 1.0), ("m", 1.0)),  # the owner's rule: position in m, velocity in m/s
+        "sat-1.velocity_N": (("m/s", 1.0), ("m/s", 1.0)),
+        "sat-1.orbit_elements.semi_major_axis": (("km", 1e-3), ("m", 1.0)),  # and semi-major axis in km
         "sat-1.body_rate_omega_BN_B": (("deg/s", 180.0 / np.pi), ("rad/s", 1.0)),
         "sat-1.sensor.imu-1.gyro": (("deg/s", 180.0 / np.pi), ("rad/s", 1.0)),
         "sat-1.rw_speeds": (("RPM", 30.0 / np.pi), ("rad/s", 1.0)),
@@ -69,17 +71,19 @@ def test_the_display_units_are_km_degrees_and_rpm_and_as_recorded_is_si():
         series = result.series[name]
         for found, (unit, factor) in ((shown(name, series), display), (shown(name, series, recorded=True), recorded)):
             assert (found.unit, found.factor) == (unit, pytest.approx(factor)), name
+    # the setting says what it does: km only for altitudes (and orbit size), not for position
+    assert dict(units.PLOT_UNITS)["display"] == "Display units (altitudes in km, °, h)"
 
 
-def test_a_position_plot_reads_km_and_follows_the_setting(qtbot):
-    """UI-12: the position axis was in m although Plot units said km. With
-    the display units it reads "Position [km]" and the values are in km,
-    over hours; as recorded, "Position [m]" over seconds."""
+def test_a_position_plot_stays_in_metres_and_its_time_axis_follows_the_setting(qtbot):
+    """The owner's rule: a position plots in raw metres with either choice.
+    The elapsed time is in hours with the display units and in seconds as
+    recorded."""
     from spacemissionstudio.gui.results_widget import ResultsWidget
 
     result = _result()
     raw_m = result.series["sat-1.position_N"].data[:, 0]
-    for choice, title, factor, x_title in (("display", "Position [km]", 1e-3, "Elapsed time since t0, TDB [h]"),
+    for choice, title, factor, x_title in (("display", "Position [m]", 1.0, "Elapsed time since t0, TDB [h]"),
                                            ("recorded", "Position [m]", 1.0, "Elapsed time since t0, TDB [s]")):
         units.set_plot_units(choice)
         widget = ResultsWidget()

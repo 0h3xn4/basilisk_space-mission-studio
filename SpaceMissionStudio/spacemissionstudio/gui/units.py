@@ -93,7 +93,7 @@ def plot_unit(unit: str) -> str:
 
 
 def axis_title(name: str, unit: str) -> str | None:
-    """A plot's value axis title: "Position [km]", "[-]" without a name, or
+    """A plot's value axis title: "Semi-major axis [km]", "[-]" without a name, or
     None with neither."""
     if name:
         return f"{name} [{plot_unit(unit)}]"
@@ -130,7 +130,9 @@ def split_label(text: str) -> tuple[str, str | None]:
 # -- the plots' units (transparency plan, Phase 8a) -----------------------------------------------
 
 PLOT_UNITS_KEY = "appearance/plot_units"
-PLOT_UNITS = (("display", "Display units (km, °, h)"), ("recorded", "As recorded (SI, as the CSV exports)"))
+# "Display units": altitudes, semi-major axes and distances in km, position in m and velocity and delta-V in
+# m/s (the owner's rule, HISTORY "per-category unit policy"), angles in degrees, time in hours.
+PLOT_UNITS = (("display", "Display units (altitudes in km, °, h)"), ("recorded", "As recorded (SI, as the CSV exports)"))
 
 
 def _settings():

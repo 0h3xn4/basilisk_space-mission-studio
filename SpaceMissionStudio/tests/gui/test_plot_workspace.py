@@ -296,8 +296,8 @@ def test_the_readout_follows_the_cursor_and_the_pointer(widget):
     assert widget.readout.time_label.text().endswith("(cursor)") and "orbit 0.250 of sat-1" in \
         widget.readout.time_label.text()
     y = next(row for row in rows if row[0] == "Y")
-    assert float(y[1].replace(",", "")) == pytest.approx(_RADIUS * math.cos(math.radians(97.6)) / 1000.0, rel=1e-3)
-    assert y[2] == "km"  # the display units (UI audit B10)
+    assert float(y[1].replace(",", "")) == pytest.approx(_RADIUS * math.cos(math.radians(97.6)), rel=1e-3)
+    assert y[2] == "m"
     assert ("Mode", "0", "-") in rows
     widget._on_page_title(plot_page.HOVER_MESSAGE + f"1@{1.5 * _PERIOD / 3600.0}|1")  # [h]
     assert widget.readout.time_label.text().endswith("(pointer)") and ("Mode", "1", "-") in widget.readout.rows()

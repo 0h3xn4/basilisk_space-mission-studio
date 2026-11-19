@@ -4369,21 +4369,33 @@ open in its own window.
   on black space and on the Earth's image in both themes. The light
   steps are made for white: the new light indigo has 2.7:1 against
   black. Every dark step has 3.5:1 or more against black.
-- **Decision:** with "Display units (km, °, h)" a position (`position_N`,
-  also the Sun's and the planets') shows in km, a body rate and a
-  gyroscope in deg/s, and a wheel speed in RPM. "As recorded" shows the
-  recorded SI unit (m, rad/s). Velocity and delta-V stay in m/s in both.
-  **Why:** UI-12: the setting's own name says km, and a position axis
-  read m. RPM is the unit of the wheel's own fields (`Omega_max`, the
-  wizard's wheel biases). The user's earlier request ("state vector
-  elements shall be displayed in meters for position and m/s for
-  velocity", HISTORY) is still met by "As recorded"; velocity keeps m/s
-  in both choices, as asked, and so does delta-V. Small quantities that
-  read better in m keep m in both: the navigation errors, the relative
-  semi-major axis and the ROE diagram's metres.
+- **Decision:** a position (`position_N`) stays in m and velocity and
+  delta-V in m/s in both Plot units choices. Altitudes and semi-major
+  axes stay in km in the display units. **Why:** the owner's rule
+  (HISTORY, "Result plots: titles/axes/legends ... a per-category unit
+  policy"): "delta-V shall always be displayed in m/s"; "altitudes,
+  semi-major axes shall be displayed in km"; "state vector elements
+  shall be displayed in meters for position and m/s for velocity". The
+  display units are the default, so a km position would break the rule
+  for every user. UI-12 called the m axis a defect; the review found
+  that the setting's name was wrong, not the plot. A first version of
+  this batch showed position in km; it was reverted before the merge.
+- **Decision:** the display choice is called "Display units (altitudes
+  in km, °, h)" (it was "Display units (km, °, h)"). Its tooltip lists
+  the units in full: altitudes, semi-major axes and distances in km,
+  position in m, velocity and delta-V in m/s, angles in degrees, elapsed
+  time in hours. **Why:** the old name promised km for every length. The
+  new name is short enough for the 320 px drop-down list without "…"
+  (207 px of text at the default font; the test checks it is whole).
+- **Decision:** with the display units a body rate and a gyroscope show
+  in deg/s and a wheel speed in RPM; "As recorded" shows rad/s. **Why:**
+  the setting says angles in degrees. RPM is the unit of the wheel's own
+  fields (`Omega_max`, the wizard's wheel biases). Small quantities keep
+  m in both choices: the navigation errors, the relative semi-major axis
+  and the ROE diagram's metres.
 - **Decision:** the Mission sequence Output table takes the same display
-  units as the plots (position in km now) but does not follow Plot
-  units. **Why:** it is a table, not a plot; its CSV export is SI.
+  units as the plots but does not follow Plot units. **Why:** it is a
+  table, not a plot; its CSV export is SI.
 - **Decision:** the Thermal plots on screen follow Plot units on their
   time axis: hours, or seconds as recorded. Temperatures stay in °C and
   heat in W: the thermal CSV files hold them so. The exported SVG and
