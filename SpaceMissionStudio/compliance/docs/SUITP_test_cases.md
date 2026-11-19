@@ -763,7 +763,7 @@ Levels: *unit* runs without Basilisk or Qt; *integration* runs a Basilisk simula
 | `test_the_named_inputs_say_why_they_are_off` | The five of the audit: each tooltip starts with "Off:" and names what turns the input on. | - | integration |
 | `test_a_dry_mass_the_model_gives_says_why_it_is_off` | A spacecraft whose 3D model applies its mass properties: Dry mass is off, and its tooltip says the model gives it and how to type it. | - | integration |
 | `test_the_monte_carlo_page_keeps_its_lines_at_the_top` | Monte Carlo off: its switch and the line on what it does sit at the top of the page, one under the other (the line floated in the middle of the page). | - | integration |
-| `test_the_thermal_editor_fits_the_page` | Template 33's 3D model section at 1280 x 720: the thermal editor's tab row shows every tab whole (it was cut at "Mon"), its tables are model/view grids without grid lines, as tall as their rows, and neither the page nor  | - | integration |
+| `test_the_thermal_editor_fits_the_page` | Template 33's 3D model section at 1280 x 720: the thermal editor's tab row shows every tab whole (it was cut at "Mon"), its tables are model/view grids without grid lines, as tall as their rows, a table is wider than the | - | integration |
 | `test_the_thermal_tables_edit_in_place_and_keep_each_record` | A cell edited in place is what the section reads; Add and Remove add and remove a row; a list without a row shows its empty state with Add. | - | integration |
 | `test_the_third_bodies_are_check_boxes_in_the_form` | No framed box in the form: the list has no frame and the form's background, a row per body at the table-row height, and no scroll bar (it is as tall as its rows). | - | integration |
 
