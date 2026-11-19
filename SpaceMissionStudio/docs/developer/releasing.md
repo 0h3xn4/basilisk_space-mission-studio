@@ -543,6 +543,27 @@ at 08:14; the release workflow ([run 44265254780](https://github.com/0h3xn4/basi
 installed and checked every file, attached the eleven and published the
 release 47 minutes later. It was never a public release without files.
 
+2.13.0 was prepared on 2026-11-19 by this checklist: the UI audit's
+batches B2 to B12 (#285 to #295), with the B11 follow-up (the thermal
+page's least width and the toast follower), a minor release because it
+adds features to the window (the Settings page's controls, the command
+palette's shortcuts and reasons, the About window). No file format changed: `schema/` changed
+only in two comments since 2.12.0, and the templates not at all.
+Checked with 2.12.0's code (the tag, `2718e78`): 2.12.0 and 2.13.0 save
+the 36 templates and a file with a `budgets` section byte for byte the
+same, and each version opens and validates all 37 files of the other
+with no message. The space weather was refreshed: CelesTrak answered the
+first connection (observations to 2026-11-18, updated 2026-11-19), and
+NASA MSFC's November 2026 prediction is still the latest issue (the
+published file equals the bundled one but for whitespace). The golden
+outputs pass unchanged. The documentation's screenshots were retaken
+with `scripts/capture_screenshots.py`; the two dialogs at their earlier
+sizes on a 2560 x 1440 offscreen screen, because the offscreen platform's
+800 x 800 screen cuts them since B1. CI's "Windows (MAX Python)" job, a
+Basilisk framework job, fails one framework test on the runner image
+20261111 (MSVC 19.52); by the owner's decision of 2026-11-19 the release
+pull request is merged with that check red (SRelD K-45).
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

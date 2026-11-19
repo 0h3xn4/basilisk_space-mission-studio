@@ -308,7 +308,7 @@ _INVENTORY = [  # the shape of a real inventory: 19 files, long names, dates and
     ("atmosphere table", "EarthGRAMNominal.txt", "ok", "https://raw.githubusercontent.com/AVSLab/y.txt", ""),
     ("atmosphere table", "NRLMSISE00Nominal.txt", "ok", "https://raw.githubusercontent.com/AVSLab/z.txt", ""),
     ("space weather", "SW-All.txt", "out of date", "bundled with SpaceMissionStudio (CelesTrak SW-All)",
-     "1957-10-01 to 2041-10-31 (observed to 2026-11-14)"),
+     "1957-10-01 to 2041-10-31 (observed to 2026-11-18)"),
     ("solar-activity prediction", "nov2026f10-prd.txt", "ok", "bundled with SpaceMissionStudio (NASA MSFC)", ""),
     ("Earth orientation", "earth_1962_260806_2126_combined.bpc", "ok",
      "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/earth_1962_260806_2126_combined.bpc",

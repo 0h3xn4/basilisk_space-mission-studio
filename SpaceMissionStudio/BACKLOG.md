@@ -16,6 +16,47 @@
   plus 10 ms" rule) and record the change in `docs/ui/TEST_CHANGES.md`. If the cause is Qt's own drawing on the
   runner and no change in the app helps, move the item to
   `## Needs human` with the measurements.
+- Find the cause of the intermittent crashes around background threads
+  (SRelD K-44). Seen on 2026-11-19, none reproduced on demand:
+  - Windows CI, the platforms job's 3D step (`test_live_run_3d`): an
+    access violation in the thread `_SpaceWeatherWarmUp` during a
+    garbage collection, while `_FigureWarmUp` imported plotly and
+    `RunWorker` imported `engine.service`;
+  - Linux CI, one xdist worker: a segmentation fault in
+    `tests/gui/test_results_widget.py::test_an_export_runs_off_the_gui_thread_with_progress_and_cancel`;
+  - a template wizard test: the Qt error "Slot 'MainWindow::' not found".
+  Investigate them as one item. Serialize the warm-up imports (one
+  warm-up thread, or import plotly and the engine on the GUI thread at
+  start) and check for a CPython 3.14 import or garbage-collection
+  problem. Also check every other QObject that keeps Python state while
+  only a Python attribute refers to it, as the toast follower did (B11
+  follow-up). Add a test that fails without the fix where one can be
+  made; otherwise record the measurements and move the item to
+  `## Needs human`.
+- Make the small plot items clear (UI audit, 2026-11-19; SRelD K-46): the event
+  bands share hues with the plotted lines; some Timeline events use the
+  accent colour, which is only for the primary action, selection and
+  focus; an angle that is nearly constant gets long tick labels; the
+  reaction wheel lines are labelled "wheel_0" instead of the wheel's
+  name. The exported files must not change.
+- Run › Thermal › Notes: "Energy residual [J]" mixes significant
+  figures (5.11e+03 and 4.9e+03). Give the column one number of
+  significant figures, as the design rules ask for one quantity.
+- Budgets › Power: with the Inspector open at 1280 px, the items table
+  scrolls inside itself. Make it fit the page, as the other Budgets
+  grids do since B12, and add a test at 1280 px with the Inspector open.
+- A pointing error budget (the owner's feedback, 2026-11-18). Checked on
+  2026-11-19: the app has none. The Budgets area has mass, power and
+  propellant; the System Budget Studio merge plan
+  (`docs/developer/system-budget-merge-design.md`, phase 4) ports only
+  the hold power per pointing mode. Design it clean-room, from the
+  public concepts of ECSS-E-ST-60-10C (the error indices such as
+  absolute and relative performance and knowledge errors, the
+  contributors and their statistical classes, the summation rules).
+  Never copy another tool's name, user interface, files or numbers.
+  Every number has a source or is a placeholder ("TBD"). Write the
+  design and the decisions first; the item needs the owner's choice of
+  scope before code, so move it to `## Needs human` with the design.
 
 ## Done
 

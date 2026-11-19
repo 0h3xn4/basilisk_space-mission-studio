@@ -5,12 +5,14 @@ unmodified except for line endings (stored with LF):
 
 * source: <https://celestrak.org/SpaceData/SW-All.txt>
   (format: <https://celestrak.org/SpaceData/SpaceWx-format.php>);
-* updated 2026-11-15 20:37 UTC;
-* observed daily Kp/Ap and F10.7 from 1957-10-01 to 2026-11-14, CelesTrak's
-  45-day daily forecast to 2026-12-29, and NOAA's monthly F10.7 forecast
-  from 2027-01 to 2041-10;
-* downloaded from the source above on 2026-11-15. The copies before it
-  were downloaded on 2026-11-10 (updated 2026-11-10), on 2026-10-26
+* updated 2026-11-19 17:33 UTC;
+* observed daily Kp/Ap and F10.7 from 1957-10-01 to 2026-11-18, CelesTrak's
+  45-day daily forecast to 2027-01-02, and NOAA's monthly F10.7 forecast
+  from 2027-02 to 2041-10 (the file has no row for 2027-01-03 to
+  2027-01-31; MSFC's prediction below covers those days);
+* downloaded from the source above on 2026-11-19. The copies before it
+  were downloaded on 2026-11-15 (updated 2026-11-15), on 2026-11-10
+  (updated 2026-11-10), on 2026-10-26
   (updated 2026-10-25), on 2026-10-19
   (updated 2026-10-19), on 2026-10-12 (updated 2026-10-12) and, before that
   (updated 2025-07-21), came from the `spaceweather` Python package

@@ -8,7 +8,36 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.13.0 (2026-11-19)
+
+SpaceMissionStudio 2.13.0 is about a window that feels finished. Every
+view was photographed and checked, and this release works through what
+that audit found: forms share one grid and one page margin, every table
+looks and behaves the same, plots use colours that are easy to tell
+apart, and dialogs, notes and empty lists all speak the same quiet
+language. The way runs are computed is unchanged, and files move
+freely between 2.12.0 and 2.13.0.
+
+Most of the changes are small on their own, but you notice them
+together. Each view now has a single accent button, so the top bar's
+**Run** is always the thing to press, and it says why when it cannot
+start. Empty views say what they are waiting for and offer the action
+that fills them. Lists and fields name things the way you would ("Star
+tracker", "Sun pointing") instead of showing internal codes, and groups
+of values sit in short sheets with their units rather than in runs of
+numbers. The Settings page, the top bar, the panels, the status bar,
+the thermal page, Home, the command palette and About were all
+reworked, and the bundled space weather is current again.
+
+### Changed
+
+- **The bundled space weather is current again.** CelesTrak's file,
+  downloaded on 2026-11-19: observations to 2026-11-18 and CelesTrak's
+  daily forecast to 2027-01-02 (they ended on 2026-11-14 and 2026-12-29
+  in 2.8.0 to 2.12.0). CelesTrak also revised its 81-day averages from
+  2026-10-08, so drag on dates from 2026-10-08 to 2027-01-02 changes.
+  Later dates use NASA MSFC's November 2026 prediction, as before, so no
+  template's results change.
 
 ### Fixed
 
@@ -233,6 +262,73 @@ fixes bugs.
   whole at 1280 px with the Inspector open. The Budgets grids fit the
   window at 1280 px: long headings are two lines, and the three grids
   under the equipment list share the row by what each needs.
+
+### Who should update
+
+- **Everyone who uses the window:** forms, tables, plots and dialogs are
+  consistent across the app, and the window tells you why a command is
+  off and what turns it on. Nothing you computed before changes.
+- **Anyone on a 1280 px wide screen:** Reports › Exports, the thermal
+  page, the Reference data window and the Budgets grids fit without a
+  sideways scroll bar, and the Inspector starts closed on a window
+  narrower than 1440 px.
+- **Anyone who reads plots closely,** including with a red-green or
+  blue-yellow colour-vision deficiency: the first six series colours
+  differ clearly in both themes, and the display units now cover body
+  rates, gyroscopes and wheel speeds.
+- **Keyboard users:** the command palette shows every shortcut in its
+  own column and explains a command that cannot run.
+- **Anyone running drag studies near today's date:** the bundled space
+  weather has observations to 2026-11-18.
+- **Compatibility:** the scenario format is unchanged (schema version
+  5). 2.12.0 and 2.13.0 save the 36 templates and a file with a
+  `budgets` section byte for byte the same, and each opens every file
+  the other saves. Results, the command line and the files it writes are
+  as in 2.12.0. Run › Log no longer lists the run's progress lines; the
+  log file still has them.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.13.0_amd64.deb` replaces 2.12.0; on Windows, run
+  the 2.13.0 setup over 2.12.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **One CI check of the Basilisk framework is red on Windows, and it
+  does not affect SpaceMissionStudio's results.** The repository also
+  runs the Basilisk framework's own tests. On GitHub's newer Windows
+  runner (image 20261111, with the MSVC 19.52 compiler) the framework
+  test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+  fails in the "Windows (MAX Python)" job; it passes with MSVC 19.51.
+  That test and that build belong to the framework, which
+  SpaceMissionStudio never changes, and the installers carry Basilisk
+  2.12.0 from PyPI, not a build from this repository. The owner decided
+  on 2026-11-19 to merge with this one check red. SpaceMissionStudio's
+  own workflow, which tests and builds the release, is a separate check.
+- **Rare crashes around background threads were seen in testing.** On
+  2026-11-19 three intermittent faults turned up in CI and could not be
+  reproduced on demand: a Windows access violation while three
+  background threads loaded the space weather, the plot library and the
+  simulation engine at once, a Linux crash in a test that cancels an
+  export, and a Qt "slot not found" error in a template wizard test.
+  None has been reported from use of the app so far, and the cause is
+  being investigated.
+- **A few plot details are still rough.** Event bands can share a hue
+  with a plotted line, some Timeline events are drawn in the accent
+  colour, an angle that hardly changes can get long tick labels, and
+  reaction wheel lines are labelled `wheel_0` rather than by name.
+- **Run › Thermal › Notes** writes the energy residual (`Energy residual
+  [J]`) with two or three significant figures from case to case.
+- **Budgets › Power:** with the Inspector open on a 1280 px wide window,
+  the items table scrolls inside itself.
+- **The Budgets area can take 50 ms or more to show on a slow Windows
+  machine,** as in 2.12.0 (50 to 81 ms on the Windows CI runner when it
+  moves into its own window or back).
+- **The 3D View without a graphics card is slow,** as in 2.12.0: about
+  15 frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.12.0 (2026-11-18)
 
