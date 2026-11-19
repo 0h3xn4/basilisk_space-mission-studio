@@ -19,37 +19,61 @@
 
 :data:`CATEGORICAL` is the 8-colour categorical palette of every plot and
 diagram, in a fixed order: series take slots in order and never cycle
-back to a slot already in use. It was searched for in OKLCH and checked
-with the data-visualisation validator (``docs/DECISIONS.md``):
+back to a slot already in use. It was searched for in OKLCH (UI audit B10,
+``docs/DECISIONS.md``) and is checked by ``tests/gui/test_theme.py``:
 
-* light, on ``bg.surface`` #FFFFFF: worst adjacent colour-vision-deficiency
-  separation Delta E 14.3 (protan), worst adjacent normal-vision Delta E
-  20.8, every colour at least 3:1 against the surface;
-* dark, on ``bg.surface`` #111418: worst adjacent CVD Delta E 14.8
-  (deutan), normal-vision 15.2, every colour at least 3:1;
-* every colour at least Delta E 8 from every status colour (icon and text
-  values) and from the accent, so a series is never read as a status.
+* **every pair of the first six slots** (:data:`SHOWN_TOGETHER`: a plot's
+  x, y and z, a quaternion's four parts, the event timeline's six kinds)
+  is at least CIEDE2000 Delta E 18 apart with normal vision and at least
+  10 under simulated protanopia and deuteranopia and 7.5 under
+  tritanopia (Machado, Oliveira and Fernandes 2009, severity 1). The
+  first three slots (x, y, z) are at least 30 apart, and 20 under each
+  simulation. Measured: normal 25.1 (light) and 19.1 (dark), protan and
+  deutan 12.3 and 10.4, tritan 10.3 and 8.1;
+* neighbouring slots of all eight are at least OKLab Delta E 15 apart;
+* the data-visualisation validator passes in both themes, for adjacent
+  pairs (all eight) and for all pairs of the first six;
+* every colour is at least 3:1 against ``bg.surface`` (light #FFFFFF, dark
+  #111418), inside the validator's lightness band and chroma floor;
+* every colour is at least OKLab Delta E 9 from every status colour (icon
+  and text values) and from the accent, and one closer than 15 has a hue
+  at least 15 degrees away, so a series is never read as a status.
 
-It is validated for adjacent pairs (lines, bars, stacks: every chart in
-the GUI today). With all 28 pairs side by side (a scatter of eight
-groups) two pairs fall below the floors in each theme, which is why every
-chart keeps a legend: colour is never the only cue.
+Each slot keeps its hue family in both themes: indigo, olive, brick,
+teal, magenta, violet, plum, orchid. Slots 7 and 8 are checked for
+adjacent pairs only; a plot with more than six series keeps its legend,
+so colour is never the only cue.
+
+What is drawn on black space or on the Earth's image (Results › 3D View,
+the live map) takes the dark theme's steps in both themes
+(:func:`depicted`): the light steps are made for a white surface.
 """
 
 from __future__ import annotations
 
 
-# Hue order (OKLCH h): orchid 325, brown 65, purple 305, green 135, teal
-# 185, blue 265, crimson 10, ocean 225.
+# Hue order (OKLCH h): indigo 280, olive 120, brick 30, teal 190, magenta
+# 345, violet 295, plum 310, orchid 330.
 CATEGORICAL: dict[str, list[str]] = {
-    "light": ["#AE59B4", "#8A3600", "#6C25A4", "#236400", "#00A596", "#5283FE", "#B80040", "#005F93"],
-    "dark": ["#CA4ED3", "#B36C0D", "#8B63B6", "#458604", "#00A794", "#3163F1", "#DA185B", "#007CB1"],
+    "light": ["#4C32D4", "#839A0D", "#922116", "#0AA39C", "#B40677", "#9780F7", "#7D4E9D", "#D042C9"],
+    "dark": ["#5B4AEA", "#929D03", "#9D4B46", "#15A8AE", "#BE1099", "#B76CE9", "#72579D", "#C642D0"],
 }
+# The most series a standard plot shows together, each in its own colour:
+# every pair of these first slots is checked, not only neighbours.
+SHOWN_TOGETHER = 6
 
 
 def categorical(mode: str) -> list[str]:
     """The categorical palette of ``mode``: a copy."""
     return list(CATEGORICAL[mode])
+
+
+def depicted() -> list[str]:
+    """The categorical palette for things drawn on black space or the
+    Earth's image (the 3D View, the live map), in both themes: the dark
+    steps, made for a dark surface. A copy."""
+    return list(CATEGORICAL["dark"])
+
 
 # The application icon (gui/icons.py): a mission scene on a dark
 # rounded-square plate with a light rim. The Earth, its orbit, a satellite

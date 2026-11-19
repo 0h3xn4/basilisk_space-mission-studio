@@ -2490,3 +2490,39 @@ One existing test changed:
 | Test | Change | Reason |
 |---|---|---|
 | `tests/gui/test_form_grid.py::test_the_thermal_editor_fits_the_page` | It asked that no thermal table is wider than its viewport. It now asks that a table is wider only when the sum of its heading widths is wider than the viewport. The page must still never scroll sideways. | B9's rule says a heading is never cut, so a table whose headings alone do not fit scrolls itself. Heading widths depend on the platform's fonts. On Windows CI one table needed 892 px for its headings in an 850 px viewport, so the old check failed there while the B9 rule held. The new check asks for the B9 rule on every platform. |
+
+## UI audit B10: distinct series colours and display units in plots
+
+The owner's batch B10 gives the plots a categorical palette whose first
+six colours differ in every pair (UI-12), names the Plot units choice
+for what it does, and writes axis units as the window does. Three
+existing GUI tests changed. No test outside `tests/gui/` changed. No
+golden file changed. The new tests are in `tests/gui/test_plot_units.py`,
+`tests/gui/test_theme.py`, `tests/gui/test_lifetime_widget.py` and
+`tests/gui/test_thermal_views.py`.
+
+A first version of this batch showed position in km and changed four
+more tests for it. The review reverted that change (the owner's rule
+keeps position in metres), and those four tests are again as on
+develop: `test_results_widget.py::test_position_series_plots_in_raw_meters`,
+`test_plot_workspace.py::test_the_readout_follows_the_cursor_and_the_pointer`
+and the two `test_mission_output_widget.py` tests with position rows.
+
+**A text changed with the unit's spelling:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_results_widget.py::test_mean_orbital_element_series_is_plotted_and_labeled_distinctly_from_osculating` | axis title "Inclination [deg]" | "Inclination [°]" | B10: axis titles write the unit as the window does (`units.axis_title`); the values are unchanged |
+
+**How the test reaches the value:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_ground_map.py::test_the_map_style_comes_from_the_theme` | `style["crafts"] == categorical(mode)` | `style["crafts"] == depicted()`; the docstring says so | B10: the map draws spacecraft on the Earth's image in both themes, so it takes the dark steps |
+| `test_mission_view.py::test_the_page_data_and_style_come_from_the_scene_and_the_theme` | `style["crafts"] == categorical(mode)` | `style["crafts"] == depicted()` | B10: the 3D View draws spacecraft on black space in both themes |
+
+**Unchanged and still passing:** `test_theme.py::test_the_categorical_palette_is_distinct_and_readable`
+(3:1, the status distance, the neighbour distance),
+`test_results_widget.py::test_series_colors_palette_is_8_distinct_valid_hex_colors`
+and `test_settings_page.py::test_the_settings_forms_share_one_label_column`
+(the new Plot units name shows whole) pass as they are.

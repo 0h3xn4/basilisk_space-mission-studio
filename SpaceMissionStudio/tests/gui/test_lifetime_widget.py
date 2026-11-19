@@ -68,6 +68,34 @@ def test_the_chart_draws_years_and_months(qtbot):
     assert not chart.grab().isNull()
 
 
+def test_the_chart_draws_its_altitudes_in_series_colours_with_a_unit(qtbot, restored_theme):
+    """UI audit B10: the perigee line was drawn in the accent, which is
+    for the primary action and selection. Perigee and apogee take the
+    first two categorical colours, the re-entry line has a legend entry,
+    and the axis title says "Altitude [km]", in both themes."""
+    from PySide6.QtCore import Qt
+
+    from spacemissionstudio.gui.lifetime_widget import AltitudeChart
+    from spacemissionstudio.gui.theme import PALETTE, SERIES_COLORS, TOKENS, apply_theme
+
+    chart = AltitudeChart()
+    qtbot.addWidget(chart)
+    chart.resize(500, 260)
+    chart.set_data([0.0, 6.0, 12.0], [550.0, 400.0, 120.0], [560.0, 410.0, 125.0], 120.0, 30.0)  # [year], [km]
+    for mode in ("light", "dark"):
+        apply_theme(restored_theme, mode)
+        entries = chart.legend_entries()
+        assert [name for name, _colour, _style in entries] == ["Perigee altitude", "Apogee altitude",
+                                                                "Re-entry altitude"]
+        assert [colour for _name, colour, _style in entries[:2]] == SERIES_COLORS[:2]
+        assert TOKENS["accent"] not in [colour for _name, colour, _style in entries]
+        assert entries[2][1:] == (PALETTE["text_muted"], Qt.PenStyle.DotLine)
+        image = chart.grab().toImage()
+        drawn = {image.pixelColor(x, y).name().upper() for x in range(image.width()) for y in range(image.height())}
+        assert SERIES_COLORS[0] in drawn and SERIES_COLORS[1] in drawn and TOKENS["accent"] not in drawn
+    assert AltitudeChart.AXIS_TITLE == "Altitude [km]"
+
+
 @pytest.mark.requires_basilisk
 def test_an_estimate_shows_the_reentry_and_the_rule_badges(qtbot):
     """550 km with a burn down to a 250 km perigee: re-entry within months,

@@ -55,7 +55,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import export_log
+from . import export_log, units
 from .data_table import DataTable, Row
 from .feedback import report
 from .svg_plot import SvgPlotView, render_image, render_size
@@ -176,10 +176,12 @@ class _PlotRenderer(QThread):
     rendered = Signal(int, object)  # the request's number, {"temperature": (svg, QImage), "flow": ... or None}
     failed = Signal(int, str)
 
-    def __init__(self, number: int, case, node: str | None, sizes: dict, ratio: float, mode: str, parent=None):
+    def __init__(self, number: int, case, node: str | None, sizes: dict, ratio: float, mode: str, parent=None,
+                 time_unit: str = "h"):
         super().__init__(parent)
         self._number, self._case, self._node, self._sizes, self._ratio, self._mode = (number, case, node, sizes,
                                                                                       ratio, mode)
+        self._time_unit = time_unit  # thermal.plots.TIME_UNITS: Settings > Plot units (UI audit B10)
 
     def run(self) -> None:
         from ..thermal import plots
@@ -189,12 +191,13 @@ class _PlotRenderer(QThread):
             node = self._node
             size = render_size(self._sizes["temperature"])
             svg = plots.temperature_svg(self._case, [node] if node else None, node, size.width(), size.height(),
-                                        style=style)
+                                        style=style, time_unit=self._time_unit)
             pictures = {"temperature": (svg, render_image(svg, size, self._ratio, style["background"])),
                         "flow": None}
             if node:
                 size = render_size(self._sizes["flow"])
-                svg = plots.heat_flow_svg(self._case, node, size.width(), size.height(), style=style)
+                svg = plots.heat_flow_svg(self._case, node, size.width(), size.height(), style=style,
+                                          time_unit=self._time_unit)
                 pictures["flow"] = (svg, render_image(svg, size, self._ratio, style["background"]))
         except Exception as exc:  # noqa: BLE001 -- a plot that cannot be drawn says so; the analysis stays
             self.failed.emit(self._number, str(exc))
@@ -808,7 +811,7 @@ class ThermalWidget(QWidget):
             return
         sizes = {"temperature": self.temperature_plot.size(), "flow": self.flow_plot.size()}
         worker = _PlotRenderer(self._plot_number, case, self._node(case), sizes, self.devicePixelRatioF(),
-                               current_theme(), self)
+                               current_theme(), self, time_unit="s" if units.plot_units() == "recorded" else "h")
         worker.rendered.connect(self._on_rendered)
         worker.failed.connect(self._on_render_failed)
         worker.finished.connect(lambda w=worker: self._plot_done(w))

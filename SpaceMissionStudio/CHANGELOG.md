@@ -160,6 +160,25 @@ fixes bugs.
   list of support data, so no file is called a SPICE kernel by default.
 - The Flight Software card names the pointing mode ("Sun pointing"),
   not its code ("sunSafePoint").
+- **Distinct series colours and display units in plots** (UI audit
+  batch B10). The plot colours are new. The x and z lines of a position
+  plot were two purples that were hard to tell apart. Now every pair of
+  the first six colours differs clearly in both themes, also with a
+  red-green or a blue-yellow colour-vision deficiency, and each colour
+  reads against the plot background.
+- Settings › Plot units says what it does: "Display units (altitudes in
+  km, °, h)". Position stays in m and velocity and delta-V in m/s, by
+  the owner's rule. With the display units a body rate and a gyroscope
+  now read degrees per second, and a wheel speed RPM. "As recorded"
+  shows rad/s and seconds. The Thermal plots' time axis follows the
+  choice too. Axis titles write the
+  unit as the rest of the window does ("Inclination [°]", "Torque
+  [N·m]"). The exported files do not change.
+- End of Life draws perigee and apogee in plot colours instead of the
+  accent, names the re-entry line in its legend and labels its axis
+  "Altitude [km]". The 3D View and the live map draw spacecraft in the
+  colours made for a dark background in both themes, as they show them
+  on black space and on the Earth's image.
 
 ## 2.12.0 (2026-11-18)
 

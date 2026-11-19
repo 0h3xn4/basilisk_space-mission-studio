@@ -867,7 +867,7 @@ def test_mean_orbital_element_series_is_plotted_and_labeled_distinctly_from_oscu
 
     plotted = np.asarray(w.figure.data[0].y)
     np.testing.assert_allclose(plotted, np.degrees(raw_i_rad))
-    assert w.figure.layout.yaxis.title.text == "Inclination [deg]"
+    assert w.figure.layout.yaxis.title.text == "Inclination [°]"
     assert w.figure.layout.title.text == "sat-1: Mean (first-order J2) Inclination"
 
 
