@@ -104,6 +104,23 @@ fixes bugs.
   page's width; a list with no row shows Add.
 - Scenario › Monte Carlo keeps its lines at the top of the page, and the
   third bodies are check boxes in the form, not a list in a framed box.
+- **Settings page controls and keyboard table** (UI audit batch B7).
+  Settings › Appearance picks the theme in a segmented control (System,
+  Light, Dark). Settings › Layout shows the menu bar, the panels, the
+  status-bar details and icons-only navigation as check boxes. Reset
+  Layout, Reference Data..., About, the licences and the manual are
+  framed buttons. They looked like plain text before. Each control
+  follows its command, so the menu, the shortcut and the palette agree
+  with it.
+- The commands in the area headers (Scenario's 3D Model and Change
+  History, the Run area's controls, Results' Clear Time Cursor) are
+  framed buttons in both themes.
+- Settings › Keyboard is a table that fills the page's width, with
+  left-aligned headings, no grid lines and the keys in the monospace
+  font. Ctrl+C copies it.
+- The Settings sections line their fields up on one column. A drop-down
+  list sized to its entries shows them whole: "100 %" read "10…" in
+  Settings, and "As fast as possible" was cut on the Run page.
 
 ## 2.12.0 (2026-11-18)
 

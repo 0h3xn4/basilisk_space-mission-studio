@@ -132,7 +132,7 @@ def test_the_cursor_commands_are_in_the_registry_and_the_shortcut_list(qtbot):
     window.on_keyboard_shortcuts()
     assert window.shell.current_area() == "settings"
     table = window.settings_page.shortcuts_table
-    rows = {table.item(r, 1).text(): table.item(r, 2).text() for r in range(table.rowCount())}
+    rows = {table.cell(r, 1): table.cell(r, 2) for r in range(table.row_count())}
     assert rows["Next Event"] == "Alt+PgDown" and rows["Clear Time Cursor"] == "Alt+Backspace"
 
 

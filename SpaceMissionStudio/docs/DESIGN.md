@@ -243,7 +243,10 @@ bar and no toolbar:
   until there is room again; the tooltips and accessible names keep the
   names (decision B-19).
 - **Area header:** the area's title and its commands as buttons (Run's
-  run controls, Scenario's 3D Model...). Every area shows it, Home,
+  run controls, Scenario's 3D Model...). A command there is a secondary
+  button with an edge and a surface (`variant="secondary"`, the push
+  button's look at the compact height), never a frameless word (UI audit
+  UI-11); none is the accent. Every area shows it, Home,
   Reports and Settings too, and it has one height in every area
   (`theme.AREA_HEADER_HEIGHT`, 48 px), so the tab rows under it start at
   one height. The commands are one row; with no room for their names
@@ -311,7 +314,8 @@ bar and no toolbar:
   page's longest label needs, at most 224 px
   (`theme.LABEL_COLUMN_MAX_PX`); a longer label wraps onto a second line.
   A drop-down list is at most 320 px (`theme.FIELD_WIDTH["choice"]`; an
-  entry longer than the field ends in "…", whole in the open list), a
+  entry longer than the field ends in "…", whole in the open list; a
+  field sized to its entries shows them whole, UI audit B7), a
   number field at most 224 px (`FIELD_WIDTH["number"]`), and a button
   alone in a row keeps its own width at the left. The grid lines up again
   when a section is built, a group opens or a row shows. A form inside
@@ -325,6 +329,22 @@ bar and no toolbar:
   keeps the input's own tooltip after the reason and shows it alone
   while the input is on. Every disabled input on the Scenario pages and
   the Run and Reports tabs has one (a test walks them).
+- **A command looks like its control (UI audit UI-11):** a choice of a
+  few is a segmented control (`widgets.SegmentedControl`), an on/off
+  command a check box (`widgets.ActionCheckBox`), any other command a
+  framed push button (`widgets.ActionButton`), each bound to its
+  registry action, so it follows the action's state and shows its
+  tooltip with the shortcut. A page shows no frameless tool button that
+  reads as text.
+- **Settings (UI audit B7, `gui/settings_page.py`):** one section under
+  the other, each a form on the page's one label column: Appearance
+  (Theme, a segmented control System · Light · Dark; UI scale; Motion;
+  Plot units), Reference data, Network (Network use, its note, the hosts,
+  Open the network log), Change history (Author), Layout (Panels, Status
+  bar and Navigation rail as check boxes; Reset Layout), Keyboard (a
+  `DataTable`: the last column takes the width left, the keys in the
+  monospace font, rows at `ROW_HEIGHT`, as tall as its rows) and About. A
+  note under a field is a row of its own, hidden while empty.
 - **Check boxes in a form (UI audit UI-53):** a list of choices to tick
   (the third bodies) is a `QListWidget` with the role `checklist`: no
   frame, the form's background, a row per choice at the table-row height
@@ -399,7 +419,8 @@ bar and no toolbar:
   muted cells by role; Ctrl+C copies TSV with the header; the header's
   context menu shows and hides columns; columns sized once when filled;
   an empty state with its action. Output, Monte Carlo, Budget, Compare,
-  Scenario › Assumptions and the Reference data window use it.
+  Scenario › Assumptions, Settings › Keyboard and the Reference data
+  window use it.
 - **Editable tables:** a table edited in place is a model/view grid too
   (a `QAbstractTableModel` with `ItemIsEditable`): Budgets' grids
   (`budgets_area.GridModel`) and the 3D model's thermal records
@@ -535,6 +556,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Off reason | `widgets.set_off_reason(widget, enabled, reason)`, `own_tooltip(widget, tip)` | An input that can be off: its tooltip says "Off:", why and what turns it on, before its own (UI audit UI-42) |
 | Page inset | `shell.inset_page(page)`, `inset_stack(stack)`, the `shell.INSET_INSIDE` property | A page's content at `theme.PAGE_INSET` from its edges; `AreaPage` applies it to its pages (UI audit UI-16) |
 | List editor | a list with Add / Edit / Remove at their own width, left-aligned | Spacecraft, stations, sensors, actuators, dispersions |
+| Command controls | `widgets.ActionButton(action, text=None)`, `ActionCheckBox(action, text=None)`, `SegmentedControl(name).add_action(action, text)`; `defaultAction()` | A command on a page: a framed button, an on/off check box, or one segment of a choice of a few; each follows its registry action (UI audit UI-11) |
 | Empty state | `widgets.EmptyState(title, text, action, primary=, compact=)`: `set_text`, `add_action`, `add_detail`, `text()` | The one empty state of every view, list and panel: a title, a line of text and the action that fills it. The full form sits in the middle of its area; `compact=True` is as tall as its lines, for a panel, a short list or the room beside a table |
 | Empty list | `widgets.EmptyStack(view, empty_state, fit_rows=)`: `refresh(empty=None)`, `showing_empty()` | A list, tree or table, or its `EmptyState` while it has no row; `fit_rows=True` makes a short list as tall as its rows. Edit, Remove and the other actions on a row are off until a row is selected |
 | Badge / tag | `badges.set_badge(label, badges.SUCCESS)` and the other kinds | A state in a word: Explain, the dashboard, rule results |
@@ -849,6 +871,7 @@ decision "Breakout windows" in `docs/DECISIONS.md`):
 | No "--" as a dash and no unit in its ASCII spelling in the GUI's strings or the manual; a suffix from a unit goes through `units.suffix` | `tests/test_gui_strings.py` |
 | A device kind, guidance mode, body and configuration parameter has a label in `gui/field_text.py` | `tests/gui/test_labels.py` |
 | Every input box has a visible border in both themes | `tests/gui/test_input_borders.py` |
+| A command on a page or in an area header looks like a button, a check box or a segment, never plain text | `tests/gui/test_settings_page.py` |
 
 ## Checking a change
 
@@ -884,10 +907,10 @@ Where the app does not meet `docs/ui/UI_OVERHAUL.md` after the overhaul
   the first visit to a spacecraft page (157-168 ms) and in the spacecraft
   editor dialog (381 ms), and at the end of a run that ends in the first
   seconds after start-up (up to 0.3 s; 27-52 ms otherwise). SRelD K-23.
-- **Tables:** Output, Monte Carlo, Budget, Compare, the Timeline and
-  Reports › Exports are `DataTable`s. The reference data list, the
-  readouts, the scenario overview's table, the SIL comparison, the
-  shortcut list, the facet and data-handling editors and the series
+- **Tables:** Output, Monte Carlo, Budget, Compare, the Timeline,
+  Reports › Exports and Settings › Keyboard are `DataTable`s. The
+  reference data list, the readouts, the scenario overview's table, the
+  SIL comparison, the facet and data-handling editors and the series
   dialog are still `QTableWidget`s.
 - **Spacing:** the 4 px grid is in the style sheet and the theme's
   `SPACE`; some layouts built in code still set their own margins.

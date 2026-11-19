@@ -161,8 +161,9 @@ class AreaPage(QWidget):
     def add_command(self, action: QAction) -> QToolButton:
         """A button for ``action`` in the header: its text, icon and
         enabled state follow the action. It is secondary: the one accent
-        is the top bar's Run (UI audit UI-03)."""
-        button = QToolButton()
+        is the top bar's Run (UI audit UI-03); its edge and surface show it
+        is a button, not a line of text (``variant="secondary"``, UI-11)."""
+        button = set_role(QToolButton(), variant="secondary")
         button.setDefaultAction(action)
         button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly if self.squeezed
                                   else Qt.ToolButtonStyle.ToolButtonTextBesideIcon)

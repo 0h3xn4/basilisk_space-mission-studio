@@ -240,9 +240,10 @@ A few things to notice right away:
     model has none), and when this computer last
     wrote one, in UTC (hover for the path). Double-click a row, or select
     it and press `Enter`, to open the view that makes it.
-  * **Settings**, at the bottom: **Appearance** (the theme: **System**,
-    light or dark as your desktop is, the default; **Light** or **Dark**;
-    a new theme applies at once, to every open view; the **UI scale**,
+  * **Settings**, at the bottom: **Appearance** (**Theme**, three
+    segments: **System**, light or dark as your desktop is, the default;
+    **Light** or **Dark**; a new theme applies at once, to every open
+    view, and **View > Theme** is the same choice; the **UI scale**,
     90, 100, 110 or 125 %, from the next start, unless the
     `QT_SCALE_FACTOR` environment variable sets one; **Reduce motion**:
     notifications appear and go without fading; **Plot units**: the
@@ -257,8 +258,12 @@ A few things to notice right away:
     use allowed or refused: [Network use and offline mode](docs/reference/network.md)),
     **Change history** (**Author**: the name each save records in the
     scenario's change history, the command line's too; empty: your user
-    name), **Layout** (the menu bar, the rail as icons only, the **Inspector** and **Problems** panels, **Reset Layout**),
-    **Keyboard** (every shortcut) and **About** (the version and the
+    name), **Layout** (check boxes: **Panels**, the menu bar, the
+    **Inspector** and **Problems** panels; **Status bar**, all details;
+    **Navigation rail**, icons only; each does what its **View** menu
+    item and shortcut do; then **Reset Layout**),
+    **Keyboard** (every shortcut, by category; `Ctrl+C` copies the rows
+    you select) and **About** (the version and the
     licence; **Third-Party Licences...** shows the EUPL-1.2 text and the
     licences of everything the package contains).
   * **Help**, at the bottom: this manual (`F1`). The rail's last button

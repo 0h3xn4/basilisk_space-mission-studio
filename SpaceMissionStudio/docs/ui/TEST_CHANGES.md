@@ -2424,3 +2424,25 @@ new name, as UI-52 asks. No test outside
 | `test_workspace.py::test_the_areas_and_what_they_hold` | the tree's paths start "Overview", "Scenario", "Environment" | "Overview", "General", "Environment" | UI-52: the node is General |
 | `test_scenario_tree.py::test_a_scenario_problem_counts_on_its_node` | the node reads "Scenario (1)", then "Scenario" | "General (1)", then "General" | UI-52 |
 | `test_editing_flow.py::test_the_toggle_is_in_the_scenario_areas_header` | back in Form mode the breadcrumb reads "Scenario › Scenario" | "Scenario › General" | UI-52 |
+
+## UI audit B7: Settings page controls and keyboard table
+
+The owner's batch B7 makes the Settings page's commands and the area
+headers' commands look like controls (UI-11) and makes Settings ›
+Keyboard a `DataTable` (UI-33). Three existing GUI tests changed. Each
+reaches the shortcut table through the `DataTable` API instead of
+`QTableWidget`'s, and asserts what it asserted before, as strictly. No
+test outside `tests/gui/` changed. No golden file changed. The new
+tests are in `tests/gui/test_settings_page.py`.
+
+**How the test reaches the widget:**
+
+| Test | Before | Now |
+|---|---|---|
+| `test_keyboard_cursor.py::test_the_cursor_commands_are_in_the_registry_and_the_shortcut_list` | `table.item(r, 1).text()`, `table.item(r, 2).text()`, `table.rowCount()` | `table.cell(r, 1)`, `table.cell(r, 2)`, `table.row_count()` |
+| `test_help.py::test_help_offers_the_manual_on_f1_and_the_shortcuts` | `table.item(r, 2).text()`, `table.rowCount()` | `table.cell(r, 2)`, `table.row_count()` |
+| `test_shell_reachability.py::test_every_row_is_reachable_in_the_shell` (the ShortcutsDialog row, its check `_shortcuts_in_settings`) | `shortcuts_table.rowCount()` | `shortcuts_table.row_count()` |
+
+The tests that read `settings_page.buttons[...].defaultAction()` are
+unchanged: the new controls give their action through `defaultAction()`
+as the tool buttons did.
