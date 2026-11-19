@@ -20,10 +20,16 @@
 network, change history, layout, the keyboard shortcuts and about, each a
 section of one page.
 
-Every command is one of the window's action registry (:mod:`gui.actions`),
-shown here as a button, and the shortcut list is generated from the
-registry, so this page and the command palette agree. The UI scale and reduce
-motion (M8) are preferences, not commands: they are set here only.
+Every command is one of the window's action registry (:mod:`gui.actions`)
+and looks like the control it is (UI audit UI-11): the theme a segmented
+control, an on/off command a check box, any other a framed button
+(:mod:`gui.widgets` ``SegmentedControl``, ``ActionCheckBox``,
+``ActionButton``). Each follows its command, however it is run (a
+shortcut, a menu, the palette). The settings are forms on one label
+column (``widgets.finish_form``, UI audit B6). The shortcut list is a
+``DataTable`` generated from the registry (UI-33), so this page and the
+command palette agree. The UI scale and reduce motion (M8) are
+preferences, not commands: they are set here only.
 """
 
 from __future__ import annotations
@@ -31,17 +37,16 @@ from __future__ import annotations
 import weakref
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction
-from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QHBoxLayout, QLabel, QLineEdit,
-                               QPushButton, QScrollArea, QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import (QCheckBox, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QScrollArea,
+                               QSizePolicy, QVBoxLayout, QWidget)
 
 from .. import history, network
 from . import units
-from .widgets import ComboBox
-from .theme import (CONTENT_MAX_WIDTH_PX, SPACE, UI_SCALES, reduce_motion, set_reduce_motion, set_role,
+from .data_table import DataTable, Row
+from .theme import (CONTENT_MAX_WIDTH_PX, ROW_HEIGHT, SPACE, UI_SCALES, reduce_motion, set_reduce_motion, set_role,
                     set_ui_scale_setting, ui_scale_setting)
 from .value_sheet import ValueTable
+from .widgets import ActionButton, ActionCheckBox, ComboBox, SegmentedControl, finish_form
 
 # (key, title, what it is for)
 _SECTIONS: tuple[tuple[str, str, str], ...] = (
@@ -60,6 +65,56 @@ _SECTIONS: tuple[tuple[str, str, str], ...] = (
     ("about", "About", ""),
 )
 
+# The theme's segments: (command, label)
+_THEMES = (("view.theme.system", "System"), ("view.theme.light", "Light"), ("view.theme.dark", "Dark"))
+
+# Settings › Layout: (row label, ((command, check box label), ...))
+_LAYOUT_ROWS = (
+    ("Panels", (("view.menu_bar", "Menu bar"), ("view.inspector", "Inspector"), ("view.problems", "Problems"))),
+    ("Status bar", (("view.status_details", "All details"),)),
+    ("Navigation rail", (("view.rail_icons", "Icons only"),)),
+)
+
+_SHORTCUT_HEADERS = ("Category", "Command", "Shortcut")
+
+
+class _Note(QLabel):
+    """A wrapped note in a form's field column, in the secondary tone,
+    hidden with its (empty) label while it has no text. Qt's guess at a
+    wrapped label's height lays it out narrow (three lines for one, the
+    text then floats in the middle of the row): the note answers for the
+    width it has, as ``value_sheet.NoteList`` does."""
+
+    def __init__(self, buddy: QLabel) -> None:
+        super().__init__("")
+        self._buddy = buddy
+        set_role(self, tone="secondary")
+        self.setWordWrap(True)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.setText("")
+
+    def setText(self, text: str) -> None:  # noqa: N802 -- Qt's name
+        super().setText(text)
+        self.setVisible(bool(text))
+        self._buddy.setVisible(bool(text))
+        self.updateGeometry()
+
+    def sizeHint(self):  # noqa: N802 -- Qt's name
+        hint = super().sizeHint()
+        if self.testAttribute(Qt.WidgetAttribute.WA_Resized) and self.width() > 0:
+            hint.setHeight(self.heightForWidth(self.width()))
+        return hint
+
+    def minimumSizeHint(self):  # noqa: N802 -- Qt's name
+        hint = super().minimumSizeHint()
+        hint.setHeight(min(hint.height(), self.sizeHint().height()))
+        return hint
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 -- Qt's name
+        super().resizeEvent(event)
+        if event.oldSize().width() != event.size().width():
+            self.updateGeometry()
+
 
 class SettingsPage(QScrollArea):
     """The settings, one section under the other."""
@@ -77,7 +132,8 @@ class SettingsPage(QScrollArea):
         self._layout.setContentsMargins(SPACE["xl"], SPACE["lg"], SPACE["xl"], SPACE["lg"])
         self._layout.setSpacing(SPACE["sm"])
         self.section_titles: dict[str, QLabel] = {}
-        self.buttons: dict[str, QToolButton] = {}
+        # Each command's control: an ActionButton, a theme segment or an ActionCheckBox.
+        self.buttons: dict[str, QWidget] = {}
         for key, title, text in _SECTIONS:
             if self.section_titles:
                 self._layout.addSpacing(SPACE["lg"])
@@ -86,9 +142,12 @@ class SettingsPage(QScrollArea):
             self.section_titles[key] = heading
             self._layout.addWidget(heading)
             if text:
-                self._layout.addWidget(set_role(QLabel(text), tone="secondary"))
+                line = set_role(QLabel(text), tone="secondary")
+                line.setWordWrap(True)
+                self._layout.addWidget(line)
             getattr(self, f"_build_{key}")()
         self._layout.addStretch(1)
+        finish_form(body)  # one label column, fields at their widths (UI audit B6)
 
     def sections(self) -> list[tuple[str, str]]:
         """(key, title) of each section, in order."""
@@ -101,45 +160,80 @@ class SettingsPage(QScrollArea):
         heading = self.section_titles[key]
         self.verticalScrollBar().setValue(heading.y() - SPACE["sm"])
 
+    # -- building blocks -----------------------------------------------------------------------
+    def _form(self) -> QFormLayout:
+        """A section's form; every form of the page shares one label column."""
+        form = QFormLayout()
+        form.setContentsMargins(0, 0, 0, 0)
+        form.setHorizontalSpacing(SPACE["md"])
+        form.setVerticalSpacing(SPACE["sm"])
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        self._layout.addLayout(form)
+        return form
+
+    @staticmethod
+    def _note(form: QFormLayout) -> _Note:
+        """A note under the row above, in ``form``'s field column; hidden while empty."""
+        buddy = QLabel("")
+        note = _Note(buddy)
+        form.addRow(buddy, note)
+        return note
+
+    @staticmethod
+    def _holder(*widgets: QWidget, row: bool = True) -> QWidget:
+        """``widgets`` as one field: side by side (``row``, a stretch after
+        them) or one under the other."""
+        holder = QWidget()
+        layout = QHBoxLayout(holder) if row else QVBoxLayout(holder)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(SPACE["sm"] if row else SPACE["xs"])
+        for widget in widgets:
+            layout.addWidget(widget)
+        if row:
+            layout.addStretch(1)
+        return holder
+
     def _row(self, command_ids: tuple[str, ...]) -> None:
+        """A row of framed buttons, one per command, at the left."""
         row = QHBoxLayout()
-        row.setSpacing(SPACE["xs"])
+        row.setSpacing(SPACE["sm"])
         for command_id in command_ids:
-            row.addWidget(self._button(self._commands().action(command_id)))
+            row.addWidget(self._button(command_id))
         row.addStretch(1)
         self._layout.addLayout(row)
 
-    def _button(self, action: QAction) -> QToolButton:
-        button = QToolButton()
-        button.setDefaultAction(action)
-        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
-        self.buttons[action.objectName()] = button
+    def _button(self, command_id: str) -> ActionButton:
+        button = ActionButton(self._commands().action(command_id))
+        self.buttons[command_id] = button
         return button
 
+    def _check_box(self, command_id: str, text: str) -> ActionCheckBox:
+        box = ActionCheckBox(self._commands().action(command_id), text)
+        self.buttons[command_id] = box
+        return box
+
+    # -- the sections ---------------------------------------------------------------------------
     def _build_appearance(self) -> None:
-        self._row(("view.theme.system", "view.theme.light", "view.theme.dark"))
-        row = QHBoxLayout()
-        row.setSpacing(SPACE["sm"])
-        row.addWidget(QLabel("UI scale"))
+        form = self._form()
+        self.theme_control = SegmentedControl("Theme")
+        for command_id, label in _THEMES:
+            self.buttons[command_id] = self.theme_control.add_action(self._commands().action(command_id), label)
+        form.addRow("Theme", self._holder(self.theme_control))
         self.ui_scale = ComboBox()  # the wheel does not change it
         for percent in UI_SCALES:
             self.ui_scale.addItem(f"{percent} %", percent)
         self.ui_scale.setCurrentIndex(UI_SCALES.index(ui_scale_setting()))
         self.ui_scale.setToolTip("The size of text and controls, from the next start")
+        self.ui_scale.setAccessibleName("UI scale")
         self.ui_scale.currentIndexChanged.connect(self._on_ui_scale)
-        row.addWidget(self.ui_scale)
         self.ui_scale_note = set_role(QLabel(""), tone="secondary")
-        row.addWidget(self.ui_scale_note)
-        row.addStretch(1)
-        self._layout.addLayout(row)
+        form.addRow("UI scale", self._holder(self.ui_scale, self.ui_scale_note))
         self.reduce_motion = QCheckBox("Reduce motion")
         self.reduce_motion.setToolTip("Notifications appear and go at once, without fading")
         self.reduce_motion.setChecked(reduce_motion())
         self.reduce_motion.toggled.connect(set_reduce_motion)
-        self._layout.addWidget(self.reduce_motion)
-        row = QHBoxLayout()
-        row.setSpacing(SPACE["sm"])
-        row.addWidget(QLabel("Plot units"))
+        form.addRow("Motion", self.reduce_motion)
         self.plot_units = ComboBox()
         for value, text in units.PLOT_UNITS:
             self.plot_units.addItem(text, value)
@@ -148,11 +242,8 @@ class SettingsPage(QScrollArea):
                                    "values as recorded and exported (SI: m, rad, s). The exports are always SI.")
         self.plot_units.setAccessibleName("Plot units")
         self.plot_units.currentIndexChanged.connect(self._on_plot_units)
-        row.addWidget(self.plot_units)
         self.plot_units_note = set_role(QLabel(""), tone="secondary")
-        row.addWidget(self.plot_units_note)
-        row.addStretch(1)
-        self._layout.addLayout(row)
+        form.addRow("Plot units", self._holder(self.plot_units, self.plot_units_note))
 
     def _on_plot_units(self, index: int) -> None:
         units.set_plot_units(self.plot_units.itemData(index))
@@ -163,27 +254,21 @@ class SettingsPage(QScrollArea):
         self.ui_scale_note.setText("Applies at the next start.")
 
     def _build_history(self) -> None:
-        row = QHBoxLayout()
-        row.setSpacing(SPACE["sm"])
-        row.addWidget(QLabel("Author"))
+        form = self._form()
         self.author_edit = QLineEdit(history.set_author_name())
         self.author_edit.setPlaceholderText(history.default_author())
         self.author_edit.setToolTip("Your name, as the change history records it; empty: your user name")
         self.author_edit.setAccessibleName("Author")
         self.author_edit.editingFinished.connect(self._on_author)
-        row.addWidget(self.author_edit, 1)
-        self._layout.addLayout(row)
-        self.author_note = set_role(QLabel(""), tone="secondary")
-        self.author_note.setWordWrap(True)
-        self._layout.addWidget(self.author_note)
+        form.addRow("Author", self.author_edit)
+        self.author_note = self._note(form)
 
     def _build_network(self) -> None:
+        form = self._form()
         self.offline_box = QCheckBox("Work offline: no downloads")
         self.offline_box.toggled.connect(self._on_offline)
-        self._layout.addWidget(self.offline_box)
-        self.network_note = set_role(QLabel(""), tone="secondary")
-        self.network_note.setWordWrap(True)
-        self._layout.addWidget(self.network_note)
+        form.addRow("Network use", self.offline_box)
+        self.network_note = self._note(form)
         # Each host on its own row, under the purpose it is contacted for.
         rows = [[purpose.label if index == 0 else "", host] for purpose in network.PURPOSES.values()
                 for index, host in enumerate(purpose.hosts)]
@@ -250,17 +335,16 @@ class SettingsPage(QScrollArea):
         self._row(("tools.reference_data",))
 
     def _build_layout(self) -> None:
-        self._row(("view.menu_bar", "view.status_details", "view.rail_icons", "view.inspector", "view.problems",
-                   "view.reset_layout"))
+        form = self._form()
+        for label, boxes in _LAYOUT_ROWS:
+            form.addRow(label, self._holder(*(self._check_box(command_id, text) for command_id, text in boxes),
+                                            row=False))
+        self._row(("view.reset_layout",))
 
     def _build_keyboard(self) -> None:
-        self.shortcuts_table = QTableWidget(0, 3)
-        self.shortcuts_table.setTabKeyNavigation(False)  # read-only: Tab leaves the table; the arrows move in it (M9)
-        self.shortcuts_table.setHorizontalHeaderLabels(["Category", "Command", "Shortcut"])
-        self.shortcuts_table.verticalHeader().setVisible(False)
-        self.shortcuts_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.shortcuts_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.shortcuts_table.horizontalHeader().setStretchLastSection(True)
+        # A DataTable (UI-33): the columns fill the width, the last one the
+        # rest; headings left; no grid lines; the keys in the monospace font.
+        self.shortcuts_table = DataTable("No command has a shortcut.")
         self._layout.addWidget(self.shortcuts_table)
         self.refresh_shortcuts()
 
@@ -269,14 +353,11 @@ class SettingsPage(QScrollArea):
         commands = self._commands()
         rows = commands.shortcut_rows() if commands is not None else []
         table = self.shortcuts_table
-        table.setRowCount(len(rows))
-        for row, values in enumerate(rows):
-            for column, value in enumerate(values):
-                table.setItem(row, column, QTableWidgetItem(value))
-        table.resizeColumnsToContents()
+        table.set_table(_SHORTCUT_HEADERS, [Row(list(values)) for values in rows], stretch=len(_SHORTCUT_HEADERS) - 1,
+                        code=(len(_SHORTCUT_HEADERS) - 1,))
+        table.view.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
         # Every row in view: the page scrolls, not the table.
-        height = table.horizontalHeader().height() + sum(table.rowHeight(r) for r in range(len(rows)))
-        table.setFixedHeight(height + 2 * table.frameWidth())
+        table.fit_rows()
 
     def _build_about(self) -> None:
         import spacemissionstudio

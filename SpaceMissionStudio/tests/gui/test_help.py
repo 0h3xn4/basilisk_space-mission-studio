@@ -75,5 +75,5 @@ def test_help_offers_the_manual_on_f1_and_the_shortcuts(qtbot):
     assert window.shell.areas["help"].action is window.manual_action
     window.on_keyboard_shortcuts()
     table = window.settings_page.shortcuts_table
-    shortcuts = {table.item(r, 2).text() for r in range(table.rowCount())}
+    shortcuts = {table.cell(r, 2) for r in range(table.row_count())}
     assert "Ctrl+R" in shortcuts and "F1" in shortcuts

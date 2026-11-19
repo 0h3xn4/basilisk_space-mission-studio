@@ -19200,3 +19200,63 @@ before and after show Scenario › General, Environment, Orbit / mass,
 Power / propulsion / link budget, Attitude control, Monte Carlo, the
 thermal editor of template 33, Run › End of Life, Results › Output, the
 JSON page, Reports › Flight Software and the propagation set-up dialog.
+
+## UI audit batch B7: Settings page controls and keyboard table (2026-11-19)
+
+The screenshot audit of 2026-11-17 found two defects on the Settings
+page. Its commands and the area headers' commands looked like plain
+text (UI-11). Its keyboard table used less than half of its frame, with
+a centred header and grid lines (UI-33).
+
+**Controls that look like controls (UI-11).** Settings showed every
+command as a frameless `QToolButton` with the command's menu text:
+"Theme: System", "Theme: Light", "Theme: Dark", "Reference Data",
+"Navigation: Icons Only". The theme in effect differed from the others
+only by a light tint, which also meant "hovered". Three new controls in
+`gui/widgets.py` replace them. `SegmentedControl` holds a choice of a
+few (the theme: System · Light · Dark) in the `segmentedControl` look of
+Form · JSON and the run mode. `ActionCheckBox` is an on/off command
+(Layout: Menu bar, Inspector, Problems, All details, Icons only).
+`ActionButton` is a framed push button for any other command. Each is
+bound to its registry `QAction`. Its state follows the action however
+it is run, and its tooltip is the action's, with the shortcut. A click
+on a check box triggers the action, so a dock's own toggle hides or
+shows the dock as Ctrl+I and Ctrl+J do.
+
+The area headers kept their `QToolButton`s, because a short header shows
+their icons only. They get a new style, `variant="secondary"`: the push
+button's surface and edge at the compact height, the same size as
+before. No header button is the accent.
+
+**The keyboard table (UI-33).** The list was a `QTableWidget` sized to
+its contents: three columns ending at 438 px in a 910 px frame, a
+centred header and grid lines. It is a `DataTable` now. Category and
+Command take their content's width, Shortcut takes the rest. The
+headings are left-aligned, there are no grid lines, the rows are 26 px
+(`theme.ROW_HEIGHT`) and the keys are in JetBrains Mono. The table is
+as tall as its rows, so the page scrolls, not the table.
+
+**The form grid on Settings.** The page laid out its rows by hand, each
+label beside its field at its own x. The sections are forms now, and
+`finish_form` gives the page one label column (B6's `FormGrid`). A note
+under a field (the network policy, the author's name, an error) is a
+row of its own in the field column, hidden while empty. Qt sized a
+wrapped label in a form row for a narrow guess, three lines for one, so
+the first try floated the network note in a row three lines high. The
+note now answers for its height at the width it has, as
+`value_sheet.NoteList` does.
+
+**Cut drop-down lists.** "100 %" read "10…" in Settings › UI scale, and
+the Run page's Pace read "As fast as poss…". `widgets.ComboBox` elides
+its text when it does not fit the edit field less 12 px, but its size
+hint did not keep those 12 px. The size hint now adds them, so a field
+sized to its entries shows them whole.
+
+Tests: the new file `tests/gui/test_settings_page.py` (7 tests) failed
+before the fixes, except the check that a Layout check box follows its
+command (the old tool button did that too). Three existing GUI tests
+reach the shortcut table through the `DataTable` API now;
+`docs/ui/TEST_CHANGES.md` lists them. The golden files are unchanged.
+Screenshots at 1280 x 720, light and dark, before and after, show each
+Settings section and the headers of Scenario, Run, Results, Budgets and
+Reports.

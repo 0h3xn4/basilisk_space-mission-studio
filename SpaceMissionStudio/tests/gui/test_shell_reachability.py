@@ -358,7 +358,7 @@ def _reference_data_opens(window):
 def _shortcuts_in_settings(window):
     window.commands.action("help.shortcuts").trigger()
     assert window.shell.current_area() == "settings"
-    assert window.settings_page.shortcuts_table.rowCount() > 20
+    assert window.settings_page.shortcuts_table.row_count() > 20
 
 
 def test_every_row_of_the_plan_has_a_check():

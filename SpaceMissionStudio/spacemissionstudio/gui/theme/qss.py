@@ -552,6 +552,27 @@ QToolButton[tertiary="true"] {{
 }}
 QToolButton[tertiary="true"]:hover {{ background-color: {t['bg.hover']}; }}
 QToolButton[tertiary="true"]:disabled {{ border-color: {t['border.subtle']}; }}
+/* A command in an area header (UI audit UI-11): a secondary button with its
+   edge and surface, as a push button, so it never reads as plain text; at
+   the compact height, the same size as a frameless tool button. */
+QToolButton[variant="secondary"] {{
+    background-color: {t['bg.surface']};
+    border: {px(BORDER)} solid {t['border.strong']};
+    font-weight: {medium};
+}}
+QToolButton[variant="secondary"]:hover {{ background-color: {t['bg.hover']}; }}
+QToolButton[variant="secondary"]:pressed, QToolButton[variant="secondary"]:checked {{
+    background-color: {t['bg.selected']};
+}}
+QToolButton[variant="secondary"]:focus {{
+    border: {px(FOCUS_RING)} solid {t['border.focus']};
+    padding: {px(SPACE['xs'] - ring)} {px(SPACE['sm'] - ring)};
+}}
+QToolButton[variant="secondary"]:disabled {{
+    color: {t['text.disabled']};
+    background-color: {t['bg.surface']};
+    border-color: {t['border.subtle']};
+}}
 QToolButton::menu-indicator {{
     image: url({chevron_down});
     subcontrol-position: right center;

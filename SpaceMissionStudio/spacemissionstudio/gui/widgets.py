@@ -44,12 +44,13 @@ import math
 from decimal import Decimal
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer
-from PySide6.QtGui import QPalette, QValidator
-from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QBoxLayout, QCheckBox, QComboBox,
-                               QDialogButtonBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLayout,
-                               QPushButton, QScrollArea, QSizePolicy, QSpinBox, QStackedWidget, QStyle,
+from PySide6.QtGui import QAction, QPalette, QValidator
+from PySide6.QtWidgets import (QAbstractItemView, QAbstractSpinBox, QApplication, QBoxLayout, QButtonGroup, QCheckBox,
+                               QComboBox, QDialogButtonBox, QDoubleSpinBox, QFormLayout, QFrame, QGroupBox, QHBoxLayout,
+                               QLabel, QLayout, QPushButton, QScrollArea, QSizePolicy, QSpinBox, QStackedWidget, QStyle,
                                QStyledItemDelegate, QStyleOptionComboBox, QStylePainter, QTabBar, QTableView,
                                QTabWidget, QVBoxLayout, QWidget)
+from shiboken6 import isValid
 
 from .theme import FIELD_WIDTH, LABEL_COLUMN_MAX_PX, ROW_HEIGHT, SPACE, set_role
 
@@ -184,7 +185,13 @@ class ComboBox(_IgnoreWheel, QComboBox):
     """A QComboBox the mouse wheel doesn't change (its open list still
     scrolls). An entry longer than the field (a field is at most
     :data:`CHOICE_FIELD_MAX_WIDTH_PX` wide, UI audit UI-26) ends in "…"
-    instead of being cut; the open list shows it whole."""
+    instead of being cut; the open list shows it whole. Its size hint
+    keeps that room beside the text (``SPACE["md"]``), so an entry the
+    field was sized for is shown whole ("100 %" read "10…", UI audit B7)."""
+
+    def sizeHint(self) -> QSize:  # noqa: N802 -- Qt API name
+        hint = super().sizeHint()
+        return QSize(hint.width() + SPACE["md"], hint.height())
 
     def paintEvent(self, _event) -> None:  # noqa: N802 -- Qt API name
         painter = QStylePainter(self)  # QComboBox.paintEvent, with the text elided
@@ -661,6 +668,110 @@ def flow_row(*widgets: QWidget, spacing: int = 6) -> QWidget:
     for widget in widgets:
         flow.addWidget(widget)
     return holder
+
+
+# -- controls for commands (UI audit UI-11) ----------------------------------------------------
+
+class ActionButton(QPushButton):
+    """A framed push button for a command of the window's registry
+    (``action``): its text (or ``text``), tooltip (the shortcut in it),
+    enabled and checked state follow the action, and a click triggers it.
+    A secondary button: the one accent of a view is its primary action.
+    ``defaultAction()`` gives the action, as a tool button's does."""
+
+    def __init__(self, action: QAction, text: str | None = None, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._action = action
+        self._text = text
+        self.clicked.connect(self._on_clicked)
+        action.changed.connect(self._follow)
+        self._follow()
+
+    def defaultAction(self) -> QAction:  # noqa: N802 -- as QToolButton's
+        return self._action
+
+    def _follow(self) -> None:
+        action = self._action
+        if not isValid(action) or not isValid(self):
+            return  # the window is closing: the action went first
+        self.setText(self._text if self._text is not None else action.text())
+        self.setToolTip(action.toolTip())
+        self.setAccessibleName(action.text().replace("&", ""))
+        self.setEnabled(action.isEnabled())
+        self.setCheckable(action.isCheckable())
+        self.setChecked(action.isChecked())
+
+    def _on_clicked(self) -> None:
+        action = self._action
+        group = action.actionGroup()
+        if not (action.isCheckable() and action.isChecked() and group is not None and group.isExclusive()):
+            action.trigger()  # a choice chosen again stays chosen
+        self._follow()
+
+
+class ActionCheckBox(QCheckBox):
+    """A check box for an on/off command (a checkable ``action``): ticked
+    while the action is on, and a click turns it on or off as its shortcut
+    and menu item do (``trigger``: a dock's own toggle acts on that). The
+    label is ``text`` (else the action's); the tooltip is the action's,
+    with its shortcut. ``defaultAction()`` gives the action."""
+
+    def __init__(self, action: QAction, text: str | None = None, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._action = action
+        self._text = text
+        self.clicked.connect(self._on_clicked)
+        action.changed.connect(self._follow)
+        self._follow()
+
+    def defaultAction(self) -> QAction:  # noqa: N802 -- as QToolButton's
+        return self._action
+
+    def _follow(self) -> None:
+        action = self._action
+        if not isValid(action) or not isValid(self):
+            return  # the window is closing: the action went first
+        self.setText(self._text if self._text is not None else action.text().replace("&", ""))
+        self.setToolTip(action.toolTip())
+        self.setEnabled(action.isEnabled())
+        self.setChecked(action.isChecked())
+
+    def _on_clicked(self, checked: bool) -> None:
+        if self._action.isChecked() != checked:
+            self._action.trigger()
+        self._follow()
+
+
+class SegmentedControl(QFrame):
+    """One choice of a few, side by side, the chosen one raised (the
+    ``segmentedControl`` look of Form · JSON and the run mode). Each
+    segment is a command (:meth:`add_action`): an :class:`ActionButton`
+    of a checkable action, so the segment chosen follows the action
+    however it is chosen (its shortcut, the menu, the palette). The
+    segments are an exclusive group: one Tab stop, the arrows move in it,
+    as in the other segmented controls. ``name`` is the control's
+    accessible name ("Theme")."""
+
+    def __init__(self, name: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("segmentedControl")
+        self.setAccessibleName(name)
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        self._row = QHBoxLayout(self)
+        self._row.setContentsMargins(0, 0, 0, 0)
+        self._row.setSpacing(0)
+        self.group = QButtonGroup(self)
+        self.group.setExclusive(True)
+        self.segments: list[ActionButton] = []
+
+    def add_action(self, action: QAction, text: str) -> ActionButton:
+        """A segment labelled ``text`` for the checkable ``action``."""
+        segment = ActionButton(action, text)
+        segment.setObjectName("segmentButton")
+        self.group.addButton(segment)
+        self._row.addWidget(segment)
+        self.segments.append(segment)
+        return segment
 
 
 class EmptyState(QWidget):

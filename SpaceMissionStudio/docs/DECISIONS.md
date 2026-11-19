@@ -4086,3 +4086,63 @@ open in its own window.
 - **Decision:** Scenario › Monte Carlo is a top page (`_page(top=True)`):
   the switch and the line on what it does at the top, a stretch below.
   **Why:** UI-04.
+
+## Settings page controls and keyboard table (UI audit B7, 2026-11-19)
+
+- **Decision:** a command on a page looks like the control it is. A
+  choice of a few is a segmented control (`widgets.SegmentedControl`), an
+  on/off command a check box (`widgets.ActionCheckBox`), any other
+  command a framed push button (`widgets.ActionButton`). Each is bound to
+  its registry `QAction`: its state follows the action however it is run
+  (a shortcut, a menu item, the palette), its tooltip is the action's,
+  with the shortcut, and `defaultAction()` gives the action as a tool
+  button's does. **Why:** UI-11. Settings showed its commands as
+  frameless `QToolButton`s that read as plain text ("Theme: System",
+  "Reference Data"), and a selected theme looked like a hovered word.
+- **Decision:** Settings › Appearance › Theme is a segmented control
+  System · Light · Dark. Its segments are the three theme commands, so
+  View > Theme, the palette and the control agree. A click on the theme
+  in effect leaves it chosen. The segments are an exclusive button group:
+  one Tab stop, the arrows move in it, as in the other segmented
+  controls. **Why:** UI-11 asks for it; it is the look and the keyboard
+  of Form · JSON and the run mode.
+- **Decision:** Settings › Layout shows the five on/off commands as check
+  boxes on three rows: Panels (Menu bar, Inspector, Problems), Status bar
+  (All details) and Navigation rail (Icons only). Reset Layout is a
+  framed button under them. The check box labels are short; the tooltip
+  keeps the command's full name and shortcut. **Why:** the command names
+  ("Navigation: Icons Only") repeat the row's label beside a check box.
+- **Decision:** the commands in an area header are secondary buttons
+  with an edge and a surface (`QToolButton[variant="secondary"]`: the
+  push button's `bg.surface` and `border.strong`, `border.subtle` when
+  disabled, the 2 px focus ring), at the compact height, the same size
+  as before. They stay `QToolButton`s, so they still show their icon
+  only when the header is short of room. No header button is the accent:
+  the top bar's Run is the one primary action. **Why:** UI-11; a
+  frameless tool button on the header's canvas read as a line of text.
+  The top bar's buttons are unchanged: UI-11 names the area headers,
+  and B2 set the top bar.
+- **Decision:** Settings › Keyboard is a `DataTable` (Category, Command,
+  Shortcut). The last column takes the width left, the others their
+  content's; the headings are left-aligned; no grid lines; rows at
+  `theme.ROW_HEIGHT` (26 px); the keys are a code column (JetBrains Mono,
+  the secondary colour); Ctrl+C copies TSV. The table is as tall as its
+  rows, so the page scrolls, not the table. The rows keep the registry's
+  order (by category); the table does not sort, as before. **Why:**
+  UI-33 (the columns ended at 438 px in a 910 px frame, a centred
+  header, grid lines). The "Known gaps" list in `docs/DESIGN.md` no longer
+  names the shortcut list.
+- **Decision:** the Settings sections are forms on one label column
+  (`widgets.finish_form`, B6's `FormGrid`): Theme, UI scale, Motion, Plot
+  units, Network use, Author, Panels, Status bar and Navigation rail. A
+  note (the network policy, the author's name, an error) is a row of its
+  own under its field, in the field column, hidden while empty. It
+  answers for its height at the width it has. **Why:** B6's rule for
+  every form; Qt sized a wrapped label in a form row for a narrow guess
+  (three lines for one), and the text floated in the row.
+- **Decision:** `widgets.ComboBox` adds `SPACE["md"]` to its size hint:
+  the room its painter keeps beside the text before it elides. **Why:**
+  a field sized to its longest entry still ended it in "…" ("100 %" read
+  "10…" in Settings › UI scale, "As fast as possible" read "As fast as
+  poss…" on the Run page). A field at its maximum width
+  (`FIELD_WIDTH["choice"]`) still elides a longer entry.
