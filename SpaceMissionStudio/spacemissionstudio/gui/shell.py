@@ -40,10 +40,22 @@ from dataclasses import dataclass
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import (QButtonGroup, QFrame, QHBoxLayout, QLabel, QScrollArea, QSizePolicy, QStackedWidget,
-                               QTabWidget, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QSizePolicy,
+    QStackedWidget,
+    QTabWidget,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .theme import AREA_HEADER_HEIGHT, ICON_SIZE, PAGE_INSET, SPACE, icon, set_role
+from .widgets import layout_item_widgets
 
 
 def page_body(page: QWidget) -> QWidget:
@@ -211,7 +223,7 @@ class AreaPage(QWidget):
     def _named_width(self) -> int:
         """The width the commands take with their names [px]."""
         layout = self._buttons_layout
-        widgets = [layout.itemAt(i).widget() for i in range(layout.count())]
+        widgets = layout_item_widgets(layout)
         shown = [w for w in widgets if w is not None and not w.isHidden()]
         width = 0
         for widget in shown:

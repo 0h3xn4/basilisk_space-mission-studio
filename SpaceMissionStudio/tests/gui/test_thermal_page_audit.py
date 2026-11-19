@@ -397,8 +397,10 @@ def test_no_tab_makes_the_page_wider_than_its_header(qtbot, solved):
     471 to 622 px on Linux). The Notes table does not set the page's width."""
     widget = _page(qtbot, solved)
     layout = widget.layout()
-    header = max(layout.itemAt(i).minimumSize().width() for i in range(layout.count())
-                 if layout.itemAt(i).widget() is not widget.stack)
+    from spacemissionstudio.gui.widgets import read_layout_item
+
+    header = max(read_layout_item(layout, lambda item: item.minimumSize().width(), i) for i in range(layout.count())
+                 if read_layout_item(layout, lambda item: item.widget(), i) is not widget.stack)
     wide = {widget.tabs.tabText(i): widget.tabs.widget(i).minimumSizeHint().width()
             for i in range(widget.tabs.count())
             if widget.tabs.widget(i).minimumSizeHint().width() > header}

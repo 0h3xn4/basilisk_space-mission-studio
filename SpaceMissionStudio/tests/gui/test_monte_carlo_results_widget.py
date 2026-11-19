@@ -26,6 +26,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from spacemissionstudio.gui.widgets import layout_item_widgets
+
 pytestmark = pytest.mark.requires_gui
 
 _R_M = 6778.0e3  # [m]
@@ -54,8 +56,7 @@ def _tile_texts(widget):
     from PySide6.QtWidgets import QLabel
 
     texts = []
-    for i in range(widget.tiles_row.count()):
-        tile = widget.tiles_row.itemAt(i).widget()
+    for tile in layout_item_widgets(widget.tiles_row):
         if tile is not None:
             texts.append(" | ".join(label.text() for label in tile.findChildren(QLabel)))
     return texts

@@ -27,6 +27,8 @@ from pathlib import Path
 
 import pytest
 
+from spacemissionstudio.gui.widgets import layout_item_widget
+
 pytestmark = pytest.mark.requires_gui
 
 _TEMPLATES = Path(__file__).resolve().parents[2] / "spacemissionstudio" / "scenarios" / "templates"
@@ -78,7 +80,7 @@ def test_a_field_error_shows_under_its_row_and_clears(qtbot):
     form.addRow("Second", second)
     show_field_error(first, "First is wrong")
     assert form.rowCount() == 3 and field_error_text(first) == "First is wrong"
-    assert form.itemAt(1, QFormLayout.ItemRole.FieldRole).widget().text() == "First is wrong"
+    assert layout_item_widget(form, 1, QFormLayout.ItemRole.FieldRole).text() == "First is wrong"
     assert first.property("state") == "error"
     show_field_error(first, "Still wrong")
     assert form.rowCount() == 3 and field_error_text(first) == "Still wrong"

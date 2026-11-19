@@ -22,6 +22,8 @@ breadcrumbs (gui.app_shell) and the Settings area (gui.settings_page)."""
 
 import pytest
 
+from spacemissionstudio.gui.widgets import layout_item_widgets
+
 
 @pytest.fixture
 def unopened_window(qtbot, monkeypatch):
@@ -130,7 +132,7 @@ def test_a_later_area_slots_into_its_place_on_the_rail(qtbot):
     shell.register("operations", "activity", "Operations", QLabel("ops"), 2)
     shell.register("settings", "settings", "Settings", QLabel("s"), 4, bottom=True)
     top = shell.rail._top
-    assert [top.itemAt(i).widget().text() for i in range(top.count())] == [
+    assert [tile.text() for tile in layout_item_widgets(top)] == [
         "Home", "Timeline", "Operations", "Reports"]
     shell.show_area("operations")
     assert shell.rail.current() == "operations" and shell.current_area() == "operations"

@@ -19755,3 +19755,33 @@ tests -q -n 4` as CI runs it: 5725 passed (3526 outside `tests/gui/` and
 the inventory fixture of `tests/gui/test_labels.py` pinned the bundled
 space weather's last observed day, 2026-11-14. It now reads 2026-11-18
 (`docs/ui/TEST_CHANGES.md`).
+
+### 2.13.0: stale layout item wrappers (before the tag)
+
+After #296 was merged, CI on `develop` (88ac9e01d9) failed one test on
+Windows, twice: `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread`.
+`show_window` called `windowHandle()` and got a `QWidgetItem` in place
+of the new `QWindow`. The release was not tagged.
+
+The cause is in PySide. A Python call of `layout.itemAt()` keeps the
+wrapper of the returned item alive with the layout's wrapper. The item
+is not a QObject, so PySide is not told when Qt deletes it. The wrapper
+then stays registered at a freed address. A later object at that address
+gets the old wrapper. A short script showed this, and a probe over the
+GUI tests found the wrappers that layouts kept. `test_breakout` calls
+`gc.freeze()` (as the app does at start), so wrappers that become
+garbage after the freeze are never collected, and the risk grows.
+
+The fix:
+- `gui/widgets.py` has `read_layout_item`, `layout_item_widget` and
+  `layout_item_widgets`. They read an item and then call
+  `shiboken6.invalidate()` on its wrapper. This unregisters the wrapper;
+  the item and the layout stay as they are. A nested layout (a QObject)
+  and an item made in Python (FlowLayout keeps its own) are not touched.
+- `shell.py` reads the top bar's widgets with `layout_item_widgets`.
+- `show_window` drops a handle that is not a `QWindow` and asks again.
+- The tests read layout items only through the helpers (11 files,
+  `docs/ui/TEST_CHANGES.md`).
+- New tests: `tests/gui/test_layout_items.py`. One of them gives
+  `show_window` a stale handle; it fails with the CI error without the
+  guard. Another test finds any raw `itemAt()` in the window's code.

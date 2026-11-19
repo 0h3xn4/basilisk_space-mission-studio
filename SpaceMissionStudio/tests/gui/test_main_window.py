@@ -117,11 +117,10 @@ def test_explain_tab_refreshes_on_edit(window, qtbot):
     _add_valid_spacecraft(window)
     _explained(window, qtbot)
     assert window.scenario_explainer_widget._headline_label.isHidden() is False
-    tile_labels = {
-        window.scenario_explainer_widget._tiles_row.itemAt(i).widget()
-        for i in range(window.scenario_explainer_widget._tiles_row.count())
-        if window.scenario_explainer_widget._tiles_row.itemAt(i).widget() is not None
-    }
+    from spacemissionstudio.gui.widgets import layout_item_widgets
+
+    tile_labels = {tile for tile in layout_item_widgets(window.scenario_explainer_widget._tiles_row)
+                   if tile is not None}
     assert tile_labels  # at least one stat tile rendered for the new spacecraft
 
 
@@ -359,8 +358,9 @@ def test_choosing_a_template_opens_it_and_switches_to_editor_tab(window):
 def test_choosing_a_template_with_unsaved_changes_prompts_first(window, monkeypatch):
     """Choosing a template with unsaved changes asks first; cancelling keeps
     the unsaved scenario and the Load page."""
-    from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
     from PySide6.QtWidgets import QMessageBox
+
+    from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
 
     _add_valid_spacecraft(window)
     question_calls = []
@@ -405,9 +405,10 @@ def test_choosing_a_customized_scenario_opens_it_with_no_current_path(window):
 def test_choosing_a_customized_scenario_with_unsaved_changes_prompts_first(window, monkeypatch):
     """Opening a customized template with unsaved changes asks first;
     cancelling stays on the Load page."""
+    from PySide6.QtWidgets import QMessageBox
+
     from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
     from spacemissionstudio.schema import load_scenario
-    from PySide6.QtWidgets import QMessageBox
 
     _add_valid_spacecraft(window)
     question_calls = []
@@ -660,6 +661,7 @@ def test_close_while_run_in_progress_is_blocked(window, qtbot, monkeypatch):
     import threading
 
     from PySide6.QtGui import QCloseEvent
+
     from spacemissionstudio.gui.run_worker import RunWorker
 
     _add_valid_spacecraft(window)
@@ -933,9 +935,10 @@ def test_run_monte_carlo_rejects_disabled_monte_carlo(window):
 def test_run_monte_carlo_starts_worker_with_chosen_archive_dir(window, monkeypatch, tmp_path):
     """Monte Carlo starts its worker with the chosen archive folder and run
     count, disables both run actions and starts the busy indicator."""
+    from PySide6.QtWidgets import QFileDialog
+
     from spacemissionstudio.gui.run_worker import MonteCarloWorker
     from spacemissionstudio.schema.scenario import DispersionConfig, MonteCarloConfig
-    from PySide6.QtWidgets import QFileDialog
 
     _add_valid_spacecraft(window)
     window.scenario_editor.monte_carlo_group.set_spacecraft_names(["sat-1"])
@@ -1083,8 +1086,9 @@ def test_monte_carlo_failed_stops_busy_indicator_and_reenables_actions(window, m
 
 def test_run_monte_carlo_cancel_dialog_does_not_start_worker(window, monkeypatch):
     """Cancelling the archive-folder dialog starts no Monte Carlo worker."""
-    from spacemissionstudio.schema.scenario import MonteCarloConfig
     from PySide6.QtWidgets import QFileDialog
+
+    from spacemissionstudio.schema.scenario import MonteCarloConfig
 
     _add_valid_spacecraft(window)
     window.scenario_editor.monte_carlo_group.set_spacecraft_names(["sat-1"])
@@ -1259,6 +1263,7 @@ def test_on_run_monte_carlo_never_enables_abort_action(window, monkeypatch):
     never enable it.
     """
     from PySide6.QtWidgets import QFileDialog
+
     from spacemissionstudio.gui.run_worker import MonteCarloWorker
     from spacemissionstudio.schema.scenario import MonteCarloConfig
 
@@ -1298,6 +1303,7 @@ def test_run_failed_disables_abort_action(window, monkeypatch):
 def test_on_abort_run_calls_request_cancel_on_the_running_worker(window, monkeypatch):
     """Abort asks the running worker to cancel and disables itself."""
     from PySide6.QtWidgets import QMessageBox
+
     from spacemissionstudio.gui.run_worker import RunWorker
 
     # isRunning() is patched to always return True below (to simulate an
@@ -1453,8 +1459,8 @@ def test_autosave_tick_skips_silently_when_scenario_currently_invalid(window):
     that tick quietly rather than popping an error dialog on a timer
     the user never directly triggered.
     """
-    from spacemissionstudio.schema.scenario import OrbitIC, SpacecraftConfig
     from spacemissionstudio.gui import autosave
+    from spacemissionstudio.schema.scenario import OrbitIC, SpacecraftConfig
 
     window.scenario_editor.spacecraft_list.from_list([
         SpacecraftConfig(name="", orbit=OrbitIC(type="cartesian", position_km=[7000, 0, 0],
