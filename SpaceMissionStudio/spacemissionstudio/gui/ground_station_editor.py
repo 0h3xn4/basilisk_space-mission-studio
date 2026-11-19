@@ -50,7 +50,8 @@ from .field_text import field_title, labelled
 from .feedback import (ProblemBanner, bring_into_view, clear_field_error, clear_invalid, clear_on_edit,
                        mark_invalid, report, show_field_error, show_toast)
 from .problem_location import GROUND_STATION, locate
-from .widgets import EmptyStack, EmptyState, PreciseDoubleSpinBox, finish_form
+from .theme import PAGE_INSET
+from .widgets import EmptyStack, EmptyState, PreciseDoubleSpinBox, finish_form, set_off_reason
 
 # A new station starts from the schema's defaults, so a station made here and
 # one written in a file without these fields are the same station.
@@ -79,6 +80,8 @@ class GroundStationEditorDialog(QDialog):
         self.setWindowTitle("Ground station" if config is None else f"Ground station: {config.name}")
 
         layout = QVBoxLayout(self)
+        if embedded:  # a page of the Scenario tree: its content at the page inset (UI audit UI-16)
+            layout.setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, PAGE_INSET)
         # What is wrong, when the dialog is opened at a problem or OK finds one (U-12).
         self.problem_banner = ProblemBanner()
         layout.addWidget(self.problem_banner)
@@ -272,8 +275,8 @@ class GroundStationListWidget(QWidget):
     def _update_buttons(self) -> None:
         """Edit and Remove only with a station selected (UI audit UI-05)."""
         selected = self.list_widget.currentRow() >= 0
-        self.edit_button.setEnabled(selected)
-        self.remove_button.setEnabled(selected)
+        for button in (self.edit_button, self.remove_button):
+            set_off_reason(button, selected, "Off: select a ground station in the list first.")
 
     def _refresh_list(self) -> None:
         self.list_widget.clear()

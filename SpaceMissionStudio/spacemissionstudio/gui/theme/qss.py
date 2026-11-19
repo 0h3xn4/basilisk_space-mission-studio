@@ -432,6 +432,10 @@ QTreeView::item:hover:!selected, QTableView::item:hover:!selected {{
     background-color: {t['bg.hover']};
 }}
 QTreeView::branch {{ background: transparent; }}
+/* A list of check boxes in a form (the third bodies): the form's own background, no frame, a box per row at
+   the table-row height (UI audit UI-53). */
+QListWidget[role="checklist"] {{ background-color: transparent; border: none; }}
+QListWidget[role="checklist"]::item {{ padding: 0px {px(SPACE['xs'])}; }}
 QTreeView::branch:has-children:!has-siblings:closed, QTreeView::branch:closed:has-children:has-siblings {{
     image: url({chevron_right});
 }}

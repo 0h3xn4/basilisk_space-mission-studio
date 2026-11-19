@@ -52,9 +52,9 @@ from .icons import action_icon, icon, step_icon
 from .qss import stylesheet
 from .state import DARK, LIGHT, PALETTE, ROLES, SERIES_COLORS, TOKENS, current as current_theme
 from .state import select as select_palette
-from .typography import (AREA_HEADER_HEIGHT, CONTENT_MAX_WIDTH_PX, CONTROL_HEIGHT, ICON_SIZE, MONO_FONT_FAMILY,
-                         RADIUS, ROW_HEIGHT, SIZE, SPACE, TOP_BAR_COMPACT_BELOW, UI_FONT_FAMILY, WEB_FONT_STACK,
-                         WEB_MONO_STACK, WEIGHT)
+from .typography import (AREA_HEADER_HEIGHT, CONTENT_MAX_WIDTH_PX, CONTROL_HEIGHT, FIELD_WIDTH, ICON_SIZE,
+                         LABEL_COLUMN_MAX_PX, MONO_FONT_FAMILY, PAGE_INSET, PAGE_TREE_WIDTH, RADIUS, ROW_HEIGHT, SIZE, SPACE,
+                         TOP_BAR_COMPACT_BELOW, UI_FONT_FAMILY, WEB_FONT_STACK, WEB_MONO_STACK, WEIGHT)
 
 _listeners: list = []  # weak references to the callbacks of on_change
 
@@ -88,8 +88,8 @@ def colour(token: str) -> str:
 
 
 __all__ = [
-    "AREA_HEADER_HEIGHT", "CONTENT_MAX_WIDTH_PX", "CONTROL_HEIGHT", "DARK", "FONTS_DIR", "ICON_SIZE", "LIGHT", "MONO_FONT_FAMILY",
-    "PALETTE", "RADIUS", "ROLES", "ROW_HEIGHT", "SERIES_COLORS", "SIZE", "SPACE", "THEMES", "TOKENS", "TOP_BAR_COMPACT_BELOW",
+    "AREA_HEADER_HEIGHT", "CONTENT_MAX_WIDTH_PX", "CONTROL_HEIGHT", "DARK", "FIELD_WIDTH", "FONTS_DIR", "ICON_SIZE", "LABEL_COLUMN_MAX_PX", "LIGHT",
+    "MONO_FONT_FAMILY", "PAGE_INSET", "PAGE_TREE_WIDTH", "PALETTE", "RADIUS", "ROLES", "ROW_HEIGHT", "SERIES_COLORS", "SIZE", "SPACE", "THEMES", "TOKENS", "TOP_BAR_COMPACT_BELOW",
     "UI_FONT_FAMILY", "UI_SCALES", "WEB_FONT_STACK", "WEB_MONO_STACK", "WEIGHT", "action_icon", "apply_theme",
     "colour", "current_theme", "follow_system", "icon", "last_apply_ms", "load_fonts", "mono_font",
     "numeric_font", "on_change", "palettes", "plotly_template", "reduce_motion", "resolve_theme",

@@ -44,12 +44,15 @@ mass on each part and, where you can, each part's material.
    or a `material` conductor's **conductivity_table**
    (`[[degC, W/(m K)], ...]`), on the JSON page. Linear between rows,
    held beyond the ends.
-5. Replace contacts that are not bolted joints. On **Conductors**, a
+5. Replace contacts that are not bolted joints. On the **Couplings**
+   tab, under **Conductors**, a
    conductor of kind `value` takes a conductance in W/K (standoffs,
    isolating washers); kind `material` computes `k A / L` from a length
    and a section; kind `contact` takes an area and a coefficient. Select a
    row and press **Conductance** to see the value and how it was computed.
-6. Add what the model cannot know:
+6. Add what the model cannot know (the **Heat loads** tab holds
+   Dissipation and Heaters; the **Couplings** tab Heat pipes and
+   Radiative links):
    - **Dissipation**: the heat each unit gives off, a power in W, or the
      name of a power-budget load (`bus`, `comms`, `transmitter`,
      `instrument:<name>`) to follow it;
@@ -139,7 +142,7 @@ its "on" temperature over the orbit. Carry it into the power budget.
 ### When the checks complain
 
 - **Halving the time step changes temperatures by more than 0.5 K**: set
-  a shorter **Time step** on **Environment and solver** (template 33 uses
+  a shorter **Time step** on the **Solver** tab (template 33 uses
   10 s; a light panel at eclipse exit needs it).
 - **The orbit-periodic start did not converge**: raise **Max orbits**.
   If a heater cycles over many orbits on a large structure, the
@@ -199,7 +202,7 @@ the same run. Nothing runs in Basilisk again, so a study takes seconds.
   change they cause. Parameters without a number (a dissipation that
   follows the power budget) are listed as left out.
 - **Monte Carlo...**: first set the runs, the seed, the case and the
-  dispersions on the thermal model's **Monte Carlo** tab (a path, a
+  dispersions under **Monte Carlo** on the thermal model's **Cases** tab (a path, a
   sigma, normal or uniform, absolute or relative to the value). Press
   **Monte Carlo...** and pick a folder. The batch opens in the Monte Carlo
   view by node: the hottest and coldest any run reached, each run's

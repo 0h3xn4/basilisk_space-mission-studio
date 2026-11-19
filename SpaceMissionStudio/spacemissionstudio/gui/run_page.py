@@ -41,8 +41,9 @@ from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QFileDialog, QFrame, QHB
 
 from ..engine.live_view import PACING
 from .page_tree import embed_dialog
-from .theme import CONTENT_MAX_WIDTH_PX, set_role
-from .widgets import ComboBox
+from .shell import INSET_INSIDE
+from .theme import CONTENT_MAX_WIDTH_PX, PAGE_INSET, set_role
+from .widgets import ComboBox, set_off_reason
 
 MODES = (("single", "Single"), ("monte_carlo", "Monte Carlo"), ("sil", "SIL"))
 _LIVE_VIEW_KEY = "run/live_3d"  # QSettings: Show in 3D View while running
@@ -106,6 +107,8 @@ class RunPage(QWidget):
         content.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
         scroll.setWidget(content)
         layout = QVBoxLayout(content)
+        layout.setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, PAGE_INSET)
+        self.setProperty(INSET_INSIDE, True)  # it scrolls itself: the page inset is inside (UI audit UI-16)
         self.mode_label = set_role(QLabel(), tone="secondary")
         self.mode_label.setWordWrap(True)
         layout.addWidget(self.mode_label)
@@ -164,7 +167,8 @@ class RunPage(QWidget):
 
     def _on_live_view(self, on: bool, save: bool = True) -> None:
         self.pacing_label.setEnabled(on)
-        self.pacing_combo.setEnabled(on)
+        set_off_reason(self.pacing_combo, on, "Off: the pace is for the 3D View during a run. Tick Show in 3D View "
+                                              "while running to set it.")
         if save:
             _settings().setValue(_LIVE_VIEW_KEY, bool(on))
 

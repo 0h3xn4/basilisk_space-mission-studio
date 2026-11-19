@@ -66,3 +66,23 @@ MOTION_MS = {"fast": 120, "slow": 180}  # [ms]
 # 2560 px its fields and buttons stretched to 1500 px, labels and values a
 # head-turn apart. Plots, tables and the JSON view keep the full width.
 CONTENT_MAX_WIDTH_PX = 960  # [px]
+
+# Where a page's content starts: the same inset from the page's edges on
+# every page of every area, under a tab row or beside the Scenario tree, as
+# the area header's title is inset (UI audit UI-16, UI-52). The tab rows and
+# the Scenario tree stay flush: they are navigation, not content.
+PAGE_INSET = SPACE["lg"]  # [px]
+
+# The widest a form's field grows (UI audit UI-26): a number sits beside
+# its label (one of several in a row: "vector"; shrinking to "vector_min"
+# on a narrow page) and a choice is as wide as a long entry, never across
+# the page. Text fields (a name, a path) keep the form's width.
+FIELD_WIDTH = {"number": 224, "vector": 128, "vector_min": 72, "choice": 320}  # [px]
+# The widest a form's label column grows (UI audit UI-26): a longer label
+# wraps onto a second line, so one long name does not push every field of
+# the page to the right.
+LABEL_COLUMN_MAX_PX = 224  # [px]
+
+# The Scenario tree's width (UI audit UI-18): at least "min"; as wide as its
+# longest node needs, up to "max" (a longer one is elided, whole on hover).
+PAGE_TREE_WIDTH = {"min": 170, "start": 220, "max": 340}  # [px]

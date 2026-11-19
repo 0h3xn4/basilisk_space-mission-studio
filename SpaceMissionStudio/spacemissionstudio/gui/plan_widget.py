@@ -70,7 +70,7 @@ from .feedback import report
 from .gantt import PlanGantt
 from .theme import set_role
 from .value_sheet import NoteList
-from .widgets import EmptyState
+from .widgets import EmptyState, set_off_reason
 
 # The template the empty state opens: a week of an Earth observation microsatellite (User Manual, operations).
 PLAN_TEMPLATE = "35_eo_operations_week.json"
@@ -816,8 +816,9 @@ class PlanWidget(QWidget):
         editable = selected is not None and self.planning is not None and not busy
         self.plan_button.setEnabled(not busy)
         self.from_run_check.setEnabled(self._result is not None)
-        for button in (self.save_button, self.compare_button):
-            button.setEnabled(has_plan and not busy)
+        for button in (self.save_button, self.compare_button):  # off with the reason (UI audit UI-42)
+            set_off_reason(button, has_plan and not busy, "Off: planning is running." if busy else
+                           "Off: there is no plan yet. Press Plan first.")
         planned = has_plan and self.planning is not None and not busy
         for button in (self.export_button, self.fly_button, self.replan_button, self.robustness_button):
             button.setEnabled(planned)

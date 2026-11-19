@@ -47,6 +47,7 @@ from .badges import ACCENT, DANGER, MUTED, SUCCESS, WARNING, set_badge
 from .run_worker import failure_text
 from .sil_comparison_widget import SilComparisonWidget
 from .theme import set_role
+from .widgets import set_off_reason
 
 _STATE_BADGES = {
     "current": ("Up to date", SUCCESS),
@@ -204,8 +205,10 @@ class FlightSoftwareWidget(QWidget):
                 self._list.insertWidget(index, card)
             reason = exportable_reason(scenario, spacecraft)
             record = next((r for r in scenario.fsw_exports if r.spacecraft == spacecraft.name), None)
-            card.export_button.setEnabled(reason is None and self._busy is None)
-            card.open_button.setEnabled(record is not None)
+            # Off with the reason and what turns it on, in the tooltip (UI audit UI-42).
+            set_off_reason(card.export_button, reason is None and self._busy is None,
+                           f"Off: {reason}." if reason is not None else "Off: an export is running.")
+            set_off_reason(card.open_button, record is not None, "Off: no export yet. Press Export... first.")
             card.set_folder(record.path if record is not None else None)
             if self._busy == spacecraft.name:
                 card.set_badge("Exporting...", ACCENT)

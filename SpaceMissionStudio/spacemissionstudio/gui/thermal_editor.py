@@ -27,7 +27,16 @@ node per part, its faces and the conductors between parts in contact
 (``thermal.generate``); **Conductance** computes the selected conductor's
 value from its inputs (``thermal.conductors``). The JSON view edits the
 same section. Checked: the spacecraft keeps a thermal model; unchecked:
-none."""
+none.
+
+The tables are the editable model/view grid of the GUI (a
+``QAbstractTableModel`` with ``ItemIsEditable``, as Budgets' tables): no grid
+lines, numbers right-aligned in tabular figures, each table as tall as its
+rows and its columns fitted to the page, so the page never scrolls sideways
+(UI audit UI-13). The kinds of record are six tabs that fit the page at
+1280 x 720: Nodes, Faces, Couplings (conductors, heat pipes, radiative
+links), Heat loads (dissipation, heaters), Cases (the cases and the thermal
+Monte Carlo) and Solver (the environment and the solver)."""
 
 from __future__ import annotations
 
@@ -35,6 +44,7 @@ import dataclasses
 import json
 from collections.abc import Callable
 
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QGroupBox,
@@ -43,15 +53,14 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
+    QTableView,
     QVBoxLayout,
     QWidget,
 )
 
 from ..schema import thermal as thermal_schema
-from .theme import set_role
-from .widgets import TabWidget
+from .theme import ROW_HEIGHT, SPACE, numeric_font, set_role
+from .widgets import EmptyStack, EmptyState, TabWidget
 
 # Column kinds: "s" text, "f" number, "f?" number or blank, "i" whole number, "b" yes/no, "L" names "a, b",
 # "R?" a range "low, high" or blank, "R" a range, "J" JSON or blank.
@@ -95,6 +104,12 @@ TABLES = (("nodes", "Nodes", thermal_schema.ThermalNodeConfig, _NODE),
           ("dissipations", "Dissipation", thermal_schema.ThermalDissipationConfig, _DISSIPATION),
           ("heaters", "Heaters", thermal_schema.ThermalHeaterConfig, _HEATER),
           ("cases", "Cases", thermal_schema.ThermalCaseConfig, _CASE))
+# The tabs (UI audit UI-13): six that fit the page at 1280 x 720, not one per kind of record (ten, cut).
+TAB_OF = {"nodes": "Nodes", "faces": "Faces", "conductors": "Couplings", "heat_pipes": "Couplings",
+          "radiative_links": "Couplings", "dissipations": "Heat loads", "heaters": "Heat loads", "cases": "Cases",
+          "monte_carlo": "Cases", "environment": "Solver", "solver": "Solver"}
+TAB_TITLES = ("Nodes", "Faces", "Couplings", "Heat loads", "Cases", "Solver")
+_NUMERIC_KINDS = ("f", "f?", "i")
 _TIPS = {
     "nodes": "One isothermal node per row: the parts it is made of, and its capacitance (or mass and specific heat, "
              "or the material's). Ranges are 'lowest, highest'.",
@@ -168,37 +183,130 @@ def _note(text: str) -> QLabel:
     return label
 
 
-class RecordTable(QTableWidget):
-    """A list of records of one dataclass, a row each."""
+class RecordModel(QAbstractTableModel):
+    """The cells of a :class:`RecordTable`: one row of text per record,
+    edited in place (``ItemIsEditable``) and read by the column's kind."""
+
+    def __init__(self, columns, parent=None) -> None:
+        super().__init__(parent)
+        self.columns = columns
+        self.rows: list[list[str]] = []
+        self._numeric_font = numeric_font()
+
+    def rowCount(self, parent=None) -> int:  # noqa: N802 -- Qt API name
+        return 0 if parent is not None and parent.isValid() else len(self.rows)
+
+    def columnCount(self, parent=None) -> int:  # noqa: N802 -- Qt API name
+        return 0 if parent is not None and parent.isValid() else len(self.columns)
+
+    def data(self, index, role=Qt.ItemDataRole.DisplayRole):
+        if not index.isValid():
+            return None
+        text = self.rows[index.row()][index.column()]
+        numeric = self.columns[index.column()][2] in _NUMERIC_KINDS
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.EditRole):
+            return text
+        if role == Qt.ItemDataRole.ToolTipRole:
+            return text or None  # the whole value when the column is narrow
+        if numeric and role == Qt.ItemDataRole.TextAlignmentRole:
+            return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        if numeric and role == Qt.ItemDataRole.FontRole:
+            return self._numeric_font
+        return None
+
+    def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):  # noqa: N802 -- Qt API name
+        if orientation != Qt.Orientation.Horizontal or not 0 <= section < len(self.columns):
+            return None
+        _name, label, kind = self.columns[section]
+        if role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole):
+            return label
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            return int((Qt.AlignmentFlag.AlignRight if kind in _NUMERIC_KINDS else Qt.AlignmentFlag.AlignLeft)
+                       | Qt.AlignmentFlag.AlignVCenter)
+        return None
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.ItemFlag.NoItemFlags
+        return Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEditable
+
+    def setData(self, index, value, role=Qt.ItemDataRole.EditRole) -> bool:  # noqa: N802 -- Qt API name
+        if not index.isValid() or role != Qt.ItemDataRole.EditRole:
+            return False
+        text = "" if value is None else str(value)
+        if self.rows[index.row()][index.column()] == text:
+            return False
+        self.rows[index.row()][index.column()] = text
+        self.dataChanged.emit(index, index)
+        return True
+
+    def set_rows(self, rows: list[list[str]]) -> None:
+        self.beginResetModel()
+        self.rows = rows
+        self.endResetModel()
+
+    def append(self, row: list[str]) -> None:
+        self.beginInsertRows(QModelIndex(), len(self.rows), len(self.rows))
+        self.rows.append(row)
+        self.endInsertRows()
+
+    def remove(self, row: int) -> None:
+        self.beginRemoveRows(QModelIndex(), row, row)
+        del self.rows[row]
+        self.endRemoveRows()
+
+
+class RecordTable(QTableView):
+    """A list of records of one dataclass, a row each, edited in place.
+    Its columns share the page's width (a long value elided, whole on
+    hover): it never scrolls sideways (UI audit UI-13)."""
+
+    _COLUMN_MAX_PX = 15 * SPACE["lg"]  # [px] the widest a column starts, before it is fitted to the page
+    _COLUMN_MIN_PX = SPACE["xxl"] + SPACE["sm"]  # [px] the narrowest a column is fitted to
 
     def __init__(self, cls, columns, records=(), fixed_rows: bool = False, parent=None):
-        super().__init__(0, len(columns), parent)
+        super().__init__(parent)
         self.cls, self.columns, self.fixed_rows = cls, columns, fixed_rows
-        self.setHorizontalHeaderLabels([label for _name, label, _kind in columns])
-        self.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self.horizontalHeader().setStretchLastSection(True)
+        self.model_ = RecordModel(columns, self)
+        self.setModel(self.model_)
+        self.setShowGrid(False)  # surfaces, not lines
+        self.setWordWrap(False)
+        self.setTextElideMode(Qt.TextElideMode.ElideRight)
+        self.verticalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.DoubleClicked | QAbstractItemView.EditTrigger.EditKeyPressed
+                             | QAbstractItemView.EditTrigger.AnyKeyPressed
+                             | QAbstractItemView.EditTrigger.SelectedClicked)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # as tall as its rows
+        header = self.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
+        header.setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        header.setTextElideMode(Qt.TextElideMode.ElideRight)  # a heading too long for its column ends in "…"
+        for signal in (self.model_.modelReset, self.model_.rowsInserted, self.model_.rowsRemoved,
+                       self.model_.dataChanged):
+            signal.connect(self._fit)
         self.set_records(records)
 
+    # -- the records ------------------------------------------------------------------------------
     def set_records(self, records) -> None:
-        self.setRowCount(0)
-        for record in records:
-            self.add_record(record)
+        self.model_.set_rows([self._texts(record) for record in records])
 
     def add_record(self, record=None) -> None:
-        row = self.rowCount()
-        self.insertRow(row)
-        for column, (name, _label, kind) in enumerate(self.columns):
-            value = getattr(record, name) if record is not None else None
-            self.setItem(row, column, QTableWidgetItem(_text(value, kind)))
+        self.model_.append(self._texts(record))
+
+    def _texts(self, record) -> list[str]:
+        return [_text(getattr(record, name) if record is not None else None, kind)
+                for name, _label, kind in self.columns]
 
     def records(self, where: str) -> list:
         out = []
-        for row in range(self.rowCount()):
+        for row, texts in enumerate(self.model_.rows):
             values = {}
-            for column, (name, _label, kind) in enumerate(self.columns):
-                item = self.item(row, column)
-                value = _read(item.text() if item else "", kind, f"{where}[{row}].{name}")
+            for (name, _label, kind), text in zip(self.columns, texts):
+                value = _read(text, kind, f"{where}[{row}].{name}")
                 if value is not None or kind.endswith("?"):  # blank JSON: the field's default
                     values[name] = value
             try:
@@ -206,6 +314,74 @@ class RecordTable(QTableWidget):
             except TypeError as exc:
                 raise ValueError(f"thermal.{where}[{row}]: {exc}") from exc
         return out
+
+    # -- cells and rows, for the group and for tests -----------------------------------------
+    def row_count(self) -> int:
+        return self.model_.rowCount()
+
+    def cell(self, row: int, column: int) -> str:
+        return self.model_.rows[row][column]
+
+    def set_cell(self, row: int, column: int, text: str) -> None:
+        """Set a cell as an edit in it does."""
+        self.model_.setData(self.model_.index(row, column), text)
+
+    def current_row(self) -> int:
+        """The selected row, or -1."""
+        rows = self.selectionModel().selectedRows()
+        return rows[0].row() if rows else -1
+
+    def set_current_row(self, row: int) -> None:
+        self.selectRow(row)
+
+    def remove_current(self) -> None:
+        """Remove the selected row, if there is one."""
+        row = self.current_row()
+        if row >= 0:
+            self.model_.remove(row)
+
+    # -- its size ---------------------------------------------------------------------------------
+    def resizeEvent(self, event) -> None:  # noqa: N802 -- Qt API name
+        super().resizeEvent(event)
+        self._fit()
+
+    def _widths(self, column: int) -> tuple[int, int]:
+        """[px] what column ``column`` needs for its widest cell, and for its
+        heading too, each within the column's limits."""
+        metrics = self.fontMetrics()
+        padding = 2 * SPACE["md"]
+        cells = max([metrics.horizontalAdvance(row[column]) for row in self.model_.rows] + [0]) + padding
+        heading = metrics.horizontalAdvance(self.columns[column][1]) + padding
+        cells = max(self._COLUMN_MIN_PX, min(cells, self._COLUMN_MAX_PX))
+        return cells, max(cells, min(heading, self._COLUMN_MAX_PX))
+
+    def _fit(self, *_args) -> None:
+        """The columns fitted to the page's width: each as wide as its
+        heading and cells need when they all fit; else the cells keep
+        their width and the headings share what is left (a heading is
+        elided, whole on hover); a table too wide even for its cells is
+        scaled down. The height follows the rows."""
+        room = self.viewport().width()
+        if room > 0 and self.columns:
+            pairs = [self._widths(c) for c in range(len(self.columns))]
+            cells, wanted = [c for c, _w in pairs], [w for _c, w in pairs]
+            if sum(wanted) <= room:
+                widths = wanted
+            elif sum(cells) <= room:
+                spare, missing = room - sum(cells), sum(wanted) - sum(cells)
+                widths = [c + int((w - c) * spare / missing) for c, w in pairs]
+            else:
+                widths = [max(1, int(c * room / sum(cells))) for c in cells]
+            widths[-1] += room - sum(widths)  # the last takes what is left, so the row fills the table
+            for column, width in enumerate(widths):
+                self.setColumnWidth(column, max(1, width))
+        header = self.horizontalHeader()
+        height = header.sizeHint().height() + self.model_.rowCount() * ROW_HEIGHT + 2 * self.frameWidth()
+        self.setFixedHeight(height)
+
+
+def _section(title: str) -> QLabel:
+    return set_role(QLabel(title), role="heading")
 
 
 class ThermalGroup(QGroupBox):
@@ -233,19 +409,31 @@ class ThermalGroup(QGroupBox):
         buttons.addStretch(1)
         layout.addLayout(buttons)
         self.tabs = TabWidget()
-        self.tables: dict[str, RecordTable] = {}
-        for key, title, cls, columns in TABLES:
+        self.tabs.setDocumentMode(True)
+        self.pages: dict[str, QWidget] = {}  # tab title -> its page
+        for title in TAB_TITLES:
             page = QWidget()
             page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, SPACE["md"], 0, 0)
+            page_layout.setSpacing(SPACE["sm"])
+            self.tabs.addTab(page, title)
+            self.pages[title] = page
+        self.tables: dict[str, RecordTable] = {}
+        self.stacks: dict[str, EmptyStack] = {}  # each list's table, or its empty state
+        for key, title, cls, columns in TABLES:
+            page_layout = self.pages[TAB_OF[key]].layout()
+            if TAB_OF[key] != title:  # a tab of several kinds: each under its heading
+                page_layout.addWidget(_section(title))
             page_layout.addWidget(_note(_TIPS[key]))
             table = RecordTable(cls, columns, getattr(c, key))
-            page_layout.addWidget(table)
-            row = QHBoxLayout()
+            self.tables[key] = table
             add = QPushButton("Add")
             add.clicked.connect(lambda _checked=False, t=table: t.add_record())
             remove = QPushButton("Remove")
-            remove.clicked.connect(lambda _checked=False, t=table: t.removeRow(t.currentRow())
-                                   if t.currentRow() >= 0 else None)
+            remove.setToolTip("Remove the selected row.")
+            remove.clicked.connect(lambda _checked=False, t=table: t.remove_current())
+            page_layout.addWidget(self._listed(key, table, title, add, remove))
+            row = QHBoxLayout()
             row.addWidget(add)
             row.addWidget(remove)
             if key == "conductors":
@@ -255,51 +443,58 @@ class ThermalGroup(QGroupBox):
                 row.addWidget(self.conductance_button)
                 self.conductance_label = set_role(QLabel(""), tone="secondary")
                 row.addWidget(self.conductance_label, 1)
+                self.stacks[key].hide_while_empty(add, remove, self.conductance_button)
             row.addStretch(1)
             page_layout.addLayout(row)
-            self.tabs.addTab(page, title)
-            self.tables[key] = table
-        settings = QWidget()
-        settings_layout = QVBoxLayout(settings)
-        settings_layout.addWidget(_note("Environment (blank: the run's own, by the central body and the orbit's "
-                                        "inclination band)"))
-        self.environment_table = RecordTable(thermal_schema.ThermalEnvironmentConfig, _ENVIRONMENT, [c.environment],
-                                             fixed_rows=True)
-        settings_layout.addWidget(self.environment_table)
-        settings_layout.addWidget(_note("Solver: start 'periodic' (repeats orbits until they repeat) or 'fixed' "
-                                        "(from the initial temperatures)"))
-        self.solver_table = RecordTable(thermal_schema.ThermalSolverConfig, _SOLVER, [c.solver], fixed_rows=True)
-        settings_layout.addWidget(self.solver_table)
-        settings_layout.addStretch(1)
-        self.tabs.addTab(settings, "Environment and solver")
-        studies = QWidget()
-        studies_layout = QVBoxLayout(studies)
-        studies_layout.addWidget(_note("Thermal Monte Carlo (Run › Thermal › Monte Carlo...): the runs, the seed (the "
-                                       "same seed, the same draws), the case, and the parameters it draws by path. "
-                                       "No dispersion: no Monte Carlo."))
+        cases = self.pages["Cases"].layout()
+        cases.addWidget(_section("Monte Carlo"))
+        cases.addWidget(_note("Thermal Monte Carlo (Run › Thermal › Monte Carlo...): the runs, the seed (the "
+                              "same seed, the same draws), the case, and the parameters it draws by path. "
+                              "No dispersion: no Monte Carlo."))
         mc = c.monte_carlo or thermal_schema.ThermalMonteCarloConfig()
         self.monte_carlo_table = RecordTable(thermal_schema.ThermalMonteCarloConfig, _MONTE_CARLO, [mc],
                                              fixed_rows=True)
-        studies_layout.addWidget(self.monte_carlo_table)
+        cases.addWidget(self.monte_carlo_table)
         self.dispersion_table = RecordTable(thermal_schema.ThermalDispersionConfig, _DISPERSION, mc.dispersions)
-        studies_layout.addWidget(self.dispersion_table)
-        row = QHBoxLayout()
         add = QPushButton("Add")
         add.clicked.connect(lambda: self.dispersion_table.add_record(
             thermal_schema.ThermalDispersionConfig("", 0.1, "normal", True)))
         remove = QPushButton("Remove")
-        remove.clicked.connect(lambda: self.dispersion_table.removeRow(self.dispersion_table.currentRow())
-                               if self.dispersion_table.currentRow() >= 0 else None)
+        remove.setToolTip("Remove the selected row.")
+        remove.clicked.connect(self.dispersion_table.remove_current)
+        cases.addWidget(self._listed("monte_carlo", self.dispersion_table, "Dispersions", add, remove))
+        row = QHBoxLayout()
         row.addWidget(add)
         row.addWidget(remove)
         row.addStretch(1)
-        studies_layout.addLayout(row)
-        studies_layout.addStretch(1)
-        self.tabs.addTab(studies, "Monte Carlo")
+        cases.addLayout(row)
+        solver = self.pages["Solver"].layout()
+        solver.addWidget(_section("Environment"))
+        solver.addWidget(_note("Blank: the run's own, by the central body and the orbit's inclination band."))
+        self.environment_table = RecordTable(thermal_schema.ThermalEnvironmentConfig, _ENVIRONMENT, [c.environment],
+                                             fixed_rows=True)
+        solver.addWidget(self.environment_table)
+        solver.addWidget(_section("Solver"))
+        solver.addWidget(_note("Start 'periodic' (repeats orbits until they repeat) or 'fixed' (from the initial "
+                               "temperatures)."))
+        self.solver_table = RecordTable(thermal_schema.ThermalSolverConfig, _SOLVER, [c.solver], fixed_rows=True)
+        solver.addWidget(self.solver_table)
+        for page in self.pages.values():
+            page.layout().addStretch(1)
         layout.addWidget(self.tabs)
         self.status_label = set_role(QLabel(""), tone="secondary")
         self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
+
+    def _listed(self, key: str, table: RecordTable, title: str, add: QPushButton, remove: QPushButton) -> EmptyStack:
+        """``table``, or its empty state with Add while it has no row."""
+        empty = EmptyState(f"No {title.lower()}", "", action="Add", compact=True)
+        empty.button.clicked.connect(add.click)
+        stack = EmptyStack(table, empty, fit_rows=True)
+        if key not in ("conductors",):
+            stack.hide_while_empty(add, remove)
+        self.stacks[key] = stack
+        return stack
 
     def field_widget(self, name: str) -> QWidget | None:
         """The table holding the field ``name`` ("nodes"), shown, or None."""
@@ -308,7 +503,7 @@ class ThermalGroup(QGroupBox):
                                          "monte_carlo": self.dispersion_table}.get(key)
         if table is None:
             return None
-        self.tabs.setCurrentWidget(table.parentWidget())
+        self.tabs.setCurrentWidget(self.pages[TAB_OF[key]])
         return table
 
     def set_config(self, config: thermal_schema.ThermalConfig) -> None:
@@ -347,7 +542,7 @@ class ThermalGroup(QGroupBox):
         if spacecraft is None or getattr(spacecraft, "model", None) is None:
             self.status_label.setText("Generate needs a 3D model: build or open one first.")
             return
-        has_records = any(table.rowCount() for table in self.tables.values())
+        has_records = any(table.row_count() for table in self.tables.values())
         if has_records and QMessageBox.question(
                 self, "Replace the thermal model?",
                 "Generating replaces the nodes, faces and conductors with ones from the 3D model; heat pipes, "
@@ -372,7 +567,7 @@ class ThermalGroup(QGroupBox):
         from ..thermal import conductors
 
         table = self.tables["conductors"]
-        row = table.currentRow()
+        row = table.current_row()
         if row < 0:
             self.conductance_label.setText("Select a conductor.")
             return

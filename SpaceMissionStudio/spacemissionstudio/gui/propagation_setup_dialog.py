@@ -78,6 +78,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QFrame,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -110,8 +111,8 @@ from ..schema.scenario import (
 from .field_text import body_label, field_title, labelled
 from .feedback import ProblemBanner, bring_into_view, clear_field_error, clear_on_edit, show_field_error
 from .problem_location import PROPAGATION, locate
-from .theme import set_role
-from .widgets import ComboBox, PreciseDoubleSpinBox, SpinBox, finish_form
+from .theme import PAGE_INSET, ROW_HEIGHT, set_role
+from .widgets import ComboBox, PreciseDoubleSpinBox, RowHeightDelegate, SpinBox, finish_form, own_tooltip, set_off_reason
 
 # The minimum spherical-harmonics degree/order that's actually meaningful
 # ("spherical harmonics" starting below this is just point-mass again) --
@@ -123,6 +124,7 @@ _DEFAULT_HARMONICS_DEGREE = 2
 # Wrap width for this dialog's explanatory labels -- keeps the dialog a
 # comfortable reading width instead of one label's single-line length.
 _CONTENT_WIDTH = 600
+_NOT_MSIS = ("Off: only NRLMSISE-00 reads space weather. Choose NRLMSISE-00 as the Atmosphere model to set it.")
 
 
 class PropagationSetupDialog(QDialog):
@@ -149,6 +151,9 @@ class PropagationSetupDialog(QDialog):
         content = QWidget()
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
+        if embedded:  # the Environment page: its content at the page inset, inside its scroll area (UI-16)
+            layout.setContentsMargins(0, 0, 0, 0)
+            content_layout.setContentsMargins(PAGE_INSET, PAGE_INSET, PAGE_INSET, PAGE_INSET)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
@@ -264,8 +269,14 @@ class PropagationSetupDialog(QDialog):
             "(Basilisk's simpleSolarPanel takes no albedo).")
         form.addRow(self.albedo_check)
 
+        # Check boxes in the form: no framed box, a row each at the table-row height, as tall as its
+        # rows (UI audit UI-53).
         self.third_body_list = QListWidget()
-        self.third_body_list.setFixedHeight(130)
+        set_role(self.third_body_list, role="checklist")
+        self.third_body_list.setFrameShape(QFrame.Shape.NoFrame)
+        self.third_body_list.setItemDelegate(RowHeightDelegate(self.third_body_list))
+        self.third_body_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.third_body_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.third_body_list.setToolTip(
             "Other bodies whose OWN gravity also pulls on the spacecraft (in addition to the "
             "central body above) – e.g. checking the Sun and the Moon for an Earth-orbiting "
@@ -290,34 +301,47 @@ class PropagationSetupDialog(QDialog):
         # refuses any other body with central_body_degree > 0. Disabling it
         # here means the GUI can never construct that invalid combination,
         # rather than letting the user discover it only when a run fails.
-        self.enable_harmonics_check.setEnabled(field is not None)
+        no_field = "Off: spherical-harmonics gravity needs a gravity field: Earth (GGM03S) or Mars (GGM2B). " \
+                   "Choose one of them as the central body to turn it on."
         if field is None:
             self.enable_harmonics_check.setChecked(False)
+            own_tooltip(self.enable_harmonics_check, "")
         else:
             self.central_body_degree_spin.setRange(0, field[1])
-        self.central_body_degree_spin.setEnabled(field is not None and self.enable_harmonics_check.isChecked())
-        is_small_body = text in SMALL_BODY_CENTRAL_BODIES
-        self.polyhedral_gravity_check.setEnabled(is_small_body)
-        if not is_small_body:
-            self.polyhedral_gravity_check.setChecked(False)
-        has_albedo_map = text in ALBEDO_MAPS
-        self.albedo_check.setEnabled(has_albedo_map)
-        if not has_albedo_map:
-            self.albedo_check.setChecked(False)
-        if field is None:
-            tooltip = "Spherical-harmonics gravity needs a gravity field: Earth (GGM03S) or Mars (GGM2B)."
-        else:
-            tooltip = (
+            own_tooltip(self.enable_harmonics_check, (
                 f"Checking this ON replaces the idealized point-mass gravity model with the central body's "
                 f"real, lumpy mass distribution (the {field[0]} gravity field, up to degree {field[1]}) – this "
                 "is what makes effects like J2 nodal/apsidal precession real rather than absent, and is "
                 "REQUIRED for a genuine Sun-synchronous orbit to actually stay Sun-synchronous over time. "
-                "Point-mass gravity alone (this unchecked) has no such precession at all."
-            )
-        self.enable_harmonics_check.setToolTip(tooltip)
+                "Point-mass gravity alone (this unchecked) has no such precession at all."))
+        # Off with the reason and what turns it on, in the tooltip (UI audit UI-42).
+        set_off_reason(self.enable_harmonics_check, field is not None, no_field)
+        self._show_degree()
+        is_small_body = text in SMALL_BODY_CENTRAL_BODIES
+        if not is_small_body:
+            self.polyhedral_gravity_check.setChecked(False)
+        set_off_reason(self.polyhedral_gravity_check, is_small_body,
+                       "Off: gravity from a shape model is for a small body. Choose 433 Eros as the central body "
+                       "to turn it on.")
+        has_albedo_map = text in ALBEDO_MAPS
+        if not has_albedo_map:
+            self.albedo_check.setChecked(False)
+        set_off_reason(self.albedo_check, has_albedo_map,
+                       "Off: the central body has no albedo map. Choose Earth or Mars as the central body to turn "
+                       "it on.")
+
+    def _show_degree(self) -> None:
+        """Degree/order: on with spherical-harmonics gravity, else off with the reason."""
+        if not self.enable_harmonics_check.isEnabledTo(self):
+            reason = ("Off: spherical-harmonics gravity needs a gravity field: Earth (GGM03S) or Mars (GGM2B). "
+                      "Choose one of them as the central body, then tick Enable spherical-harmonics gravity.")
+        else:
+            reason = "Off: the central body is a point mass. Tick Enable spherical-harmonics gravity to set it."
+        set_off_reason(self.central_body_degree_spin, self.enable_harmonics_check.isEnabledTo(self)
+                       and self.enable_harmonics_check.isChecked(), reason)
 
     def _on_harmonics_toggled(self, checked: bool) -> None:
-        self.central_body_degree_spin.setEnabled(checked)
+        self._show_degree()
         if checked and self.central_body_degree_spin.value() == 0:
             self.central_body_degree_spin.setValue(_DEFAULT_HARMONICS_DEGREE)
 
@@ -335,6 +359,9 @@ class PropagationSetupDialog(QDialog):
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(Qt.CheckState.Checked if body in checked else Qt.CheckState.Unchecked)
             self.third_body_list.addItem(item)
+        rows = self.third_body_list.count()
+        self.third_body_list.setFixedHeight(rows * max(ROW_HEIGHT, self.third_body_list.sizeHintForRow(0))
+                                            + 2 * self.third_body_list.frameWidth())
         self.third_body_list.blockSignals(False)
 
     def _checked_third_bodies(self) -> list:
@@ -575,22 +602,28 @@ class PropagationSetupDialog(QDialog):
         # (schema.scenario.SpaceWeatherConfig's own docstring) -- greyed
         # out rather than hidden, so switching back doesn't lose whatever
         # the user had set.
-        self.space_weather_source_combo.setEnabled(is_msis)
-        self.local_file_edit.setEnabled(is_msis and self.space_weather_source_combo.currentText() == "local_file")
-        self.local_file_browse_button.setEnabled(
-            is_msis and self.space_weather_source_combo.currentText() == "local_file"
-        )
-        for widget in (self.forecast_percentile_combo, self.msfc_file_edit, self.msfc_browse_button):
-            widget.setEnabled(is_msis)
-        self.atmosphere_table_combo.setEnabled(self._selected_atmosphere_model() == "tabular")
+        # Off with the reason and what turns it on, in the tooltip (UI audit UI-42).
+        for widget in (self.space_weather_source_combo, self.forecast_percentile_combo, self.msfc_file_edit,
+                       self.msfc_browse_button):
+            set_off_reason(widget, is_msis, _NOT_MSIS)
+        self._show_local_file(self.space_weather_source_combo.currentText())
+        set_off_reason(self.atmosphere_table_combo, self._selected_atmosphere_model() == "tabular",
+                       "Off: the atmosphere model is not the tabular one. Choose Tabular as the Atmosphere model "
+                       "to pick a table.")
+
+    def _show_local_file(self, source: str) -> None:
+        """The local file and its Browse...: on for NRLMSISE-00 with the local_file source."""
+        is_msis = self._selected_atmosphere_model() == "nrlmsise00"
+        reason = _NOT_MSIS if not is_msis else ("Off: the space weather comes from the Source chosen. Choose "
+                                                "local_file as the Source to give a file.")
+        for widget in (self.local_file_edit, self.local_file_browse_button):
+            set_off_reason(widget, is_msis and source == "local_file", reason)
 
     def _selected_atmosphere_model(self) -> str:
         return self._atmosphere_model_items[self.atmosphere_model_combo.currentIndex()][1]
 
     def _on_space_weather_source_changed(self, source: str) -> None:
-        is_msis = self._selected_atmosphere_model() == "nrlmsise00"
-        self.local_file_edit.setEnabled(is_msis and source == "local_file")
-        self.local_file_browse_button.setEnabled(is_msis and source == "local_file")
+        self._show_local_file(source)
         if source == "local_file":
             self._suggest_cached_local_file()
 

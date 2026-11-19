@@ -19121,3 +19121,82 @@ or assert the new words: `docs/ui/TEST_CHANGES.md` lists them. Screenshots taken
 offscreen at 1280 x 720 before and after show Scenario › Assumptions
 (template 33), the sensors of template 07 and its FSW mode list, the
 central and third bodies of template 30 and the Reference data window.
+
+## UI audit batch B6: one form grid and page inset (2026-11-19)
+
+The screenshot audit of 2026-11-17 grouped eight defects under "form
+grid and page inset": forms whose fields started at a different x in
+each group, fields as wide as the page, pages without a margin or with
+one of their own, a cut tree node and a cut tab row, and disabled
+controls that did not say why.
+
+**The page inset (UI-16).** Results › Output, the JSON page and Reports ›
+Flight Software started their content at the page's edge; the other
+pages at 9, 12, 16, 18, 24 or 25 px. `theme.PAGE_INSET` (16 px, the
+area header's inset of its title) is now the one inset of every page.
+`AreaPage` applies it to each tab of a tabbed area, to the area itself
+when it has no tabs, and to the pages a screen names (the Scenario
+tree's and the JSON page), the pages added later too
+(`shell.inset_page`, `inset_stack`). A page that scrolls itself (the Run
+page, Overview, Home, the embedded spacecraft, station and Environment
+forms) is marked `INSET_INSIDE` and puts it inside its scroll area. The
+tab rows and the tree stay flush. Home's reference-data band now takes
+no room while its card is hidden, so Home starts at the inset too.
+
+**General (UI-52).** Scenario › Scenario showed "Scenario" three times:
+the area's title, the node and the page's group title. The node is
+**General** and the page has no group title; the form starts at the
+inset from the tree, not 4 px from it. The breadcrumb reads "Scenario ›
+General". The manual and the user guide name the node.
+
+**The tree (UI-18).** "Power / propulsion / link budget" was cut at
+220 px. The tree's minimum width is now what its longest node needs
+(`PageTree.needed_width`: indentation, text, padding, frame, scroll
+bar), between 170 and 340 px; 287 px for template 07 on Linux.
+
+**The form grid (UI-26).** Each `QFormLayout` sized its own label
+column, so the fields of a page started at a different x in each group
+or section; combos were 770 to 960 px wide, End of Life's Look ahead
+820 px, the LTAN field 435 px and a button 880 px. `finish_form` now
+installs a `FormGrid` on the page: the label column of every form of the
+page reaches one x, measured from the forms' positions, at most 224 px
+(a longer label wraps). It lines up again when a section is built or a
+group opens. `limit_field_widths` keeps a drop-down list at 320 px at
+most (a long entry ends in "…"), a number field at 224 px, and a button
+alone in a row at its own width. The General page, End of Life and the
+re-entry section are finished forms now; End of Life's numbers are
+`NumberField`s. The widths are theme constants (`FIELD_WIDTH`,
+`LABEL_COLUMN_MAX_PX`).
+
+**Disabled inputs (UI-42).** Pace, Degree/order, Gravity from the shape
+model, a dry mass the 3D model gives and the re-entry Estimate were off
+with no reason. `widgets.set_off_reason` gives a disabled input a
+tooltip that starts "Off:", says why and names what turns it on, before
+its own tooltip. A test walks every Scenario page and the Run and
+Reports tabs of templates 07, 28 and 30; the other inputs it found off
+without one have a reason too, so it needs no allow-list.
+
+**The thermal editor (UI-13).** The 3D model's thermal model had ten
+tabs (cut at "Mon"), QTableWidgets with grid lines, and tables that
+scrolled sideways inside the page. It has six tabs now: Nodes, Faces,
+Couplings, Heat loads, Cases and Solver. Its tables are an editable
+model/view grid (`RecordModel`, `RecordTable`): no grid lines, numbers
+right-aligned, as tall as their rows, columns fitted to the page, and an
+empty list shows Add. Generate, Conductance and every record and field
+work as before; the section round-trips exactly.
+
+**Monte Carlo and the third bodies (UI-04, UI-53).** Scenario › Monte
+Carlo's line on what it does floated in the middle of the page; the
+page is a top page now. The third bodies were check boxes in a framed
+list box with 16 px rows; they are a frameless list (role `checklist`)
+at the table-row height, as tall as its rows.
+
+Tests: the new file `tests/gui/test_form_grid.py` (16 tests) failed
+before the fixes. Five existing GUI test files changed: they reach the
+renamed node or the new thermal tables another way, or assert the new
+name; `docs/ui/TEST_CHANGES.md` lists them. The golden files are
+unchanged. Screenshots at 1280 x 720
+before and after show Scenario › General, Environment, Orbit / mass,
+Power / propulsion / link budget, Attitude control, Monte Carlo, the
+thermal editor of template 33, Run › End of Life, Results › Output, the
+JSON page, Reports › Flight Software and the propagation set-up dialog.

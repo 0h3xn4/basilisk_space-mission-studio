@@ -3,7 +3,7 @@
 How to make a spacecraft point somewhere, give it sensors and actuators,
 and add the torques that disturb it.
 
-Attitude needs **Simulation mode** *Full attitude* (the **Scenario**
+Attitude needs **Simulation mode** *Full attitude* (the **General**
 page of the scenario tree). In *Orbit only* the spacecraft has a position but no
 orientation.
 

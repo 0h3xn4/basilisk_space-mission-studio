@@ -433,7 +433,7 @@ class MissionViewWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(SPACE["sm"])
         controls = QHBoxLayout()
-        controls.setContentsMargins(SPACE["md"], SPACE["sm"], SPACE["md"], 0)
+        controls.setContentsMargins(0, 0, 0, 0)  # the page inset is the area's (UI audit UI-16)
         controls.setSpacing(SPACE["sm"])
         self.play_button = QPushButton(icon("play"), "Play")
         self.play_button.setToolTip("Play the run (Space)")

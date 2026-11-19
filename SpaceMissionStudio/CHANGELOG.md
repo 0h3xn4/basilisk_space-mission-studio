@@ -85,6 +85,25 @@ fixes bugs.
 - The window writes a dash as "–", not "--", and writes units as °, m²,
   kg·m² and Wh instead of deg, m^2, kg*m^2 and W*h; so does the user
   manual. File formats, JSON keys and the command line are unchanged.
+- **One form grid and page inset** (UI audit batch B6). Every page of
+  every area starts its content 16 px from its edges; Results › Output,
+  the JSON page and Reports › Flight Software had no margin. On each
+  page the fields of all its forms start at one x, a long label wraps
+  instead of pushing the fields right, a drop-down list is at most
+  320 px wide (a long entry ends in "…") and a number field at most
+  224 px. Run › End of Life's numbers are number fields with their unit.
+- The Scenario area's first form is **General** (it was a third
+  "Scenario"), and the scenario tree is wide enough for "Power /
+  propulsion / link budget".
+- A disabled field or button says why in its tooltip and what turns it
+  on: the Pace of the live 3D View, Degree/order, Gravity from the shape
+  model, a dry mass the 3D model gives, the re-entry Estimate and more.
+- The 3D model's thermal editor has six tabs that fit the page (Nodes,
+  Faces, Couplings, Heat loads, Cases, Solver) instead of ten cut ones.
+  Its tables have no grid lines, are as tall as their rows and fit the
+  page's width; a list with no row shows Add.
+- Scenario › Monte Carlo keeps its lines at the top of the page, and the
+  third bodies are check boxes in the form, not a list in a framed box.
 
 ## 2.12.0 (2026-11-18)
 
