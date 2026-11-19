@@ -19703,7 +19703,7 @@ The CHANGELOG's Unreleased entries are under 2.13.0, with an
 introduction, a Changed list for the space weather, Who should update
 and Known limits. SRelD issue 45 records the release: K-13 is extended,
 and K-44 to K-46 are new. The SDP, SRS, ICD, CSD, SUM, limitations and
-`README.md` name 2.13.0. `BACKLOG.md` has five new items: the
+both READMEs name 2.13.0. `BACKLOG.md` has five new items: the
 intermittent crashes around background threads, the small plot items,
 the thermal energy residual's significant figures, the Budgets › Power
 items table at 1280 px, and a pointing error budget (not in the app
