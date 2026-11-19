@@ -346,11 +346,19 @@ bar and no toolbar:
   next start.
 - **DataTable (M6b):** `gui.data_table`, the table of a view: a
   `QTableView` over `DataModel` through a filter proxy; numeric columns
-  right-aligned in the numeric font (units in the headers); group rows
-  across the table; bold and muted cells by role; Ctrl+C copies TSV with
-  the header; the header's context menu shows and hides columns; columns
-  sized once when filled; an empty state with its action. Output, Monte
-  Carlo, Budget and Compare use it.
+  right-aligned in the numeric font (units in the headers, typeset by
+  `units.label`: "[deg]" shows "[°]"), a cell of text in one (`Row.plain`,
+  a model's name) left-aligned; headings left-aligned, a numeric column's
+  right; code columns (`code=`: keys, checksums) in the monospace font
+  and the secondary colour; a muted second line under a cell
+  (`Row.notes`: a key under a name), the rows then two lines high; a
+  status as a word with its status icon and ink (`Row.marks`); no grid
+  lines; group rows across the table as section headings, in the heading
+  weight on `bg.canvas`, never selectable (UI audit B4, UI-19); bold and
+  muted cells by role; Ctrl+C copies TSV with the header; the header's
+  context menu shows and hides columns; columns sized once when filled;
+  an empty state with its action. Output, Monte Carlo, Budget, Compare,
+  Scenario › Assumptions and the Reference data window use it.
 - **Run › Run (M5b):** the run mode as a segmented control in the Run
   area's header (`gui.run_page.RunModeControl`, the same `segmentedControl`
   look as Form · JSON); the Run page (`RunPage`) shows what the next run
@@ -512,7 +520,27 @@ after its section: "my-sat: Station keeping: Reboost thrust [N] must be
 - **A section is named once** in a message.
 
 **Units.** A label carries its unit in brackets ("Dry mass [kg]"); a
-dimensionless value has "[-]".
+dimensionless value has "[-]". The window shows every unit through
+`gui/units.py`: a field's suffix ("97.59°"), a table heading
+(`units.label`: "Off-nadir [°]"), a value beside its unit
+(`units.shown`: "W*h" as "Wh"). Text written in the GUI uses the
+display form ("0° = equatorial", "kg·m²"), never the code's ASCII
+spelling ("deg", "kg*m^2", "W/m^2"), which field names, JSON keys, the
+command line, messages and files keep (UI audit B4, UI-35).
+
+**Labels, not identifiers.** A form names a code by its professional
+term (`gui/field_text.py`): a device kind ("Star tracker" for
+`star_tracker`), a guidance mode ("Sun pointing" for `sunSafePoint`, as
+the Overview names it), a body ("Mars barycentre" for
+`mars barycenter`), a configuration parameter ("Residual propellant
+fraction" for `propellant_budget.residual_fraction`). The code stays the
+item's data, so the file is written as before, and an engineer finds it
+on hover or as a muted second line. The user's own names (st-1) stay as
+they are (UI audit B4, UI-08, UI-19).
+
+**Dashes.** A dash in the window's text and in the manual is an en dash
+with spaces (" – "), never "--"; a figure the run does not give is "–"
+(UI audit B4, UI-34). Command-line flags keep their hyphens.
 
 **One line first.**
 
@@ -761,6 +789,8 @@ decision "Breakout windows" in `docs/DECISIONS.md`):
 | A command with a shortcut is in the table above | `tests/gui/test_design_rules.py::test_the_shortcut_table_matches_the_registry` |
 | A widget with a worker thread waits for it before it is destroyed | `tests/gui/test_lifetime_widget.py`, `test_budget_widget.py`, `test_data_panel_widget.py` |
 | Help text is short and plain | `tests/gui/test_label_text.py` |
+| No "--" as a dash and no unit in its ASCII spelling in the GUI's strings or the manual; a suffix from a unit goes through `units.suffix` | `tests/test_gui_strings.py` |
+| A device kind, guidance mode, body and configuration parameter has a label in `gui/field_text.py` | `tests/gui/test_labels.py` |
 | Every input box has a visible border in both themes | `tests/gui/test_input_borders.py` |
 
 ## Checking a change

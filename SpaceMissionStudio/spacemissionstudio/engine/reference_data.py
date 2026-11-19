@@ -121,7 +121,10 @@ def _support_files() -> list[ReferenceFile]:
     except ImportError:
         return [ReferenceFile("support data", "SPICE kernels, gravity field, magnetic model", "missing",
                               note="Basilisk is not installed")]
-    kinds = {"LocalGravData": "gravity field", "MagneticFieldData": "magnetic model", "AlbedoData": "albedo map"}
+    # The kind of each support-data file by its Basilisk enum; the rest are SPICE kernels. The tabular
+    # atmosphere's published profiles are CSV tables, not kernels (UI audit B4, UI-49).
+    kinds = {"LocalGravData": "gravity field", "MagneticFieldData": "magnetic model", "AlbedoData": "albedo map",
+             "AtmosphereData": "atmosphere table"}
     files = []
     for kernel, status in zip(kernels.ALL_SUPPORT_DATA_FILES, kernels.cached_statuses()):
         rel = dataFetcher.relpath(kernel)

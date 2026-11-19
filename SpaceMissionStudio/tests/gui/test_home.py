@@ -85,14 +85,14 @@ def test_every_template_has_a_card_with_its_type_orbit_and_first_sentence(home):
 
 
 @pytest.mark.parametrize("prefix, mission_type, orbit", [
-    ("01", "Orbit only · 1 spacecraft", "Earth · 400 km circular · i 97.0 deg"),
-    ("02", "Orbit only · 1 spacecraft", "Earth · 941 × 35095 km · i 28.5 deg"),
-    ("03", "Orbit only · 1 spacecraft", "Earth · 35788 km circular · i 0.2 deg"),
-    ("04", "Orbit only · 6 spacecraft", "Earth · 700 km circular · i 53.0 deg"),
-    ("07", "Full attitude · Sun pointing · 1 spacecraft", "Earth · 550 km circular · i 97.6 deg · Sun-synchronous"),
-    ("19", "Full attitude · 1 spacecraft", "Earth · 550 km circular · i 97.6 deg · Sun-synchronous"),
-    ("30", "Orbit only · 1 spacecraft", "Mars · 11004 × 18204 km · i 30.0 deg"),
-    ("31", "Orbit only · 1 spacecraft", "Eros · 35 km from the centre · i 90.0 deg"),
+    ("01", "Orbit only · 1 spacecraft", "Earth · 400 km circular · i 97.0°"),
+    ("02", "Orbit only · 1 spacecraft", "Earth · 941 × 35095 km · i 28.5°"),
+    ("03", "Orbit only · 1 spacecraft", "Earth · 35788 km circular · i 0.2°"),
+    ("04", "Orbit only · 6 spacecraft", "Earth · 700 km circular · i 53.0°"),
+    ("07", "Full attitude · Sun pointing · 1 spacecraft", "Earth · 550 km circular · i 97.6° · Sun-synchronous"),
+    ("19", "Full attitude · 1 spacecraft", "Earth · 550 km circular · i 97.6° · Sun-synchronous"),
+    ("30", "Orbit only · 1 spacecraft", "Mars · 11004 × 18204 km · i 30.0°"),
+    ("31", "Orbit only · 1 spacecraft", "Eros · 35 km from the centre · i 90.0°"),
 ])
 def test_a_cards_type_and_orbit(home, prefix, mission_type, orbit):
     """Examples: a circular LEO, an eccentric orbit as periapsis and

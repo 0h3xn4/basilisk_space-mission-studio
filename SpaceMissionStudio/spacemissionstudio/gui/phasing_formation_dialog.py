@@ -172,29 +172,29 @@ class PhasingFormationDialog(QDialog):
 
         self.radial_km = _double_spin(-10000.0, 10000.0, 3, 1.0, 0.0)
         self.radial_km.setToolTip(
-            "Radial offset at epoch [km] -- outward along the chief's position vector. This is a STARTING "
+            "Radial offset at epoch [km] – outward along the chief's position vector. This is a STARTING "
             "geometry only: the active phasing controller does not hold radial separation, so this will "
             "drift over the run (see the dialog's own top note). A nonzero value here also distorts the "
             "follower's own orbital elements enough to throw off the controller's along-track error "
-            "estimate (a known numerical effect, worse than merely imprecise -- a correction can end up "
+            "estimate (a known numerical effect, worse than merely imprecise – a correction can end up "
             "making the real along-track separation WORSE, not better). A built-in safety guard suspends "
             "automatic corrections after a couple of cycles that don't actually converge rather than keep "
-            "burning propellant into that spiral, but it is a safety net, not a fix -- leave this at 0 "
+            "burning propellant into that spiral, but it is a safety net, not a fix – leave this at 0 "
             "unless you specifically need a radial offset, and prefer a small value if you do."
         )
         self.along_track_km = _double_spin(0.0, 100000.0, 3, 1.0, 50.0)  # [km] ahead of the chief; 0 is refused
         self.along_track_km.setToolTip(
-            "Along-track offset at epoch [km] -- ahead of the chief along its velocity direction. This IS "
+            "Along-track offset at epoch [km] – ahead of the chief along its velocity direction. This IS "
             "actively held: it becomes phasing_keeping.target_separation_km, the one separation component "
             "the controller maintains via along-track burns for the whole run. Achieved exactly at epoch "
             "when Radial and Cross-track are both 0. A nonzero radial offset especially (even a modest "
             "tens-of-km one) can push the achieved separation far past this target during the run, not "
-            "just start short of it -- see the Radial field's own tooltip."
+            "just start short of it – see the Radial field's own tooltip."
         )
         self.cross_track_km = _double_spin(-10000.0, 10000.0, 3, 1.0, 0.0)
         self.cross_track_km.setToolTip(
-            "Cross-track offset at epoch [km] -- along the chief's orbit-normal direction (out of its "
-            "orbital plane). Same starting-geometry-only caveat as the radial offset above -- not actively "
+            "Cross-track offset at epoch [km] – along the chief's orbit-normal direction (out of its "
+            "orbital plane). Same starting-geometry-only caveat as the radial offset above – not actively "
             "held by the controller."
         )
         offset_form.addRow("Radial (R) [km]", self.radial_km)
@@ -241,14 +241,14 @@ class PhasingFormationDialog(QDialog):
         self.station_keeping_target_altitude_km = _double_spin(0.001, 1.0e6, 3, 10.0, 500.0)
         self.station_keeping_target_altitude_km.setEnabled(False)
         self.station_keeping_target_altitude_km.setToolTip(
-            "Explicit station-keeping target altitude for the new follower -- only used while the "
+            "Explicit station-keeping target altitude for the new follower – only used while the "
             "checkbox above is OFF."
         )
         station_form.addRow("Explicit altitude [km]", self.station_keeping_target_altitude_km)
         self.eclipse_sunlit_threshold = _double_spin(0.001, 1.0, 4, 0.01, 0.99)
         self.eclipse_sunlit_threshold.setToolTip(
             "The real simulated shadow (eclipse) factor must be at or above this before a reboost "
-            "burn is allowed to fire -- a stand-in for a solar-electric bus that can't run its "
+            "burn is allowed to fire – a stand-in for a solar-electric bus that can't run its "
             "thruster off battery alone during eclipse. 1.0 = must be in full sunlight; lower values "
             "tolerate partial shadow (e.g. penumbra)."
         )

@@ -87,7 +87,7 @@ def test_an_edited_value_can_be_given_a_reason(editor, qtbot, monkeypatch):
     editor.flush_forms()
     editor.revalidate()
     note = orbit.mark_notes["inclination_deg"]
-    assert note.status == "edited" and note.label.text() == f"Edited (computed {computed:g} deg)"
+    assert note.status == "edited" and note.label.text() == f"Edited (computed {computed:g}°)"
     assert note.reason_button.isVisibleTo(orbit)
     asked = []
     monkeypatch.setattr(QInputDialog, "getMultiLineText",
@@ -142,8 +142,8 @@ def test_a_scenario_with_marks_opens_with_its_notes(qtbot):
     widget.show_spacecraft(0)
     qtbot.waitUntil(lambda: widget._spacecraft_nodes[0].form is not None)
     note = widget._spacecraft_nodes[0].form.orbit_widget.mark_notes["inclination_deg"]
-    assert note.status == "overridden" and note.label.text() == "Overridden (computed 97 deg): the customer's orbit"
-    assert f"Value used: {used:g} deg" in note.toolTip()
+    assert note.status == "overridden" and note.label.text() == "Overridden (computed 97°): the customer's orbit"
+    assert f"Value used: {used:g}°" in note.toolTip()
     assert widget.to_scenario().value_marks == scenario.value_marks
 
 
@@ -223,7 +223,7 @@ def test_the_note_says_what_an_edit_changes(editor, qtbot):
     editor.flush_forms()
     editor.revalidate()
     note = orbit.mark_notes["inclination_deg"]
-    assert note.label.text() == f"Edited (computed {computed:g} deg)"  # the status line as before
+    assert note.label.text() == f"Edited (computed {computed:g}°)"  # the status line as before
     assert "Not Sun-synchronous: the node moves" in note.consequence_label.text()
     assert note.consequence_label.isVisibleTo(orbit) and "Changes: The node drifts" in note.toolTip()
     orbit.inc_deg.setValue(computed)

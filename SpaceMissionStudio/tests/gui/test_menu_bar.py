@@ -302,7 +302,7 @@ def test_an_optional_file_not_downloaded_needs_no_attention(monkeypatch):
 
 def test_the_dialog_and_the_status_bar_do_not_count_optional_files(qtbot, monkeypatch):
     from spacemissionstudio.engine.reference_data import NOT_DOWNLOADED, ReferenceFile
-    from spacemissionstudio.gui.data_panel_widget import DataPanelWidget
+    from spacemissionstudio.gui.data_panel_widget import DataPanelWidget, status_text
 
     files = [ReferenceFile("SPICE kernel", "de430.bsp", "ok"),
              ReferenceFile("ITU-R recommendation data", "R-REC-P.676-13-Part1.txt", NOT_DOWNLOADED, note="Optional")]
@@ -311,4 +311,4 @@ def test_the_dialog_and_the_status_bar_do_not_count_optional_files(qtbot, monkey
     panel.show_files(files)
     assert "need attention" not in panel.status_label.text()
     assert "1 optional file(s) not downloaded" in panel.status_label.text()
-    assert panel.table.item(1, 2).text() == NOT_DOWNLOADED
+    assert panel.table.cell(1, 2) == status_text(NOT_DOWNLOADED) == "Not downloaded"

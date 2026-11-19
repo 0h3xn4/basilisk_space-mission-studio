@@ -107,7 +107,7 @@ from .data_handling_editor import GainTableWidget, InstrumentTableWidget
 from .roe_formation_editor import RoeTargetTableWidget
 from .facet_editor import FacetTableWidget
 from .solar_array_editor import SolarArrayTableWidget
-from .field_text import field_title, labelled
+from .field_text import field_title, labelled, mode_label
 from .feedback import (ProblemBanner, bring_into_view, clear_field_error, clear_invalid, clear_on_edit,
                        mark_invalid, report, show_dialog_error, show_field_error, show_toast)
 from .number_list import NumberListEditor
@@ -120,7 +120,7 @@ from . import units
 from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row
 
-_FSW_MODE_NONE_LABEL = "(none -- no attitude control)"
+_FSW_MODE_NONE_LABEL = "(none – no attitude control)"
 
 
 class _FswParamSpec(NamedTuple):
@@ -157,7 +157,7 @@ _FSW_MODE_PARAM_SPECS: dict[str, list[_FswParamSpec]] = {
                       label="Spin rate about the Sun axis"),
         _FswParamSpec("use_css_estimation", False, False,
                       "true: estimate sun heading from this spacecraft's own 'coarse_sun_sensor' "
-                      "sensors (cssWlsEst) instead of simpleNav's noise-free truth -- requires at "
+                      "sensors (cssWlsEst) instead of simpleNav's noise-free truth – requires at "
                       "least one coarse_sun_sensor sensor", label="Estimate Sun heading from CSS"),
     ],
     "locationPointing": [
@@ -166,11 +166,11 @@ _FSW_MODE_PARAM_SPECS: dict[str, list[_FswParamSpec]] = {
         # other; target_body's fill_on_reset=False keeps "Reset to
         # template" from filling both.
         _FswParamSpec("target_ground_station", False, "<ground station name>",
-                      "name of a GroundStationConfig already in this scenario -- exactly one of this or "
+                      "name of a GroundStationConfig already in this scenario – exactly one of this or "
                       "target_body is required", label="Point at ground station"),
         _FswParamSpec("target_body", False, "moon",
                       "name of a SPICE-tracked body (gravity.central_body or a gravity"
-                      ".third_body_perturbers entry) to point at directly -- exactly one of this or "
+                      ".third_body_perturbers entry) to point at directly – exactly one of this or "
                       "target_ground_station is required", fill_on_reset=False, label="Point at celestial body"),
         _FswParamSpec("pHat_B", False, [0.0, 0.0, 1.0], "body-frame pointing axis, unit vector [-]",
                       label="Pointing axis"),
@@ -198,15 +198,15 @@ _CONTROL_PARAM_SPECS: list[_FswParamSpec] = [
     # [rad/sec], Ki and integralLimit as [N*m], which the law does not bear out (docs/models/
     # flight-software-and-navigation.md, "The attitude controller's gains").
     _FswParamSpec("K", False, control_gains.DEFAULT_MRP_GAINS["K"],
-                  "MRP feedback proportional (attitude) gain [N*m] -- unticked, the reference 3.5 scaled to the "
+                  "MRP feedback proportional (attitude) gain [N*m] – unticked, the reference 3.5 scaled to the "
                   "spacecraft's inertia", label="Attitude gain K"),
     _FswParamSpec("P", False, control_gains.DEFAULT_MRP_GAINS["P"],
-                  "MRP feedback derivative (rate) gain [N*m*s] -- unticked, the reference 30 scaled to the "
+                  "MRP feedback derivative (rate) gain [N*m*s] – unticked, the reference 30 scaled to the "
                   "spacecraft's inertia", label="Rate gain P"),
-    _FswParamSpec("Ki", False, -1.0, "integral gain [1/(N*m*s^2)] -- negative disables integral feedback",
+    _FswParamSpec("Ki", False, -1.0, "integral gain [1/(N*m*s^2)] – negative disables integral feedback",
                   label="Integral gain Ki"),
     _FswParamSpec("integral_limit", False, 0.0,
-                  "integral windup limit [s] -- the largest each element of the integral of sigma may reach",
+                  "integral windup limit [s] – the largest each element of the integral of sigma may reach",
                   label="Integral limit"),
 ]
 
@@ -503,7 +503,7 @@ class SpacecraftEditorDialog(QDialog):
         self.dry_mass_kg = _spin(0.001, 1.0e6, decimals=3, step=10.0, value=config.dry_mass_kg if config else 100.0)
         self.dry_mass_kg.setToolTip(
             "Spacecraft mass WITHOUT propellant (propellant for any thruster below is tracked "
-            "separately). Affects acceleration from any force (thrust, drag, SRP) -- a heavier "
+            "separately). Affects acceleration from any force (thrust, drag, SRP) – a heavier "
             "spacecraft responds less to the same force."
         )
         top_form.addRow("Dry mass [kg]", self.dry_mass_kg)
@@ -532,11 +532,11 @@ class SpacecraftEditorDialog(QDialog):
 
         inertia_group = QGroupBox("Center of mass and moments of inertia [kg*m^2] (about the center of mass)")
         inertia_group.setToolTip(
-            "How the spacecraft's mass is distributed around its own body axes -- resistance to "
+            "How the spacecraft's mass is distributed around its own body axes – resistance to "
             "being rotated about each axis, the rotational analog of mass. A larger value on an "
             "axis means a slower response (and a larger commanded torque needed) for a given "
             "attitude maneuver about that axis. Assumed diagonal (a 'principal axis' body frame, "
-            "no cross-coupling terms) -- the common simplifying assumption for a simple-shaped bus."
+            "no cross-coupling terms) – the common simplifying assumption for a simple-shaped bus."
         )
         inertia_form = QFormLayout(inertia_group)
         com0 = config.center_of_mass_b_m if config else [0.0, 0.0, 0.0]
@@ -577,7 +577,7 @@ class SpacecraftEditorDialog(QDialog):
         self.enable_drag_check = QCheckBox("Enable atmospheric drag")
         self.enable_drag_check.setToolTip(
             "Adds real air-drag deceleration (Basilisk's exponential or NRLMSISE-00 atmosphere "
-            "model, set in Propagation setup) -- the dominant force shrinking a LEO orbit over "
+            "model, set in Propagation setup) – the dominant force shrinking a LEO orbit over "
             "time. Negligible above ~800-1000 km; matters a lot below ~500 km. Turning this on "
             "with no station-keeping configured means the orbit will genuinely decay over the run."
         )
@@ -586,7 +586,7 @@ class SpacecraftEditorDialog(QDialog):
         self.drag_coeff = _spin(0.1, 10.0, decimals=3, step=0.1,
                                  value=config.drag_coeff if config else SpacecraftConfig.drag_coeff)
         self.drag_coeff.setToolTip(
-            "Dimensionless drag coefficient (Cd) -- how efficiently the spacecraft's shape "
+            "Dimensionless drag coefficient (Cd) – how efficiently the spacecraft's shape "
             "converts the local atmosphere into drag force. ~2.0-2.2 is a common default for a "
             "generic convex bus; a real value needs a shape-specific aerodynamic analysis."
         )
@@ -594,14 +594,14 @@ class SpacecraftEditorDialog(QDialog):
         self.drag_area_m2 = _spin(0.0001, 1.0e6, decimals=4, step=0.1,
                                    value=config.drag_area_m2 if config else SpacecraftConfig.drag_area_m2)
         self.drag_area_m2.setToolTip(
-            "Cross-sectional area facing the oncoming atmosphere -- a flat-plate approximation, "
+            "Cross-sectional area facing the oncoming atmosphere – a flat-plate approximation, "
             "not the spacecraft's full surface area. Bigger = more drag force = faster orbit decay."
         )
         drag_srp_form.addRow("Drag cross-section area [m^2]", self.drag_area_m2)
         self.enable_srp_check = QCheckBox("Enable solar radiation pressure")
         self.enable_srp_check.setToolTip(
             "Adds the real, small push from sunlight photons reflecting/absorbing off the "
-            "spacecraft (Basilisk's radiationPressure model) -- automatically zero while the "
+            "spacecraft (Basilisk's radiationPressure model) – automatically zero while the "
             "spacecraft is in Earth's shadow. Usually a minor effect next to drag in LEO, but "
             "the dominant long-term perturbation at GEO and beyond, where drag is negligible."
         )
@@ -611,7 +611,7 @@ class SpacecraftEditorDialog(QDialog):
                                 value=config.srp_coeff if config else SpacecraftConfig.srp_coeff)
         self.srp_coeff.setToolTip(
             "Reflectivity coefficient (Cr): 1.0 = a perfectly absorbing (black) surface, 2.0 = "
-            "a perfectly reflecting (mirror) surface -- a reflecting surface feels roughly twice "
+            "a perfectly reflecting (mirror) surface – a reflecting surface feels roughly twice "
             "the force for the same cross-section, since the photon's momentum reverses instead "
             "of just stopping."
         )
@@ -619,7 +619,7 @@ class SpacecraftEditorDialog(QDialog):
         self.srp_area_m2 = _spin(0.0001, 1.0e6, decimals=4, step=0.1,
                                   value=config.srp_area_m2 if config else SpacecraftConfig.srp_area_m2)
         self.srp_area_m2.setToolTip(
-            "Cross-sectional area facing the Sun -- a flat-plate approximation, same idea as the "
+            "Cross-sectional area facing the Sun – a flat-plate approximation, same idea as the "
             "drag area above but for sunlight pressure instead of atmosphere."
         )
         drag_srp_form.addRow("SRP cross-section area [m^2]", self.srp_area_m2)
@@ -652,7 +652,7 @@ class SpacecraftEditorDialog(QDialog):
 
         attitude_group = QGroupBox("Initial attitude / body rate")
         attitude_group.setToolTip(
-            "The spacecraft's starting orientation and spin rate at the epoch -- only matters "
+            "The spacecraft's starting orientation and spin rate at the epoch – only matters "
             "if 'Full attitude' mode is selected (rotational dynamics aren't simulated in "
             "'Orbit only' mode, so these fields are ignored there)."
         )
@@ -666,17 +666,17 @@ class SpacecraftEditorDialog(QDialog):
         self.omega2 = _spin(-10.0, 10.0, decimals=6, step=0.001, value=omega0[1])
         self.omega3 = _spin(-10.0, 10.0, decimals=6, step=0.001, value=omega0[2])
         _sigma_tip = (
-            "Starting attitude, as a Modified Rodrigues Parameter (MRP) set -- Basilisk's own "
+            "Starting attitude, as a Modified Rodrigues Parameter (MRP) set – Basilisk's own "
             "compact 3-number attitude representation (no gimbal lock, unlike Euler angles; no "
             "redundant 4th component, unlike quaternions). All zeros means the body frame starts "
             "exactly aligned with the inertial frame. A magnitude close to 1 means close to a "
-            "180 deg rotation; MRPs switch to an equivalent 'shadow set' past that to stay "
+            "180° rotation; MRPs switch to an equivalent 'shadow set' past that to stay "
             "numerically well-behaved, which is why the range here is capped at +/-1."
         )
         for box in (self.sigma1, self.sigma2, self.sigma3):
             box.setToolTip(_sigma_tip)
         _omega_tip = (
-            "Starting angular velocity about each BODY axis (not inertial) -- how fast the "
+            "Starting angular velocity about each BODY axis (not inertial) – how fast the "
             "spacecraft is tumbling/spinning at the epoch. All zeros means it starts perfectly "
             "at rest relative to inertial space. A nonzero value here is exactly how a "
             "'detumble' scenario is set up: start fast, watch the chosen FSW mode slow it down."
@@ -715,7 +715,7 @@ class SpacecraftEditorDialog(QDialog):
         fsw_form = QFormLayout()
         self.fsw_mode_combo = ComboBox()
         self.fsw_mode_combo.setToolTip(
-            "Which attitude-control GUIDANCE law this spacecraft runs -- what direction it "
+            "Which attitude-control GUIDANCE law this spacecraft runs – what direction it "
             "tries to point, computed fresh every tick from the real simulated state (never a "
             "fixed, pre-scripted attitude). 'None' means no active control: the spacecraft "
             "coasts under whatever torques are actually turned on (e.g. gravity gradient) with "
@@ -723,8 +723,10 @@ class SpacecraftEditorDialog(QDialog):
             "needs in 'FSW params' underneath."
         )
         self.fsw_mode_combo.addItem(_FSW_MODE_NONE_LABEL, userData=None)
-        for mode in SUPPORTED_FSW_MODES:
-            self.fsw_mode_combo.addItem(mode, userData=mode)
+        for mode in SUPPORTED_FSW_MODES:  # its label shown, its code kept (UI-08)
+            self.fsw_mode_combo.addItem(mode_label(mode), userData=mode)
+            self.fsw_mode_combo.setItemData(self.fsw_mode_combo.count() - 1, f"fsw_mode: {mode}",
+                                            Qt.ItemDataRole.ToolTipRole)
         if config is not None and config.fsw_mode is not None:
             index = self.fsw_mode_combo.findData(config.fsw_mode)
             if index >= 0:
@@ -800,7 +802,7 @@ class SpacecraftEditorDialog(QDialog):
         self.comms_pointing_group.setToolTip(
             "Checking this ON makes this spacecraft automatically switch its attitude between "
             "Sun-pointing (normal operations) and ground-station-pointing (whenever it's in "
-            "real, simulated access to the ground station below) -- it builds and owns its own "
+            "real, simulated access to the ground station below) – it builds and owns its own "
             "guidance internally, so 'FSW mode' above must be left at '(none)'. If 'Comms "
             "power' below is > 0, this spacecraft's 'Power budget' (Power / propulsion / link "
             "budget tab) must also be configured."
@@ -821,7 +823,7 @@ class SpacecraftEditorDialog(QDialog):
         self.cp_ground_station_combo.setToolTip(
             "The ground station this spacecraft points its antenna at whenever it has real, "
             "simulated access to it (engine.service's own groundLocation.GroundLocation access "
-            "state -- never a fixed, manually-specified time window)."
+            "state – never a fixed, manually-specified time window)."
         )
         if self._ground_station_names:
             for gs_name in self._ground_station_names:
@@ -853,7 +855,7 @@ class SpacecraftEditorDialog(QDialog):
         self.cp_boresight_y = _spin(-1.0, 1.0, decimals=4, step=0.1, value=cp_boresight0[1])
         self.cp_boresight_z = _spin(-1.0, 1.0, decimals=4, step=0.1, value=cp_boresight0[2])
         _cp_boresight_tip = (
-            "Unit vector (body frame) of the antenna's own pointing direction -- this is the "
+            "Unit vector (body frame) of the antenna's own pointing direction – this is the "
             "axis actually aimed at the ground station while comms-pointing mode is active."
         )
         for box in (self.cp_boresight_x, self.cp_boresight_y, self.cp_boresight_z):
@@ -878,7 +880,7 @@ class SpacecraftEditorDialog(QDialog):
         self.cp_sun_axis_z = _spin(-1.0, 1.0, decimals=4, step=0.1, value=cp_sun_axis0[2])
         _cp_sun_axis_tip = (
             "Unit vector (body frame) aimed at the Sun during Sun-pointing mode. Only used when "
-            "the checkbox above is OFF -- set this to point a DIFFERENT body axis at the Sun "
+            "the checkbox above is OFF – set this to point a DIFFERENT body axis at the Sun "
             "than the power panel's own normal."
         )
         for box in (self.cp_sun_axis_x, self.cp_sun_axis_y, self.cp_sun_axis_z):
@@ -893,7 +895,7 @@ class SpacecraftEditorDialog(QDialog):
                                        value=cp0.comms_power_w if cp0 else 0.0)
         self.cp_comms_power_w.setToolTip(
             "Additional electrical power drawn (on top of 'Power budget' bus idle power) for "
-            "exactly as long as ground-station-pointing mode is actually active -- a stand-in "
+            "exactly as long as ground-station-pointing mode is actually active – a stand-in "
             "for a downlink transmitter's own power draw. Leave at 0 to model only the attitude "
             "-switching behavior with no extra power draw."
         )
@@ -946,7 +948,7 @@ class SpacecraftEditorDialog(QDialog):
         _panel_normal_tip = (
             "Unit vector (in the spacecraft BODY frame) the panel's flat face points along. "
             "Generated power depends on the real angle between this axis and the actual Sun "
-            "direction each tick -- straight at the Sun generates the most power, edge-on "
+            "direction each tick – straight at the Sun generates the most power, edge-on "
             "generates none. This is also the natural axis for Sun-pointing/Sun-safe FSW modes "
             "to aim at the Sun."
         )
@@ -963,7 +965,7 @@ class SpacecraftEditorDialog(QDialog):
                                           else PowerConfig.battery_capacity_wh)
         self.battery_capacity_wh.setToolTip(
             "Total energy the battery can hold. A smaller capacity means the state-of-charge "
-            "swings faster and further during each eclipse -- watch for it hitting 0% in the "
+            "swings faster and further during each eclipse – watch for it hitting 0% in the "
             "Results if this is set too small for the load."
         )
         self.battery_initial_soc = _spin(0.0, 1.0, decimals=4, step=0.05,
@@ -971,7 +973,7 @@ class SpacecraftEditorDialog(QDialog):
                                           else PowerConfig.battery_initial_soc)
         self.battery_initial_soc.setToolTip(
             "Battery charge level at the epoch, as a fraction of capacity above (1.0 = fully "
-            "charged, 0.0 = fully depleted). Only affects the starting point -- the simulated "
+            "charged, 0.0 = fully depleted). Only affects the starting point – the simulated "
             "charge/discharge cycle afterward is entirely real generation minus real loads."
         )
         power_form.addRow("Panel area [m^2]", self.panel_area_m2)
@@ -991,7 +993,7 @@ class SpacecraftEditorDialog(QDialog):
             "Checking this ON adds an automatic controller that fires a low-thrust reboost burn "
             "whenever this spacecraft's altitude decays too far below target, holding it there "
             "and tracking the delta-V/propellant spent doing so. Needs something to actually be "
-            "shrinking the orbit to have any visible effect -- turn on 'Enable atmospheric drag' "
+            "shrinking the orbit to have any visible effect – turn on 'Enable atmospheric drag' "
             "above too, or this will simply never fire."
         )
         self.station_keeping_group.setChecked(sk0 is not None)
@@ -1017,7 +1019,7 @@ class SpacecraftEditorDialog(QDialog):
         )
         self.sk_isp_s = _spin(1.0, 1.0e5, decimals=1, step=10.0, value=sk0.isp_s if sk0 else 1500.0)
         self.sk_isp_s.setToolTip(
-            "Specific impulse -- the thruster's propellant efficiency (effective exhaust "
+            "Specific impulse – the thruster's propellant efficiency (effective exhaust "
             "velocity / g0). Higher Isp means less propellant burned for the same delta-V "
             "(~1500-2000 s is typical for an electric thruster; ~200-300 s for chemical)."
         )
@@ -1025,20 +1027,20 @@ class SpacecraftEditorDialog(QDialog):
         self.sk_propellant_kg.setToolTip(
             "Propellant mass available at the epoch, burned down by the rocket equation as "
             "reboost burns fire. Once depleted, this controller stops firing and the orbit is "
-            "free to decay -- watch for that in Results if the run is long enough."
+            "free to decay – watch for that in Results if the run is long enough."
         )
         self.sk_eclipse_sunlit_threshold = _spin(0.001, 1.0, decimals=4, step=0.01,
                                                    value=sk0.eclipse_sunlit_threshold if sk0 else 0.99)
         self.sk_eclipse_sunlit_threshold.setToolTip(
             "The real simulated shadow (eclipse) factor must be at or above this before a "
-            "reboost burn is allowed to fire -- a stand-in for a solar-electric bus that can't "
+            "reboost burn is allowed to fire – a stand-in for a solar-electric bus that can't "
             "run its thruster off battery alone during eclipse. 1.0 = must be in full sunlight; "
             "lower values tolerate partial shadow (e.g. penumbra)."
         )
         self.sk_min_on_time_s = _spin(0.0, 86400.0, decimals=1, step=10.0,
                                       value=sk0.min_on_time_s if sk0 else 0.0)
         self.sk_min_on_time_s.setToolTip(
-            "Shortest firing this thruster can make [s] -- its minimum impulse bit is thrust x this. "
+            "Shortest firing this thruster can make [s] – its minimum impulse bit is thrust x this. "
             "A firing, once started, always lasts at least this long; a correction needing less than "
             "half of one minimum firing is skipped, and one needing more is rounded up to it. 0 = an "
             "ideal thruster. Also applies to phasing-keeping burns on this spacecraft (same thruster). "
@@ -1104,7 +1106,7 @@ class SpacecraftEditorDialog(QDialog):
         self.constant_thrust_group.setToolTip(
             "Checking this ON fires a continuous, always-on thruster whose direction is fixed "
             "relative to the orbit (not a fixed inertial direction, so it doesn't drift as the "
-            "spacecraft moves) -- e.g. a constant prograde or out-of-plane push, with its own "
+            "spacecraft moves) – e.g. a constant prograde or out-of-plane push, with its own "
             "independent delta-V/propellant budget. Works in either simulation mode (no "
             "attitude model needed), unlike the station-keeping controller above."
         )
@@ -1127,7 +1129,7 @@ class SpacecraftEditorDialog(QDialog):
         self.ct_dir_y = _spin(-1.0, 1.0, decimals=6, step=0.1, value=ct_dir0[1])
         self.ct_dir_z = _spin(-1.0, 1.0, decimals=6, step=0.1, value=ct_dir0[2])
         _ct_dir_tip = (
-            "Unit vector giving the thrust direction, in the rotating Frame selected above -- "
+            "Unit vector giving the thrust direction, in the rotating Frame selected above – "
             "re-evaluated every tick from the spacecraft's current state, so this stays e.g. "
             "'always prograde' rather than drifting the way a fixed inertial vector would. "
             "[1,0,0] in VNB is pure prograde (raises the orbit); [0,0,1] in either frame is "
@@ -1142,13 +1144,13 @@ class SpacecraftEditorDialog(QDialog):
         ct_form.addRow("Thrust [N]", self.ct_thrust_n)
         self.ct_isp_s = _spin(1.0, 1.0e5, decimals=1, step=10.0, value=ct0.isp_s if ct0 else 1500.0)
         self.ct_isp_s.setToolTip(
-            "Specific impulse -- propellant efficiency (effective exhaust velocity / g0). "
+            "Specific impulse – propellant efficiency (effective exhaust velocity / g0). "
             "Higher Isp burns less propellant for the same thrust/duration."
         )
         ct_form.addRow("Thruster Isp [s]", self.ct_isp_s)
         self.ct_propellant_kg = _spin(0.0, 1.0e5, decimals=3, step=0.1, value=ct0.propellant_kg if ct0 else 2.0)
         self.ct_propellant_kg.setToolTip(
-            "Propellant mass available at the epoch -- once depleted (by the rocket equation, "
+            "Propellant mass available at the epoch – once depleted (by the rocket equation, "
             "tracked every tick), this thruster stops firing on its own."
         )
         ct_form.addRow("Propellant available [kg]", self.ct_propellant_kg)
@@ -1162,9 +1164,9 @@ class SpacecraftEditorDialog(QDialog):
         self.phasing_keeping_group.setCheckable(True)
         self.phasing_keeping_group.setToolTip(
             "Checking this ON holds this spacecraft's along-track spacing from a 'chief' "
-            "spacecraft at a target distance -- by default via an occasional drift-orbit maneuver "
+            "spacecraft at a target distance – by default via an occasional drift-orbit maneuver "
             "(a small, temporary altitude offset, let it drift, then a restoring burn), or by one "
-            "of Basilisk's formation-flying control laws (see 'Control law') -- useful for "
+            "of Basilisk's formation-flying control laws (see 'Control law') – useful for "
             "spreading satellites evenly around the SAME orbital plane, e.g. a Walker "
             "constellation. REQUIRES 'Station keeping' above to also be enabled: both share "
             "one physical thruster/propellant tank, with altitude-keeping taking priority if "
@@ -1206,7 +1208,7 @@ class SpacecraftEditorDialog(QDialog):
             "separation to tens of metres, for far more delta-V (template 05: 3.3 m/s in 90 days "
             "against 0.014 m/s for the drift orbit). Earth with J2 only.\n"
             "Hill-frame PD: holds a fixed point next to the chief; for close formations "
-            "(about a kilometre) with enough thrust -- it fires all the time and can diverge "
+            "(about a kilometre) with enough thrust – it fires all the time and can diverge "
             "if the thruster saturates.\n"
             "See User Manual, 'Formation control laws'."
         )
@@ -1236,7 +1238,7 @@ class SpacecraftEditorDialog(QDialog):
         self.pk_tolerance_fraction.setToolTip(
             "How far the real separation must drift off target (as a fraction of the current "
             "target) before a correction maneuver starts. Wider = fewer, larger corrections; "
-            "narrower = tighter formation-keeping at the cost of firing more often -- there's "
+            "narrower = tighter formation-keeping at the cost of firing more often – there's "
             "no single right answer, it depends on the mission's own tolerance for drift."
         )
         pk_form.addRow("Trigger tolerance [-] (fraction of target)", self.pk_tolerance_fraction)
@@ -1244,14 +1246,14 @@ class SpacecraftEditorDialog(QDialog):
                                                      value=pk0.restore_tolerance_fraction if pk0 else 0.02)
         self.pk_restore_tolerance_fraction.setToolTip(
             "Once a correction is underway, how close to the target counts as 'close enough, "
-            "stop drifting' and settle back onto the target orbit -- tighter than the trigger "
+            "stop drifting' and settle back onto the target orbit – tighter than the trigger "
             "tolerance above, since this is the actual precision the correction aims for."
         )
         pk_form.addRow("Restore tolerance [-] (fraction of target)", self.pk_restore_tolerance_fraction)
         self.pk_correction_window_days = _spin(0.1, 1.0e4, decimals=2, step=1.0,
                                                 value=pk0.correction_window_days if pk0 else 3.0)
         self.pk_correction_window_days.setToolTip(
-            "Target time to null a freshly-triggered phasing error -- sets how aggressive the "
+            "Target time to null a freshly-triggered phasing error – sets how aggressive the "
             "temporary drift-orbit altitude offset needs to be (a shorter window needs a "
             "bigger, faster offset). Delta-V scales roughly as 1 / window: at ~550 km, closing "
             "50 km takes ~0.13 m/s in 3 days, ~0.38 m/s in 1 day."
@@ -1261,7 +1263,7 @@ class SpacecraftEditorDialog(QDialog):
                                         value=pk0.max_drift_days if pk0 else 90.0)
         self.pk_max_drift_days.setToolTip(
             "Safety cap: the drift-orbit coast phase is never allowed to run longer than this, "
-            "even if the correction hasn't finished -- bounds how long this spacecraft can "
+            "even if the correction hasn't finished – bounds how long this spacecraft can "
             "spend off its nominal orbit at once."
         )
         pk_form.addRow("Max drift coast [days]", self.pk_max_drift_days)
@@ -1269,7 +1271,7 @@ class SpacecraftEditorDialog(QDialog):
                                           value=pk0.max_delta_semi_major_axis_km if pk0 else 3.0)
         self.pk_max_delta_sma_km.setToolTip(
             "Safety clamp: the temporary semi-major-axis offset used to drift into position is "
-            "never allowed to exceed this -- bounds how far the orbit is allowed to change "
+            "never allowed to exceed this – bounds how far the orbit is allowed to change "
             "during a correction."
         )
         pk_form.addRow("Max drift-orbit SMA offset [km]", self.pk_max_delta_sma_km)
@@ -1449,7 +1451,7 @@ class SpacecraftEditorDialog(QDialog):
         self.momentum_dumping_group.setCheckable(True)
         self.momentum_dumping_group.setToolTip(
             "Checking this ON fires thrusters in short pulses to bleed off reaction-wheel "
-            "momentum whenever it builds up too far -- wheels alone can't shed momentum they've "
+            "momentum whenever it builds up too far – wheels alone can't shed momentum they've "
             "absorbed from persistent external torques (e.g. gravity gradient), so without this "
             "they'd eventually saturate and lose control authority. Thrusters here are used ONLY "
             "for desaturation, never for primary pointing (that stays on the reaction wheels). "
@@ -1469,7 +1471,7 @@ class SpacecraftEditorDialog(QDialog):
         self.md_thr_min_fire_time = _spin(1.0e-4, 100.0, decimals=4, step=0.01,
                                            value=md0.thr_min_fire_time if md0 else 0.02)
         self.md_thr_min_fire_time.setToolTip(
-            "Shortest thruster pulse this controller will command -- a real thruster valve "
+            "Shortest thruster pulse this controller will command – a real thruster valve "
             "can't open for an arbitrarily short time, so a commanded pulse shorter than this "
             "gets rounded up (or skipped)."
         )
@@ -1478,7 +1480,7 @@ class SpacecraftEditorDialog(QDialog):
                                            value=md0.max_counter_value if md0 else 100)
         self.md_max_counter_value.setToolTip(
             "Minimum number of attitude-control cycles to wait between desaturation firings, "
-            "even if the momentum threshold is already crossed -- avoids firing thrusters so "
+            "even if the momentum threshold is already crossed – avoids firing thrusters so "
             "often that they fight the reaction wheels' own control authority."
         )
         md_form.addRow("Control periods between firings [-]", self.md_max_counter_value)
@@ -1501,7 +1503,7 @@ class SpacecraftEditorDialog(QDialog):
             "above) biases the reaction wheels' commanded motor torque to drive each wheel's "
             "speed toward a target bias, using whatever magnetic torque Earth's real geomagnetic "
             "field (the WMM model) allows at the spacecraft's current position. The alternative "
-            "desaturation strategy to 'Momentum dumping' -- use ONE or the other, never both. "
+            "desaturation strategy to 'Momentum dumping' – use ONE or the other, never both. "
             "REQUIRES both 'reaction_wheel' and 'magnetic_torque_rod' actuators on this "
             "spacecraft, and an Earth-centered scenario (the WMM field model is Earth-only)."
         )
@@ -1543,7 +1545,7 @@ class SpacecraftEditorDialog(QDialog):
             "Checking this ON adds a real Basilisk fuel-tank state effector: any 'thruster' "
             "actuator on this spacecraft draws propellant from it as it fires, and the "
             "spacecraft's own simulated mass (and center of mass, since the tank has a "
-            "position) decreases as the tank drains -- unlike station-keeping/constant-thrust's "
+            "position) decreases as the tank drains – unlike station-keeping/constant-thrust's "
             "own simplified propellant bookkeeping above, this feeds back into the real "
             "simulated dynamics. REQUIRES a 'thruster' actuator configured on the "
             "Sensors/actuators tab."
@@ -1557,7 +1559,7 @@ class SpacecraftEditorDialog(QDialog):
         self.ft_max_propellant_mass = _spin(1.0e-6, 1.0e6, decimals=3, step=1.0,
                                               value=ft0.max_propellant_mass_kg if ft0 else 20.0)
         self.ft_max_propellant_mass.setToolTip(
-            "The tank's physical capacity -- must be at least as large as the propellant mass "
+            "The tank's physical capacity – must be at least as large as the propellant mass "
             "above (you can load a partially-full tank, never more than it can hold)."
         )
         ft_form.addRow("Tank capacity [kg]", self.ft_max_propellant_mass)
@@ -1569,7 +1571,7 @@ class SpacecraftEditorDialog(QDialog):
         _ft_tank_pos_tip = (
             "Where the tank physically sits, in the spacecraft body frame (origin at the body "
             "reference point). As the tank drains, the spacecraft's real center of mass shifts "
-            "slightly toward or away from this position -- usually a small effect, more "
+            "slightly toward or away from this position – usually a small effect, more "
             "noticeable for a large tank far from the body's own center."
         )
         for box in (self.ft_tank_pos_x, self.ft_tank_pos_y, self.ft_tank_pos_z):
@@ -1611,7 +1613,7 @@ class SpacecraftEditorDialog(QDialog):
                                      value=(rf_link0.data_rate_bps / 1.0e6) if rf_link0 else 1.0)
         self.data_rate_mbps.setToolTip(
             "Downlink data rate. Higher data rate spreads the same received power over more "
-            "bits per second, which REDUCES the margin -- there's a direct trade between "
+            "bits per second, which REDUCES the margin – there's a direct trade between "
             "downlink speed and link robustness. Shown in Mbit/s, saved in the scenario in bit/s "
             "(rf_link.data_rate_bps)."
         )
@@ -1619,7 +1621,7 @@ class SpacecraftEditorDialog(QDialog):
                                           value=rf_link0.tx_antenna_gain_dbi if rf_link0
                                           else RFLinkConfig.tx_antenna_gain_dbi)
         self.tx_antenna_gain_dbi.setToolTip(
-            "Spacecraft downlink antenna's gain -- how much it concentrates its RF power toward "
+            "Spacecraft downlink antenna's gain – how much it concentrates its RF power toward "
             "the ground station rather than radiating it evenly in all directions. 0 dBi is an "
             "idealized unity-gain (omnidirectional) antenna."
         )
@@ -1627,7 +1629,7 @@ class SpacecraftEditorDialog(QDialog):
                                                  value=rf_link0.implementation_loss_db if rf_link0 else 2.0)
         self.rf_implementation_loss_db.setToolTip(
             "A lumped catch-all loss (pointing error, polarization mismatch, hardware "
-            "imperfection, etc.) subtracted from the link budget as a fixed penalty -- ~2 dB is "
+            "imperfection, etc.) subtracted from the link budget as a fixed penalty – ~2 dB is "
             "a common rough default when these aren't modeled individually."
         )
         self.required_ebno_db = _spin(-50.0, 50.0, decimals=2, step=0.5,
@@ -1635,7 +1637,7 @@ class SpacecraftEditorDialog(QDialog):
         self.required_ebno_db.setToolTip(
             "The minimum Eb/N0 (energy per bit over noise density) the ground receiver's "
             "modulation and coding scheme needs to decode the signal reliably. The reported "
-            "margin is the ACTUAL computed Eb/N0 minus this number -- a more robust "
+            "margin is the ACTUAL computed Eb/N0 minus this number – a more robust "
             "modulation/coding scheme needs a lower number here and is easier to close."
         )
         # antenna_beamwidth_deg (Optional[float]): None (the checkbox below
@@ -1657,7 +1659,7 @@ class SpacecraftEditorDialog(QDialog):
         )
         self.rf_beamwidth_deg.setEnabled(self.rf_beamwidth_check.isChecked())
         self.rf_beamwidth_deg.setToolTip(
-            "Half-power beamwidth of this spacecraft's downlink antenna pattern -- narrower "
+            "Half-power beamwidth of this spacecraft's downlink antenna pattern – narrower "
             "(smaller) beamwidths need more precise pointing (via 'Comms pointing' on the FSW "
             "tab) to avoid a real link-margin penalty. Only used while the checkbox above is ON."
         )
@@ -2126,10 +2128,10 @@ class SpacecraftEditorDialog(QDialog):
             missing = _fsw_missing_required_keys(fsw_mode, fsw_params)
             if missing:
                 raise ValueError(
-                    f"FSW mode {fsw_mode!r} is missing required params key(s): {', '.join(missing)} -- "
+                    f"FSW mode {fsw_mode!r} is missing required params key(s): {', '.join(missing)} – "
                     "tick 'Point at ground station' or 'Point at celestial body'"
                     if fsw_mode == "locationPointing" else
-                    f"FSW mode {fsw_mode!r} is missing required params key(s): {', '.join(missing)} -- "
+                    f"FSW mode {fsw_mode!r} is missing required params key(s): {', '.join(missing)} – "
                     "use 'Reset to template' for a working example"
                 )
             sensors = self.sensor_list.to_list()
@@ -2521,7 +2523,7 @@ class SpacecraftEditorDialog(QDialog):
         target_ground_station = self.cp_ground_station_combo.currentData()
         if target_ground_station is None:
             raise ScenarioValidationError(
-                "comms_pointing is enabled but no ground station is selectable -- add a ground "
+                "comms_pointing is enabled but no ground station is selectable – add a ground "
                 "station to this scenario first, or uncheck 'Comms pointing'"
             )
         sun_pointing_axis_b = None if self.cp_sun_axis_default_check.isChecked() else [
@@ -2607,7 +2609,7 @@ class SpacecraftEditorDialog(QDialog):
             spins = (_spin(0.0, maximum, decimals=6, step=0.001, value=step),
                      _spin(0.0, maximum, decimals=6, step=0.01, value=bound))
             for spin, part in zip(spins, ("step per update", "bound")):
-                spin.setSuffix(f" {unit}")
+                spin.setSuffix(units.suffix(unit))
                 spin.setAccessibleName(f"{label} {part}")  # a grid row has no form label
             grid.addWidget(QLabel(label), row, 0)
             grid.addWidget(spins[0], row, 1)
@@ -2640,7 +2642,7 @@ class SpacecraftEditorDialog(QDialog):
         wheel_speed_biases_rad_s = self.mmm_wheel_speed_biases.values()
         if not wheel_speed_biases_rad_s:
             raise ScenarioValidationError(
-                "Magnetic momentum management needs at least one reaction wheel -- add one on the "
+                "Magnetic momentum management needs at least one reaction wheel – add one on the "
                 "Sensors/actuators tab"
             )
         return MagneticMomentumManagementConfig(
@@ -2684,7 +2686,7 @@ class SpacecraftEditorDialog(QDialog):
         chief = self.pk_chief_combo.currentData()
         if chief is None:
             raise ScenarioValidationError(
-                "phasing_keeping is enabled but no chief spacecraft is selectable -- add another "
+                "phasing_keeping is enabled but no chief spacecraft is selectable – add another "
                 "spacecraft to this scenario first, or uncheck 'Phasing keeping'"
             )
         target_separation_km = self.pk_target_separations.values()
@@ -2762,7 +2764,7 @@ class SpacecraftEditorDialog(QDialog):
             ("min_radius_px", "Smallest usable disk [px] (radius)", 0.1, 1.0e4, 2, 1.0,
              "A disk smaller than this, far away, is not used."),
             ("max_phase_angle_deg", "Largest phase angle [deg]", 0.1, 180.0, 1, 5.0,
-             "Sun-body-camera angle above which the image is not used: 90 deg leaves out the night side."),
+             "Sun-body-camera angle above which the image is not used: 90° leaves out the night side."),
             ("initial_position_sigma_m", "Initial position uncertainty [m] (1 sigma)", 1.0e-3, 1.0e9, 3, 100.0,
              "The filter starts this far off (one random draw) and with this uncertainty, each axis."),
             ("initial_velocity_sigma_mps", "Initial velocity uncertainty [m/s] (1 sigma)", 1.0e-6, 1.0e4, 4, 0.1,
@@ -2921,7 +2923,7 @@ class SpacecraftEditorDialog(QDialog):
         chief = self.roe_chief_spacecraft_combo.currentData()
         if chief is None:
             raise ScenarioValidationError(
-                "roe_formation is enabled but no chief spacecraft is selectable -- add another spacecraft to "
+                "roe_formation is enabled but no chief spacecraft is selectable – add another spacecraft to "
                 "this scenario first, or uncheck 'ROE formation'"
             )
         try:
@@ -3002,12 +3004,12 @@ class SpacecraftEditorDialog(QDialog):
             else:
                 n = link_budget.cosine_exponent(gain)
                 rf = RFLinkConfig(1.0, 1.0, 1.0, tx_antenna_gain_dbi=gain, antenna_pattern="cosine")
-                text = (f"n = {n:.2f}, half-power beamwidth {link_budget.half_power_beamwidth_deg(rf):.0f} deg. "
+                text = (f"n = {n:.2f}, half-power beamwidth {link_budget.half_power_beamwidth_deg(rf):.0f}°. "
                         "The model takes the gain as the directivity, so a real patch's beam is narrower: a "
                         "datasheet table is closer. The pattern applies the pointing loss: leave it out of the "
                         "implementation loss.")
         elif pattern == "table":
-            text = ("The 0 deg row is the peak gain; TX antenna gain above is not used. The table applies the "
+            text = ("The 0° row is the peak gain; TX antenna gain above is not used. The table applies the "
                     "pointing loss: leave it out of the implementation loss.")
         self.rf_pattern_hint.setText(text)
         self.rf_pattern_hint.setVisible(bool(text))

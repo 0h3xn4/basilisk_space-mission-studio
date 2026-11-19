@@ -44,7 +44,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import export_log
+from . import export_log, units
 from .. import output_provenance
 from ..schema.scenario import SUPPORTED_DISPOSALS, PropellantBudgetConfig
 from .calculation_panel import Explanation
@@ -68,7 +68,7 @@ def _spin(minimum, maximum, value, decimals=2, suffix=""):
     box.setDecimals(decimals)
     box.setValue(value)
     if suffix:
-        box.setSuffix(suffix)
+        box.setSuffix(units.suffix(suffix))  # " deg" shows "°" (UI-35)
     return box
 
 
@@ -371,7 +371,7 @@ class BudgetWidget(QWidget):
         layout.addWidget(self.notes_label)
 
         self._trade = None
-        self.trade_group = QGroupBox("Altitude trade -- pick a row for its launch dates")
+        self.trade_group = QGroupBox("Altitude trade – pick a row for its launch dates")
         trade_layout = QVBoxLayout(self.trade_group)
         self.trade_table = self._picker_table()
         self.trade_table.row_chosen.connect(self._trade_row_picked)
@@ -382,7 +382,7 @@ class BudgetWidget(QWidget):
         layout.addWidget(self.trade_group)
 
         self._sweep = None
-        self.sweep_group = QGroupBox("Launch delays (AD10 Sec. 5.5) -- pick a row for its budget")
+        self.sweep_group = QGroupBox("Launch delays (AD10 Sec. 5.5) – pick a row for its budget")
         sweep_layout = QVBoxLayout(self.sweep_group)
         self.sweep_table = self._picker_table()
         self.sweep_table.row_chosen.connect(self._sweep_row_picked)

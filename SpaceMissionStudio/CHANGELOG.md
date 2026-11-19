@@ -66,6 +66,25 @@ fixes bugs.
   the user manual's section.
 - The 3D View's scale note is one line, shown in the views where it
   helps, and the dark strip at the right edge of the view is gone.
+- **Labels instead of identifiers** (UI audit batch B4). The sensor and
+  actuator lists name each device's kind ("Star tracker: st-1", not
+  "star_tracker: st-1"), and so does the Kind field. The FSW mode field
+  names the guidance modes as the Overview does ("Sun pointing", not
+  "sunSafePoint"), and the central body and third-body fields name the
+  bodies ("Mars barycentre"). The scenario file keeps the codes: it is
+  written exactly as before.
+- Scenario › Assumptions names each parameter ("Residual propellant
+  fraction") with its key as a muted second line, right-aligns the
+  numbers and shows the areas as section headings. Tables have no grid
+  lines, their headings are left-aligned (a column of numbers right),
+  and a heading row no longer looks selected.
+- The Reference data window lists the tabular atmosphere's files as
+  atmosphere tables, not SPICE kernels, shows each status as a word with
+  its icon ("Present", "Out of date"), writes "–" for a file without
+  dates and fits a 1280 x 720 screen without a sideways scroll bar.
+- The window writes a dash as "–", not "--", and writes units as °, m²,
+  kg·m² and Wh instead of deg, m^2, kg*m^2 and W*h; so does the user
+  manual. File formats, JSON keys and the command line are unchanged.
 
 ## 2.12.0 (2026-11-18)
 

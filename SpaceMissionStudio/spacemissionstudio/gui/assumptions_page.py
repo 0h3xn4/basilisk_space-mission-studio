@@ -19,6 +19,14 @@
 configuration file the scenario names, and every parameter of the registry
 with the value in effect, its unit and source, the changed ones in bold.
 
+Each parameter shows its name ("Residual propellant fraction") and, as a
+muted second line, its key (``propellant_budget.residual_fraction``): the
+key is what the file and the command line use (UI audit B4, UI-19).
+Numbers are right-aligned, a model's name left-aligned, and the areas are
+section headings. The columns fit the page at 1280 x 720: the name takes
+the width left, and a long value or source is elided, whole on hover and
+under the table.
+
 Selecting a parameter shows what it controls, why, and the values it may
 take. A value set here is checked against those, then written into the
 configuration file: only that parameter's line changes, so the file's
@@ -37,11 +45,28 @@ from PySide6.QtWidgets import (QCheckBox, QFileDialog, QHBoxLayout, QLabel, QLin
 
 from ..config import files, models, registry
 from ..config.registry import ConfigError, Configuration
+from . import units
 from .data_table import DataTable, Row
+from .field_text import area_label, parameter_label
 from .theme import SPACE, set_role
 
 _HEADERS = ("Parameter", "Value", "Default", "Unit", "Source")
-_VALUE = 1
+_VALUE, _DEFAULT, _UNIT, _SOURCE = 1, 2, 3, 4
+# [px] the widest these columns take at first (drag them wider): with them the
+# columns fit the page at 1280 x 720, and the name takes the rest (UI-19).
+_COLUMN_MAX_PX = {_VALUE: 96, _DEFAULT: 96, _UNIT: 72, _SOURCE: 152}
+
+
+def _unit(unit: str) -> str:
+    """A registry unit ("[deg]", "[-]") as the table shows it ("°", "")."""
+    return units.shown(unit.strip().removeprefix("[").removesuffix("]"))
+
+
+def _is_number(value) -> bool:
+    """A number or a list of numbers (right-aligned); a model's name is text."""
+    if isinstance(value, (list, tuple)):
+        return bool(value) and all(_is_number(item) for item in value)
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
 class AssumptionsPage(QWidget):
@@ -57,6 +82,7 @@ class AssumptionsPage(QWidget):
         self._base_dir_provider = None
         self._configuration: Configuration | None = None
         self._names: list[str | None] = []  # the parameter of each table row; None for an area's heading
+        self._areas: list[str] = []  # the area of each table row
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["lg"], SPACE["lg"])
@@ -232,23 +258,30 @@ class AssumptionsPage(QWidget):
             set_role(self.status_label, tone="secondary")
             self.status_label.setText(f"{len(overrides)} value(s) changed by the file." if self._config_file
                                       else "No configuration file: every value is its default.")
-        rows, self._names, area = [], [], None
+        rows, self._names, self._areas, area = [], [], [], None
         for parameter in registry.parameters():
             if parameter.area != area:
                 area = parameter.area
-                rows.append(Row((area,), group=True))
+                rows.append(Row((area_label(area),), tooltips={0: area}, group=True))  # a section heading
                 self._names.append(None)
+                self._areas.append(area)
             changed = parameter.name in overrides
             value = registry.effective(parameter.name, overrides)
             setter = None if changed else models.set_by(parameter.name, overrides)
             source = f"{setter.title} ({setter.choice})" if setter is not None else parameter.source
-            rows.append(Row((parameter.name, files.format_value(value), files.format_value(parameter.default),
-                             parameter.unit, source),
-                            tooltips={0: parameter.controls,
-                                      4: setter.method if setter is not None else parameter.rationale or source},
-                            bold=changed))
+            plain = frozenset(column for column, shown in ((_VALUE, value), (_DEFAULT, parameter.default))
+                              if not _is_number(shown))
+            shown = (files.format_value(value), files.format_value(parameter.default))
+            rows.append(Row((parameter_label(parameter.name), *shown, _unit(parameter.unit), source),
+                            tooltips={0: f"{parameter.name}: {parameter.controls}", _VALUE: shown[0],
+                                      _DEFAULT: shown[1],
+                                      _SOURCE: setter.method if setter is not None else parameter.rationale or source},
+                            bold=changed, plain=plain, notes={0: parameter.name}))
             self._names.append(parameter.name)
-        self.table.set_table(_HEADERS, rows, stretch=4)
+            self._areas.append(area)
+        self.table.set_table(_HEADERS, rows, numeric=(_VALUE, _DEFAULT), stretch=0)
+        for column, width in _COLUMN_MAX_PX.items():
+            self.table.view.setColumnWidth(column, min(self.table.view.columnWidth(column), width))
         self._apply_filter()
         self._show_selected()
 
@@ -263,7 +296,7 @@ class AssumptionsPage(QWidget):
         changed = self.overrides()
         areas = {name.split(".", 1)[0] for name in changed}
         self.table.set_row_filter(lambda row: (self._names[row] in changed) if self._names[row] is not None
-                                  else self.table.model.text(row, 0) in areas)
+                                  else self._areas[row] in areas)
 
     def select(self, name: str) -> None:
         """Select parameter ``name`` (its details and value below the table)."""

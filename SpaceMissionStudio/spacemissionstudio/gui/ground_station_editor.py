@@ -101,10 +101,10 @@ class GroundStationEditorDialog(QDialog):
                                    value=config.min_elevation_deg if config else _DEFAULTS["min_elevation_deg"])
         self.min_elev_deg.setToolTip(
             "The lowest elevation angle above the local horizon counted as real, usable "
-            "access -- real terrain/buildings/RF-noise near the horizon mean a satellite just "
+            "access – real terrain/buildings/RF-noise near the horizon mean a satellite just "
             "above the geometric horizon usually isn't actually usable. Lower = longer, more "
             "frequent access windows but at progressively worse link quality near the edges; "
-            "higher = shorter, higher-quality windows only. 5-10 deg is a common real-world "
+            "higher = shorter, higher-quality windows only. 5-10° is a common real-world "
             "default."
         )
         form.addRow("Minimum elevation mask [deg]", self.min_elev_deg)
@@ -114,7 +114,7 @@ class GroundStationEditorDialog(QDialog):
         self.rx_antenna_gain_dbi = _spin(-50.0, 100.0, decimals=2, step=1.0,
                                           value=config.rx_antenna_gain_dbi if config else _DEFAULTS["rx_antenna_gain_dbi"])
         self.rx_antenna_gain_dbi.setToolTip(
-            "This ground station's receive antenna gain -- only used if a spacecraft also has "
+            "This ground station's receive antenna gain – only used if a spacecraft also has "
             "an RF link budget configured (Spacecraft editor's Power tab). Higher gain "
             "improves the reported link margin for any spacecraft downlinking to this station."
         )
@@ -122,7 +122,7 @@ class GroundStationEditorDialog(QDialog):
         self.system_noise_temp_k = _spin(0.1, 1.0e5, decimals=2, step=10.0,
                                           value=config.system_noise_temp_k if config else _DEFAULTS["system_noise_temp_k"])
         self.system_noise_temp_k.setToolTip(
-            "This ground station's receiver system noise temperature -- same link-budget-only "
+            "This ground station's receiver system noise temperature – same link-budget-only "
             "scope as the antenna gain above. Lower (a quieter, better receiver) improves the "
             "reported link margin."
         )

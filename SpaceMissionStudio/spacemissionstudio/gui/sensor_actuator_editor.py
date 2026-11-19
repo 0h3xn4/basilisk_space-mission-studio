@@ -93,6 +93,7 @@ from PySide6.QtWidgets import (
 
 from ..engine.device_catalog import catalog_entries_for_kind
 from ..schema.scenario import RW_TYPES, THRUSTER_TYPES
+from .field_text import kind_label
 from .feedback import clear_invalid, mark_invalid, show_dialog_error, show_toast
 from .inline_form import InlineForm
 from .param_form import ParamForm
@@ -144,7 +145,7 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
         # noise_arcsec/noise_std/etc. fields above, so there is no
         # separate "enable" flag to also set.
         _ParamSpec("bias_walk_bound_arcsec", False, 0.0, "long-run random-walk BOUND on the noise above "
-                    "[arcsec] -- 0 (default) means no bounded long-term drift is modeled, only the "
+                    "[arcsec] – 0 (default) means no bounded long-term drift is modeled, only the "
                     "per-tick noise"),
     ],
     "imu": [
@@ -154,14 +155,14 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
                     normalizable=False),
         _ParamSpec("accel_bias_m_s2", False, [0.0, 0.0, 0.0], "fixed per-axis accelerometer bias [m/s^2]",
                     normalizable=False),
-        _ParamSpec("gyro_saturation_rad_s", False, 1000000.0, "gyro output saturation magnitude [rad/s] -- "
+        _ParamSpec("gyro_saturation_rad_s", False, 1000000.0, "gyro output saturation magnitude [rad/s] – "
                     "effectively unbounded by default"),
         _ParamSpec("accel_saturation_m_s2", False, 1000000.0, "accelerometer output saturation magnitude "
-                    "[m/s^2] -- effectively unbounded by default"),
-        _ParamSpec("gyro_lsb_rad_s", False, 0.0, "gyro encoder/ADC quantization step size [rad/s] -- 0 "
+                    "[m/s^2] – effectively unbounded by default"),
+        _ParamSpec("gyro_lsb_rad_s", False, 0.0, "gyro encoder/ADC quantization step size [rad/s] – 0 "
                     "(default) means effectively continuous, no quantization"),
         _ParamSpec("accel_lsb_m_s2", False, 0.0, "accelerometer encoder/ADC quantization step size "
-                    "[m/s^2] -- 0 (default) means effectively continuous, no quantization"),
+                    "[m/s^2] – 0 (default) means effectively continuous, no quantization"),
     ],
     "coarse_sun_sensor": [
         _ParamSpec("nHat_B", True, [1.0, 0.0, 0.0], "sensor boresight direction, body frame, unit vector [-]"),
@@ -169,7 +170,7 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
         _ParamSpec("noise_std", False, 0.0, "1-sigma output noise (cosine-law output units) [-]"),
         _ParamSpec("bias", False, 0.0, "fixed sensor bias (cosine-law output units) [-]"),
         _ParamSpec("saturation_max", False, 1000000.0, "output saturation upper bound (cosine-law output "
-                    "units) [-] -- effectively unbounded by default"),
+                    "units) [-] – effectively unbounded by default"),
         _ParamSpec("saturation_min", False, 0.0, "output saturation lower bound (cosine-law output "
                     "units) [-]"),
         _ParamSpec("fault_mode", False, "none", "hardware fault to simulate: 'none' / 'stuck_current' "
@@ -183,12 +184,12 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
                     normalizable=False),
         _ParamSpec("bias_tesla", False, [0.0, 0.0, 0.0], "fixed per-axis bias [T]", normalizable=False),
         _ParamSpec("saturation_tesla", False, 1000000.0, "symmetric output saturation magnitude [T] "
-                    "(clips at +/- this value) -- effectively unbounded by default"),
+                    "(clips at +/- this value) – effectively unbounded by default"),
         _ParamSpec("fault_mode", False, "none", "hardware fault to simulate on fault_axis below: 'none' "
                     "/ 'stuck_current' (freezes at the last real reading) / 'stuck_value' (freezes at "
                     "stuck_value_tesla) / 'spiking' (randomly multiplies the true reading by "
                     "spike_amount with probability spike_probability each tick)"),
-        _ParamSpec("fault_axis", False, 0, "which body axis (0/1/2) fault_mode above applies to -- a "
+        _ParamSpec("fault_axis", False, 0, "which body axis (0/1/2) fault_mode above applies to – a "
                     "real single-axis sensor-element failure does not take out the other two axes"),
         _ParamSpec("stuck_value_tesla", False, 0.0, "value fault_axis freezes at when fault_mode="
                     "'stuck_value' [T]"),
@@ -201,25 +202,25 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
         _ParamSpec("gsHat_B", True, [0.0, 0.0, 1.0], "spin-axis direction, body frame, unit vector [-]"),
         _ParamSpec("rw_type", False, "custom",
                     "wheel model name known to Basilisk's simIncludeRW.rwFactory(), e.g. 'Honeywell_HR12' "
-                    "(which needs maxMomentum 12, 25 or 50 N*m*s)"),
+                    "(which needs maxMomentum 12, 25 or 50 N·m·s)"),
         _ParamSpec("Omega_max", False, 6000.0, "max wheel speed [RPM]"),
         _ParamSpec("u_max", False, 0.2, "max motor torque [N*m]"),
-        _ParamSpec("Js", False, 0.028, "wheel inertia about the spin axis [kg*m^2] -- rw_type='custom' can "
+        _ParamSpec("Js", False, 0.028, "wheel inertia about the spin axis [kg*m^2] – rw_type='custom' can "
                     "derive this from maxMomentum [N*m*s] instead, but NOT both: rwFactory.create() hard"
                     "-exits the whole process if Js and maxMomentum are both set"),
         # Device-interface realism: real simIncludeRW.rwFactory() kwargs,
         # already passed straight through by this app's own
         # engine.fsw._coerce_rw_kwargs() -- these were already wired, just
         # not previously surfaced here for discovery.
-        _ParamSpec("useRWfriction", False, False, "enable the internal wheel friction model below -- off "
+        _ParamSpec("useRWfriction", False, False, "enable the internal wheel friction model below – off "
                     "by default, matching simIncludeRW's own default"),
-        _ParamSpec("fCoulomb", False, 0.0, "Coulomb (constant-magnitude) friction torque [N*m] -- only "
+        _ParamSpec("fCoulomb", False, 0.0, "Coulomb (constant-magnitude) friction torque [N*m] – only "
                     "applied when useRWfriction is true"),
-        _ParamSpec("fStatic", False, 0.0, "static friction torque magnitude [N*m] -- only applied when "
+        _ParamSpec("fStatic", False, 0.0, "static friction torque magnitude [N*m] – only applied when "
                     "useRWfriction is true"),
-        _ParamSpec("cViscous", False, 0.0, "viscous friction coefficient [N*m*s/rad] -- only applied "
+        _ParamSpec("cViscous", False, 0.0, "viscous friction coefficient [N*m*s/rad] – only applied "
                     "when useRWfriction is true"),
-        _ParamSpec("betaStatic", False, -1.0, "Stribeck friction coefficient [-] -- positive enables "
+        _ParamSpec("betaStatic", False, -1.0, "Stribeck friction coefficient [-] – positive enables "
                     "Stribeck friction, negative (default) disables it; only relevant when "
                     "useRWfriction is true"),
         # Thermal simulation: an OPTIONAL motor-thermal model
@@ -231,15 +232,15 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
         # listed as its own row -- it has a real 0 C Basilisk-side default
         # and is independently optional even within this group) can still
         # be added by hand in the params box below if needed.
-        _ParamSpec("motor_thermal_initial_temp_c", False, 20.0, "starting motor temperature [C] -- set this "
+        _ParamSpec("motor_thermal_initial_temp_c", False, 20.0, "starting motor temperature [C] – set this "
                     "(together with the other three motor_thermal_* fields below) to enable a motor-thermal "
                     "model for this wheel; leave all four unset for none"),
         _ParamSpec("motor_thermal_efficiency", False, 0.7, "mechanical efficiency [-], strictly between 0 "
-                    "and 1 -- motorThermal.MotorThermal rejects 1.0 itself (modeled as a real inefficiency), "
+                    "and 1 – motorThermal.MotorThermal rejects 1.0 itself (modeled as a real inefficiency), "
                     "not just values above it"),
         _ParamSpec("motor_thermal_ambient_resistance_w_c", False, 5.0, "thermal resistance to the "
-                    "surrounding environment [C/W] -- lower means heat dissipates faster"),
-        _ParamSpec("motor_thermal_heat_capacity_j_c", False, 50.0, "motor heat capacity [J/C] -- "
+                    "surrounding environment [C/W] – lower means heat dissipates faster"),
+        _ParamSpec("motor_thermal_heat_capacity_j_c", False, 50.0, "motor heat capacity [J/C] – "
                     "mass * specific heat, e.g. a steel motor's specific heat is about 466 J/kg/C"),
     ],
     "thruster": [
@@ -248,7 +249,7 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
         _ParamSpec("MaxThrust", True, 1.0, "maximum thrust [N]"),
         _ParamSpec("thruster_type", False, "Blank_Thruster",
                     "thruster model name known to Basilisk's simIncludeThruster.thrusterFactory(), "
-                    "e.g. 'MOOG_Monarc_1' -- 'Blank_Thruster' means no type-specific defaults, use the "
+                    "e.g. 'MOOG_Monarc_1' – 'Blank_Thruster' means no type-specific defaults, use the "
                     "params here as-is"),
         _ParamSpec("steadyIsp", False, 220.0, "fuel efficiency [s]"),
         _ParamSpec("MinOnTime", False, 0.020, "minimum on time [s]"),
@@ -274,18 +275,18 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
         _ParamSpec("area_m2", True, 1.0, "radiative surface area [m^2]"),
         _ParamSpec("absorptivity", True, 0.25, "absorptivity coefficient (0, 1] [-]"),
         _ParamSpec("emissivity", True, 0.34, "emissivity coefficient (0, 1] [-]"),
-        _ParamSpec("mass_kg", False, 2.0, "mass [kg] -- defaults to 1 kg if unset"),
-        _ParamSpec("specific_heat_j_kg_k", False, 890.0, "specific heat [J/kg/K] -- defaults to 890 "
+        _ParamSpec("mass_kg", False, 2.0, "mass [kg] – defaults to 1 kg if unset"),
+        _ParamSpec("specific_heat_j_kg_k", False, 890.0, "specific heat [J/kg/K] – defaults to 890 "
                     "(aluminum) if unset"),
-        _ParamSpec("initial_temp_c", False, 0.0, "starting temperature [C] -- defaults to 30 C if unset"),
-        _ParamSpec("power_draw_w", False, 0.0, "internal power dissipated as heat [W] -- 0 (default) means "
+        _ParamSpec("initial_temp_c", False, 0.0, "starting temperature [C] – defaults to 30 C if unset"),
+        _ParamSpec("power_draw_w", False, 0.0, "internal power dissipated as heat [W] – 0 (default) means "
                     "none"),
-        _ParamSpec("measurement_bias_c", False, 0.0, "fixed measurement bias, always added [C] -- 0 "
+        _ParamSpec("measurement_bias_c", False, 0.0, "fixed measurement bias, always added [C] – 0 "
                     "(default) means none"),
-        _ParamSpec("measurement_noise_std_c", False, 0.0, "1-sigma measurement noise [C] -- 0 (default) "
+        _ParamSpec("measurement_noise_std_c", False, 0.0, "1-sigma measurement noise [C] – 0 (default) "
                     "means none"),
         _ParamSpec("measurement_walk_bound_c", False, 0.0, "long-run random-walk BOUND on the noise above "
-                    "[C] -- 0 (default) means no bounded long-term drift is modeled"),
+                    "[C] – 0 (default) means no bounded long-term drift is modeled"),
         _ParamSpec("measurement_fault_mode", False, "none", "hardware fault to simulate: 'none' / "
                     "'stuck_current' (freezes at the last real reading) / 'stuck_value' (freezes at "
                     "measurement_stuck_value_c) / 'spiking' (randomly multiplies the reading by "
@@ -405,7 +406,7 @@ def _hint_text(kind: str) -> str:
     labels, units and tooltips."""
     if kind in _UNIMPLEMENTED_ACTUATOR_KINDS:
         return (
-            f"⚠ {kind!r} is schema-valid but not simulated yet -- engine.service will raise an error at "
+            f"⚠ {kind!r} is schema-valid but not simulated yet – engine.service will raise an error at "
             "Run if this actuator is actually configured on a spacecraft with fsw_mode set. "
             "Pick 'reaction_wheel' for a working actuator."
         )
@@ -491,9 +492,11 @@ class _ItemEditorDialog(QDialog):
         top = QFormLayout()
         self.kind_combo = ComboBox()
         self.kind_combo.setToolTip("Which kind of hardware this is: it sets the parameters below.")
-        self.kind_combo.addItems(list(kind_choices))
+        for kind in kind_choices:  # its label shown, its code kept (UI-08)
+            self.kind_combo.addItem(kind_label(kind), kind)
+            self.kind_combo.setItemData(self.kind_combo.count() - 1, kind, Qt.ItemDataRole.ToolTipRole)
         if item is not None:
-            index = self.kind_combo.findText(item.kind)
+            index = self.kind_combo.findData(item.kind)
             if index >= 0:
                 self.kind_combo.setCurrentIndex(index)
         top.addRow("Kind", self.kind_combo)
@@ -587,13 +590,13 @@ class _ItemEditorDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-        self._current_kind = self.kind_combo.currentText()
+        self._current_kind = self.kind()
         initial = (dict(item.params) if item is not None
                    else self._default_params(self._current_kind))
         self._build_form(self._current_kind, initial)
         self._rebuild_catalog_row(self._current_kind)
         self._update_hint(self._current_kind)
-        self.kind_combo.currentTextChanged.connect(self._on_kind_changed)
+        self.kind_combo.currentIndexChanged.connect(lambda _index: self._on_kind_changed(self.kind()))
         self.resize(self.sizeHint().expandedTo(QSize(980, 640)))  # [px]
 
     def embed_in_page(self) -> None:
@@ -614,6 +617,10 @@ class _ItemEditorDialog(QDialog):
         self._card.setVisible(card_shown)
         self._card_scroll = self._card  # what the catalog shows and hides
         self._form_scroll = None
+
+    def kind(self) -> str:
+        """The kind chosen, as the scenario file writes it ("star_tracker")."""
+        return self.kind_combo.currentData()
 
     # -- form ----------------------------------------------------------
     @staticmethod
@@ -657,7 +664,7 @@ class _ItemEditorDialog(QDialog):
         self._catalog_container.setVisible(bool(entries))
         self.catalog_combo.blockSignals(True)
         self.catalog_combo.clear()
-        self.catalog_combo.addItem("-- none (custom values) --")
+        self.catalog_combo.addItem("None (custom values)")
         for entry in entries:
             self.catalog_combo.addItem(entry.display_name)
         self.catalog_combo.setCurrentIndex(0)
@@ -691,7 +698,7 @@ class _ItemEditorDialog(QDialog):
         self._build_form(entry.kind, params)
 
     def _on_reset_template(self) -> None:
-        kind = self.kind_combo.currentText()
+        kind = self.kind()
         self._build_form(kind, self._default_params(kind))
 
     # -- result --------------------------------------------------------
@@ -729,15 +736,27 @@ class _ItemEditorDialog(QDialog):
         name = self.name_edit.text().strip()
         if not name:
             raise ValueError("name must not be empty")
-        kind = self.kind_combo.currentText()
+        kind = self.kind()
         params = self.param_form.params()
         missing = _missing_required_keys(kind, params)
         if missing:
             raise ValueError(
-                f"{kind!r} is missing required params key(s): {', '.join(missing)} -- "
+                f"{kind!r} is missing required params key(s): {', '.join(missing)} – "
                 "use 'Reset to template' for a working example"
             )
         return self._item_cls(kind=kind, name=name, params=params, mount=copy.deepcopy(self._mount))
+
+
+def _show_item(row: QListWidgetItem, item) -> QListWidgetItem:
+    """A device's row: its kind's label and its own name ("Star tracker:
+    st-1"); the kind's code, as the scenario file writes it, on hover."""
+    row.setText(f"{kind_label(item.kind)}: {item.name}")
+    row.setToolTip(f"kind: {item.kind}")
+    return row
+
+
+def _list_item(item) -> QListWidgetItem:
+    return _show_item(QListWidgetItem(), item)
 
 
 class SensorActuatorListWidget(QWidget):
@@ -784,7 +803,7 @@ class SensorActuatorListWidget(QWidget):
         try:
             self.list_widget.clear()
             for item in self._items:
-                self.list_widget.addItem(QListWidgetItem(f"{item.kind}: {item.name}"))
+                self.list_widget.addItem(_list_item(item))
         finally:
             self.list_widget.blockSignals(blocked)
 
@@ -808,7 +827,7 @@ class SensorActuatorListWidget(QWidget):
         self._items.append(new_item)
         self._refresh_list()
         self.list_widget.setCurrentRow(len(self._items) - 1)
-        show_toast(self.window(), f"Added {new_item.kind}: {new_item.name!r}")
+        show_toast(self.window(), f"Added {kind_label(new_item.kind)}: {new_item.name!r}")
         self.changed.emit()
         self._focus_form()
 
@@ -828,7 +847,7 @@ class SensorActuatorListWidget(QWidget):
         if not 0 <= row < len(self._items) or item == self._items[row]:
             return
         self._items[row] = item
-        self.list_widget.item(row).setText(f"{item.kind}: {item.name}")
+        _show_item(self.list_widget.item(row), item)
         self.changed.emit()
 
     def _focus_form(self) -> None:
@@ -843,7 +862,7 @@ class SensorActuatorListWidget(QWidget):
         item = self._items[row]
         del self._items[row]
         self._refresh_list()
-        show_toast(self.window(), f"Removed {item.kind}: {item.name!r}", kind="info")
+        show_toast(self.window(), f"Removed {kind_label(item.kind)}: {item.name!r}", kind="info")
         self.changed.emit()
 
     def to_list(self) -> list:

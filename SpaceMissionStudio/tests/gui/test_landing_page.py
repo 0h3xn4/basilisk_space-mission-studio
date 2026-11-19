@@ -104,7 +104,7 @@ def test_the_window_starts_on_home_with_nothing_open(window):
     window.show()
     assert not window.scenario_open
     assert window.shell.current_area() == "home"
-    assert window.windowTitle() == "SpaceMissionStudio -- no scenario open"
+    assert window.windowTitle() == "SpaceMissionStudio – no scenario open"
     assert window.top_bar.name_label.text() == "No scenario open"
     assert not window.top_bar.save_button.isEnabled()
     for area_id in ("scenario", "run", "results", "timeline", "reports"):
@@ -149,7 +149,7 @@ def test_new_scenario_opens_one_and_enables_its_commands(window):
     window.no_scenario_states["run"].new_button.click()
     assert window.scenario_open
     assert window.shell.current_area() == "scenario"
-    assert window.windowTitle() == "SpaceMissionStudio -- untitled"
+    assert window.windowTitle() == "SpaceMissionStudio – untitled"
     for area_id in ("scenario", "run", "results", "timeline", "reports"):
         page = window.shell.page(area_id)
         assert not page.showing_empty and not page.empty_state.isVisibleTo(window)
@@ -184,7 +184,7 @@ def test_the_empty_state_opens_new_open_and_home(window, tmp_path, monkeypatch):
     monkeypatch.setattr(QFileDialog, "getOpenFileName", staticmethod(lambda *a, **k: (str(path), "")))
     window.no_scenario_states["timeline"].open_button.click()
     assert window.scenario_open and window._current_path == path
-    assert window.windowTitle() == "SpaceMissionStudio -- from-the-empty-state.json"
+    assert window.windowTitle() == "SpaceMissionStudio – from-the-empty-state.json"
 
 
 def test_a_template_and_a_restored_autosave_open_a_scenario(qtbot, monkeypatch):
@@ -271,4 +271,4 @@ def test_the_window_size_is_kept_but_not_the_scenario(qtbot, monkeypatch, tmp_pa
     # The height as it was (the width is fitted to the 800 px offscreen screen).
     assert second.height() == size.height() == 560  # [px]
     assert not second.scenario_open and second.shell.current_area() == "home"
-    assert second.windowTitle() == "SpaceMissionStudio -- no scenario open"
+    assert second.windowTitle() == "SpaceMissionStudio – no scenario open"

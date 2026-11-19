@@ -106,7 +106,7 @@ def _item_traces(items, highlight: str | None, slant_m: float) -> list:
             v, t = cone_mesh(p, axis, half, slant_m)
             traces.append(go.Mesh3d(x=v[:, 0], y=v[:, 1], z=v[:, 2], i=t[:, 0], j=t[:, 1], k=t[:, 2],
                                     name=f"{item.name} {what}", color=color, opacity=opacity, flatshading=True,
-                                    hovertemplate=f"{item.name}: {what} ({2.0 * half if what == 'field of view' else half:g} deg"
+                                    hovertemplate=f"{item.name}: {what} ({2.0 * half if what == 'field of view' else half:g}°"
                                     f"{'' if what == 'field of view' else ' half-angle'})<extra></extra>"))
         end = p + 0.5 * slant_m * b
         traces.append(go.Scatter3d(x=[p[0], end[0]], y=[p[1], end[1]], z=[p[2], end[2]], mode="lines+markers",

@@ -603,9 +603,9 @@ class PlanWidget(QWidget):
             predicted = activity.predicted
             extra = []
             if predicted.get("off_nadir_deg") is not None:
-                extra.append(f"off-nadir {predicted['off_nadir_deg']:.1f} deg")
+                extra.append(f"off-nadir {predicted['off_nadir_deg']:.1f}°")
             if predicted.get("slew_deg"):
-                extra.append(f"slew {predicted['slew_deg']:.0f} deg in {predicted.get('slew_s', 0.0):.0f} s")
+                extra.append(f"slew {predicted['slew_deg']:.0f}° in {predicted.get('slew_s', 0.0):.0f} s")
             self.selected_label.setText(f"{activity.id}: {what}, {activity.spacecraft}, {activity.start_utc} for "
                                         f"{activity.duration_s:.0f} s" + (f"; {', '.join(extra)}" if extra else "")
                                         + ("; locked" if activity.locked else ""))

@@ -73,7 +73,7 @@ class ReentrySection(QGroupBox):
         self.spacecraft_combo = ComboBox()
         row.addWidget(self.spacecraft_combo, 1)
         self.density_check = QCheckBox("Population density")
-        self.density_check.setToolTip("People per km^2 under the re-entry: no default (model-analyses decision D-16)")
+        self.density_check.setToolTip("People per km² under the re-entry: no default (model-analyses decision D-16)")
         row.addWidget(self.density_check)
         self.density_field = NumberField("/km²", minimum=0.0, maximum=1.0e5, decimals=2)
         self.density_field.setEnabled(False)

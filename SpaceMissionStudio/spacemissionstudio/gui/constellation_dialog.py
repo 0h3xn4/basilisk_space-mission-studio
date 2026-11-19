@@ -57,7 +57,7 @@ _PHASING_LAWS = (("Drift orbit (occasional burns)", "drift_orbit"),
 
 _PATTERN_LABELS = {
     "delta": "Walker-Delta (planes spread over 360°, e.g. GPS)",
-    "star": "Walker-Star (planes spread over 180°, e.g. Iridium -- near-polar)",
+    "star": "Walker-Star (planes spread over 180°, e.g. Iridium – near-polar)",
 }
 
 
@@ -120,7 +120,7 @@ class WalkerConstellationDialog(QDialog):
             for name in template_names:
                 self.template_combo.addItem(name, userData=name)
         else:
-            self.template_combo.addItem("(none -- use a bare default spacecraft)", userData=None)
+            self.template_combo.addItem("(none – use a bare default spacecraft)", userData=None)
             self.template_combo.setEnabled(False)
         form.addRow("Template spacecraft", self.template_combo)
 

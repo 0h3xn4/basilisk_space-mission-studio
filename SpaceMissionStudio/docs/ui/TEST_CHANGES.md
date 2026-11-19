@@ -2262,6 +2262,61 @@ Problems panel now; `run_warning_rows()` gives them with their tooltip.
 |---|---|---|---|
 | `test_results_overview.py::test_each_figure_is_a_card_with_its_value_and_unit` | the cards' figures are `run_summary.summarize(result)` | they are `run_summary.overview_figures(result)`: the same figures with the orbit's period and altitude after the run length | Results › Overview adds the orbit's cards (UI-20); `summarize` itself is unchanged |
 
+## UI audit B4: labels instead of identifiers
+
+The owner's batch B4 shows labels where the window showed codes (UI-08,
+UI-19), an en dash where it wrote "--" (UI-34), units in their display
+form (UI-35) and the Reference data window as a `DataTable` (UI-49).
+Sixteen existing GUI test files changed. Most reach the same widget
+another way: a combo box's or list item's code is now its data, not its
+text, and the reference data table is a `DataTable`. Each asserts what
+it asserted before, as strictly. The others assert the new words of
+UI-34, UI-35 and UI-49, as the defects ask. No test outside
+`tests/gui/` changed. No golden file changed. The new tests are in
+`tests/gui/test_labels.py` and `tests/test_gui_strings.py`.
+
+**How the test reaches the code (UI-08):** the Kind, central body and
+third-body fields show labels ("Star tracker", "Mars barycentre") and
+keep the code as the item's data.
+
+| Test | Before | Now |
+|---|---|---|
+| `test_sensor_actuator_editor.py` (17 tests: the Kind field) | `kind_combo.findText("star_tracker")`, `kind_combo.setCurrentText(kind)` | `kind_combo.findData("star_tracker")`, `setCurrentIndex(kind_combo.findData(kind))` |
+| `test_editing_flow.py::test_a_devices_new_kind_has_its_fields_followed` | `form.kind_combo.findText("reaction_wheel")` | `form.kind_combo.findData("reaction_wheel")` |
+| `test_input_borders.py::_dialogs` (the device dialogs) | `dialog.kind_combo.findText(kind)` | `dialog.kind_combo.findData(kind)`; the mission sequence's Kind is unchanged |
+| `test_propagation_setup_dialog.py` (4 tests) | `central_body_combo.setCurrentText("mars barycenter")`; the third bodies' `item(i).text()` | `setCurrentIndex(central_body_combo.findData("mars barycenter"))`; `item(i).data(Qt.UserRole)` (`_CODE`) |
+| `test_small_body_editors.py::test_the_gravity_form_offers_eros_and_its_shapes_gravity` | as above, with "eros" and "earth" | as above |
+
+**How the test reaches the Assumptions table (UI-19):** the first column
+names the parameter and the area; the page keeps each row's parameter
+(`_names`) and area (`_areas`).
+
+| Test | Before | Now |
+|---|---|---|
+| `test_assumptions_page.py::test_without_a_file_every_parameter_shows_its_default` | the area row's text is "propellant_budget" | the area row's area is "propellant_budget" (`_areas`), and its text "Propellant budget" |
+| `test_assumptions_page.py::test_a_file_chosen_is_named_relative_to_the_scenario_and_its_values_shown` | the shown rows' first cells are the area and the parameter's codes | the shown rows' area and parameter (`_areas`, `_names`) are those codes |
+
+**How the test reaches the reference data table (UI-49):** a
+`DataTable`, not a `QTableWidget`.
+
+| Test | Before | Now |
+|---|---|---|
+| `test_data_panel_widget.py::test_the_table_lists_every_file_with_status_dates_source_and_checksum` | `table.rowCount()`, `item(r, c).text()`, `item(r, c).toolTip()`; the first four cells "space weather", "SW-All.txt", "out of date", the dates | `row_count()`, `cell(r, c)`, `cell_tooltip(r, c)`; the first four cells "Space weather", "SW-All.txt", "Out of date", the dates (the words of UI-49) |
+| `test_data_panel_widget.py::test_only_the_source_column_stretches` | `table.horizontalHeader()`, `columnCount()` | `table.view.horizontalHeader()`, `column_count()` |
+| `test_menu_bar.py::test_the_dialog_and_the_status_bar_do_not_count_optional_files` | `table.item(1, 2).text() == NOT_DOWNLOADED` | `table.cell(1, 2) == status_text(NOT_DOWNLOADED) == "Not downloaded"` |
+
+**Behaviour changed on purpose (UI-34, UI-35):**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_landing_page.py` (4 tests), `test_main_window.py::test_initial_title_is_untitled` | "SpaceMissionStudio -- untitled" | "SpaceMissionStudio – untitled" | UI-34: an en dash, not "--" |
+| `test_mission_dashboard_widget.py` (2 tests) | a figure the run does not give is "--" | "–" | UI-34 |
+| `test_value_mark_views.py` (3 tests) | "Edited (computed 97.59 deg)", "Value used: 97.59 deg" | "Edited (computed 97.59°)", "Value used: 97.59°" | UI-35: the note's values carry their unit through `units.suffix` |
+| `test_home.py::test_a_cards_type_and_orbit` (8 cases) | "Earth · 400 km circular · i 97.0 deg" | "... · i 97.0°" | UI-35 |
+| `test_data_handling_editor.py::test_each_pattern_shows_only_its_own_controls` | "half-power beamwidth 120 deg" | "half-power beamwidth 120°" | UI-35 |
+| `test_idm_power_gui.py::test_the_dialog_offers_the_system_modes_and_the_panel_sides` | "0.96 m^2, 1 panel(s)" | "0.96 m², 1 panel(s)" | UI-35 |
+| `test_idm_properties_gui.py::test_the_battery_follows_the_mapping_and_an_earlier_one_is_shown` | "85 W*h", "85000 W*h" | "85 Wh", "85000 Wh" | UI-35 |
+
 ## 2.12.0 windows and views
 
 ### PR-1: thermal results (decisions T-40 to T-42)

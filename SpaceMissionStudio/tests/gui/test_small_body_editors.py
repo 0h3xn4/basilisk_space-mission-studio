@@ -23,6 +23,7 @@ navigation" group."""
 import pytest
 
 pytestmark = pytest.mark.requires_gui
+_CODE = 0x0100  # Qt.ItemDataRole.UserRole: a body's code beside its label (UI-08)
 
 
 def _spacecraft(**camera):
@@ -82,12 +83,13 @@ def test_the_gravity_form_offers_eros_and_its_shapes_gravity(qtbot):
     dialog = PropagationSetupDialog(scenario.gravity, scenario.sim_settings, scenario.space_weather)
     qtbot.addWidget(dialog)
     assert not dialog.polyhedral_gravity_check.isEnabled()
-    dialog.central_body_combo.setCurrentText("eros")
+    dialog.central_body_combo.setCurrentIndex(dialog.central_body_combo.findData("eros"))
     assert dialog.polyhedral_gravity_check.isEnabled()
     dialog.polyhedral_gravity_check.setChecked(True)
-    third = [dialog.third_body_list.item(i).text() for i in range(dialog.third_body_list.count())]
+    third = [dialog.third_body_list.item(i).data(_CODE)
+             for i in range(dialog.third_body_list.count())]  # the bodies' codes (UI-08)
     assert "eros" not in third and "sun" in third
     gravity = dialog.to_gravity()
     assert (gravity.central_body, gravity.polyhedral_gravity) == ("eros", True)
-    dialog.central_body_combo.setCurrentText("earth")
+    dialog.central_body_combo.setCurrentIndex(dialog.central_body_combo.findData("earth"))
     assert not dialog.polyhedral_gravity_check.isChecked() and not dialog.to_gravity().polyhedral_gravity

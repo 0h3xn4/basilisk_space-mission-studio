@@ -119,6 +119,7 @@ def _find_ground_station(result: ResultSet, spacecraft_name: str,
     return None
 
 
+NO_VALUE = "–"  # a figure the run does not give (an en dash, not "--": UI audit B4, UI-34)
 _sample_index = power_state.sample_index  # the last sample at or before the time cursor, else the last one
 
 
@@ -179,9 +180,9 @@ class MissionDashboardWidget(QWidget):
         # -- Operating state --------------------------------------------
         self._state_box = QGroupBox("Operating state")
         state_form = _card_form(self._state_box)
-        self.sim_time_label = QLabel("--")
-        self.mode_badge = QLabel("--")
-        self.visibility_badge = QLabel("--")
+        self.sim_time_label = QLabel(NO_VALUE)
+        self.mode_badge = QLabel(NO_VALUE)
+        self.visibility_badge = QLabel(NO_VALUE)
         state_form.addRow("Sim time:", self.sim_time_label)
         state_form.addRow("Mode:", self.mode_badge)
         state_form.addRow("Ground station:", self.visibility_badge)
@@ -189,28 +190,28 @@ class MissionDashboardWidget(QWidget):
         # -- Attitude -----------------------------------------------------
         self._attitude_box = QGroupBox("Attitude")
         attitude_form = _card_form(self._attitude_box)
-        self.pointing_error_label = QLabel("--")
-        self.tracking_badge = QLabel("--")
+        self.pointing_error_label = QLabel(NO_VALUE)
+        self.tracking_badge = QLabel(NO_VALUE)
         attitude_form.addRow("Pointing error:", self.pointing_error_label)
         attitude_form.addRow("Tracking:", self.tracking_badge)
 
         # -- Power ----------------------------------------------------------
         self._power_box = QGroupBox("Power")
         power_form = _card_form(self._power_box)
-        self.battery_charge_label = QLabel("--")
+        self.battery_charge_label = QLabel(NO_VALUE)
         # A slim gauge with the percentage beside it: the old "67% SOC"
         # text drawn across the bar was grey on blue and hard to read.
         self.battery_soc_bar = QProgressBar()
         self.battery_soc_bar.setRange(0, 100)
         self.battery_soc_bar.setTextVisible(False)
         self.battery_soc_bar.setFixedSize(140, 10)  # [px]
-        self.battery_soc_label = QLabel("--")
+        self.battery_soc_label = QLabel(NO_VALUE)
         soc_row = QWidget()
         soc_layout = QHBoxLayout(soc_row)
         soc_layout.setContentsMargins(0, 0, 0, 0)
         soc_layout.addWidget(self.battery_soc_bar)
         soc_layout.addWidget(self.battery_soc_label)
-        self.net_power_label = QLabel("--")
+        self.net_power_label = QLabel(NO_VALUE)
         power_form.addRow("Battery charge:", self.battery_charge_label)
         power_form.addRow("State of charge:", soc_row)
         power_form.addRow("Net power:", self.net_power_label)
@@ -224,17 +225,17 @@ class MissionDashboardWidget(QWidget):
         # -- RF link --------------------------------------------------------
         self._rf_box = QGroupBox("RF link")
         rf_form = _card_form(self._rf_box)
-        self.link_status_badge = QLabel("--")
-        self.slant_range_label = QLabel("--")
-        self.eirp_label = QLabel("--")
-        self.fspl_label = QLabel("--")
-        self.pointing_loss_label = QLabel("--")
-        self.atmospheric_loss_label = QLabel("--")  # shown with link.atmospheric_loss chosen only
-        self.received_power_label = QLabel("--")
-        self.noise_label = QLabel("--")
-        self.cn0_label = QLabel("--")
-        self.ebno_label = QLabel("--")
-        self.margin_label = QLabel("--")
+        self.link_status_badge = QLabel(NO_VALUE)
+        self.slant_range_label = QLabel(NO_VALUE)
+        self.eirp_label = QLabel(NO_VALUE)
+        self.fspl_label = QLabel(NO_VALUE)
+        self.pointing_loss_label = QLabel(NO_VALUE)
+        self.atmospheric_loss_label = QLabel(NO_VALUE)  # shown with link.atmospheric_loss chosen only
+        self.received_power_label = QLabel(NO_VALUE)
+        self.noise_label = QLabel(NO_VALUE)
+        self.cn0_label = QLabel(NO_VALUE)
+        self.ebno_label = QLabel(NO_VALUE)
+        self.margin_label = QLabel(NO_VALUE)
         # The answer first (status, margin, range), then the link budget as
         # a muted breakdown: ten equally weighted rows hid the margin.
         set_role(self.margin_label, role="strong")
@@ -384,7 +385,7 @@ class MissionDashboardWidget(QWidget):
         sim_time_s = float(active_mode_series.time_s[_sample_index(active_mode_series, at_s)]) \
             if active_mode_series is not None and active_mode_series.time_s.shape[0] > 0 else None
         self.sim_time_label.setText((f"{sim_time_s:,.1f} s" + (" (time cursor)" if at_s is not None else ""))
-                                    if sim_time_s is not None else "--")
+                                    if sim_time_s is not None else NO_VALUE)
 
         active_mode = _latest(result, f"{sc_name}.comms_pointing.active_mode", at_s)
         is_comms_mode = bool(active_mode is not None and active_mode > 0.5)
@@ -423,7 +424,7 @@ class MissionDashboardWidget(QWidget):
         # -- Attitude -----------------------------------------------------
         pointing_error_deg = _latest(result, f"{sc_name}.comms_pointing.pointing_error_deg", at_s)
         self.pointing_error_label.setText(
-            f"{pointing_error_deg:.2f} deg" if pointing_error_deg is not None else "--"
+            f"{pointing_error_deg:.2f}°" if pointing_error_deg is not None else NO_VALUE
         )
         if pointing_error_deg is None:
             self.tracking_badge.setText("Unknown")
@@ -438,7 +439,7 @@ class MissionDashboardWidget(QWidget):
         # -- Power ----------------------------------------------------------
         battery_charge_wh = _latest(result, f"{sc_name}.battery_charge", at_s)
         net_power_w = _latest(result, f"{sc_name}.battery_net_power", at_s)
-        self.battery_charge_label.setText(f"{battery_charge_wh:.2f} Wh" if battery_charge_wh is not None else "--")
+        self.battery_charge_label.setText(f"{battery_charge_wh:.2f} Wh" if battery_charge_wh is not None else NO_VALUE)
         battery_capacity_wh = sc_config.power.battery_capacity_wh if sc_config is not None and \
             sc_config.power is not None else None
         self._power_inputs = (sc_name, battery_capacity_wh, at_s) \
@@ -452,13 +453,13 @@ class MissionDashboardWidget(QWidget):
         else:
             self.battery_soc_bar.setValue(0)
             self.battery_soc_bar.setEnabled(False)
-            self.battery_soc_label.setText("--")
+            self.battery_soc_label.setText(NO_VALUE)
         if net_power_w is not None:
             sign = "+" if net_power_w >= 0 else ""
             self.net_power_label.setText(f"{sign}{net_power_w:.2f} W")
             set_role(self.net_power_label, tone="normal" if net_power_w >= 0 else "critical")
         else:
-            self.net_power_label.setText("--")
+            self.net_power_label.setText(NO_VALUE)
             set_role(self.net_power_label, tone=None)
 
         # -- RF link --------------------------------------------------------
@@ -470,7 +471,7 @@ class MissionDashboardWidget(QWidget):
                           pointing_error_deg: float | None, elevation_deg: float | None = None) -> None:
         atmospheric = link_budget.atmospheric_model(self._scenario) != "none"
         self._rf_form.setRowVisible(self.atmospheric_loss_label, atmospheric)
-        self.slant_range_label.setText(f"{slant_range_m / 1000.0:,.1f} km" if slant_range_m is not None else "--")
+        self.slant_range_label.setText(f"{slant_range_m / 1000.0:,.1f} km" if slant_range_m is not None else NO_VALUE)
 
         rf_link = sc_config.rf_link if sc_config is not None else None
         gs_config = None
@@ -510,7 +511,7 @@ class MissionDashboardWidget(QWidget):
             for label in (self.eirp_label, self.fspl_label, self.pointing_loss_label, self.atmospheric_loss_label,
                           self.received_power_label, self.noise_label, self.cn0_label,
                           self.ebno_label, self.margin_label):
-                label.setText("--")
+                label.setText(NO_VALUE)
             if has_access is None:
                 self.link_status_badge.setText("Unknown")
                 set_badge(self.link_status_badge, _MUTED_BADGE)

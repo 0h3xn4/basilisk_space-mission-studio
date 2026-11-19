@@ -141,7 +141,7 @@ class MissionOutputWidget(QWidget):
         top_row.addWidget(self.filter_edit, stretch=1)
         self.export_button = QPushButton("Export CSV...")
         self.export_button.setToolTip(
-            "Write every report's values to one CSV file (SI units, one row per value) -- always every "
+            "Write every report's values to one CSV file (SI units, one row per value) – always every "
             "report, whatever the filter shows."
         )
         self.export_button.setEnabled(False)

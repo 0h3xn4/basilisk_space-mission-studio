@@ -54,13 +54,13 @@ def test_the_table_lists_every_file_with_status_dates_source_and_checksum(panel)
     """The reference-data table lists each file with its status and dates, the
     full checksum, source and path on hover, and counts the files that need
     attention."""
-    assert panel.table.rowCount() == 3
-    cells = [[panel.table.item(r, c).text() for c in range(panel.table.columnCount())] for r in range(3)]
-    assert cells[1][:4] == ["space weather", "SW-All.txt", "out of date", _FILES[1].covers]
-    assert panel.table.item(0, dp._COLUMNS.index("SHA-256")).toolTip() == "ab" * 32  # full SHA-256 one hover away
-    assert panel.table.item(0, dp._COLUMNS.index("Source")).toolTip() == "https://naif.jpl.nasa.gov/x"
-    assert panel.table.item(0, 1).toolTip() == "/cache/naif0012.tls"
-    assert panel.table.item(2, 2).toolTip() == "runs use IAU_EARTH"
+    assert panel.table.row_count() == 3
+    cells = [[panel.table.cell(r, c) for c in range(panel.table.column_count())] for r in range(3)]
+    assert cells[1][:4] == ["Space weather", "SW-All.txt", "Out of date", _FILES[1].covers]  # words, not codes (UI-49)
+    assert panel.table.cell_tooltip(0, dp._COLUMNS.index("SHA-256")) == "ab" * 32  # full SHA-256 one hover away
+    assert panel.table.cell_tooltip(0, dp._COLUMNS.index("Source")) == "https://naif.jpl.nasa.gov/x"
+    assert panel.table.cell_tooltip(0, 1) == "/cache/naif0012.tls"
+    assert panel.table.cell_tooltip(2, 2) == "runs use IAU_EARTH"
     assert "2 need attention" in panel.status_label.text()
 
 
@@ -68,8 +68,8 @@ def test_only_the_source_column_stretches(panel):
     """Only the Source column stretches."""
     from PySide6.QtWidgets import QHeaderView
 
-    header = panel.table.horizontalHeader()
-    stretching = [c for c in range(panel.table.columnCount())
+    header = panel.table.view.horizontalHeader()
+    stretching = [c for c in range(panel.table.column_count())
                   if header.sectionResizeMode(c) == QHeaderView.ResizeMode.Stretch]
     assert stretching == [dp._COLUMNS.index("Source")]
 

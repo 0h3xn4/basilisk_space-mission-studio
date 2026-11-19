@@ -68,7 +68,7 @@ class _LifetimeWorker(QThread):
         try:
             from ..engine import lifetime
         except ImportError as exc:
-            self.failed.emit(f"Basilisk is not installed/built ({exc}) -- the lifetime uses its atmosphere model.")
+            self.failed.emit(f"Basilisk is not installed/built ({exc}) – the lifetime uses its atmosphere model.")
             return
         scenario, name, result, perigee_km, max_years, percentile, drag_coeff, propellant_kg = self._args
         try:

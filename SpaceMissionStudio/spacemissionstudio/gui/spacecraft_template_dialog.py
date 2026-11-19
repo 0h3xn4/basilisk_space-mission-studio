@@ -57,7 +57,7 @@ class SpacecraftTemplateDialog(QDialog):
 
         layout = QVBoxLayout(self)
         description_label = QLabel(
-            "Start a new spacecraft from a physically-reasonable preset instead of a blank default -- "
+            "Start a new spacecraft from a physically-reasonable preset instead of a blank default – "
             "you can adjust everything (including the orbit) in the editor that opens next."
         )
         # See phasing_formation_dialog.py's identical fix (same

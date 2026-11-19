@@ -125,7 +125,7 @@ class GainTableWidget(_TableEditor):
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(["Off boresight [deg]", "Gain [dBi]"], parent)
-        self.table.setToolTip("Read these off the antenna's datasheet pattern, from 0 deg (boresight) up. "
+        self.table.setToolTip("Read these off the antenna's datasheet pattern, from 0° (boresight) up. "
                               "Gains between the rows are interpolated in dB; beyond the last row the last gain "
                               "holds.")
 

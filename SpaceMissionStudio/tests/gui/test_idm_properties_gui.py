@@ -109,11 +109,11 @@ def test_the_battery_follows_the_mapping_and_an_earlier_one_is_shown(qtbot, tmp_
     dialog = _dialog(qtbot, tmp_path)
     assert not dialog.battery_check.isEnabled()
     _map(dialog, "Capacity", "battery.capacity_wh", "W*h")
-    assert dialog.battery_check.isEnabled() and dialog.battery_label.text().startswith("85 W*h")
+    assert dialog.battery_check.isEnabled() and dialog.battery_label.text().startswith("85 Wh")
     dialog.battery_check.setChecked(True)
     assert dialog.power_choice().battery
     (tmp_path / "again").mkdir()
     again = _dialog(qtbot, tmp_path / "again", [Mapping("Capacity", "battery.capacity_wh", "kW*h")])
     row = _rows(again.properties_table)["Capacity"]
     assert again.properties_table.cellWidget(row, 5).currentData() == "kW*h"
-    assert again.battery_label.text().startswith("85000 W*h")
+    assert again.battery_label.text().startswith("85000 Wh")

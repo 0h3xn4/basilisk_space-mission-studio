@@ -28,6 +28,7 @@ from __future__ import annotations
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from . import units
 from .theme import set_role
 
 
@@ -61,7 +62,7 @@ class ValueMarkNote(QWidget):
         self.show_mark(None)
 
     def _value(self, value) -> str:
-        return f"{value:g} {self._unit}".strip()
+        return f"{value:g}{units.suffix(self._unit)}" if self._unit else f"{value:g}"  # "97°", not "97 deg" (UI-35)
 
     def show_mark(self, status: str | None, mark=None, value_used=None, consequences=()) -> None:
         """``status`` (``schema.scenario.value_mark_status``) of ``mark``,
