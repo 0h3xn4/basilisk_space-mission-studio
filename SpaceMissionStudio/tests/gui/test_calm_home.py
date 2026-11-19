@@ -50,16 +50,21 @@ def test_home_puts_the_panels_aside_and_gives_them_back(window):
     assert window.side_dock.isVisible() and window.problems_dock.isVisible()
 
 
-def test_a_card_shows_its_title_and_kind_and_its_buttons_when_picked(window):
+def test_a_card_shows_its_title_and_kind_and_is_marked_when_picked(window):
+    """A card shows its title and kind, no buttons (UI audit B12: the
+    details hold Open template and Customize and open...); the card picked
+    is marked selected, one at a time."""
+    from PySide6.QtWidgets import QAbstractButton
+
     home = window.load_scenario_widget
     card = home.cards[3]
     assert card.title_label.isVisibleTo(card) and card.type_label.isVisibleTo(card)
     assert not card.orbit_label.isVisibleTo(card) and not card.line_label.isVisibleTo(card)
-    assert not card.buttons_shown()
+    assert card.findChildren(QAbstractButton) == [] and not card.is_selected()
     card.selected.emit(card)
-    assert card.buttons_shown()
+    assert card.is_selected()
     home.cards[4].selected.emit(home.cards[4])
-    assert not card.buttons_shown() and home.cards[4].buttons_shown()
+    assert not card.is_selected() and home.cards[4].is_selected()
 
 
 def test_the_details_fold_the_headed_parts(window):

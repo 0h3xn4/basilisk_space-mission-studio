@@ -362,7 +362,7 @@ class ReferenceDataCard(QFrame):
         set_role(self.fetch_button, variant="primary")
         self.fetch_button.clicked.connect(self.start_fetch)
         self.skip_button = QPushButton("Not now")
-        self.skip_button.setToolTip("Fetch later from Settings > Reference data.")
+        self.skip_button.setToolTip("Fetch later from Settings › Reference data.")
         self.skip_button.clicked.connect(self.dismiss)
         buttons.addWidget(self.fetch_button)
         buttons.addWidget(self.skip_button)

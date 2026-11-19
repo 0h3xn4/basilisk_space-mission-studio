@@ -635,7 +635,9 @@ class ThermalWidget(QWidget):
         row.addWidget(parameter_label_)
         self.sweep_parameter = ComboBox()
         self.sweep_parameter.setMaximumWidth(FIELD_WIDTH["choice"])
-        self.sweep_parameter.setMinimumContentsLength(24)
+        # Short enough not to widen the page (its own window on a small screen); a long label ends in
+        # "…", the whole of it in the list and the tooltip.
+        self.sweep_parameter.setMinimumContentsLength(12)
         self.sweep_parameter.currentIndexChanged.connect(lambda _index: self._parameter_chosen())
         parameter_label_.setBuddy(self.sweep_parameter)
         row.addWidget(self.sweep_parameter)
@@ -733,7 +735,12 @@ class ThermalWidget(QWidget):
         angle in a sheet, then the notes, each once (UI audit UI-07: they
         were sentences of numbers, "nominal: nominal: ...")."""
         page, layout = _page()
-        values = QHBoxLayout()
+        # The table and the sheet do not set the page's least width (the page's own window on a small
+        # screen, where Windows' wider fonts made it wider than the screen); the page has no scroll
+        # area of its own, so below the table's width its right edge is cut.
+        values_box = QWidget()
+        values = QHBoxLayout(values_box)
+        values.setContentsMargins(0, 0, 0, 0)
         values.setSpacing(SPACE["xl"])
         self.solution_table = ValueTable("Solution per case", ["Case", "Start", "Orbits", "Energy residual [J]",
                                                                "Energy throughput [J]", "Half-step change [K]"],
@@ -746,7 +753,9 @@ class ThermalWidget(QWidget):
         self.environment_sheet = ValueSheet("Over the run")
         values.addWidget(self.environment_sheet, 0, Qt.AlignmentFlag.AlignTop)
         values.addStretch(1)
-        layout.addLayout(values)
+        values_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum)
+        self.notes_values = values_box
+        layout.addWidget(values_box)
         self.notes_title = set_role(QLabel("Notes"), role="heading")
         layout.addWidget(self.notes_title)
         self.notes_list = NoteList("note", empty="No notes.", fold_after=3)

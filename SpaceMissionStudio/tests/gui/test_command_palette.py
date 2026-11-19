@@ -61,9 +61,9 @@ def test_enter_runs_the_highlighted_command_and_skips_disabled_ones(qtbot):
     qtbot.addWidget(palette)
     qtbot.keyClicks(palette.search, "simulation")
     assert palette.list.count() == 2
-    assert palette.list.currentItem().text().startswith("Run > Run Simulation")  # the enabled one
+    assert palette.list.currentItem().text().startswith("Run › Run Simulation")  # the enabled one, shown with "›"
     qtbot.keyClick(palette.search, Qt.Key.Key_Down)  # the disabled abort is not selectable
-    assert palette.list.currentItem().text().startswith("Run > Run Simulation")
+    assert palette.list.currentItem().text().startswith("Run › Run Simulation")
     qtbot.keyClick(palette.search, Qt.Key.Key_Return)
     assert calls == ["run"] and palette.ran.label == "Run > Run Simulation"
 

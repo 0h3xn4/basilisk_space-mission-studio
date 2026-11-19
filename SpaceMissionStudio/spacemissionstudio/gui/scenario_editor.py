@@ -1212,8 +1212,12 @@ class ScenarioEditorWidget(QWidget):
             self._show_field_problem(field_error)
         else:
             self._show_field_problem("")
-            base_dir = self._base_dir_provider() if self._base_dir_provider else None
-            warnings = plausibility_warnings(scenario, base_dir=base_dir)
+        # The warnings stay listed while there is an error, under it (UI audit UI-50: they went with the
+        # first error). A check that could not run on the scenario with its error says nothing of use:
+        # its "check not run" line is left out until the error is fixed.
+        base_dir = self._base_dir_provider() if self._base_dir_provider else None
+        warnings = [warning for warning in plausibility_warnings(scenario, base_dir=base_dir)
+                    if not errors or getattr(warning, "rule_id", "") != "check.not_run"]
         warnings = self._range_warnings() + warnings
         self.problems = problems + [("warning", warning) for warning in warnings]
         self.mission_guide.update_state(len(scenario.spacecraft), len(scenario.ground_stations), valid=not errors,

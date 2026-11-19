@@ -145,6 +145,12 @@ _logger = logging.getLogger(__name__)
 # The Log's record of each run (M5a): start, end, warnings, where it is saved.
 _run_logger = logging.getLogger("spacemissionstudio.run")
 _RUN_END_STEP_MS = 4  # [ms] between the steps that show a run's end (M6b)
+# Why a command is off: its tooltip and its palette entry say it (UI audit UI-40, UI-55).
+_NO_SCENARIO_OPEN = "No scenario is open. Open one on Home."
+_RUN_GOING = "A run is going. Wait for it to end, or cancel it (Esc)."
+_NO_RUN_GOING = "No run is going."
+_RUN_CANCELLING = "The run is being cancelled: it stops at its next checkpoint."
+_NO_OWN_WINDOW = "The view shown has no window of its own: show Results › 3D View, Run › Thermal or Budgets."
 # [-] saveState() version: bump when the docks change, so an old layout is ignored. 6: the docks' own title
 # bars and the Inspector's width (UI audit B8); a layout of version 5 opens the default layout.
 _LAYOUT_VERSION = 6
@@ -485,6 +491,7 @@ class MainWindow(QMainWindow):
         self.data_dialog = make_window(QDialog(self))
         self._manual_dialog = None  # Help > User Manual's window, once opened
         self._licences_dialog = None  # Help > Third-Party Licences' window, once opened
+        self._about_dialog = None  # Help > About's window, once opened
         self._history_window = None  # File > Change History's window, once opened
         self.data_dialog.setWindowTitle("Reference data")
         self.data_dialog.resize(1120, 480)  # [px] every column without a sideways scroll on a 1280 x 720 screen (UI-49)
@@ -700,11 +707,11 @@ class MainWindow(QMainWindow):
                  "Build the scenario in Basilisk and run it once (the Mission Sequence, when it has one, or the "
                  "set duration)."),
                 ("monte_carlo", "run.mode.monte_carlo", "&Monte Carlo", toolbar_icon("monte-carlo"),
-                 "Run the scenario's Monte Carlo batch (Scenario > Monte Carlo): many runs with dispersed inputs, "
+                 "Run the scenario's Monte Carlo batch (Scenario › Monte Carlo): many runs with dispersed inputs, "
                  "saved to a folder you choose."),
                 ("sil", "run.mode.sil", "S&IL (flight software in the loop)", None,
                  "Run with a spacecraft's exported flight software as an external program in the loop "
-                 "(Reports > Flight Software).")):
+                 "(Reports › Flight Software).")):
             action = add(command_id, label, None, category="Run mode", area="run", qicon=qicon, checkable=True,
                          tip=tip)
             action.setData(mode)
@@ -726,7 +733,7 @@ class MainWindow(QMainWindow):
         self.abort_action = add("run.cancel", "&Cancel Run", self.on_abort_run, category="Run", area="run",
                                 shortcut=QKeySequence(Qt.Key.Key_Escape), qicon=toolbar_icon("abort"),
                                 tip="It stops at the next checkpoint, keeping what was computed.")
-        self.abort_action.setEnabled(False)  # enabled only while a run can be cancelled
+        self.commands.set_available("run.cancel", _NO_RUN_GOING)  # enabled only while a run can be cancelled
         # A labelled toggle (U-46): it says its state, rather than looking
         # like a pressed tab.
         self.live_plot_action = add(
@@ -873,7 +880,7 @@ class MainWindow(QMainWindow):
             tip="Opens the user manual shipped with the app (works offline).")
         self.shortcuts_action = add("help.shortcuts", "&Keyboard Shortcuts", self.on_keyboard_shortcuts,
                                     category="Help", area="settings", shortcut="Ctrl+/",
-                                    tip="Lists the keyboard shortcuts (Settings > Keyboard).")
+                                    tip="Lists the keyboard shortcuts (Settings › Keyboard).")
         self.palette_action = add("help.palette", "&Command Palette...", self.on_command_palette, category="Help",
                                   area="global", shortcut="Ctrl+K",
                                   tip="Find any command, area, page or object by typing part of its name.")
@@ -1029,9 +1036,6 @@ class MainWindow(QMainWindow):
         recent file, a template or a restored autosave opens one."""
         return self._scenario_open
 
-    def _scenario_commands(self) -> list:
-        return [self.commands.action(command_id) for command_id in self._SCENARIO_COMMANDS]
-
     def _set_scenario_open(self, is_open: bool) -> None:
         """The one switch of the "scenario open" state: the work areas show
         their content or their empty state, the scenario's commands are
@@ -1041,8 +1045,8 @@ class MainWindow(QMainWindow):
             self.breakouts.attach_all()  # their areas show the empty state; no window stays open for nothing
         for area_id in self._SCENARIO_AREAS:
             self.shell.page(area_id).show_empty(not is_open)
-        for action in self._scenario_commands():
-            action.setEnabled(is_open)
+        for command_id in self._SCENARIO_COMMANDS:  # off with the reason, in the palette too (UI audit UI-40)
+            self.commands.set_available(command_id, "" if is_open else _NO_SCENARIO_OPEN)
         self._set_running(self._run_going())  # the run commands: not while a run goes either
         self._refresh_clear_cursor()
         # Home's own primary (Open template) while Run cannot start for want of a scenario (UI-03).
@@ -1284,7 +1288,7 @@ class MainWindow(QMainWindow):
             self.breakout_action.setText(text)
             self.breakout_action.setIcon(icon("square-arrow-down-left" if text == BACK_TEXT else "external-link"))
             self.commands.refresh_tooltip("view.breakout")
-        self.breakout_action.setEnabled(target is not None)
+        self.commands.set_available("view.breakout", "" if target is not None else _NO_OWN_WINDOW)
 
     def _on_guide_navigate(self, target: str) -> None:
         """The Scenario page's guide pointing at a page this window owns:
@@ -1813,23 +1817,14 @@ class MainWindow(QMainWindow):
         self.show_settings("keyboard")
 
     def on_about(self) -> None:
-        import importlib.util
+        """Help › About: a small window in the app's theme (UI audit UI-48),
+        one window, kept when closed."""
+        from .about_dialog import AboutDialog
 
-        import spacemissionstudio
-        from spacemissionstudio import legal
-
-        basilisk_status = (
-            "available" if importlib.util.find_spec("Basilisk") is not None
-            else 'not installed: see the user manual, section 2, "Installing it"'
-        )
-        QMessageBox.about(
-            self, "About SpaceMissionStudio",
-            f"<b>SpaceMissionStudio</b> {spacemissionstudio.__version__}<br><br>"
-            "A GUI-based mission-analysis application built on the Basilisk "
-            "astrodynamics framework (AVS Lab, University of Colorado Boulder).<br><br>"
-            f"{legal.about_html()}<br><br>"
-            f"Basilisk: {basilisk_status}",
-        )
+        if self._about_dialog is None:
+            self._about_dialog = AboutDialog(self, self.licences_action, self.manual_action)
+            self._about_dialog.adjustSize()  # as tall as its lines at its width
+        show_window(self._about_dialog)
 
     def on_licences(self) -> None:
         """Help > Third-Party Licences: one window, kept when closed."""
@@ -2083,7 +2078,9 @@ class MainWindow(QMainWindow):
                  "Undo the last scenario edit.", typing),
                 ("edit.redo", self.redo_action, self._history.redo_label(), "Redo", "Makes again",
                  "Redo the scenario edit just undone.", "")):
-            action.setEnabled(label is not None and self._scenario_open)
+            self.commands.set_available(command_id, "" if label is not None and self._scenario_open else
+                                        _NO_SCENARIO_OPEN if not self._scenario_open else
+                                        f"Nothing to {verb.lower()}.")
             action.setText(f"&{verb} {label[0]}" if label else f"&{verb}")
             self.commands.refresh_tooltip(command_id, (f"{does} {label[1]}." if label else plain) + extra)
 
@@ -2483,7 +2480,9 @@ class MainWindow(QMainWindow):
         self._running = running
         needs_scenario = {self.live_plot_action, *self.run_mode_group.actions()}  # and none is open: disabled
         for action in (self.live_plot_action, self.check_kernels_action, *self.run_mode_group.actions()):
-            action.setEnabled(not running and (self._scenario_open or action not in needs_scenario))
+            reason = (_RUN_GOING if running else
+                      _NO_SCENARIO_OPEN if not self._scenario_open and action in needs_scenario else "")
+            self.commands.set_available(self.commands.command_of(action).id, reason)
         for button in (getattr(self, "run_mode_button", None), getattr(self, "run_mode_control", None)):
             if button is not None:
                 button.setEnabled(not running and self._scenario_open)
@@ -2493,9 +2492,9 @@ class MainWindow(QMainWindow):
         """Why Run cannot start now, or "" when it can (UI audit UI-55): a
         run going, no scenario open, or an error in the scenario."""
         if getattr(self, "_running", False):
-            return "A run is going. Wait for it to end, or cancel it (Esc)."
+            return _RUN_GOING
         if not self._scenario_open:
-            return "No scenario is open. Open one on Home."
+            return _NO_SCENARIO_OPEN
         if any(severity == "error" for severity, _text in self.scenario_editor.problems):
             return "The scenario has an error. The Problems panel (Ctrl+J) says what to fix."
         return ""
@@ -2550,7 +2549,7 @@ class MainWindow(QMainWindow):
         self.run_chip.set_state(chip_state, chip_text)
         self.run_chip.setVisible(self._scenario_open)  # the run state of no scenario says nothing (UI audit B8)
         self._set_running(False)
-        self.abort_action.setEnabled(False)
+        self.commands.set_available("run.cancel", _NO_RUN_GOING)
         self._busy_timer.stop()
         self._mc_poll.stop()
         self.run_progress.finish()
@@ -2803,7 +2802,7 @@ class MainWindow(QMainWindow):
         # right after start(), rather than lumped into _set_running(),
         # since on_run_monte_carlo()'s _start_busy() call must NOT enable
         # it.
-        self.abort_action.setEnabled(True)
+        self.commands.set_available("run.cancel")
 
     def on_abort_run(self) -> None:
         if self._run_worker is not None and self._run_worker.isRunning():
@@ -2813,12 +2812,12 @@ class MainWindow(QMainWindow):
             # tempted to click it again while waiting for the next
             # checkpoint; _stop_busy() re-disables it anyway once the
             # worker actually reports back, but that can be a moment away.
-            self.abort_action.setEnabled(False)
+            self.commands.set_available("run.cancel", _RUN_CANCELLING)
             self.run_progress.cancelling()
             self.statusBar().showMessage("Cancelling... the run stops at its next checkpoint.")
         elif self._mc_worker is not None and self._mc_worker.isRunning():
             self._mc_worker.request_cancel()  # audit G3: the cases finished stay
-            self.abort_action.setEnabled(False)
+            self.commands.set_available("run.cancel", _RUN_CANCELLING)
             self.run_progress.cancelling()
             self.statusBar().showMessage("Cancelling... the cases finished are kept.")
 

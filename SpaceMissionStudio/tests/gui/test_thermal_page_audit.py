@@ -384,3 +384,25 @@ def _window(qtbot, monkeypatch, solved):
     window.show_view(page)
     qtbot.wait(50)
     return window, page
+
+
+# -- the page's least width (B11 CI on Windows) --------------------------------------------------------
+
+def test_no_tab_makes_the_page_wider_than_its_header(qtbot, solved):
+    """No tab of the solved page needs more width than the header row
+    (Spacecraft, Size the heaters, Solve, Save...): a tab wider than that
+    widened the page and its own window. On Windows, with its wider fonts,
+    the page's own window then no longer fitted beside the main window (the
+    Notes table and the Studies row had raised the page's least width from
+    471 to 622 px on Linux). The Notes table does not set the page's width."""
+    widget = _page(qtbot, solved)
+    layout = widget.layout()
+    header = max(layout.itemAt(i).minimumSize().width() for i in range(layout.count())
+                 if layout.itemAt(i).widget() is not widget.stack)
+    wide = {widget.tabs.tabText(i): widget.tabs.widget(i).minimumSizeHint().width()
+            for i in range(widget.tabs.count())
+            if widget.tabs.widget(i).minimumSizeHint().width() > header}
+    assert wide == {}, (header, wide)
+    _tab(widget, qtbot, "Notes")
+    assert widget.notes_values.isAncestorOf(widget.solution_table)
+    assert widget.solution_table.width() >= widget.solution_table.minimumSizeHint().width()  # whole at 1280 px

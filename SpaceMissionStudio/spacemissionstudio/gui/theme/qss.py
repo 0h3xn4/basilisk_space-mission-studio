@@ -192,13 +192,18 @@ QFrame[role="card"] {{
 QFrame[role="card"] QLabel {{ border: none; }}
 /* The empty state over Results › Plots' grid: the plots' surface (UI-15). */
 QWidget#plotEmptyState {{ background-color: {t['bg.surface']}; }}
-/* A template card on Home: hover, selected (the accent edge) and focus
-   (the 2 px ring; the 1 px margin keeps its content from moving). */
+/* A template card on Home: hover, selected and focus. The selected card
+   has the focus ring's edge in the accent, 2 px wide, with or without the
+   focus (UI audit UI-38: its 1 px accent border did not show); the 1 px
+   margin of the others keeps their content from moving. */
 QFrame#templateCard {{ margin: {px(FOCUS_RING - BORDER)}; }}
 QFrame#templateCard:hover {{ background-color: {t['bg.hover']}; }}
-QFrame#templateCard[selected="true"] {{ background-color: {t['bg.selected']}; border-color: {t['accent']}; }}
+QFrame#templateCard[selected="true"] {{
+    background-color: {t['bg.selected']};
+    border: {px(FOCUS_RING)} solid {t['accent']};
+    margin: 0px;
+}}
 QFrame#templateCard:focus {{ border: {px(FOCUS_RING)} solid {t['border.focus']}; margin: 0px; }}
-QFrame#templateCard[selected="true"] QPushButton[variant="ghost"] {{ color: {t['text.primary']}; }}
 /* A Results › Overview card: click or Enter shows how its figure was computed. */
 QFrame#metricCard {{ margin: {px(FOCUS_RING - BORDER)}; }}
 QFrame#metricCard:hover {{ background-color: {t['bg.hover']}; }}

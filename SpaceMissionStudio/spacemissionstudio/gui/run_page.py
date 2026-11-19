@@ -36,14 +36,14 @@ from pathlib import Path
 from collections.abc import Callable
 
 from PySide6.QtCore import QSettings, Signal
-from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLineEdit,
-                               QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QFileDialog, QFormLayout, QFrame, QHBoxLayout, QLabel,
+                               QLineEdit, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget)
 
 from ..engine.live_view import PACING
 from .page_tree import embed_dialog
 from .shell import INSET_INSIDE
 from .theme import CONTENT_MAX_WIDTH_PX, PAGE_INSET, set_role
-from .widgets import ComboBox, set_off_reason
+from .widgets import ComboBox, finish_form, set_off_reason
 
 MODES = (("single", "Single"), ("monte_carlo", "Monte Carlo"), ("sil", "SIL"))
 _LIVE_VIEW_KEY = "run/live_3d"  # QSettings: Show in 3D View while running
@@ -198,14 +198,14 @@ class RunPage(QWidget):
         off_label.setWordWrap(True)
         off_row.addWidget(off_label, 1)
         self.enable_monte_carlo_button = QPushButton("Enable Monte Carlo")
-        self.enable_monte_carlo_button.setToolTip("Turns Monte Carlo on and opens Scenario > Monte Carlo, where its "
+        self.enable_monte_carlo_button.setToolTip("Turns Monte Carlo on and opens Scenario › Monte Carlo, where its "
                                                   "runs and dispersions are set.")
         self.enable_monte_carlo_button.clicked.connect(self.enable_monte_carlo)
         off_row.addWidget(self.enable_monte_carlo_button)
         layout.addWidget(self.monte_carlo_off)
         _section("Archive folder", layout)
         note = set_role(QLabel("Every run of the batch is saved here; the Monte Carlo view of Results opens on it. "
-                               "Remembered for this scenario. Its runs and dispersions are on Scenario > Monte "
+                               "Remembered for this scenario. Its runs and dispersions are on Scenario › Monte "
                                "Carlo."), tone="secondary")
         note.setWordWrap(True)
         layout.addWidget(note)
@@ -226,19 +226,27 @@ class RunPage(QWidget):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         _section("Flight software in the loop", layout)
-        row = QHBoxLayout()
-        row.addWidget(QLabel("Spacecraft"))
+        # The label and its list are one row, shown together: with no spacecraft to choose
+        # there is no list and no label, only the note under it (UI audit UI-23).
+        # A form row, so it shares the label column of the program's form under it (UI audit UI-26).
+        self.sil_row = QWidget()
+        row = QFormLayout(self.sil_row)
+        row.setContentsMargins(0, 0, 0, 0)
+        self.sil_label = QLabel("Spacecraft")
         self.sil_combo = ComboBox()
         self.sil_combo.setToolTip("The spacecraft whose exported flight software runs as a program in the loop")
         self.sil_combo.currentTextChanged.connect(self._build_sil_form)
-        row.addWidget(self.sil_combo, 1)
-        layout.addLayout(row)
-        self.sil_none_label = set_role(QLabel("No spacecraft's flight software can be exported: Reports > Flight "
+        self.sil_label.setBuddy(self.sil_combo)
+        row.addRow(self.sil_label, self.sil_combo)
+        layout.addWidget(self.sil_row)
+        self.sil_row.setVisible(False)  # until set_sil_spacecraft gives it names
+        self.sil_none_label = set_role(QLabel("No spacecraft's flight software can be exported: Reports › Flight "
                                               "Software says why."), tone="secondary")
         self.sil_none_label.setWordWrap(True)
         layout.addWidget(self.sil_none_label)
         self.sil_holder = QVBoxLayout()
         layout.addLayout(self.sil_holder)
+        layout.addStretch(1)  # the lines at the top: room the stack gives the page goes under them
         self.stack.addWidget(page)
         self.pages["sil"] = page
 
@@ -286,7 +294,7 @@ class RunPage(QWidget):
         if current in names:
             self.sil_combo.setCurrentText(current)
         self.sil_combo.blockSignals(False)
-        self.sil_combo.setVisible(bool(names))
+        self.sil_row.setVisible(bool(names))
         self.sil_none_label.setVisible(not names)
         self._build_sil_form(self.sil_combo.currentText())
 
@@ -304,6 +312,7 @@ class RunPage(QWidget):
         form.layout().setContentsMargins(0, 0, 0, 0)
         self.sil_holder.addWidget(form)
         self.sil_form = form
+        finish_form(self.pages["sil"])  # the spacecraft and the program's form on one label column, fields at width
 
     def sil_choice(self):
         """(spacecraft, options) for Run, or (None, why not)."""
@@ -311,5 +320,5 @@ class RunPage(QWidget):
         if not name or self.sil_form is None:
             return None, "SIL needs a spacecraft whose flight software can be exported: see Flight Software"
         if not self.sil_form.run_button.isEnabled():
-            return None, "Choose the flight software program and confirm it on Run > Run before a SIL run"
+            return None, "Choose the flight software program and confirm it on Run › Run before a SIL run"
         return name, self.sil_form.to_options()

@@ -175,12 +175,15 @@ def test_the_keyboard_reaches_the_cards_once_and_moves_with_the_arrows(home, qtb
     assert opened == [home.cards[0].path]
 
 
-def test_a_cards_open_button_opens_that_template(home):
-    """A card's Open hands on its own file, whatever is selected."""
+def test_a_cards_open_button_opens_that_template(home, qtbot):
+    """A card's double-click (its Open, UI audit B12) hands on its own file,
+    whatever is selected."""
+    from PySide6.QtCore import Qt
+
     home.select(0)
     opened = []
     home.path_chosen.connect(opened.append)
-    home.cards[4].open_button.click()
+    qtbot.mouseDClick(home.cards[4], Qt.MouseButton.LeftButton)
     assert opened == [home.cards[4].path]
 
 
@@ -206,13 +209,15 @@ def test_the_details_customize_opens_the_wizard_for_the_selected_template(home, 
 
 
 def test_customize_opens_the_wizard_from_the_window(window, monkeypatch):
-    """In the window, a card's Customize... opens the wizard, and its result
-    opens in the Scenario area without a file (Save As writes one)."""
+    """In the window, Customize and open... of the card selected opens the
+    wizard, and its result opens in the Scenario area without a file (Save
+    As writes one)."""
     from spacemissionstudio.gui.template_wizard import TemplateCustomizeWizard
 
     monkeypatch.setattr(TemplateCustomizeWizard, "exec", lambda self: TemplateCustomizeWizard.DialogCode.Accepted)
     home = window.load_scenario_widget
-    home.card("22 - Starter: your first LEO satellite").customize_button.click()
+    home.select("22 - Starter: your first LEO satellite")
+    home.customize_template_button.click()
     assert window.current_view() is window.scenario_editor
     assert window._current_path is None
     assert window.scenario_editor.to_scenario().name == "22 - Starter: your first LEO satellite"

@@ -4420,6 +4420,104 @@ open in its own window.
   the axis shows no offset or exponent notation by an earlier user
   request. All three are listed for a later batch.
 
+## Home, command palette, run pages, log and dialogs (UI audit B12, 2026-11-19)
+
+- **Decision B12-1:** the window writes a path with "›" only. The
+  strings of the Run page, the action tooltips and the Reference data
+  card use "›". A command palette entry keeps "Category > Command" as
+  its key (`PaletteEntry.label`) and shows it with "›"
+  (`PaletteEntry.shown`). An engine message keeps ">"; the Problems
+  panel shows it with "›" (`workspace_panels.window_path`). **Why:**
+  UI-23 and UI-40 found ">" and "›" mixed. The palette's key is read by
+  DESIGN.md's shortcut table test and about 60 test lookups; showing
+  the key with "›" changes what the user sees and no test's way to an
+  entry. The engine's messages are in the golden files and the command
+  line, which stay as they are.
+- **Decision B12-2:** Home's recent list holds the scenario files
+  opened or saved, as before. A template opens unsaved (Save goes to
+  Save As), so it is listed once it is saved; its card stays on Home.
+  The empty state says so: "A scenario file you open or save is listed
+  here. A template opens unsaved: save it (Ctrl+S) to list it." The list
+  follows an open or a save at once. **Why:** UI-32. After template 01
+  opened, the list said "No recent scenarios yet", which read as a bug.
+  Listing the template would put a built-in file, which the app keeps as
+  shipped, beside the user's files, and its card is already on Home.
+- **Decision B12-3:** a template card has no buttons. It shows its title
+  and kind and is as tall as they are. Open template in the details, a
+  double-click or Enter on the card open the template. The details'
+  second button is "Customize and open...": the wizard first, then the
+  result opens unsaved. **Why:** UI-38. The card's Open and Customize...
+  showed on the card under the pointer and kept their room on every
+  other card, so the lower third of each card was blank, and they
+  repeated the details' two buttons. The earlier reason for a Customize
+  per card ("users missed a single Customize button gated on a
+  selection") was about the old list, where the button sat under the
+  list; the details now show the selected template's description beside
+  the cards, with the button next to it.
+- **Decision B12-4:** the selected card's edge is the accent, 2 px wide,
+  the focus ring's width. **Why:** UI-38. The 1 px accent border on the
+  selected surface did not show.
+- **Decision B12-5:** a palette row shows the shortcut in a column of
+  its own at the right, in the monospace font (`_EntryDelegate`), and
+  under a disabled command the reason it is off, which is also its
+  tooltip. The reason is the registry's (`ActionRegistry.set_available`),
+  else the "Off:" line of the action's tooltip, else "Not available
+  now.". The window now gives a reason for every command it disables:
+  no scenario open, nothing to undo or redo, no run going, a run being
+  cancelled, a run going, a view without a window of its own. **Why:**
+  UI-40. The shortcut was joined to the name with spaces, and a
+  disabled command was grey with no reason; most commands were disabled
+  with `setEnabled` and no reason.
+- **Decision B12-6:** a run's progress lines ("run_live: x% complete")
+  are DEBUG records. **Why:** UI-31. About 60 INFO lines per run buried
+  the records that matter in Run › Log. The status bar shows the
+  progress; the log file takes DEBUG and keeps the lines. The command
+  line's `run` uses `SimulationService.run`, not `run_live`, so its
+  output is the same (checked with the two-body validation scenario).
+  No test read the progress records.
+- **Decision B12-7:** About is a small window of the app
+  (`gui.about_dialog.AboutDialog`): the name, the version, the Basilisk
+  version and the licence (a row each, the value in the monospace font),
+  the licence lines and the Third-Party Licences and User Manual
+  commands as buttons; Close is its default button. It is
+  not modal and is kept when closed, as the manual and the licences.
+  **Why:** UI-48. `QMessageBox.about` was a plain box in Qt's look, and
+  a modal dialog is only for a destructive confirmation or a wizard.
+- **Decision B12-8:** a confirmation keeps `QMessageBox.question`; the
+  application style gives every message box the theme's status icons
+  (`theme/style.py`, `MESSAGE_ICONS`): the caution sign for a
+  confirmation and a warning, the critical sign for an error, the info
+  sign for a note, 32 px. **Why:** UI-48. Qt's "?" icon is not the
+  theme's. The style changes every confirmation of the app at once, and
+  the 67 tests that answer `QMessageBox.question` keep their way to it.
+- **Decision B12-9:** the Problems panel lists the plausibility warnings
+  while the scenario has an error, under the errors. A "check not run"
+  line is left out while there is an error. **Why:** UI-50. The
+  warnings were computed only when the scenario validated, so they went
+  with the first error. A check that cannot run on a scenario with an
+  error says nothing of use until the error is fixed.
+- **Decision B12-10:** Reports › Exports wraps its text columns
+  (`DataTable.set_fit_width(wrap=...)`): a wrapped column is never
+  narrower than its longest word, the time last written keeps one line,
+  and each row is as tall as its tallest cell. **Why:** found in the B9
+  review. With the Inspector open at 1280 px most "Made in", "Format"
+  and "Provenance" cells were elided in the middle. The table is short
+  (21 rows), so taller rows cost little, and every entry reads whole
+  without hover.
+- **Decision B12-11:** the Budgets grids fit their width
+  (`EditableTable.fit_columns`, the B9 rule): long headings are two
+  lines, the name above the unit ("Average" over "[W]", "Mass" over
+  "source"), and the three grids under the equipment list share their
+  row by what each needs (`EquipmentPage.fit_lower`) until the user
+  drags a divider. Budgets › Power's tables fit their width too, with
+  their long headings on two lines. **Why:** found in the B9 review. At
+  1280 px the power modes and the power settings scrolled sideways in
+  equal thirds of the row. Now no grid scrolls sideways at 1280 px, with
+  the Inspector open or closed. Two cases can still scroll inside the
+  table, never the page: a system mode grid with many items (one column
+  each), and Budgets › Power's table of the items (twelve columns) with
+  the Inspector open, whose headings alone are wider than the page.
+
 ## Thermal page values, studies and header (UI audit B11, 2026-11-19)
 
 - **Decision:** the Summary tab stays a `DataTable` with every case and
@@ -4497,3 +4595,8 @@ open in its own window.
   a table of numbers to compare whole, scrolling (Output, Monte Carlo).
   The status line's failure messages from the solver stay as the solver
   writes them.
+
+### B11 follow-up (2026-11-19)
+
+- **A tab never sets the thermal page's least width beyond its header row.** The page's own window must fit on a small screen beside the main window, also with Windows' fonts. A wide table without a scroll area takes an Ignored horizontal size policy instead. The design keeps scroll areas out of the thermal page (`test_thermal_views`).
+- **A QObject that Qt calls back (an event filter, a timer) keeps no Python attribute** when only a Python attribute of another object refers to it. It reads what it needs from Qt: its parent, or a Qt property. The toast follower is the first such object.
