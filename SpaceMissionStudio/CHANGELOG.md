@@ -160,7 +160,6 @@ fixes bugs.
   list of support data, so no file is called a SPICE kernel by default.
 - The Flight Software card names the pointing mode ("Sun pointing"),
   not its code ("sunSafePoint").
-
 - **Distinct series colours and display units in plots** (UI audit
   batch B10). The plot colours are new. The x and z lines of a position
   plot were two purples that were hard to tell apart. Now every pair of
