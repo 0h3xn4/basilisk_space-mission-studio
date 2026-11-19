@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QFrame, QHBoxLayout, QHeaderVi
                                QTableView, QVBoxLayout, QWidget)
 
 from .theme import TOKENS, icon, mono_font, set_role
-from .widgets import EmptyState, show_window
+from .widgets import EmptyState, set_table_look, show_window
 
 HISTORY_COLUMNS = ("Status", "Run", "Scenario", "Mode", "Started (UTC)", "Duration", "Saved")
 SORT_ROLE = Qt.ItemDataRole.UserRole + 1
@@ -309,6 +309,7 @@ class RunHistoryView(QWidget):
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
+        set_table_look(self.table)  # the DataTable look (UI audit B9); Duration's heading stays on the right
         header = self.table.horizontalHeader()
         header.setStretchLastSection(False)
         for column, name in enumerate(HISTORY_COLUMNS):  # every column its text's width; Scenario takes the rest

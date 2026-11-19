@@ -440,6 +440,9 @@ QTreeView::branch {{ background: transparent; }}
    the table-row height (UI audit UI-53). */
 QListWidget[role="checklist"] {{ background-color: transparent; border: none; }}
 QListWidget[role="checklist"]::item {{ padding: 0px {px(SPACE['xs'])}; }}
+/* A table that fills a dock (the Problems panel): the dock is its panel, so no frame of its own, no box in a
+   box (UI audit B9). */
+QTableView[role="docked"] {{ border: none; border-radius: 0px; }}
 QTreeView::branch:has-children:!has-siblings:closed, QTreeView::branch:closed:has-children:has-siblings {{
     image: url({chevron_right});
 }}

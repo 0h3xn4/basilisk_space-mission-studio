@@ -22,6 +22,10 @@ makes, in one table, with its format, where it is made, its default
 destination, the provenance written with it and when this machine last
 wrote one (:mod:`gui.export_log`). Enter or a double-click opens the view
 that makes it; the exports themselves stay on their views' buttons.
+
+The table fits the page (UI audit UI-27): at 1280 px, with the Inspector
+open or closed, it does not scroll sideways; the longest texts are elided
+and whole on hover, and no heading is cut.
 """
 
 from __future__ import annotations
@@ -118,10 +122,12 @@ class ExportsPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(SPACE["lg"], SPACE["lg"], SPACE["lg"], SPACE["lg"])
         layout.setSpacing(SPACE["sm"])
-        layout.addWidget(set_role(QLabel("Every file the app writes. The files are the same as in 1.1.0, byte for "
-                                         "byte. Enter or a double-click opens the view that makes one."),
-                                  tone="secondary"))
+        note = set_role(QLabel("Every file the app writes, where it is made and what is written with it. Enter or "
+                               "a double-click opens the view that makes one."), tone="secondary")
+        note.setWordWrap(True)
+        layout.addWidget(note)
         self.table = DataTable("No exports.")
+        self.table.set_fit_width()  # no sideways scroll at 1280 px (UI-27)
         self.table.view.activated.connect(self._on_activated)
         layout.addWidget(self.table, 1)
         export_log.signals.changed.connect(self._on_logged)
@@ -139,7 +145,7 @@ class ExportsPage(QWidget):
                 tooltips[_LAST] = path
             rows.append(Row((export.name, when, export.file_format, export.made_in, export.destination,
                              export.provenance), tooltips=tooltips))
-        self.table.set_table(_HEADERS, rows, stretch=-1)  # every column its content's width
+        self.table.set_table(_HEADERS, rows, stretch=-1)  # fitted to the page; the last column takes what is left
         self._stale = False
 
     def last_written(self, key: str) -> str:

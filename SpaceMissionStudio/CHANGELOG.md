@@ -141,6 +141,25 @@ fixes bugs.
   start where the line under them starts. The top bar's Undo, Redo and
   Save are framed buttons, as the area headers' commands. A layout saved
   by an earlier version opens the default layout once.
+- **One table style, no cut headings** (UI audit batch B9). Reports ›
+  Exports fits the window at 1280 px, with the Inspector open or closed:
+  no sideways scroll, and the last column is in view. A long text ends in
+  "…" and shows whole under the pointer. The line over the table no
+  longer carries a developer's remark about version 1.1.0.
+- Every table has the same look: headings on the left (a number's on
+  the right), no grid lines and rows 26 px high. This includes the
+  Problems panel, which also lost the frame inside its panel, the
+  Budgets grids, Run › History, the readouts, the scenario overview, the
+  SIL comparison and the editors' tables.
+- The thermal model's tables never cut a heading. The headings are
+  short, with the unit ("C [J/K]" for the capacitance), and name the
+  field in full under the pointer. A table too wide for the window
+  scrolls sideways on its own, for example the conductors with the
+  Inspector open at 1280 px.
+- The Reference data window names each file's kind from Basilisk's own
+  list of support data, so no file is called a SPICE kernel by default.
+- The Flight Software card names the pointing mode ("Sun pointing"),
+  not its code ("sunSafePoint").
 
 ## 2.12.0 (2026-11-18)
 

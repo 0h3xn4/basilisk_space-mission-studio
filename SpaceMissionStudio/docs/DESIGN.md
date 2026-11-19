@@ -415,6 +415,8 @@ bar and no toolbar:
   view, destination, provenance and the last time written, which each
   export records with `gui.export_log.record(key, path)` once its files
   are written. A new export adds a row to `EXPORTS` and records itself.
+  The table fits the page (`set_fit_width`, UI audit UI-27): no sideways
+  scroll at 1280 px with the Inspector open or closed.
 - **Motion and scale (M8):** toasts fade in and out over
   `feedback.TOAST_FADE_MS` (150 ms, ease-out), the only motion; with
   `theme.reduce_motion()` they appear and go at once. The UI scale
@@ -434,17 +436,40 @@ bar and no toolbar:
   weight on `bg.canvas`, never selectable (UI audit B4, UI-19); bold and
   muted cells by role; Ctrl+C copies TSV with the header; the header's
   context menu shows and hides columns; columns sized once when filled;
-  an empty state with its action. Output, Monte Carlo, Budget, Compare,
-  Scenario › Assumptions, Settings › Keyboard and the Reference data
-  window use it.
+  rows at `ROW_HEIGHT` (26 px; UI audit B9); an empty state with its
+  action. Output, Monte Carlo, Budget, Compare, Scenario › Assumptions,
+  Settings › Keyboard and the Reference data window use it.
+- **A table that fits its width (UI audit B9):** a `DataTable` with
+  `set_fit_width()` (Reports › Exports, the Reference data window) shares
+  the view's width among its columns (`data_table.fit_widths`): each
+  column its content's width when they all fit, the stretch column (or
+  the last) taking the rest; else the longest texts are cut to one width,
+  never below their heading's. A heading is never cut. A cell whose text
+  is elided shows it whole on hover (its own tooltip first). Only a table
+  whose headings alone are too wide scrolls sideways, every value whole.
+  A table of numbers to compare (Output, Monte Carlo) keeps its columns
+  and scrolls instead.
+- **No heading cut (UI audit B9):** a column is at least as wide as its
+  heading as the style draws it (`QHeaderView.sectionSizeHint`: the
+  style sheet's font and padding). A heading is short, with its unit
+  ("C [J/K]", "G [W/K]"), and names the field in full on hover.
+- **One look for every table (UI audit B9):** a table built another way
+  (a `QTableWidget`, a view over its own model) takes the DataTable look
+  with `widgets.set_table_look(view, numeric=, rows=, docked=)`: no grid
+  lines, headings on the left (a numeric column's on the right), rows at
+  `ROW_HEIGHT` (not for cells that hold controls), and no frame of its
+  own when it fills a dock (`role="docked"`, the Problems panel).
 - **Editable tables:** a table edited in place is a model/view grid too
   (a `QAbstractTableModel` with `ItemIsEditable`): Budgets' grids
   (`budgets_area.GridModel`) and the 3D model's thermal records
   (`thermal_editor.RecordTable`, UI audit UI-13): no grid lines, numbers
   right-aligned in tabular figures, as tall as their rows, their columns
   fitted to the page (a heading or a value too long is elided, whole on
-  hover), so a page never scrolls sideways; a list without a row shows
-  its compact empty state with Add. The thermal model's ten kinds of
+  hover), so a page never scrolls sideways; a column is never narrower
+  than its heading, so a table whose headings do not fit (the conductors
+  and the nodes with the Inspector open at 1280 px) scrolls sideways
+  itself (UI audit B9); a list without a row shows its compact empty
+  state with Add. The thermal model's ten kinds of
   record are six tabs that fit 1280 x 720: Nodes, Faces, Couplings, Heat
   loads, Cases and Solver.
 - **Run › Run (M5b):** the run mode as a segmented control in the Run
@@ -458,7 +483,8 @@ bar and no toolbar:
 - **Problems panel, at the bottom (Ctrl+J):** a `QTableView` over
   `ProblemsModel`: Severity (icon and word), ID (the field path), Object,
   Message; errors first, any column sorts, Ctrl+C copies TSV, Enter or a
-  double-click goes to the field. Its counts are on its title, in the
+  double-click goes to the field. It has the DataTable look and no frame
+  of its own in the dock (UI audit B9). Its counts are on its title, in the
   status bar and the top bar.
 - **One place for a warning (UI audit B5, UI-37):** a problem or a
   warning is written out in the Problems panel only: the scenario's
@@ -596,6 +622,7 @@ popovers, tooltips) are `bg.raised` with a 1 px border instead.
 | Command controls | `widgets.ActionButton(action, text=None)`, `ActionCheckBox(action, text=None)`, `SegmentedControl(name).add_action(action, text)`; `defaultAction()` | A command on a page: a framed button, an on/off check box, or one segment of a choice of a few; each follows its registry action (UI audit UI-11) |
 | Empty state | `widgets.EmptyState(title, text, action, primary=, compact=)`: `set_text`, `add_action`, `add_detail`, `text()` | The one empty state of every view, list and panel: a title, a line of text and the action that fills it. The full form sits in the middle of its area; `compact=True` is as tall as its lines, for a panel, a short list or the room beside a table |
 | Empty list | `widgets.EmptyStack(view, empty_state, fit_rows=)`: `refresh(empty=None)`, `showing_empty()` | A list, tree or table, or its `EmptyState` while it has no row; `fit_rows=True` makes a short list as tall as its rows. Edit, Remove and the other actions on a row are off until a row is selected |
+| Table look | `widgets.set_table_look(view, numeric=(), rows=True, docked=False)`; `DataTable.set_fit_width()`, `hover_text(row, column)`, `data_table.fit_widths(wanted, floors, room, grow)` | The DataTable look for a table built another way (no grid lines, headings left, a number's right, rows at `ROW_HEIGHT`, no frame in a dock); a table that shares its view's width without cutting a heading (UI audit B9) |
 | Badge / tag | `badges.set_badge(label, badges.SUCCESS)` and the other kinds | A state in a word: Explain, the dashboard, rule results |
 | Role | `theme.set_role(widget, role=..., tone=..., badge=...)` | A label's or frame's look from the style sheet: caption, heading, section-title, mono, hint, card; a status tone |
 | Toast | `feedback.report(widget, text, kind)` | Something finished or failed, not tied to a field |
@@ -957,9 +984,13 @@ Where the app does not meet `docs/ui/UI_OVERHAUL.md` after the overhaul
   editor dialog (381 ms), and at the end of a run that ends in the first
   seconds after start-up (up to 0.3 s; 27-52 ms otherwise). SRelD K-23.
 - **Tables:** Output, Monte Carlo, Budget, Compare, the Timeline,
-  Reports › Exports and Settings › Keyboard are `DataTable`s. The
-  reference data list, the readouts, the scenario overview's table, the
-  SIL comparison, the facet and data-handling editors and the series
-  dialog are still `QTableWidget`s.
+  Reports › Exports, Settings › Keyboard and the Reference data window
+  are `DataTable`s. The readouts, the scenario overview's table, the SIL
+  comparison, the facet and data-handling editors, the model analyses'
+  observers, the 3D model's face properties and envelope, the IDM-CIC
+  import and the input differences dialog are still `QTableWidget`s; they
+  have the DataTable look (`set_table_look`, UI audit B9), but not its
+  copy, column menu or fitting. The Budgets grids at 1280 px scroll
+  sideways inside the grid.
 - **Spacing:** the 4 px grid is in the style sheet and the theme's
   `SPACE`; some layouts built in code still set their own margins.

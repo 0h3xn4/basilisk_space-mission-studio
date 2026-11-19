@@ -19349,3 +19349,78 @@ files are unchanged. Screenshots at 1280 x 720 and 1920 x 1080, light
 and dark, before and after, show Home, Scenario with the Inspector,
 Run, Results, Settings, the panels' title bars and the New blank
 scenario toast.
+
+## UI audit batch B9: one table style, no cut headings (2026-11-19)
+
+The screenshot audit of 2026-11-17 found two table defects. Reports ›
+Exports scrolled sideways at 1280 px, its last column out of view, and a
+line over it said "The files are the same as in 1.1.0, byte for byte"
+(UI-27). The Reference data window called the atmosphere tables SPICE
+kernels and showed "ok" (UI-49; B4 fixed most of it). The B6 and B8
+reviews added three more. The thermal editor cut its headings with the
+Inspector open ("Ca…"). The Flight Software card showed the code
+"sunSafePoint". The Problems panel's table had centred headings, grid
+lines and a frame inside its dock.
+
+**Tables that fit their width (UI-27).** `DataTable.set_fit_width` makes
+the columns share the view's width (`data_table.fit_widths`). When all
+columns fit, each gets its content's width and the stretch column, or
+the last, takes the rest. Else the widest columns are cut to one width,
+found by bisection, and never below their heading's width. So the short
+columns stay whole and only the long texts are elided. A cell whose text
+is elided shows it whole on hover: one delegate (`_CellDelegate`) does
+it for every `DataTable`, and a cell's own tooltip comes first. Only a
+table whose headings alone do not fit scrolls sideways, and then every
+value is whole. The fit runs again when the viewport's width changes,
+which includes a vertical scroll bar that comes or goes. Reports ›
+Exports and the Reference data window use it; the Reference data
+window's own pixel caps per column (B4) are gone. The line over the
+Exports table now says what the table lists.
+
+**One look for every table.** A `DataTable` row is `ROW_HEIGHT` (26 px)
+high; Qt's own height was about 30 px. `widgets.set_table_look` gives a
+table built another way the same look: no grid lines, headings on the
+left and a number's on the right, rows at `ROW_HEIGHT` unless its cells
+hold controls, and with `docked=True` no frame of its own
+(`QTableView[role="docked"]`). The Problems panel uses it with `docked`;
+it keeps its sort indicator and severity icons. The sweep found grid
+lines or centred headings in the Budgets grids, Run › History, the
+readouts, the scenario overview's table, the SIL comparison, the facet
+and data-handling editors, the model analyses' observers, the 3D model's
+face properties and envelope, the IDM-CIC import's two tables and the
+input differences dialog. Each now calls `set_table_look`. They stay
+`QTableWidget`s or their own views: moving them to `DataTable` is a
+larger change.
+
+**No heading cut in the thermal editor.** A column of a `RecordTable` is
+never narrower than its heading as the style draws it
+(`QHeaderView.sectionSizeHint`). A measure of the font in code was not
+enough: the style sheet's header font, padding and margins need about
+34 px more than the text, and "Time step [s]" was cut while the code
+said it fitted. The headings are short, with the unit ("C [J/K]",
+"G [W/K]", "hc [W/(m²·K)]", "cp(T)", "k(T)"), and name the field in full
+on hover. At 1280 px without the Inspector every table fits. With the
+Inspector the conductors (twelve columns) and the nodes (ten) cannot fit
+even with one-letter headings, so they scroll sideways inside the table,
+every value whole, and the table grows by the scroll bar's height. The
+page never scrolls sideways.
+
+**Reference data kinds (UI-49).** `reference_data.SUPPORT_DATA_KINDS`
+names each class of Basilisk's support-data registry. B4 named four and
+called every other one a SPICE kernel; a class that is not named now
+shows "support data file". A test checks every class of the installed
+Basilisk.
+
+**The Flight Software card** names the pointing mode with
+`field_text.mode_label` ("Pointing mode: Sun pointing"); the code is the
+line's tooltip.
+
+Tests: the new file `tests/gui/test_tables.py` has 11 tests, the
+Exports and thermal ones run with the Inspector open and closed. All 11
+failed before the fixes. No existing test changed. The full suites
+passed: 2154 GUI tests and 3525 others. The golden files and the export
+files are unchanged. Screenshots at 1280 x 720 (Inspector open and
+closed) and 1920 x 1080, light and dark, before and after, show
+Reports › Exports, the Flight Software card, each thermal tab, the
+Problems panel, the Reference data window, Settings, the Budgets grids,
+the scenario overview's table and the 3D model's face properties.

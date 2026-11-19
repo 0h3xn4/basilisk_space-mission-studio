@@ -44,6 +44,7 @@ from PySide6.QtWidgets import (QFileDialog, QFrame, QGridLayout, QHBoxLayout, QL
 
 from . import export_log
 from .badges import ACCENT, DANGER, MUTED, SUCCESS, WARNING, set_badge
+from .field_text import mode_label
 from .run_worker import failure_text
 from .sil_comparison_widget import SilComparisonWidget
 from .theme import set_role
@@ -210,6 +211,7 @@ class FlightSoftwareWidget(QWidget):
                            f"Off: {reason}." if reason is not None else "Off: an export is running.")
             set_off_reason(card.open_button, record is not None, "Off: no export yet. Press Export... first.")
             card.set_folder(record.path if record is not None else None)
+            card.detail.setToolTip("")
             if self._busy == spacecraft.name:
                 card.set_badge("Exporting...", ACCENT)
                 card.detail.setText("Recording a short run and writing the C project...")
@@ -221,8 +223,10 @@ class FlightSoftwareWidget(QWidget):
                 card.detail.setText(reason)
             elif record is None:
                 card.set_badge("Not exported", MUTED)
-                card.detail.setText(f"Pointing mode {spacecraft.fsw_mode}; "
+                # The mode's label, as the FSW mode field shows it; its code on hover (UI audit B4, B9).
+                card.detail.setText(f"Pointing mode: {mode_label(spacecraft.fsw_mode)}; "
                                     f"{len(spacecraft.actuators)} actuator(s).")
+                card.detail.setToolTip(f"fsw_mode: {spacecraft.fsw_mode}")
             else:
                 status = export_status(scenario, record, base_dir=self._base_dir)
                 text, colors = _STATE_BADGES.get(status.state, ("?", MUTED))

@@ -35,7 +35,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..schema.scenario import ModelAnalysesConfig, ObserverSiteConfig
-from .widgets import NumberField, SpinBox, style_number
+from .widgets import NumberField, SpinBox, set_table_look, style_number
 
 _SWITCHES = (("sensor_blinding", "Sensor blinding by the Sun, Earth and Moon"),
              ("antenna_obstruction", "Antenna obstruction during passes"),
@@ -83,6 +83,7 @@ class ModelAnalysesGroup(QGroupBox):
         self.observers = QTableWidget(0, len(_OBSERVER_COLUMNS))
         self.observers.setHorizontalHeaderLabels(_OBSERVER_COLUMNS)
         self.observers.setToolTip("Observer sites for the brightness, beside the ground stations")
+        set_table_look(self.observers)  # the DataTable look (UI audit B9)
         for site in c.observers:
             self._add_row(site)
         layout.addWidget(self.observers)
