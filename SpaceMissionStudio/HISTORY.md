@@ -19682,3 +19682,76 @@ and the thermal exports are unchanged.
   - B8's toast follower is a child of its window and an event filter on it. Only an attribute of the window referred to it. So Qt could call it after its Python wrapper had gone, and a new wrapper has none of the old one's attributes.
   - The follower now keeps no Python attribute. Its window is its parent. Its timer is its own (`startTimer`/`timerEvent`), with the id in a Qt property. A new test checks this.
   - The error did not reproduce locally, also not with CI's own invocation (`pytest tests -n 4`: 5702 passed). The fix removes the cause that the traceback shows.
+
+## Release 2.13.0 prepared (2026-11-19)
+
+A minor release. It adds features to the window and changes no file
+format. Contents since 2.12.0: the 2.12.0 publication record and the UI
+audit's batches B2 to B12 (#285 to #295). B2 gives each view one
+primary action. B3 adds the empty states. B4 shows labels, not codes.
+B5 shows values as sheets. B6 sets one form grid and page inset. B7
+reworks the Settings page. B8 reworks the top bar, the docks, the
+status bar and the toasts. B9 gives the tables one style. B10 sets the
+plot colours and the display units. B11 reworks the thermal page, with
+its CI follow-up (the page's least width and the toast follower). B12
+reworks Home, the command palette, the run pages, the log and the
+dialogs.
+
+Prepared by `docs/developer/releasing.md` sections 1 to 4. The version
+is 2.13.0 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+The CHANGELOG's Unreleased entries are under 2.13.0, with an
+introduction, a Changed list for the space weather, Who should update
+and Known limits. SRelD issue 45 records the release: K-13 is extended,
+and K-44 to K-46 are new. The SDP, SRS, ICD, CSD, SUM, limitations and
+both READMEs name 2.13.0. `BACKLOG.md` has five new items: the
+intermittent crashes around background threads, the small plot items,
+the thermal energy residual's significant figures, the Budgets › Power
+items table at 1280 px, and a pointing error budget (not in the app
+yet).
+
+The space weather was refreshed. CelesTrak answered the first
+connection on 2026-11-19. The new `SW-All.txt` was updated on
+2026-11-19 17:33 UTC. It has observations to 2026-11-18 and the daily
+forecast to 2027-01-02. CelesTrak revised its 81-day averages from
+2026-10-08. The file has no row from 2027-01-03 to 2027-01-31; NASA
+MSFC's prediction covers those days, as it covers every day after the
+daily forecast. NASA MSFC's November 2026 prediction is still the
+latest issue: the published file equals the bundled one but for
+whitespace. The golden outputs of the 36 templates pass unchanged.
+Three tests in `tests/test_spaceweather.py` pin the file's raw lines.
+They now read the new lines, and one starts its run in February 2027,
+where NOAA's monthly forecast now starts.
+
+The screenshots in `docs/images/` were retaken with
+`scripts/capture_screenshots.py`, and `scripts/sync_help.py` copied
+them into the app's help. Nine main-window shots and the wizard came out
+at their earlier sizes. Since B1 a dialog is at most the screen's height
+less 64 px, and Qt's offscreen screen is 800 x 800 px. So the script cut
+the 3D model editor to 1600 x 736 and gave the IDM-CIC import its own
+900 x 720. These two were taken again at their earlier sizes (1600 x 967
+and 900 x 820) on a 2560 x 1440 offscreen screen, with the script's
+models and steps.
+
+Compatibility was checked with 2.12.0's code (the tag, `2718e78`).
+`schema/` changed since 2.12.0 only in two comments and their field
+help, and the templates did not change. The 36 templates and one file
+with a `budgets` section, as 2.12.0 and as this code save them, are
+byte for byte the same. Each version opens and validates all 37 files
+of the other with no message.
+
+CI's "Windows (MAX Python)" job fails on GitHub's runner image 20261111
+(MSVC 19.52.37029). The failing test is the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`.
+It passed on the image 20261103 (MSVC 19.51). The job is part of
+Basilisk's own "Pull Request" workflow, not of the SpaceMissionStudio
+workflow, and SpaceMissionStudio does not change the framework. The
+owner decided on 2026-11-19 to merge the SpaceMissionStudio pull
+requests, this release's included, with that one check red (SRelD
+K-45).
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4` as CI runs it: 5725 passed (3526 outside `tests/gui/` and
+2199 in it; 5524 at 2.12.0), none failed. A first run failed one test:
+the inventory fixture of `tests/gui/test_labels.py` pinned the bundled
+space weather's last observed day, 2026-11-14. It now reads 2026-11-18
+(`docs/ui/TEST_CHANGES.md`).

@@ -61,7 +61,14 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.12.0, windows and
+signed (decision 11). The current release is 2.13.0, the UI audit's
+batches B2 to B12: one primary action per view, empty states, labels
+instead of codes, value sheets, one form grid and page inset, the
+Settings page, the top bar, docks, status bar and toasts, one table
+style, plot colours and display units, the thermal page, and Home, the
+command palette, the run pages, the log and the dialogs, with the space
+weather refreshed and the scenario format unchanged (prepared
+2026-11-19); before it 2.12.0, windows and
 views: Results › 3D View, Run › Thermal and the Budgets area in windows
 of their own, ground tracks, ground stations and a live 2D map, the
 thermal results as tabs and on the 3D View, dialogs that fit a
@@ -170,7 +177,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.12.0, and the code is at 2.12.0.
+  release is 2.13.0, and the code is at 2.13.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;

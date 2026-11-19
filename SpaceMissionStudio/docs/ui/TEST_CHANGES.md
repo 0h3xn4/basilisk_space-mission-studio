@@ -2590,3 +2590,19 @@ Two existing tests changed:
 The test still checks every value it checked before: the summary's
 rows, the cases, the plots, the files written, the sweep's and the
 sensitivity's rows and the Monte Carlo.
+
+## Release 2.13.0: the space weather refreshed
+
+The bundled CelesTrak file of 2026-11-19 has observations to 2026-11-18.
+One existing GUI test changed. Its inventory fixture names the bundled
+space-weather file with the date range the real file gives, because the
+Reference data window shows the bundled file's own range in that row.
+
+**The pinned data:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_labels.py::test_the_reference_data_window_has_no_sideways_scroll_at_1280_by_720` (via the `_INVENTORY` fixture) | the space-weather row covers "1957-10-01 to 2041-10-31 (observed to 2026-11-14)" | "... (observed to 2026-11-18)" | the refreshed file's last observed day; the assertion is unchanged |
+
+The three tests in `tests/test_spaceweather.py` that pin the shipped
+file's raw lines read the new lines, as at the 2.8.0 refresh.
