@@ -4517,3 +4517,86 @@ open in its own window.
   table, never the page: a system mode grid with many items (one column
   each), and Budgets › Power's table of the items (twelve columns) with
   the Inspector open, whose headings alone are wider than the page.
+
+## Thermal page values, studies and header (UI audit B11, 2026-11-19)
+
+- **Decision:** the Summary tab stays a `DataTable` with every case and
+  node, and gains a **Status** column (an icon and words: Within limits,
+  Below or Above operating, Below or Above survival, No limits). The
+  operating range is one column ("-30 to 50"). **Why:** UI-07 asked for
+  each case's values with their margins and a status. Template 33 has 24
+  case and node rows; DESIGN.md puts a long or sortable list in a
+  `DataTable` and keeps `ValueTable` for a few rows. Survival comes
+  first: a node outside its survival range is critical even when the
+  operating range is also broken. The two range columns made the table
+  scroll sideways beside the Inspector.
+- **Decision:** the solution checks of each case (start, orbits to the
+  periodic state, energy residual and throughput, half-step change) are
+  a `ValueTable` on the Notes tab, one row per case, and the beta angle
+  range is a `ValueSheet` beside it. The status line says only "Solved n
+  cases.". **Why:** UI-07. These values were sentences of numbers in the
+  status line and in the notes. Four cases are a few rows.
+- **Decision:** a note that several cases share is shown once, after
+  their names. A note that starts with its case's own name loses that
+  name; a note that starts with another preset's name says "the cold
+  environment". A case override is named by its parameter label ("cold
+  safe mode: Dissipation avionics: power set to 15.0 W"). Units in the
+  core's sentences go through the new `units.in_text`. **Why:** UI-07
+  ("nominal: nominal:"); the cold note was shown twice, once for cold and
+  once for cold safe mode. The core's notes and the files keep their
+  text: only the window changes.
+- **Decision:** one **Save...** button with a menu: Everything to a
+  folder..., Temperature plot as SVG..., Temperature plot as PNG....
+  The actions call the same `save` and `save_plot` as before. **Why:**
+  UI-44 (three save buttons). A menu keeps every format one click away;
+  a "Save..." dialog that asks for the format would add a step. The
+  results' Export all... already uses a button with a menu.
+- **Decision:** the findings count is a `badges.StatusBadge`: the
+  status's icon and words on its soft tint, painted from the tokens and
+  repainted on a theme change. **Show in Problems** is a plain
+  (secondary) push button. It still emits `problems_requested`, which
+  the main window connects to `MainWindow.show_problems`. **Why:**
+  UI-44. The brief names `MainWindow.reveal_problems`; this app's method
+  is `show_problems` (the status bar and the top bar use it), so no
+  second name was added. From the Thermal page in its own window,
+  `show_problems` now also brings the main window to the front, where
+  the panel is.
+- **Decision:** the study parameter is a drop-down list of the thermal
+  model's parameters (`sweeps.default_parameters`, the ones Sensitivity
+  varies), each by its record and field with its unit; the path is the
+  entry's tooltip. The last entry, **Other parameter, by its path**,
+  shows the old text field. **Why:** UI-30. The text field was the only
+  way to sweep a parameter outside that list (`environment.albedo`, a
+  node's capacitance), as a case's overrides do; the brief keeps an
+  advanced path when a feature needs it. The labels keep the user's
+  names ("Face array +y, side +z: absorptance").
+- **Decision:** Heat flows: the table asks for its rows' height and the
+  plot takes the rest, at least 160 px (`_FLOW_PLOT_MIN_PX`). Short of
+  room the table gives way, down to two rows. At 1280 x 720 the table
+  shows four of template 33's six rows (two before). **Why:** UI-21. A
+  plot lower than 160 px has no readable axis.
+- **Decision:** a heat-flow column that is zero for every node of the
+  case is hidden; the header's context menu shows it again, and the
+  section title's tooltip says so. **Why:** template 33 has ten
+  columns. Their headings alone (two lines, the unit under the name)
+  need 961 px; the page has 880 px beside the Inspector at 1280 px. The
+  zero columns (radiation between nodes, heaters off) carry no
+  information. The CSV files keep every column.
+- **Decision:** `units.label` keeps a unit on a heading's second line
+  ("Cold margin\n[K]"). **Why:** it joined a known unit back onto the
+  first line, so a two-line heading was one line. The Timeline's
+  headings were written with the unit on a second line for narrow
+  columns and now show so.
+- **Decision:** a record table's numeric columns are those that hold
+  numbers. **Why:** the node and heater names were right-aligned as
+  numbers.
+- **Left as it is:** a sweep's table has a column per node and extreme
+  (13 for template 33) and scrolls sideways at 1280 px. DESIGN.md keeps
+  a table of numbers to compare whole, scrolling (Output, Monte Carlo).
+  The status line's failure messages from the solver stay as the solver
+  writes them.
+
+### B11 follow-up (2026-11-19)
+
+- **A tab never sets the thermal page's least width beyond its header row.** The page's own window must fit on a small screen beside the main window, also with Windows' fonts. A wide table without a scroll area takes an Ignored horizontal size policy instead. The design keeps scroll areas out of the thermal page (`test_thermal_views`).
+- **A QObject that Qt calls back (an event filter, a timer) keeps no Python attribute** when only a Python attribute of another object refers to it. It reads what it needs from Qt: its parent, or a Qt property. The toast follower is the first such object.

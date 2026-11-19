@@ -24,9 +24,10 @@ orbit-average heat flows, the summary per case with the margins, the
 heaters and radiators, the 3D model in its temperatures, the studies and
 the notes; the findings go to the Problems panel, with one line here.
 Limit violations go to the Timeline, and Results › 3D View can colour the
-spacecraft by a case's temperatures (``analysis_changed``). **Save...**
-writes the record, the tables and series (CSV) and the plots (SVG and
-PNG), each with its provenance.
+spacecraft by a case's temperatures (``analysis_changed``). **Save...**,
+the page's one save entry point (a menu, UI audit UI-44), writes the
+record, the tables and series (CSV) and the plots (SVG and PNG), each
+with its provenance, or the temperature plot shown alone.
 
 The plots on screen are made at their view's size and in the theme
 (decision T-40) by a worker (:class:`_PlotRenderer`), again when the view
@@ -38,17 +39,20 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import re
+
 from PySide6.QtCore import QByteArray, QRectF, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QCheckBox,
-    QCompleter,
     QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
+    QSizePolicy,
     QSlider,
     QStackedWidget,
     QVBoxLayout,
@@ -56,16 +60,19 @@ from PySide6.QtWidgets import (
 )
 
 from . import export_log, units
+from .badges import StatusBadge
 from .data_table import DataTable, Row
 from .feedback import report
 from .svg_plot import SvgPlotView, render_image, render_size
-from .theme import SPACE, current_theme, on_change, set_role
+from .theme import FIELD_WIDTH, ROW_HEIGHT, SPACE, current_theme, on_change, set_role
 from .theme.svg_plot_style import svg_plot_style
-from .value_sheet import NoteList
-from .widgets import ComboBox, EmptyState, TabWidget
+from .value_sheet import NoteList, ValueSheet, ValueTable
+from .widgets import ComboBox, EmptyState, TabWidget, own_tooltip, set_off_reason
 
 _ALL_NODES = "All nodes"
 _MODEL_HEIGHT_PX = 240  # [px] the 3D model's least height (the page fits a 720 px window)
+_FLOW_PLOT_MIN_PX = 160  # [px] the heat-flow plot's least height: the table below takes the rest (UI audit UI-21)
+_UNLIMITED_PX = 16777215  # [px] Qt's QWIDGETSIZE_MAX: no height limit
 #: The tabs, in their order (T-41).
 TABS = ("Temperatures", "Heat flows", "Summary", "Heaters and radiators", "3D model", "Studies", "Notes")
 _DRAWING = "Drawing the plot..."
@@ -73,7 +80,7 @@ _DRAWING = "Drawing the plot..."
 
 def _text(value) -> str:
     if value is None:
-        return ""
+        return "–"  # a figure the analysis does not give (a node without limits has no margin)
     if isinstance(value, float):
         return f"{value:.4g}"
     return str(value)
@@ -91,6 +98,156 @@ def heading(key: str) -> str:
     return key.replace("_", " ").capitalize()
 
 
+def _two_lines(text: str) -> str:
+    """A heading with its unit on a second line ("Conduction\n[W]"), so a
+    table of many numbers fits the page (UI audit UI-21)."""
+    return text.replace(" [", "\n[")
+
+
+# -- the parameters a study varies, by their labels (UI audit UI-30) ----------------------------------
+
+#: A record kind of the thermal model (``kind[name]`` in a path) and its label.
+_RECORD_KINDS = {"faces": "Face", "nodes": "Node", "conductors": "Conductor", "heat_pipes": "Heat pipe",
+                 "dissipations": "Dissipation", "heaters": "Heater"}
+#: A field and its label and unit (the code's spelling; ``units.label`` shows it).
+_FIELDS = {"absorptance": ("absorptance", "-"), "emissivity": ("emissivity", "-"),
+           "mli_effective_emittance": ("MLI effective emittance", "-"),
+           "conductance_w_k": ("conductance", "W/K"), "contact_coefficient_w_m2_k": ("contact coefficient", "W/(m²·K)"),
+           "power_w": ("power", "W"), "capacitance_j_k": ("heat capacity", "J/K"),
+           "solar_flux_w_m2": ("solar flux", "W/m²"), "planet_ir_w_m2": ("planetary infrared", "W/m²"),
+           "albedo": ("albedo", "-")}
+_PATH = re.compile(r"^(?P<kind>\w+)(?:\[(?P<name>[^\]]*)\])?\.(?P<field>\w+)$")
+
+
+def parameter_label(path: str) -> tuple[str, str]:
+    """``(label, unit)`` of a thermal model parameter by its path, as a study
+    shows it: "faces[array +y:+z].absorptance" -> ("Face array +y, side +z:
+    absorptance", "-"), "environment.solar_flux_w_m2" -> ("Environment:
+    solar flux", "W/m²"). The user's names stay as they are; a path this
+    does not know is its own label, with no unit."""
+    match = _PATH.match(path.strip())
+    if match is None:
+        return path, ""
+    kind, name, field = match.group("kind"), match.group("name"), match.group("field")
+    if kind == "environment" and name is None:
+        owner = "Environment"
+    elif kind in _RECORD_KINDS and name is not None:
+        part, _sep, side = name.partition(":")
+        owner = f"{_RECORD_KINDS[kind]} {part}" + (f", side {side}" if side else "")
+    else:
+        return path, ""
+    text, unit = _FIELDS.get(field, (field.replace("_", " "), ""))
+    return f"{owner}: {text}", unit
+
+
+def parameter_text(path: str) -> str:
+    """A parameter's label with its unit, as a list shows it ("Heater
+    battery heater A: power [W]"; no unit for a dimensionless one)."""
+    label, unit = parameter_label(path)
+    return units.label(f"{label} [{unit}]") if unit else label
+
+
+def _override_note(note: str) -> str:
+    """A case's override as the window names it: "dissipations[avionics].power_w
+    = 15.0" -> "Dissipation avionics: power set to 15.0"; anything else as it is."""
+    path, sep, value = note.partition(" = ")
+    if not sep or _PATH.match(path) is None or parameter_label(path)[0] == path:
+        return note
+    label, unit = parameter_label(path)
+    value = "empty" if value in ("''", '""') else value.strip("'")
+    shown = units.suffix(unit) if unit and unit != "-" else ""
+    return f"{label} set to {value}{shown}"
+
+
+def case_notes(cases) -> list[str]:
+    """The cases' notes, each once (UI audit UI-07): a note several cases
+    share names them together ("cold, cold safe mode: S 1322 W/m²; ...");
+    a note that starts with its case's own name loses the repeat (the
+    preset environment's note "nominal: ..." of the case nominal read
+    "nominal: nominal: ..."); a preset's name of another case says so;
+    units as the window writes them."""
+    from ..thermal.cases import DEFAULT_CASES
+
+    shared: dict[str, list[str]] = {}
+    for case in cases:
+        for note in case.notes:
+            shared.setdefault(note, [])
+            if case.name not in shared[note]:
+                shared[note].append(case.name)
+    notes = []
+    for note, names in shared.items():
+        head, sep, rest = note.partition(": ")
+        if sep and head in names:
+            note = rest
+        elif sep and head in DEFAULT_CASES:
+            note = f"the {head} environment, {rest}"
+        notes.append(f"{', '.join(names)}: {units.in_text(_override_note(note))}")
+    return notes
+
+
+# -- a node's temperatures against its limits (UI audit UI-07) ---------------------------------------
+
+#: status: (words, icon, icon ink, text ink)
+_STATUS = {
+    "below survival": ("Below survival", "octagon-alert", "status.critical", "status.critical.text"),
+    "above survival": ("Above survival", "octagon-alert", "status.critical", "status.critical.text"),
+    "below operating": ("Below operating", "triangle-alert", "status.caution", "status.caution.text"),
+    "above operating": ("Above operating", "triangle-alert", "status.caution", "status.caution.text"),
+    "within": ("Within limits", "circle-check", "status.normal", "status.normal.text"),
+    "none": ("No limits", "circle-minus", "text.secondary", "text.secondary"),
+}
+
+
+def node_status(node) -> str:
+    """A key of :data:`_STATUS` for a ``thermal.results.NodeSummary``: the
+    worst of its range against the survival, then the operating limits."""
+    for limits, kind in ((node.survival_c, "survival"), (node.operating_c, "operating")):
+        if limits is None:
+            continue
+        if node.min_c < limits[0]:
+            return f"below {kind}"
+        if node.max_c > limits[1]:
+            return f"above {kind}"
+    return "none" if node.operating_c is None and node.survival_c is None else "within"
+
+
+def _range(limits) -> str:
+    return "–" if limits is None else f"{limits[0]:g} to {limits[1]:g}"
+
+
+def summary_rows(analysis) -> tuple[list[str], list[Row]]:
+    """Run › Thermal › Summary: per case and node the extremes, the mean, the
+    operating range, the margins and the status, a word behind its icon
+    (never the colour alone)."""
+    headers = ["Case", "Node", "Min [°C]", "Max [°C]", "Mean [°C]", "Operating [°C]", "Cold margin [K]",
+               "Hot margin [K]", "Status"]
+    rows = []
+    for case in analysis.cases:
+        for node in case.summary:
+            words, mark, ink, text_ink = _STATUS[node_status(node)]
+            cells = (case.name, node.name, _text(node.min_c), _text(node.max_c), _text(node.mean_c),
+                     _range(node.operating_c), _text(node.cold_margin_k), _text(node.hot_margin_k), words)
+            tip = f"Operating {_range(node.operating_c)} °C; survival {_range(node.survival_c)} °C"
+            rows.append(Row(cells, tooltips={8: tip, 5: tip}, plain=frozenset({1, 8}),
+                            marks={8: (mark, ink, text_ink)}))
+    return [_two_lines(h) for h in headers], rows
+
+
+def solution_rows(analysis) -> list[list[str]]:
+    """Run › Thermal › Notes: per case how it started and the solution's
+    checks, one value per cell (they were sentences, UI audit UI-07)."""
+    rows = []
+    for case in analysis.cases:
+        solution = case.solution
+        periodic = solution.periodic
+        start = ("Initial temperatures" if periodic is None else
+                 "Periodic" if periodic.converged else "Not periodic")
+        rows.append([case.name, start, "–" if periodic is None else str(periodic.orbits),
+                     f"{abs(solution.energy_residual_j):.3g}", f"{solution.energy_throughput_j:.3g}",
+                     "–" if solution.step_check_k is None else f"{solution.step_check_k:.3g}"])
+    return rows
+
+
 def write_png(svg: str, path, scale: float = 2.0) -> Path:
     """Render ``svg`` (thermal.plots) to a PNG at ``path``."""
     renderer = QSvgRenderer(QByteArray(svg.encode("utf-8")))
@@ -105,10 +262,23 @@ def write_png(svg: str, path, scale: float = 2.0) -> Path:
     return Path(path)
 
 
+class _Section(QWidget):
+    """A titled part of a tab (:func:`_section`). ``wanted`` [px], when set,
+    is the content's height it asks for (Heat flows' table: its rows)."""
+
+    wanted = 0
+
+    def sizeHint(self):  # noqa: N802 -- Qt's name
+        hint = super().sizeHint()
+        if self.wanted:
+            hint.setHeight(self.title_label.sizeHint().height() + self.layout().spacing() + self.wanted)
+        return hint
+
+
 def _section(title: str, content: QWidget, note: QWidget | None = None) -> QWidget:
     """A titled part of a tab: its section title, then ``content``. A
     surface, not a frame (no group box)."""
-    section = QWidget()
+    section = _Section()
     layout = QVBoxLayout(section)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(SPACE["sm"])
@@ -231,8 +401,10 @@ class ThermalWidget(QWidget):
         top.setSpacing(SPACE["sm"])
         top.addWidget(QLabel("Spacecraft"))
         self.spacecraft_combo = ComboBox()
+        self.spacecraft_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.spacecraft_combo.setMaximumWidth(FIELD_WIDTH["choice"])  # a drop-down list's width (UI audit UI-26)
         self.spacecraft_combo.currentTextChanged.connect(lambda _name: self._clear())
-        top.addWidget(self.spacecraft_combo, 1)
+        top.addWidget(self.spacecraft_combo)
         self.size_check = QCheckBox("Size the heaters")
         self.size_check.setChecked(True)
         self.size_check.setToolTip("Find each heater's least constant power that holds its 'on' temperature in "
@@ -242,57 +414,70 @@ class ThermalWidget(QWidget):
         self.solve_button.setToolTip("Solve the spacecraft's thermal cases on the last run")
         self.solve_button.clicked.connect(self.solve)
         top.addWidget(self.solve_button)
+        # One entry point for every file the page writes (UI audit UI-44): it had three buttons.
         self.save_button = QPushButton("Save...")
-        self.save_button.setToolTip("Write the record (thermal.json), the tables and series (CSV) and the plots (SVG "
-                                    "and PNG), each with its provenance, to a folder")
-        self.save_button.clicked.connect(self._save_clicked)
+        self.save_button.setToolTip("Save the thermal analysis: everything to a folder, or the temperature plot "
+                                    "shown as SVG or PNG, each with its provenance")
+        self.save_menu = QMenu(self.save_button)
+        self.save_menu.setToolTipsVisible(True)
+        self.save_all_action = self.save_menu.addAction("Everything to a folder...")
+        self.save_all_action.setToolTip("The record (thermal.json), the tables and series (CSV) and the plots (SVG "
+                                        "and PNG), each with its provenance")
+        self.save_all_action.triggered.connect(self._save_clicked)
+        self.save_menu.addSeparator()
+        self.save_svg_action = self.save_menu.addAction("Temperature plot as SVG...")
+        self.save_svg_action.setToolTip("The temperature plot of the case and node shown, 900 x 420, with its "
+                                        "provenance")
+        self.save_svg_action.triggered.connect(lambda: self._save_plot("svg"))
+        self.save_png_action = self.save_menu.addAction("Temperature plot as PNG...")
+        self.save_png_action.setToolTip("The temperature plot of the case and node shown, 900 x 420 at twice the "
+                                        "pixels, with its provenance")
+        self.save_png_action.triggered.connect(lambda: self._save_plot("png"))
+        self.save_button.setMenu(self.save_menu)
         top.addWidget(self.save_button)
+        top.addStretch(1)
         self._toolbar = top  # add_tool_button: the window's Open in Own Window button goes last
         layout.addLayout(top)
 
+        # The case and node every tab shows, then one short status line and the findings (UI audit UI-07, UI-44).
         status = QHBoxLayout()
         status.setSpacing(SPACE["sm"])
+        self.choices = QWidget()
+        choices = QHBoxLayout(self.choices)
+        choices.setContentsMargins(0, 0, 0, 0)
+        choices.setSpacing(SPACE["sm"])
+        self.case_label = QLabel("Case")
+        choices.addWidget(self.case_label)
+        self.case_combo = ComboBox()
+        self.case_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.case_combo.setMaximumWidth(FIELD_WIDTH["choice"])
+        self.case_combo.setToolTip("The case the plots, the tables, the 3D model and the studies show")
+        self.case_combo.currentTextChanged.connect(lambda _name: self._show_case())
+        self.case_label.setBuddy(self.case_combo)
+        choices.addWidget(self.case_combo)
+        self.node_label = QLabel("Node")
+        choices.addSpacing(SPACE["sm"])
+        choices.addWidget(self.node_label)
+        self.node_combo = ComboBox()
+        self.node_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.node_combo.setMaximumWidth(FIELD_WIDTH["choice"])
+        self.node_combo.setToolTip("All nodes, or one with its operating and survival ranges and its heat flows")
+        self.node_combo.currentTextChanged.connect(lambda _name: self._show_plots())
+        self.node_label.setBuddy(self.node_combo)
+        choices.addWidget(self.node_combo)
+        status.addWidget(self.choices)
         self.status_label = set_role(QLabel(""), tone="secondary")
         self.status_label.setWordWrap(True)
         self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         status.addWidget(self.status_label, 1)
-        self.findings_label = set_role(QLabel(""), tone="caution")
+        self.findings_label = StatusBadge("caution")  # the count behind its icon, never the colour alone
         status.addWidget(self.findings_label)
-        self.problems_button = set_role(QPushButton("Show in Problems"), variant="ghost")
-        self.problems_button.setToolTip("The thermal findings (limit violations, shading, the checks) are in the "
-                                        "Problems panel")
+        self.problems_button = QPushButton("Show in Problems")  # a command: a framed button, not a link (UI-44)
+        self.problems_button.setToolTip("Open the Problems panel (Ctrl+J): the thermal findings (limit violations, "
+                                        "shading, the checks) are listed there")
         self.problems_button.clicked.connect(self.problems_requested.emit)
         status.addWidget(self.problems_button)
         layout.addLayout(status)
-
-        self.choices = QWidget()  # the case and node every tab shows
-        choices = QHBoxLayout(self.choices)
-        choices.setContentsMargins(0, 0, 0, 0)
-        choices.setSpacing(SPACE["sm"])
-        choices.addWidget(QLabel("Case"))
-        self.case_combo = ComboBox()
-        self.case_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
-        self.case_combo.setToolTip("The case the plots, the tables, the 3D model and the studies show")
-        self.case_combo.currentTextChanged.connect(lambda _name: self._show_case())
-        choices.addWidget(self.case_combo)
-        choices.addWidget(QLabel("Node"))
-        self.node_combo = ComboBox()
-        self.node_combo.setSizeAdjustPolicy(ComboBox.SizeAdjustPolicy.AdjustToContents)
-        self.node_combo.setToolTip("All nodes, or one with its operating and survival ranges and its heat flows")
-        self.node_combo.currentTextChanged.connect(lambda _name: self._show_plots())
-        choices.addWidget(self.node_combo)
-        choices.addStretch(1)
-        self.save_svg_button = QPushButton("Save SVG...")
-        self.save_svg_button.setToolTip("Save the temperature plot of the case and node shown as SVG (900 x 420, "
-                                        "with its provenance)")
-        self.save_svg_button.clicked.connect(lambda: self._save_plot("svg"))
-        self.save_png_button = QPushButton("Save PNG...")
-        self.save_png_button.setToolTip("Save the temperature plot of the case and node shown as PNG (900 x 420 at "
-                                        "twice the pixels, with its provenance)")
-        self.save_png_button.clicked.connect(lambda: self._save_plot("png"))
-        choices.addWidget(self.save_svg_button)
-        choices.addWidget(self.save_png_button)
-        layout.addWidget(self.choices)
 
         self.stack = QStackedWidget()
         self.empty_state = EmptyState("No thermal result")
@@ -330,21 +515,52 @@ class ThermalWidget(QWidget):
         page, layout = _page()
         self.flow_plot = SvgPlotView("Heat flows", _DRAWING)
         self.flow_plot.size_settled.connect(self._request_plots)
-        layout.addWidget(self.flow_plot, 3)
+        # The plot takes what the table leaves, never less than its least height (UI audit UI-21).
+        self.flow_plot.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Ignored)
+        self.flow_plot.setMinimumHeight(_FLOW_PLOT_MIN_PX)
+        layout.addWidget(self.flow_plot, 1)
         # One compact line until a node is picked, so the table below gets the room (UI audit UI-21).
         self.flow_empty = EmptyState("No node picked", "The plot shows the heat flows into one node, by kind: pick "
                                      "it in the Node list above.", compact=True)
         layout.addWidget(self.flow_empty, 0)
         self.tables: dict[str, tuple[QWidget, DataTable]] = {}
         table = DataTable("No heat flow in this case.")
+        table.set_fit_width()
         self.tables["flows"] = (_section("Orbit-average heat flows [W] (positive in)", table), table)
-        layout.addWidget(self.tables["flows"][0], 2)
+        self.tables["flows"][0].title_label.setToolTip("A kind of heat flow that is zero for every node of the case "
+                                                       "is hidden; the header's context menu shows it again")
+        layout.addWidget(self.tables["flows"][0], 0)
         self.flow_page = page
         self.tabs.addTab(page, TABS[1])
+
+    def _fit_flow_table(self) -> None:
+        """Heat flows: the table asks to be as tall as its rows, and the plot
+        takes what is left, never less than its least height (UI audit
+        UI-21: the table showed two rows at 1280 x 720); short of room the
+        table gives way first, down to two rows. With no plot shown, the
+        table takes the tab."""
+        section, table = self.tables["flows"]
+        layout = self.flow_page.layout()
+        view = table.view
+        header = max(view.horizontalHeader().height(), view.horizontalHeader().sizeHint().height())
+        table.setMinimumHeight(header + 2 * ROW_HEIGHT + 2 * view.frameWidth())
+        if self.flow_plot.isHidden():
+            layout.setStretchFactor(section, 1)
+            section.wanted = 0
+            table.setMaximumHeight(_UNLIMITED_PX)
+        else:
+            layout.setStretchFactor(section, 0)
+            rows = sum(view.rowHeight(r) for r in range(table.row_count())) if table.row_count() else ROW_HEIGHT
+            bar = view.horizontalScrollBar()
+            section.wanted = header + rows + 2 * view.frameWidth() + (
+                bar.sizeHint().height() if bar.maximum() > 0 else 0)
+            table.setMaximumHeight(section.wanted)
+        section.updateGeometry()
 
     def _build_summary(self) -> None:
         page, layout = _page()
         self.summary_table = DataTable("No case solved.")
+        self.summary_table.set_fit_width()
         self.summary_group = _section("Summary per case", self.summary_table)
         layout.addWidget(self.summary_group, 1)
         self.summary_page = page
@@ -354,6 +570,7 @@ class ThermalWidget(QWidget):
         page, layout = _page()
         for key, title in (("heaters", "Heaters"), ("radiators", "Radiators")):
             table = DataTable(f"No {key} in this case.")
+            table.set_fit_width()
             self.tables[key] = (_section(title, table), table)
             layout.addWidget(self.tables[key][0], 1)
         self.heaters_empty = EmptyState("No heaters or radiators",
@@ -376,7 +593,10 @@ class ThermalWidget(QWidget):
         model_layout.setSpacing(SPACE["sm"])
         row = QHBoxLayout()
         row.setSpacing(SPACE["sm"])
+        colour_label = QLabel("Colour by")
+        row.addWidget(colour_label)
         self.colour_combo = ComboBox()
+        colour_label.setBuddy(self.colour_combo)
         self.colour_combo.addItems(self._COLOUR_MODES)
         self.colour_combo.setToolTip("Which temperature of each node colours its parts")
         self.colour_combo.currentTextChanged.connect(lambda _text: self._show_model_colours())
@@ -400,7 +620,10 @@ class ThermalWidget(QWidget):
 
     def _build_studies(self) -> None:
         """Sweeps, sensitivity and the thermal Monte Carlo of the case shown
-        (thermal.sweeps, T-36): solved on the same fluxes, no new run."""
+        (thermal.sweeps, T-36): solved on the same fluxes, no new run. The
+        parameter is chosen by its label from the thermal model's own
+        (UI audit UI-30); "Other parameter" takes any path, as a case's
+        overrides do."""
         page, layout = _page()
         self.studies_group = QWidget()
         studies = QVBoxLayout(self.studies_group)
@@ -408,19 +631,38 @@ class ThermalWidget(QWidget):
         studies.setSpacing(SPACE["sm"])
         row = QHBoxLayout()
         row.setSpacing(SPACE["sm"])
-        row.addWidget(QLabel("Parameter"))
-        self.sweep_path = QLineEdit()
-        self.sweep_path.setPlaceholderText("faces[radiator].absorptance")
+        parameter_label_ = QLabel("Parameter")
+        row.addWidget(parameter_label_)
+        self.sweep_parameter = ComboBox()
+        self.sweep_parameter.setMaximumWidth(FIELD_WIDTH["choice"])
+        # Short enough not to widen the page (its own window on a small screen); a long label ends in
+        # "…", the whole of it in the list and the tooltip.
+        self.sweep_parameter.setMinimumContentsLength(12)
+        self.sweep_parameter.currentIndexChanged.connect(lambda _index: self._parameter_chosen())
+        parameter_label_.setBuddy(self.sweep_parameter)
+        row.addWidget(self.sweep_parameter)
+        self.sweep_path = QLineEdit()  # "Other parameter": a path, as in a case's overrides
+        self.sweep_path.setPlaceholderText("environment.albedo")
         self.sweep_path.setToolTip("A parameter of the thermal model by its path, as in a case's overrides")
-        row.addWidget(self.sweep_path, 2)
-        row.addWidget(QLabel("Values"))
+        self.sweep_path.setMaximumWidth(FIELD_WIDTH["choice"])
+        self.sweep_path.setAccessibleName("Parameter path")
+        row.addWidget(self.sweep_path, 1)
+        values_label = QLabel("Values")
+        row.addSpacing(SPACE["sm"])
+        row.addWidget(values_label)
         self.sweep_values = QLineEdit()
         self.sweep_values.setPlaceholderText("0.1, 0.2, 0.3")
+        self.sweep_values.setToolTip("The values to solve the case at, separated by commas, in the parameter's unit")
+        self.sweep_values.setMaximumWidth(FIELD_WIDTH["number"])
+        values_label.setBuddy(self.sweep_values)
         row.addWidget(self.sweep_values, 1)
+        self.sweep_unit = set_role(QLabel(""), tone="secondary")
+        row.addWidget(self.sweep_unit)
         self.sweep_button = QPushButton("Sweep")
         self.sweep_button.setToolTip("Solve the case at each value")
         self.sweep_button.clicked.connect(self.run_sweep)
         row.addWidget(self.sweep_button)
+        row.addStretch(1)
         studies.addLayout(row)
         row = QHBoxLayout()
         row.setSpacing(SPACE["sm"])
@@ -440,18 +682,83 @@ class ThermalWidget(QWidget):
         self.study_label.setWordWrap(True)
         studies.addWidget(self.study_label)
         self.study_table = DataTable("No study yet.")
+        self.study_table.set_fit_width()
         studies.addWidget(self.study_table, 1)
         self.study_empty = EmptyState("No study yet", "Sweep a parameter, rank the parameters by their effect, or "
                                       "run the thermal Monte Carlo of the case shown.")
         studies.addWidget(self.study_empty, 1)
         self._show_study_table(False)
+        self._set_parameters([])
         layout.addWidget(self.studies_group, 1)
         self.studies_page = page
         self.tabs.addTab(page, TABS[5])
 
+    _OTHER_PARAMETER = "Other parameter, by its path"
+
+    def _set_parameters(self, paths: list[str]) -> None:
+        """The parameters the Parameter list offers: each by its label and
+        unit, its path on hover; then "Other parameter"."""
+        self.sweep_parameter.blockSignals(True)
+        self.sweep_parameter.clear()
+        for path in paths:
+            self.sweep_parameter.addItem(parameter_text(path), path)
+            self.sweep_parameter.setItemData(self.sweep_parameter.count() - 1, path, Qt.ItemDataRole.ToolTipRole)
+        self.sweep_parameter.addItem(self._OTHER_PARAMETER, None)
+        self.sweep_parameter.setItemData(self.sweep_parameter.count() - 1, "Any parameter of the thermal model by "
+                                         "its path, as in a case's overrides", Qt.ItemDataRole.ToolTipRole)
+        self.sweep_parameter.blockSignals(False)
+        self._parameter_chosen()
+
+    def _parameter_chosen(self) -> None:
+        path = self.sweep_parameter.currentData()
+        self.sweep_path.setVisible(path is None)
+        unit = parameter_label(path)[1] if path else ""
+        self.sweep_unit.setText(units.shown(unit) if unit and unit != "-" else "")
+        own_tooltip(self.sweep_parameter, f"{path}: its path in the thermal model" if path else
+                    "The parameter to sweep, by its label; its path in the thermal model on hover")
+
+    def choose_parameter(self, path: str) -> None:
+        """Sweep ``path``: its entry in the Parameter list, else Other with the path."""
+        index = self.sweep_parameter.findData(path)
+        if index < 0:
+            index = self.sweep_parameter.count() - 1
+            self.sweep_path.setText(path)
+        self.sweep_parameter.setCurrentIndex(index)
+
+    def sweep_parameter_path(self) -> str:
+        """The path of the parameter chosen ("" for none)."""
+        path = self.sweep_parameter.currentData()
+        return (path if path is not None else self.sweep_path.text()).strip()
+
     def _build_notes(self) -> None:
+        """Each case's start and solution checks in a table, the run's beta
+        angle in a sheet, then the notes, each once (UI audit UI-07: they
+        were sentences of numbers, "nominal: nominal: ...")."""
         page, layout = _page()
-        self.notes_list = NoteList("note", empty="No notes.")
+        # The table and the sheet do not set the page's least width (the page's own window on a small
+        # screen, where Windows' wider fonts made it wider than the screen); the page has no scroll
+        # area of its own, so below the table's width its right edge is cut.
+        values_box = QWidget()
+        values = QHBoxLayout(values_box)
+        values.setContentsMargins(0, 0, 0, 0)
+        values.setSpacing(SPACE["xl"])
+        self.solution_table = ValueTable("Solution per case", ["Case", "Start", "Orbits", "Energy residual [J]",
+                                                               "Energy throughput [J]", "Half-step change [K]"],
+                                         numeric=(2, 3, 4, 5))
+        self.solution_table.setToolTip("Start: from the orbit-periodic state, or the initial temperatures. Energy "
+                                       "residual: how far the energy balance is from closing, of the energy "
+                                       "throughput. Half-step change: how much half the time step changes the "
+                                       "temperatures.")
+        values.addWidget(self.solution_table, 0, Qt.AlignmentFlag.AlignTop)
+        self.environment_sheet = ValueSheet("Over the run")
+        values.addWidget(self.environment_sheet, 0, Qt.AlignmentFlag.AlignTop)
+        values.addStretch(1)
+        values_box.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Maximum)
+        self.notes_values = values_box
+        layout.addWidget(values_box)
+        self.notes_title = set_role(QLabel("Notes"), role="heading")
+        layout.addWidget(self.notes_title)
+        self.notes_list = NoteList("note", empty="No notes.", fold_after=3)
         layout.addWidget(self.notes_list)
         layout.addStretch(1)
         self.notes_page = page
@@ -480,7 +787,8 @@ class ThermalWidget(QWidget):
     def _show_model_colours(self) -> None:
         case = self._case()
         at_time = self.colour_combo.currentText() == self._COLOUR_MODES[3]
-        self.time_slider.setEnabled(at_time and case is not None)
+        set_off_reason(self.time_slider, at_time and case is not None,
+                       "Off: the colours show the whole run. Choose At a time in Colour by to pick a time.")
         if case is None:
             self.time_label.setText("")
             return
@@ -516,9 +824,7 @@ class ThermalWidget(QWidget):
         self._export_cache = (None, "", "")
         self._plot_number += 1  # a picture still being made is not wanted
         ready = self._result is not None and self.spacecraft_combo.count() > 0
-        self.status_label.setText("Press Solve to solve the thermal cases on this run." if ready else
-                                  "Run a scenario whose spacecraft has a thermal model (Spacecraft › 3D model › "
-                                  "Thermal model) to solve it here.")
+        self.status_label.setText("")  # the empty state says what to do
         if ready:
             self.empty_state.set_text("No thermal result", "Press Solve to solve the thermal cases of "
                                       f"{self.spacecraft_combo.currentText()} on this run.")
@@ -536,8 +842,11 @@ class ThermalWidget(QWidget):
         self.findings_label.setVisible(False)
         self.problems_button.setVisible(False)
         self.notes_list.set_notes([])
-        self.save_button.setEnabled(False)
-        self.solve_button.setEnabled(ready and self._worker is None)
+        self.solution_table.set_rows([])
+        self.environment_sheet.set_rows([])
+        set_off_reason(self.save_button, False, "Off: nothing is solved yet. Press Solve first.")
+        self._enable_solve()
+        self._enable_studies()
         self.events_changed.emit([])
         if had:
             self.problems_changed.emit()
@@ -555,7 +864,7 @@ class ThermalWidget(QWidget):
         self._worker.finished_ok.connect(self.show_analysis)
         self._worker.failed.connect(self._failed)
         self._worker.finished.connect(self._worker_done)
-        self.solve_button.setEnabled(False)
+        set_off_reason(self.solve_button, False, "Off: the cases are being solved.")
         self.status_label.setText("Building the fluxes on every facet...")
         self._worker.start()
 
@@ -571,7 +880,7 @@ class ThermalWidget(QWidget):
             return
         self.study_label.setText(text)
         for button in (self.sweep_button, self.sensitivity_button, self.monte_carlo_button):
-            button.setEnabled(False)
+            set_off_reason(button, False, "Off: a study is running. It ends by itself.")
         self._study_worker = _StudyWorker(job, self)
         self._study_worker.finished_ok.connect(done)
         self._study_worker.failed.connect(lambda message: self.study_label.setText(message))
@@ -580,10 +889,18 @@ class ThermalWidget(QWidget):
 
     def _study_done(self) -> None:
         self._study_worker = None
-        self.sweep_button.setEnabled(True)
-        self.sensitivity_button.setEnabled(True)
-        self.monte_carlo_button.setEnabled(self.analysis is not None
-                                           and self.analysis.prepared.spacecraft.thermal.monte_carlo is not None)
+        self._enable_studies()
+
+    def _enable_studies(self) -> None:
+        """The study buttons on, or off with why (UI audit UI-30)."""
+        solved = self.analysis is not None
+        for button in (self.sweep_button, self.sensitivity_button):
+            set_off_reason(button, solved, "Off: nothing is solved yet. Press Solve first.")
+        monte_carlo = solved and self.analysis.prepared.spacecraft.thermal.monte_carlo is not None
+        set_off_reason(self.monte_carlo_button, monte_carlo,
+                       "Off: the thermal model has no Monte Carlo section. Add its runs and dispersions in "
+                       "Spacecraft › 3D model › Thermal model › Cases, then run and solve again." if solved else
+                       "Off: nothing is solved yet. Press Solve first.")
 
     def _case_config(self):
         from ..thermal import cases as thermal_cases
@@ -594,7 +911,7 @@ class ThermalWidget(QWidget):
     def run_sweep(self) -> None:
         from ..thermal import sweeps
 
-        path = self.sweep_path.text().strip()
+        path = self.sweep_parameter_path()
         try:
             values = [float(v) for v in self.sweep_values.text().replace(";", ",").split(",") if v.strip()]
         except ValueError:
@@ -604,7 +921,7 @@ class ThermalWidget(QWidget):
             self.study_label.setText("Give a parameter and its values.")
             return
         prepared, case = self.analysis.prepared, self._case_config()
-        self._study(f"Sweeping {path}...", lambda: sweeps.sweep(prepared, case, path, values),
+        self._study(f"Sweeping {parameter_label(path)[0]}...", lambda: sweeps.sweep(prepared, case, path, values),
                     lambda points: self._show_sweep(path, case.name, points))
 
     def _show_study_table(self, shown: bool) -> None:
@@ -612,13 +929,20 @@ class ThermalWidget(QWidget):
         self.study_empty.setVisible(not shown)
 
     def _show_sweep(self, path: str, case: str, points) -> None:
+        label, unit = parameter_label(path)
         nodes = [n.name for n in points[0].summary]
-        rows = [{"value": p.value, **{f"{n.name} min_c": n.min_c for n in p.summary},
-                 **{f"{n.name} max_c": n.max_c for n in p.summary}} for p in points]
-        columns = ["value"] + [f"{n} {e}_c" for n in nodes for e in ("min", "max")]
-        self._fill(self.study_table, [{c: r[c] for c in columns} for r in rows])
+        # The user's node names as they are ("array +y min", not "Array +y min"; UI audit B11).
+        headers = [units.label(f"Value [{unit}]") if unit else "Value"]
+        headers += [f"{node} {end}\n[°C]" for node in nodes for end in ("min", "max")]
+        rows = []
+        for point in points:
+            by_node = {n.name: n for n in point.summary}
+            rows.append(Row((_text(point.value), *(_text(getattr(by_node[node], f"{end}_c")) for node in nodes
+                                                   for end in ("min", "max")))))
+        # Numbers to compare: every column whole, the table scrolls sideways when they do not fit (DESIGN.md).
+        self.study_table.set_table(headers, rows, numeric=range(len(headers)), stretch=-1)
         self._show_study_table(True)
-        self.study_label.setText(f"Sweep of {path} in the {case} case: each node's extremes at each value.")
+        self.study_label.setText(f"Sweep of {label} in the {case} case: each node's extremes at each value.")
 
     def run_sensitivity(self) -> None:
         from ..thermal import sweeps
@@ -633,10 +957,10 @@ class ThermalWidget(QWidget):
         for row in rows:
             node = max(row.changes, key=lambda n: max(abs(v) for v in row.changes[n]))
             d_min, d_max, d_mean = row.changes[node]
-            table.append({"parameter": row.path, "value": row.value, "step": row.step,
+            table.append({"parameter": parameter_text(row.path), "value": row.value, "step": row.step,
                           "largest change_k": row.largest_k, "node": node, "min change_k": d_min,
                           "max change_k": d_max, "mean change_k": d_mean})
-        self._fill(self.study_table, table)
+        self._fill(self.study_table, table, tips={0: [row.path for row in rows]})
         self._show_study_table(bool(table))
         left_out = f" Left out: {'; '.join(notes)}." if notes else ""
         self.study_label.setText(f"Sensitivity in the {case} case: each parameter 10 % up and down (optics kept "
@@ -669,7 +993,16 @@ class ThermalWidget(QWidget):
 
     def _worker_done(self) -> None:
         self._worker = None
-        self.solve_button.setEnabled(self._result is not None and self.spacecraft_combo.count() > 0)
+        self._enable_solve()
+
+    def _enable_solve(self) -> None:
+        if self._worker is not None:
+            set_off_reason(self.solve_button, False, "Off: the cases are being solved.")
+        elif self._result is None or self.spacecraft_combo.count() == 0:
+            set_off_reason(self.solve_button, False, "Off: there is no run of a spacecraft with a thermal model. "
+                           "Run a scenario whose spacecraft has one (Spacecraft › 3D model › Thermal model).")
+        else:
+            set_off_reason(self.solve_button, True, "")
 
     def _failed(self, message: str) -> None:
         self.status_label.setText(message)
@@ -678,27 +1011,22 @@ class ThermalWidget(QWidget):
 
     def show_analysis(self, analysis) -> None:
         """Show ``analysis`` (a thermal.analysis.ThermalAnalysis)."""
-        from ..thermal import records
-
         self.analysis = analysis
         self._export_cache = (None, "", "")
         cases = analysis.cases
-        solved = [f"{c.name}: periodic after {c.solution.periodic.orbits} orbits"
-                  if c.solution.periodic is not None else f"{c.name}: from the initial temperatures" for c in cases]
+        # One short line (UI audit UI-07): each case's start and checks are on Notes, the findings in Problems.
+        self.status_label.setText(f"Solved {len(cases)} case{'' if len(cases) == 1 else 's'}.")
         env = analysis.prepared.environment
-        self.status_label.setText("Solved " + "; ".join(solved) + f". Beta angle over the run: "
-                                  f"{float(env.beta_deg.min()):.1f}° to {float(env.beta_deg.max()):.1f}°.")
-        tables = records.tables(analysis)
-        self._fill(self.summary_table, tables["thermal_summary"])
+        headers, rows = summary_rows(analysis)
+        self.summary_table.set_table(headers, rows, numeric=range(2, 8), stretch=len(headers) - 1)
         findings = analysis.findings()
-        self.findings_label.setText(f"{len(findings)} finding{'' if len(findings) == 1 else 's'}")
+        self.findings_label.set_text(f"{len(findings)} finding{'' if len(findings) == 1 else 's'}")
         self.findings_label.setVisible(bool(findings))
         self.problems_button.setVisible(bool(findings))
-        notes = [f"{c.name}: {note}" for c in cases for note in c.notes]
-        notes += [f"{c.name}: energy balance closes to {abs(c.solution.energy_residual_j):.3g} J of "
-                  f"{c.solution.energy_throughput_j:.3g} J; half the step changes it by "
-                  f"{c.solution.step_check_k:.3g} K" for c in cases if c.solution.step_check_k is not None]
-        self.notes_list.set_notes(notes)
+        self.solution_table.set_rows(solution_rows(analysis))
+        self.environment_sheet.set_rows([("Beta angle, lowest", f"{float(env.beta_deg.min()):.1f}", "°"),
+                                         ("Beta angle, highest", f"{float(env.beta_deg.max()):.1f}", "°")])
+        self.notes_list.set_notes(case_notes(cases))
         self.case_combo.blockSignals(True)
         self.case_combo.clear()
         self.case_combo.addItems([c.name for c in cases])
@@ -709,9 +1037,9 @@ class ThermalWidget(QWidget):
         self.study_label.setText("")
         from ..thermal import sweeps
 
-        self.sweep_path.setCompleter(QCompleter(sweeps.default_parameters(analysis.prepared.spacecraft.thermal), self))
-        self.monte_carlo_button.setEnabled(analysis.prepared.spacecraft.thermal.monte_carlo is not None)
-        self.save_button.setEnabled(True)
+        self._set_parameters(sweeps.default_parameters(analysis.prepared.spacecraft.thermal))
+        self._enable_studies()
+        set_off_reason(self.save_button, True, "")
         self._show_case()
         self.events_changed.emit(analysis.events())
         self.problems_changed.emit()
@@ -752,7 +1080,11 @@ class ThermalWidget(QWidget):
             group, table = self.tables[key]
             group.setVisible(bool(rows))
             if rows:
-                self._fill(table, [{k: v for k, v in r.items() if k != "case"} for r in rows])
+                shown = [{k: v for k, v in r.items() if k != "case"} for r in rows]
+                self._fill(table, shown)
+                if key == "flows":  # a kind of heat no node has in this case is noise: hidden, on the header's menu
+                    table.set_hidden_columns([i for i, k in enumerate(shown[0]) if i and all(
+                        isinstance(r[k], (int, float)) and r[k] == 0 for r in shown)])
         self.heaters_empty.setVisible(self.tables["heaters"][0].isHidden() and self.tables["radiators"][0].isHidden())
         self._show_plots()
         self._show_model_colours()
@@ -768,6 +1100,7 @@ class ThermalWidget(QWidget):
         node = self._node(case)
         self.flow_plot.setVisible(bool(node))
         self.flow_empty.setVisible(not node)
+        self._fit_flow_table()
         self._request_plots()
 
     # -- the plots: the files' text, and the screen's pictures (T-40) ---------------
@@ -842,10 +1175,19 @@ class ThermalWidget(QWidget):
         self._request_plots()
 
     @staticmethod
-    def _fill(table: DataTable, rows: list[dict]) -> None:
+    def _fill(table: DataTable, rows: list[dict], tips: dict | None = None) -> None:
+        """``rows`` of a record table under their headings, the unit on a
+        second line; the columns of numbers right-aligned, those of names
+        (a node, a heater) left (UI audit B11: a node's name was set right);
+        ``tips``: per column, a tooltip per row."""
         columns = list(rows[0]) if rows else []
-        table.set_table([heading(c) for c in columns], [Row(tuple(_text(r.get(c)) for c in columns)) for r in rows],
-                        numeric=range(1, len(columns)), stretch=0)
+        numeric = [i for i, c in enumerate(columns)
+                   if any(isinstance(r.get(c), (int, float)) and not isinstance(r.get(c), bool) for r in rows)]
+        tips = tips or {}
+        table.set_table([_two_lines(heading(c)) for c in columns],
+                        [Row(tuple(_text(r.get(c)) for c in columns),
+                             tooltips={col: tip[i] for col, tip in tips.items() if i < len(tip)})
+                         for i, r in enumerate(rows)], numeric=numeric, stretch=0)
 
     # -- saving -------------------------------------------------------------
 

@@ -514,3 +514,31 @@ def test_an_older_saved_layout_opens_without_error(qtbot, monkeypatch, tmp_path)
     again.shell.show_area("scenario")
     _settle(qtbot)
     assert again.problems_dock.isVisible()
+
+
+def test_the_toast_follower_keeps_no_python_attribute(window, qtbot):
+    """The follower that moves a window's toasts is a child of the window
+    and an event filter on it, and only an attribute of the window refers
+    to it. Qt can call it after its Python wrapper has gone, and a new
+    wrapper has none of the old one's attributes ("'_ToastFollower' object
+    has no attribute '_window'" on CI, and every later test of that worker
+    failed). So it keeps no attribute: its window is its parent, its timer
+    is its own, and it still follows a resize and stops with no toast."""
+    from spacemissionstudio.gui.feedback import _TOAST_FILTER_ATTR, _TOAST_STACK_ATTR, show_toast
+
+    window.shell.show_area("results")
+    _settle(qtbot)
+    toast = show_toast(window, "Saved mine.json", duration_ms=10_000)
+    _settle(qtbot)
+    from PySide6.QtCore import SignalInstance
+
+    follower = getattr(window, _TOAST_FILTER_ATTR)
+    assert [name for name, value in vars(follower).items() if not isinstance(value, SignalInstance)] == []
+    assert follower.watched_window() is window and follower.is_watching()
+    window.side_dock.show()
+    _settle(qtbot)
+    assert not toast.geometry().intersects(_rect(window.side_dock, window))
+    toast.hide()
+    setattr(window, _TOAST_STACK_ATTR, [])
+    follower.reposition()
+    assert not follower.is_watching()

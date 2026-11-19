@@ -179,6 +179,32 @@ fixes bugs.
   "Altitude [km]". The 3D View and the live map draw spacecraft in the
   colours made for a dark background in both themes, as they show them
   on black space and on the Earth's image.
+- **Thermal page values, studies and header** (UI audit batch B11).
+  Run › Thermal has one **Save...** button. Its menu saves everything to
+  a folder, or the temperature plot as SVG or PNG; the files are the
+  same as before. The findings count is a chip with a warning icon, and
+  **Show in Problems** is a button.
+- The status line says how many cases were solved. Each case's start
+  and its solution checks are now a table on the **Notes** tab, with the
+  beta angle beside it. The notes no longer repeat the case's name
+  ("nominal: nominal: ...") or a note that several cases share, and they
+  write units as the window does (W/m², °).
+- The thermal page's own window fits on a small screen again: no tab
+  makes the page wider than its header. The window's toasts no longer
+  raise errors after a window is closed.
+- **Summary** gives each node a status with an icon and words ("Below
+  operating", "Within limits"), and the operating range in one column.
+  Node and heater names are on the left.
+- **Heat flows** gives the table the room once a node is picked: the
+  table is as tall as its rows and the plot takes the rest. Kinds of heat
+  that are zero for every node are hidden. The thermal tables no longer
+  scroll sideways at 1280 px, with the Inspector open or closed.
+- **Studies** offers the parameters by name and unit ("Heater battery
+  heater A: power [W]"), with the path on hover. **Other parameter**
+  still takes any path. **Monte Carlo...** says why it is off and what
+  turns it on, and so do Save..., Solve and the 3D model's time slider.
+- A heading's unit on its own line stays there. The Timeline's columns
+  were meant to show it so.
 
 - **Home, command palette, run pages, log and dialogs** (UI audit batch
   B12). Home's template cards are as tall as their title and kind, and

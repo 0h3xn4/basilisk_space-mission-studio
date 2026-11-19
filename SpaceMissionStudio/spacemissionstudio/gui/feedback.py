@@ -58,7 +58,6 @@ from __future__ import annotations
 import logging
 import re
 
-from PySide6 import QtCore
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, Qt, QTimer, Signal
 from PySide6.QtWidgets import (QAbstractButton, QAbstractSlider, QAbstractSpinBox, QBoxLayout, QComboBox,
                                QDialogButtonBox, QFormLayout, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel,
@@ -377,21 +376,49 @@ class _ToastFollower(QObject):
     """Moves a window's toasts when the window or its central area changes
     size (a panel shown or hidden) and, while any shows, when what is under
     them changes (a page laid out or scrolled after its toast): every
-    :data:`_TOAST_WATCH_MS`, about a millisecond each time."""
+    :data:`_TOAST_WATCH_MS`, about a millisecond each time.
+
+    It keeps no Python attribute. It is a child of its window and an event
+    filter on it, and its only Python reference is an attribute of the
+    window, so Qt can call it after its Python wrapper has gone (a window
+    torn down, a test's window collected): a new wrapper then has none of
+    the old one's attributes. So it reads its window from its parent and
+    keeps its timer's id in a Qt property, and its timer is its own
+    (``timerEvent``), not a connection to a method of the old wrapper."""
+
+    _TIMER_PROPERTY = "toastWatchTimer"
 
     def __init__(self, window: QWidget) -> None:
         super().__init__(window)
-        self._window = window
-        self.timer = QtCore.QTimer(self)  # not the module's QTimer, which a test replaces
-        self.timer.setInterval(_TOAST_WATCH_MS)
-        self.timer.timeout.connect(self.reposition)
+
+    def watched_window(self) -> QWidget | None:
+        window = self.parent()
+        return window if isinstance(window, QWidget) and isValid(window) else None
+
+    def watch(self) -> None:
+        """Check the toasts' place every :data:`_TOAST_WATCH_MS` while one shows."""
+        if not self.property(self._TIMER_PROPERTY):
+            self.setProperty(self._TIMER_PROPERTY, self.startTimer(_TOAST_WATCH_MS))
+
+    def stop(self) -> None:
+        timer = self.property(self._TIMER_PROPERTY)
+        if timer:
+            self.killTimer(int(timer))
+        self.setProperty(self._TIMER_PROPERTY, 0)
+
+    def is_watching(self) -> bool:
+        return bool(self.property(self._TIMER_PROPERTY))
 
     def reposition(self) -> None:
-        stack = getattr(self._window, _TOAST_STACK_ATTR, None) if isValid(self._window) else None
+        window = self.watched_window()
+        stack = getattr(window, _TOAST_STACK_ATTR, None) if window is not None else None
         if stack:
-            _reposition_toasts(self._window, stack)
+            _reposition_toasts(window, stack)
         else:
-            self.timer.stop()
+            self.stop()
+
+    def timerEvent(self, _event) -> None:  # noqa: N802 -- Qt API name
+        self.reposition()
 
     def eventFilter(self, _watched, event) -> bool:  # noqa: N802 -- Qt API name
         if event.type() == QEvent.Type.Resize:
@@ -402,10 +429,10 @@ class _ToastFollower(QObject):
 def _follow_resizes(window: QWidget) -> None:
     follower = getattr(window, _TOAST_FILTER_ATTR, None)
     if follower is not None and isValid(follower):
-        follower.timer.start()
+        follower.watch()
         return
     follower = _ToastFollower(window)
-    follower.timer.start()
+    follower.watch()
     setattr(window, _TOAST_FILTER_ATTR, follower)
     window.installEventFilter(follower)
     central = window.centralWidget() if isinstance(window, QMainWindow) else None

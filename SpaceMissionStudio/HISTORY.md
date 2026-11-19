@@ -6304,7 +6304,7 @@ Continuing the same round of feedback as the device catalog above: "device-inter
 
 **A real bug caught by this round's own tests, not shipped**: the first version of the `coarse_sun_sensor` fault wiring mapped `fault_mode="none"` to `coarseSunSensor.CSSFAULT_OFF` -- reasonable-looking given the name, and WRONG: reading `coarseSunSensor.h`'s own enum comment directly ("CSS measurement is set to 0 for all future time") shows `CSSFAULT_OFF` is itself one of the FAULT states (a "sensor permanently dead" fault), not "no fault" -- the real nominal/unfaulted value is a separate, differently-named enum member, `NOMINAL`, which doesn't contain the substring "FAULT" and was therefore missed on a first `dir()`-based enumeration of the module's fault constants. This made EVERY `coarse_sun_sensor` built through the new code read a permanent 0 regardless of real sun geometry -- caught immediately by `test_css_baseline_reads_near_full_illumination` actually checking the sensor's real observable output (not just that the field got set without crashing), before this was ever committed. Fixed by mapping `"none"` to `coarseSunSensor.NOMINAL` instead. Also confirmed directly against `coarseSunSensor.cpp`'s own `UpdateState()` ordering that `"stuck_max"` forces the PRE-saturation value to a literal `1.0`, which this schema's own `saturation_max` (if set lower) still clips afterward -- documented precisely in `engine.fsw`'s own comment rather than the looser "freezes at maxOutput" phrasing an untested first draft used.
 
-**Verified directly against the real Basilisk build** (`/tmp/bsk_venv4`), via real observable sensor OUTPUT, not just "the setter ran": a new `tests/test_device_realism.py` (14 tests) builds each sensor directly against a bare `SimulationBaseClass` (same pattern as `tests/test_css_estimation.py`/`tests/test_mtb_desaturation.py`) and confirms, from the actual recorded output message: a CSS bias adds exactly to the true cosine-law reading; `saturation_max` really clips it; `fault_mode="stuck_max"` combined with a tiny `saturation_max` reads exactly that saturation value regardless of an enormous bias; an unrecognized `fault_mode` raises a clear `FswError` (both CSS and magnetometer); a magnetometer bias adds exactly per-axis to a REAL WMM-computed field (same real-Earth-field setup as `test_mtb_desaturation.py`); magnetometer saturation clips every axis symmetrically; a magnetometer `fault_mode="stuck_value"` on one `fault_axis` freezes exactly that axis while leaving the other two untouched; an IMU gyro/accelerometer bias adds exactly to the true rate/specific-force (the latter checked against a true value of exactly 0, since this bare sim has no gravity/forces -- a clean, nothing-else-to-subtract-out baseline); IMU gyro saturation clips; and a coarse `gyro_lsb_rad_s` genuinely quantizes a true rate that is NOT itself a multiple of that step onto one that is. The star tracker's `bias_walk_bound_arcsec` gets a lighter-touch test (confirms it's really set and the sensor still runs/produces finite output) since its effect is a stochastic long-run bound, not something one deterministic tick can demonstrate -- a statistical long-run confirmation is flagged as a reasonable, not-yet-done follow-on. Full suite: all pre-existing Basilisk-dependent tests this round touched (`test_css_estimation.py`, `test_mtb_desaturation.py`, `test_orbit_maintenance.py`, `test_fuel_tank.py`, `test_thruster_control.py`, `test_momentum_dumping.py`) still pass, plus the full non-Basilisk suite (1040 passed, 11 skipped), zero regressions.
+**Verified directly against the real Basilisk build** (`/tmp/bsk_venv4`), via real observable sensor OUTPUT, not just "the setter ran": a new `tests/test_device_realism.py` (13 tests) builds each sensor directly against a bare `SimulationBaseClass` (same pattern as `tests/test_css_estimation.py`/`tests/test_mtb_desaturation.py`) and confirms, from the actual recorded output message: a CSS bias adds exactly to the true cosine-law reading; `saturation_max` really clips it; `fault_mode="stuck_max"` combined with a tiny `saturation_max` reads exactly that saturation value regardless of an enormous bias; an unrecognized `fault_mode` raises a clear `FswError` (both CSS and magnetometer); a magnetometer bias adds exactly per-axis to a REAL WMM-computed field (same real-Earth-field setup as `test_mtb_desaturation.py`); magnetometer saturation clips every axis symmetrically; a magnetometer `fault_mode="stuck_value"` on one `fault_axis` freezes exactly that axis while leaving the other two untouched; an IMU gyro/accelerometer bias adds exactly to the true rate/specific-force (the latter checked against a true value of exactly 0, since this bare sim has no gravity/forces -- a clean, nothing-else-to-subtract-out baseline); IMU gyro saturation clips; and a coarse `gyro_lsb_rad_s` genuinely quantizes a true rate that is NOT itself a multiple of that step onto one that is. The star tracker's `bias_walk_bound_arcsec` gets a lighter-touch test (confirms it's really set and the sensor still runs/produces finite output) since its effect is a stochastic long-run bound, not something one deterministic tick can demonstrate -- a statistical long-run confirmation is flagged as a reasonable, not-yet-done follow-on. Full suite: all pre-existing Basilisk-dependent tests this round touched (`test_css_estimation.py`, `test_mtb_desaturation.py`, `test_orbit_maintenance.py`, `test_fuel_tank.py`, `test_thruster_control.py`, `test_momentum_dumping.py`) still pass, plus the full non-Basilisk suite (1040 passed, 11 skipped), zero regressions.
 
 ---
 
@@ -19609,3 +19609,76 @@ Home (fresh, a card selected, after a template and after a save), the
 command palette with disabled commands, Run › Run in each mode, Run ›
 Log after a short run, About, a confirmation, the Problems panel with
 an error and warnings, Reports › Exports and the Budgets pages.
+
+## UI audit batch B11: thermal page values, studies and header (2026-11-19)
+
+Branch `ui/thermal-page`. The audit found four faults on Run › Thermal
+(UI-07, UI-21, UI-30, UI-44). The batch also checked every tab and the
+page in its own window, at 1280 x 720 (with the Inspector open and
+closed) and 1920 x 1080, in both themes.
+
+**The header (UI-44).** The page had three save buttons: Save... in the
+top row, Save SVG... and Save PNG... beside the case and node. Now one
+Save... button opens a menu with the three entries. The entries call the
+same code as before, so the files are byte for byte the same; a test
+compares them. "2 findings" was a word in the caution colour. It is now a
+chip (`badges.StatusBadge`) with the caution triangle and the words.
+Show in Problems looked like a link. It is now a framed button, with
+Ctrl+J in its tooltip. From the page in its own window, it also brings
+the main window to the front.
+
+**Values instead of sentences (UI-07).** The status line was two lines
+at 1280 px: every case's start and the beta angle. It now says "Solved 4
+cases.". The case and node lists moved onto the same row, so the tabs
+start one row higher. The Notes tab shows each case's start and
+solution checks in a value table, and the beta angle in a value sheet.
+The notes come from the core with the case's name in front
+("nominal: S 1367 W/m^2 ..."), and the page put the name in front again.
+Now a note is shown once, after the names of the cases that share it,
+with the units as the window writes them (`units.in_text`). A case's
+override is named by its parameter's label. The Summary tab gives every
+node a status with an icon and words, and the operating range in one
+column. Node names are on the left: the page set every column after the
+first as a number.
+
+**Heat flows (UI-21).** B3 made the "pick a node" prompt one compact
+line. With a node picked, the plot still took three fifths of the tab,
+and the table showed two rows at 1280 x 720. Now the table asks for its
+rows' height and the plot takes the rest, at least 160 px: four of
+template 33's six rows show at 1280 x 720, every row in a taller window.
+The headings put the unit on a second line. `units.label` joined a known
+unit back onto the first line; it now keeps it, which also gives the
+Timeline the two-line headings its code asked for. Heat kinds that are
+zero for every node of the case are hidden (the header's menu shows
+them). With that, no thermal table scrolls sideways at 1280 px with the
+Inspector open or closed.
+
+**Studies (UI-30).** The parameter was a code path in a text field. It
+is now a list of the thermal model's parameters by label and unit
+("Heater battery heater A: power [W]"), with the path on hover. "Other
+parameter, by its path" shows the old field, for a path outside the
+list. Monte Carlo... was off with no reason; it now says that the
+thermal model has no Monte Carlo section and where to add one. Save...,
+Solve, Sweep, Sensitivity and the 3D model's time slider say why they
+are off too, and the 3D model's colour list has a label.
+
+**Left open.** A sweep's table has a column per node and extreme and
+scrolls sideways at 1280 px; DESIGN.md keeps such a table of numbers
+whole. The energy heading of the heaters reads "W·h" (an existing test
+fixes it). The notes keep the long literature reference of each case's
+environment.
+
+Tests: `tests/gui/test_thermal_page_audit.py` (13 tests). Two existing
+tests changed; `docs/ui/TEST_CHANGES.md` lists them. The golden files
+and the thermal exports are unchanged.
+
+### B11 CI follow-up: the page's least width and the toast follower (2026-11-19)
+
+- **Windows CI** failed `test_breakout.py::test_a_window_saved_on_a_screen_that_is_gone_opens_on_the_main_window`. The thermal page's own window was 194 px off the main window's centre. B11's Notes table and Studies row had raised the page's least width from 471 to 622 px on Linux. With Windows' wider fonts, the window no longer fitted on the screen beside the main window.
+  - The Notes values no longer set the page's width (horizontal size policy Ignored). The page has no scroll area of its own, so below the table's width its right edge is cut.
+  - The Studies parameter list asks for 12 characters, not 24. A longer label ends in "…", and the whole label is in the list and the tooltip.
+  - The page's least width is 471 px on Linux again, as on develop. A new test asks that no tab is wider than the header row.
+- **Linux CI** failed 104 tests on one worker. The first error was "'_ToastFollower' object has no attribute '_window'", and "Slot 'MainWindow::' not found" errors followed.
+  - B8's toast follower is a child of its window and an event filter on it. Only an attribute of the window referred to it. So Qt could call it after its Python wrapper had gone, and a new wrapper has none of the old one's attributes.
+  - The follower now keeps no Python attribute. Its window is its parent. Its timer is its own (`startTimer`/`timerEvent`), with the id in a Qt property. A new test checks this.
+  - The error did not reproduce locally, also not with CI's own invocation (`pytest tests -n 4`: 5702 passed). The fix removes the cause that the traceback shows.

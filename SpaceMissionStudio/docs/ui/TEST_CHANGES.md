@@ -2560,3 +2560,33 @@ text of Reports › Exports and fits the Budgets grids. The new tests are in
 | Test | Before | Now | Why |
 |---|---|---|---|
 | `test_tables.py::test_the_exports_fit_the_page_with_every_heading_whole` | every row is `ROW_HEIGHT`; with the Inspector some cells are elided (whole on hover) | every row is at least `ROW_HEIGHT`; no cell is elided, with the Inspector open or closed | B9 review, carried into B12: the text columns of Exports wrap and the rows grow, so every entry reads whole without hover. The new rule is stricter on elision; the row height follows the wrap |
+
+## UI audit B11: thermal page values, studies and header
+
+B11 puts Run › Thermal's values in tables (UI-07), gives Heat flows'
+table the room (UI-21), chooses a study's parameter by its label and
+says why Monte Carlo... is off (UI-30), and makes the header one Save...
+menu, a findings chip and a Show in Problems button (UI-44). The new
+tests are in `tests/gui/test_thermal_page_audit.py`. No golden file and
+no thermal export changed.
+
+Two existing tests changed:
+
+**How the test reaches the control:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_thermal_views.py::test_the_page_is_tabs_that_fit_1280_by_720` | `save_svg_button` and `save_png_button` are shown above the tabs | `save_svg_action` and `save_png_action` are in the menu of `save_button`, which is shown above the tabs | UI-44: the two buttons are entries of the one Save... menu |
+| `test_thermal_views.py::test_the_page_is_tabs_that_fit_1280_by_720` | the Studies tab shows `sweep_path` | it shows `sweep_parameter` | UI-30: the parameter is a list; the path field shows only for "Other parameter, by its path" |
+| `test_thermal_pages.py::test_run_thermal_solves_shows_and_saves` | `sweep_path.setText("faces[battery].emissivity")` | `choose_parameter("faces[battery].emissivity")` (the list's entry for that path) | UI-30 |
+
+**A text changed with the defect's fix:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_thermal_pages.py::test_run_thermal_solves_shows_and_saves` | the status line starts "Solved nominal: periodic after" and holds "Beta angle over the run:" | the status line is "Solved 3 cases."; the Notes tab's solution table lists nominal, hot and cold, nominal "Periodic"; the beta angle sheet has a value | UI-07: the status line was a sentence of every case's start and the beta angle; they are a value table and a value sheet now |
+| `test_thermal_pages.py::test_run_thermal_solves_shows_and_saves` | the study line starts "Sweep of faces[battery]" | it starts "Sweep of Face battery: emissivity" | UI-30: the line names the parameter by its label |
+
+The test still checks every value it checked before: the summary's
+rows, the cases, the plots, the files written, the sweep's and the
+sensitivity's rows and the Monte Carlo.
