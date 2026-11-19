@@ -261,7 +261,7 @@ def test_the_window_size_is_kept_but_not_the_scenario(qtbot, monkeypatch, tmp_pa
     window starts with nothing open, whatever was open before."""
     first = _new_window(qtbot, monkeypatch)
     first.show()
-    first.resize(first.minimumSizeHint().width(), 560)  # [px] the new window's own height is 850 px
+    first.resize(first.minimumSizeHint().width(), 640)  # [px] the new window's own height is 850 px
     assert first.open_path(_scenario_file(tmp_path, "A"))
     size = first.size()
     first.close()
@@ -269,6 +269,6 @@ def test_the_window_size_is_kept_but_not_the_scenario(qtbot, monkeypatch, tmp_pa
     second = _new_window(qtbot, monkeypatch)
     second.show()
     # The height as it was (the width is fitted to the 800 px offscreen screen).
-    assert second.height() == size.height() == 560  # [px]
+    assert second.height() == size.height() == 640  # [px]
     assert not second.scenario_open and second.shell.current_area() == "home"
     assert second.windowTitle() == "SpaceMissionStudio – no scenario open"

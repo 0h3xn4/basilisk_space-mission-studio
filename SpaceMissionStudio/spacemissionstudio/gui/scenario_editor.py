@@ -109,6 +109,29 @@ def _page(widget: QWidget, top: bool = False) -> QScrollArea:
     return scroll
 
 
+def _cap_form(form: QWidget) -> None:
+    """``form``, an embedded editor, no wider than
+    :data:`CONTENT_MAX_WIDTH_PX` (UI audit UI-56). A form that scrolls
+    itself keeps its scroll areas as wide as the page, so their scroll
+    bars sit at the page's edge, beside the Inspector, with no strip that
+    belongs to nothing between them; the content inside is capped and keeps
+    the left edge, as on the Run page. A form that does not scroll is
+    capped whole."""
+    def outermost(area: QScrollArea) -> bool:
+        parent = area.parentWidget()
+        while parent is not None and parent is not form:
+            if isinstance(parent, QScrollArea):
+                return False
+            parent = parent.parentWidget()
+        return parent is form
+
+    scrolls = [area for area in form.findChildren(QScrollArea) if outermost(area) and area.widget() is not None]
+    if not scrolls:
+        form.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
+    for area in scrolls:
+        area.widget().setMaximumWidth(CONTENT_MAX_WIDTH_PX)
+
+
 def _validate(scenario: Scenario) -> None:
     """``scenario.validate()``; a wrong-typed value it trips over (one typed
     on the JSON page) is a validation error too, as ``load_scenario`` makes
@@ -372,7 +395,7 @@ class ScenarioEditorWidget(QWidget):
         form = PropagationSetupDialog(self._gravity, self._sim_settings, self._space_weather,
                                       parent=self.environment_page, embedded=True)
         embed_dialog(form)
-        form.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
+        _cap_form(form)  # its scroll bars at the page's edge (UI-56)
         _Debounce(form, "environment").settled.connect(self._on_form_settled)
         self.environment_page.layout().addWidget(form)
         self._environment_form = form
@@ -576,7 +599,7 @@ class ScenarioEditorWidget(QWidget):
                                              embedded=True)
             kind = "station"
         embed_dialog(form)
-        form.setMaximumWidth(CONTENT_MAX_WIDTH_PX)
+        _cap_form(form)  # its scroll bars at the page's edge (UI-56)
         if kind == "spacecraft":
             form.other_titles = self._environment_title
         node.holder.layout().addWidget(form)

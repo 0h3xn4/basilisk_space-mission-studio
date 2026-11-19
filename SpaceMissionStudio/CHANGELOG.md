@@ -121,6 +121,26 @@ fixes bugs.
 - The Settings sections line their fields up on one column. A drop-down
   list sized to its entries shows them whole: "100 %" read "10…" in
   Settings, and "As fast as possible" was cut on the Run page.
+- **Top bar, panels, status bar and toasts** (UI audit batch B8). The
+  top bar spans the window under the menu bar, so the Inspector starts
+  under it and the scenario's state reads whole at 1280 px ("Unch…"
+  before). A window narrower than 1440 px starts without the Inspector,
+  which opens 320 px wide (380 px before). Each panel's title bar has
+  Float and Close buttons of the interface's size, with tooltips, that
+  Tab reaches.
+- Notes (toasts) sit in the work area, above the status bar and beside
+  the panels, and move up so that they cover no button, field or link;
+  a click on one goes to what is under it. "New blank scenario" covered
+  a link of the scenario guide. A short note is one line.
+- A status-bar message that names a long path is shortened in the
+  middle, so the file name stays in view; pointing at the bar shows all
+  of it. With no scenario open, the status bar no longer says "No run
+  yet" and "No problems".
+- On wide screens a Scenario form's scroll bar sits beside the Inspector
+  instead of in the middle of the window. Section titles ("Appearance")
+  start where the line under them starts. The top bar's Undo, Redo and
+  Save are framed buttons, as the area headers' commands. A layout saved
+  by an earlier version opens the default layout once.
 
 ## 2.12.0 (2026-11-18)
 

@@ -37,6 +37,9 @@ visible" and "Target layout"; docs/ux-audit.md U-04, U-06, U-07):
 * :class:`NoScenarioState` -- what a work area shows while no scenario is
   open (the window starts so): why it is empty, and New scenario, Open...
   and Go to Home.
+* :class:`DockTitleBar` -- a panel's title bar (Inspector, Problems,
+  Calculation): its title, and Float and Close as icon buttons with
+  tooltips and accessible names (UI audit UI-39).
 
 Colours come from theme.py's ``QLabel#statusChip[state=...]`` and
 ``QWidget#topBar`` rules.
@@ -48,10 +51,10 @@ from pathlib import Path
 
 from PySide6.QtCore import QElapsedTimer, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QPainter
-from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QProgressBar, QPushButton, QSizePolicy, QToolButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QDockWidget, QFrame, QHBoxLayout, QLabel, QProgressBar, QPushButton, QSizePolicy,
+                               QToolButton, QVBoxLayout, QWidget)
 
-from .theme import ICON_SIZE, SPACE, TOP_BAR_COMPACT_BELOW, icon, set_role
+from .theme import CONTROL_HEIGHT, DOCK_TITLE_HEIGHT, ICON_SIZE, SPACE, TOP_BAR_COMPACT_BELOW, icon, set_role
 from .theme.icons import keep_icon
 from .widgets import EmptyState
 
@@ -303,16 +306,23 @@ class TopBar(QWidget):
         of its longest mode."""
         self.problems_button = _problems_button("topBarProblems")
         self.commands.addWidget(self.problems_button)
+        # Undo, Redo and Save are secondary buttons with an edge and a surface, as the area headers'
+        # commands (UI audit B7, UI-11): never frameless words; Run stays the one accent (UI-03).
+        self.undo_button = self.redo_button = None
         for action, name in ((undo, "undo-2"), (redo, "redo-2")):
-            button = QToolButton()
+            button = set_role(QToolButton(), variant="secondary")
             button.setDefaultAction(action)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             keep_icon(button, icon(name, "text.secondary"))
             button.setAccessibleName(action.text().replace("&", ""))
             self.commands.addWidget(button)
+            if self.undo_button is None:
+                self.undo_button = button
+            else:
+                self.redo_button = button
         # Not the action's own button: it stays enabled while the scenario is open, and its
         # label is always "Save"; the save state is the subtitle's, with its icon (UI-36).
-        self.save_button = QToolButton()
+        self.save_button = set_role(QToolButton(), variant="secondary")
         self.save_button.setObjectName("topBarSave")
         self.save_button.setText("Save")
         self.save_button.setIcon(icon("save", "text.secondary"))
@@ -490,6 +500,14 @@ class StatusBarItems:
         # always is. Each tooltip says the rest.
         self.details = False
         self._needs_attention: set = set()
+        # The problem count means nothing while no scenario is open (UI audit B8): it is hidden then.
+        self.scenario_open = True
+
+    def set_scenario_open(self, is_open: bool) -> None:
+        """Show the entries about the scenario (the problem count) only
+        while one is open."""
+        self.scenario_open = bool(is_open)
+        self._apply_visibility()
 
     def set_details(self, shown: bool) -> None:
         """Show every entry (True), or only those that need attention."""
@@ -499,7 +517,10 @@ class StatusBarItems:
     def _apply_visibility(self) -> None:
         shown_before = False
         for item in self._items:
-            visible = item is self.problems_button or self.details or item in self._needs_attention
+            if item is self.problems_button:
+                visible = self.scenario_open
+            else:
+                visible = self.details or item in self._needs_attention
             item.setVisible(visible)
             if item in self._separators:
                 self._separators[item].setVisible(visible and shown_before)
@@ -644,3 +665,74 @@ class NoScenarioState(EmptyState):
         for button, signal in ((self.new_button, self.new_requested), (self.open_button, self.open_requested),
                                (self.home_button, self.home_requested)):
             button.clicked.connect(signal)
+
+
+class DockTitleBar(QWidget):
+    """A panel's title bar (UI audit UI-39): its title, then **Float** (or
+    **Dock**, while it floats) and **Close** as icon buttons of the
+    interface size (``theme.ICON_SIZE["ui"]`` on compact buttons), each
+    with a tooltip and an accessible name that name the panel ("Float
+    Inspector", "Close Inspector"). Tab reaches them. They replace Qt's
+    own 10 px buttons, which had neither. A drag or a double-click on the
+    title still moves or floats the panel: the bar leaves those mouse
+    events to the dock."""
+
+    _FLOAT_ICON, _DOCK_ICON = "external-link", "square-arrow-down-left"  # as a view's own window (gui.breakout)
+
+    def __init__(self, dock: QDockWidget, name: str) -> None:
+        super().__init__(dock)
+        self.setObjectName("dockTitleBar")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)  # its surface from the style sheet
+        self.setFixedHeight(DOCK_TITLE_HEIGHT)
+        self._dock = dock
+        self.name = name
+        self._keys = ""
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(SPACE["sm"], 0, SPACE["xs"], 0)
+        layout.setSpacing(SPACE["xs"])
+        self.title_label = QLabel(dock.windowTitle())
+        self.title_label.setObjectName("dockTitle")
+        layout.addWidget(self.title_label, 1)
+        self.float_button = self._button()
+        self.float_button.clicked.connect(self._toggle_floating)
+        self.close_button = self._button()
+        self.close_button.setIcon(icon("x", "text.secondary"))
+        self.close_button.clicked.connect(dock.close)
+        layout.addWidget(self.float_button)
+        layout.addWidget(self.close_button)
+        dock.windowTitleChanged.connect(self.title_label.setText)
+        dock.topLevelChanged.connect(self._show_state)
+        dock.featuresChanged.connect(self._show_state)
+        self._show_state()
+
+    def _button(self) -> QToolButton:
+        button = QToolButton()
+        button.setObjectName("dockTitleButton")
+        button.setAutoRaise(True)
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        button.setIconSize(QSize(ICON_SIZE["ui"], ICON_SIZE["ui"]))
+        button.setFixedSize(CONTROL_HEIGHT["compact"], CONTROL_HEIGHT["compact"])
+        button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)  # Tab reaches it, as any button
+        return button
+
+    def set_keys(self, keys: str) -> None:
+        """The shortcut that shows and hides the panel, named in Close's tooltip."""
+        self._keys = keys
+        self._show_state()
+
+    def _toggle_floating(self) -> None:
+        self._dock.setFloating(not self._dock.isFloating())
+
+    def _show_state(self, *_args) -> None:
+        features = self._dock.features()
+        floating = self._dock.isFloating()
+        float_text = f"Dock {self.name}" if floating else f"Float {self.name}"
+        self.float_button.setIcon(icon(self._DOCK_ICON if floating else self._FLOAT_ICON, "text.secondary"))
+        self.float_button.setToolTip(f"{float_text}: back in the main window" if floating
+                                     else f"{float_text}: in a window of its own")
+        self.float_button.setAccessibleName(float_text)
+        self.float_button.setVisible(bool(features & QDockWidget.DockWidgetFeature.DockWidgetFloatable))
+        close_text = f"Close {self.name}"
+        self.close_button.setToolTip(f"{close_text} ({self._keys})" if self._keys else close_text)
+        self.close_button.setAccessibleName(close_text)
+        self.close_button.setVisible(bool(features & QDockWidget.DockWidgetFeature.DockWidgetClosable))

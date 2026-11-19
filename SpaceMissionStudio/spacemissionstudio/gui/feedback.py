@@ -58,13 +58,15 @@ from __future__ import annotations
 import logging
 import re
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, QTimer, Signal
-from PySide6.QtWidgets import (QBoxLayout, QDialogButtonBox, QFormLayout, QFrame, QGraphicsOpacityEffect, QHBoxLayout,
-                               QLabel, QLayout, QMainWindow, QPushButton, QScrollArea, QStackedWidget, QTabWidget,
-                               QWidget)
+from PySide6 import QtCore
+from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPoint, QPropertyAnimation, QRect, Qt, QTimer, Signal
+from PySide6.QtWidgets import (QAbstractButton, QAbstractSlider, QAbstractSpinBox, QBoxLayout, QComboBox,
+                               QDialogButtonBox, QFormLayout, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel,
+                               QLayout, QLineEdit, QMainWindow, QPushButton, QScrollArea, QScrollBar, QStackedWidget,
+                               QTabBar, QTabWidget, QWidget)
 from shiboken6 import isValid
 
-from .theme import reduce_motion, set_role
+from .theme import SPACE, TOAST, reduce_motion, set_role
 
 # A toast's status tone per kind (theme/qss.py's QLabel[role="toast"]): the
 # status's tinted background and outline, primary text.
@@ -73,9 +75,9 @@ _logger = logging.getLogger("spacemissionstudio.gui")
 _REPORT_LOG_LEVELS = {"error": logging.ERROR, "warning": logging.WARNING, "info": logging.INFO,
                       "success": logging.INFO}
 _REPORT_TOAST_MS = {"error": 6000, "warning": 6000, "info": 4500, "success": 3000}  # [ms]
-_TOAST_MARGIN_PX = 16
-_TOAST_GAP_PX = 8
 _TOAST_STACK_ATTR = "_spacemissionstudio_active_toasts"
+_TOAST_FILTER_ATTR = "_spacemissionstudio_toast_filter"
+_TOAST_WATCH_MS = 150  # [ms] how often shown toasts check that they cover no control (UI audit UI-54)
 TOAST_FADE_MS = 150  # [ms] in and out (the design's 120-180 ms); none with Settings > Reduce motion
 
 
@@ -89,14 +91,27 @@ class _Toast(QLabel):
         super().__init__(re.sub(r"([/\\])", "\\1\u200b", message), parent)
         set_role(self, role="toast", tone=_TOAST_KIND_TONES.get(kind, "standby"))
         self.setWordWrap(True)
-        self.setMaximumWidth(360)
-        self.adjustSize()
+        self.setMaximumWidth(TOAST["max_width"])
+        # It says something and has nothing to click: a click on it reaches what is under it (UI audit UI-54).
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        # As wide as its text on one line, up to the most a toast takes; a longer text wraps. Qt's own
+        # width for a wrapped label broke "New blank scenario" over two lines.
+        self.ensurePolished()
+        self.setWordWrap(False)
+        one_line = self.sizeHint().width()  # [px] with its padding and edge
+        self.setWordWrap(True)
+        width = min(one_line, TOAST["max_width"])
+        self.resize(width, self.heightForWidth(width))
 
 
 def show_toast(window: QWidget, message: str, kind: str = "success", duration_ms: int = 2600) -> QLabel:
     """Shows ``message`` in a small notification anchored to the
     bottom-right corner of ``window`` (the app's top-level window, or any
-    dialog), above its status bar, auto-dismissing after ``duration_ms``.
+    dialog), auto-dismissing after ``duration_ms``. In a main window it
+    sits in the central area, above the status bar and beside or above any
+    panel, and moves up past a control it would cover (UI audit UI-54):
+    see :func:`toast_area`. A click on it reaches what is under it.
     ``kind`` is ``"success"`` (default), ``"error"``, ``"warning"`` or
     ``"info"`` -- picks the
     toast's colour from the theme's status tokens so it reads as part of the
@@ -117,7 +132,11 @@ def show_toast(window: QWidget, message: str, kind: str = "success", duration_ms
 
     toast = _Toast(window, message, kind)
     stack.append(toast)
+    _follow_resizes(window)
     _reposition_toasts(window, stack)
+    # Again once the window has laid out what the action changed (a page shown after its toast), and
+    # while it shows (_ToastFollower).
+    QTimer.singleShot(0, lambda: _reposition_toasts(window, stack) if isValid(window) else None)
     toast.show()
     toast.raise_()
     fades = not reduce_motion() and duration_ms > 2 * TOAST_FADE_MS
@@ -193,7 +212,46 @@ def report(widget: QWidget | None, text: str, kind: str = "error") -> None:
     shown = first + (" (more in the Log)" if "\n" in text.strip() and kind in ("error", "warning") else "")
     show_toast(window, shown, kind=kind, duration_ms=_REPORT_TOAST_MS.get(kind, 3000))
     if isinstance(window, QMainWindow):
-        window.statusBar().showMessage(first)
+        show_status(window, first)
+
+
+_STATUS_TIP_FOR = "_smsStatusTipFor"  # the status-bar message whose tooltip the bar shows
+
+
+def show_status(window: QMainWindow, text: str, tooltip: str = "") -> str:
+    """Show ``text`` in ``window``'s status bar, elided in the middle to
+    the room left of its permanent entries, so its end (a file name) stays
+    in view and nothing is clipped at the first entry (UI audit UI-09).
+    The bar's tooltip is ``tooltip``, or the whole text when it was
+    elided, until another message replaces it. Returns the text shown."""
+    bar = window.statusBar()
+    shown = text
+    if bar.isVisible():  # a hidden bar is not laid out: its width says nothing
+        entries = [w for w in bar.findChildren(QWidget) if w.parent() is bar and w.isVisible()]
+        room = bar.width() - sum(w.sizeHint().width() + SPACE["xs"] for w in entries) - SPACE["md"]  # [px]
+        shown = bar.fontMetrics().elidedText(text, Qt.TextElideMode.ElideMiddle, max(room, 0))
+    if bar.findChild(_StatusTips) is None:
+        _StatusTips(bar)
+    bar.setProperty(_STATUS_TIP_FOR, shown)
+    bar.showMessage(shown)
+    bar.setToolTip(tooltip or (text if shown != text else ""))
+    return shown
+
+
+class _StatusTips(QObject):
+    """Clears a status bar's tooltip when another message replaces the
+    one it belongs to (:func:`show_status`). A child of the bar, so it
+    holds no reference to the window."""
+
+    def __init__(self, bar: QWidget) -> None:
+        super().__init__(bar)
+        bar.messageChanged.connect(self._forget)
+
+    def _forget(self, message: str) -> None:
+        bar = self.parent()
+        if message != bar.property(_STATUS_TIP_FOR):
+            bar.setProperty(_STATUS_TIP_FOR, None)
+            bar.setToolTip("")
 
 
 _DIALOG_ERROR_NAME = "dialogError"
@@ -238,15 +296,121 @@ def clear_dialog_error(dialog: QWidget) -> None:
         label.hide()
 
 
-def _reposition_toasts(window: QWidget, stack: list[QLabel]) -> None:
-    y = window.height() - _TOAST_MARGIN_PX
+def toast_area(window: QWidget) -> QRect:
+    """Where ``window``'s toasts may sit, in its coordinates: a main
+    window's central area, so never over the menu and top bar, a panel
+    (the Inspector, Problems) or the status bar (UI audit UI-54); any other
+    window's whole rectangle."""
+    central = window.centralWidget() if isinstance(window, QMainWindow) else None
+    if central is not None and central.isVisible():
+        return QRect(central.mapTo(window, QPoint(0, 0)), central.size())
+    area = window.rect()
     status_bar = window.statusBar() if isinstance(window, QMainWindow) else None
     if status_bar is not None and status_bar.isVisible():
-        y -= status_bar.height()  # never over the status bar's run state and reference data
-    for toast in reversed(stack):
+        area.setBottom(status_bar.mapTo(window, QPoint(0, 0)).y() - 1)
+    return area
+
+
+# The controls a toast does not cover (UI audit UI-54): what a user clicks or
+# types in. Views, text areas and plots are areas, not controls; scroll bars
+# are at every page's edge, and a click on a toast reaches them anyway.
+_CONTROLS = (QAbstractButton, QComboBox, QLineEdit, QAbstractSpinBox, QAbstractSlider, QTabBar)
+
+
+def _is_control(widget: QWidget) -> bool:
+    if isinstance(widget, QScrollBar):
+        return False
+    if isinstance(widget, _CONTROLS):
+        return True
+    return isinstance(widget, QLabel) and "<a " in widget.text()  # a label with a link
+
+
+def _controls_in(window: QWidget, strip: QRect, skip: list) -> list[QRect]:
+    """The rectangles (``window``'s coordinates) of the shown controls that
+    meet ``strip``. A hidden widget's children are skipped, and so is a
+    widget outside the strip: Qt clips children to their parent."""
+    found: list[QRect] = []
+    pending = [child for child in window.children() if isinstance(child, QWidget)]
+    while pending:
+        widget = pending.pop()
+        if widget in skip or not widget.isVisible() or widget.isWindow():
+            continue
+        rect = QRect(widget.mapTo(window, QPoint(0, 0)), widget.size())
+        if not rect.intersects(strip):
+            continue
+        if _is_control(widget):
+            found.append(rect.adjusted(-SPACE["xs"], -SPACE["xs"], SPACE["xs"], SPACE["xs"]))  # not touching it
+            continue
+        pending.extend(child for child in widget.children() if isinstance(child, QWidget))
+    return found
+
+
+def _reposition_toasts(window: QWidget, stack: list[QLabel]) -> None:
+    """Lay the toasts out at the bottom right of :func:`toast_area`, the
+    newest lowest, :data:`theme.TOAST` apart; the whole stack moves up,
+    4 px at a time, until it covers no control (or, with no such place,
+    stays at the bottom)."""
+    shown = [toast for toast in stack if isValid(toast)]
+    if not shown:
+        return
+    area = toast_area(window)
+    margin, gap = TOAST["margin"], TOAST["gap"]
+    width = max(toast.width() for toast in shown)
+    height = sum(toast.height() for toast in shown) + gap * (len(shown) - 1)
+    right = area.right() - margin
+    strip = QRect(right - width + 1, area.top(), width, area.height())
+    controls = _controls_in(window, strip, shown)
+    lowest = area.bottom() - margin - height + 1
+    top = lowest
+    while top > area.top() + margin and any(c.intersects(QRect(strip.left(), top, width, height)) for c in controls):
+        top -= SPACE["xs"]
+    if top <= area.top() + margin:
+        top = lowest  # nowhere free: the bottom, where a click still goes through it
+    y = top + height
+    for toast in reversed(shown):
         y -= toast.height()
-        toast.move(window.width() - toast.width() - _TOAST_MARGIN_PX, y)
-        y -= _TOAST_GAP_PX
+        toast.move(right - toast.width() + 1, y)
+        y -= gap
+
+
+class _ToastFollower(QObject):
+    """Moves a window's toasts when the window or its central area changes
+    size (a panel shown or hidden) and, while any shows, when what is under
+    them changes (a page laid out or scrolled after its toast): every
+    :data:`_TOAST_WATCH_MS`, about a millisecond each time."""
+
+    def __init__(self, window: QWidget) -> None:
+        super().__init__(window)
+        self._window = window
+        self.timer = QtCore.QTimer(self)  # not the module's QTimer, which a test replaces
+        self.timer.setInterval(_TOAST_WATCH_MS)
+        self.timer.timeout.connect(self.reposition)
+
+    def reposition(self) -> None:
+        stack = getattr(self._window, _TOAST_STACK_ATTR, None) if isValid(self._window) else None
+        if stack:
+            _reposition_toasts(self._window, stack)
+        else:
+            self.timer.stop()
+
+    def eventFilter(self, _watched, event) -> bool:  # noqa: N802 -- Qt API name
+        if event.type() == QEvent.Type.Resize:
+            self.reposition()
+        return False
+
+
+def _follow_resizes(window: QWidget) -> None:
+    follower = getattr(window, _TOAST_FILTER_ATTR, None)
+    if follower is not None and isValid(follower):
+        follower.timer.start()
+        return
+    follower = _ToastFollower(window)
+    follower.timer.start()
+    setattr(window, _TOAST_FILTER_ATTR, follower)
+    window.installEventFilter(follower)
+    central = window.centralWidget() if isinstance(window, QMainWindow) else None
+    if central is not None:
+        central.installEventFilter(follower)
 
 
 _ERROR_STATE_PROPERTY = "state"

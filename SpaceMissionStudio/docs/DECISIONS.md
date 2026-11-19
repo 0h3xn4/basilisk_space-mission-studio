@@ -4146,3 +4146,95 @@ open in its own window.
   "10…" in Settings › UI scale, "As fast as possible" read "As fast as
   poss…" on the Run page). A field at its maximum width
   (`FIELD_WIDTH["choice"]`) still elides a longer entry.
+
+## Shell: top bar, panels, status bar and toasts (UI audit B8, 2026-11-19)
+
+- **Decision:** the top bar spans the window under the menu bar. The
+  window's menu widget (`QMainWindow.setMenuWidget`) is a header,
+  `windowHeader`, that holds the menu bar and the top bar. The docks and
+  the rail start under it. `MainWindow.menuBar()` returns the menu bar
+  in the header, because `QMainWindow.menuBar()` would replace the header
+  with a new, empty menu bar. **Why:** UI-06. The Inspector took the full
+  height beside the top bar, and at 1280 px the subtitle read "Unch…". A
+  `QToolBar` would also span the window, but the app has no toolbars
+  since M2a (their overflow hid a button on one platform), and a test
+  keeps it so.
+- **Decision:** a new window narrower than 1440 px
+  (`theme.INSPECTOR_MIN_WINDOW_PX`), or on a narrower screen, starts
+  without the Inspector. Reset Layout follows the same rule. Ctrl+I
+  shows it. The rule was a screen narrower than 1600 px. **Why:** UI-06.
+  The audit asked that the Inspector not squeeze a window under 1440 px:
+  it opens as an overlay, opens narrower, or starts closed there. Closed
+  at the start is the simplest of the three and keeps the Inspector a
+  dock. An overlay would cover the field the Inspector describes. The
+  window's own first size is 1400 px wide, so a first start shows no
+  Inspector, also on a wide screen. The app does not hide an open
+  Inspector when the user makes the window narrower.
+- **Decision:** the Inspector opens 320 px wide (`theme.INSPECTOR_WIDTH`;
+  it was 380 px). **Why:** UI-56. Its labels and a wrapped line of help
+  fit 320 px. 380 px held one line of placeholder text.
+- **Decision:** an embedded Scenario form that scrolls itself (the
+  Environment form, a spacecraft's sections) keeps its scroll areas as
+  wide as the page. The form inside each scroll area is capped at
+  `CONTENT_MAX_WIDTH_PX` and keeps the left edge
+  (`scenario_editor._cap_form`), as on the Run page. A form that does
+  not scroll (a ground station) is capped whole, as before. **Why:**
+  UI-56. The cap was on the whole form, scroll bar included. At 1920 px
+  the scroll bar stood 960 px into the page, and a 220 px strip that
+  belonged to nothing lay between it and the Inspector. The form keeps
+  its width; the blank is now part of the page, and the scroll bar sits
+  beside the Inspector.
+- **Decision:** the layout version is 6. A layout saved with version 5
+  is ignored, and the window opens with the default layout. **Why:** the
+  docks have their own title bars and the Inspector a new width. An old
+  layout would keep the 380 px Inspector. `restoreState` refuses another
+  version without an error (a test opens a version 5 layout).
+- **Decision:** each dock has its own title bar, `app_shell.DockTitleBar`:
+  the title (it follows the dock's title, "Problems (3)"), then Float and
+  Close as compact tool buttons (28 px) with 16 px Lucide icons. Float
+  uses `external-link` and reads Dock (`square-arrow-down-left`) while
+  the panel floats, the icons of a view's own window (`gui.breakout`).
+  Close uses `x`. The tooltip and the accessible name name the panel:
+  "Float Inspector", "Close Inspector (Ctrl+I)". The buttons take Tab
+  focus and Space. **Why:** UI-39. Qt's own buttons were about 10 px
+  and had no tooltip. No new icon file is needed.
+- **Decision:** a toast sits in the work area, the main window's central
+  widget: at its bottom right, above the status bar and a docked
+  Problems panel, left of the Inspector. Its stack moves up 4 px at a
+  time until it covers no control (a button, a field, a drop-down list,
+  a tab bar or a label with a link, with 4 px to spare). With no free
+  place it stays at the bottom. It looks again when the window or the
+  work area changes size, and every 150 ms while a toast shows. A click
+  on a toast goes to the widget under it. A toast is as wide as its text
+  on one line, at most 360 px. **Why:** UI-54. The "New blank scenario"
+  toast covered the guide's "Mission sequence" link at 1280 x 720. The
+  toast was placed before the page it announced was shown; the check
+  runs again after the page is laid out and while the toast shows, so a
+  page laid out or scrolled later does not end under it. Scroll bars,
+  tables, text areas and plots are not avoided: they are areas, and a
+  click goes through the toast to them. A toast has nothing to click.
+- **Decision:** every status-bar message goes through
+  `feedback.show_status`: it is elided in the middle to the room left of
+  the permanent entries, and the whole text is the bar's tooltip while
+  it shows. `report` uses it, and so do Opened and Saved, which name the
+  file only (B5). **Why:** UI-09. A report that named a long path
+  ("Exported the mission output to /…/output.csv") was clipped at the
+  first entry, so the file name was lost. The middle elision keeps the
+  start and the file name. A report keeps its path in the text, and the
+  toast and the Log keep the whole message (B5 left error reports so).
+- **Decision:** the status bar's run state chip ("No run yet") and its
+  problem count ("No problems") show only while a scenario is open.
+  **Why:** found in the B7 review; they say nothing when no scenario is
+  open. The reference data, Basilisk and Earth orientation entries stay:
+  they are about the installation.
+- **Decision:** the top bar's Undo, Redo and Save are secondary buttons
+  (`variant="secondary"`), as the area headers' commands since B7. Run
+  stays the one accent button. **Why:** found in the B7 review; they
+  read as frameless words beside the framed area commands.
+- **Decision:** the style sheet sets `qproperty-indent: 0` on section
+  titles (`QLabel[role="section-title"]`, `QLabel#sectionTitle`).
+  **Why:** found in the B7 review. A title's vertical padding gives the
+  label a frame, and a label with a frame and the default indent (-1)
+  indents its text by half an "x" (4 px). "Appearance" started 4 px right
+  of the line under it. A group box's title already started at the page
+  inset; its glyphs are bolder, about 1 px.

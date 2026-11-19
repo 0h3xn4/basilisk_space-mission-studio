@@ -201,6 +201,7 @@ def test_enter_in_the_problems_table_goes_to_the_field(shown, qtbot):
 def test_a_run_is_a_job_in_the_status_bar_with_progress_and_cancel(window):
     """While a run goes, the status bar shows its phase, progress, time and
     Cancel, and the chip its state; the job leaves when the run ends."""
+    _open(window)  # the run state shows while a scenario is open (UI audit B8)
     bar = window.statusBar()
     progress = window.run_progress
     assert bar.isAncestorOf(progress) and bar.isAncestorOf(window.run_chip)
@@ -286,9 +287,9 @@ def test_the_inspector_and_explain_are_panels_on_the_right_without_tabs(window):
 
 
 def test_a_new_window_on_a_small_screen_starts_without_the_inspector(qtbot, monkeypatch):
-    """G8: on a screen narrower than 1600 px a new window starts without the
-    Inspector, and Reset Layout keeps it so; on a wider one the Inspector
-    is shown. Problems starts hidden on both."""
+    """G8: on a screen narrower than 1440 px (1600 px before UI audit B8) a
+    new window starts without the Inspector, and Reset Layout keeps it so;
+    on a wider one the Inspector is shown. Problems starts hidden on both."""
     from PySide6.QtWidgets import QApplication
 
     from spacemissionstudio.gui import main_window

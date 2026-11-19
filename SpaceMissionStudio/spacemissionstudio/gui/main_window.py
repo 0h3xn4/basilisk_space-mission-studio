@@ -51,6 +51,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMenu,
+    QMenuBar,
     QMessageBox,
     QScrollArea,
     QDockWidget,
@@ -71,9 +72,9 @@ from . import export_log
 from .actions import ActionRegistry
 from .menu_bar import build_menu_bar
 from .breakout import BACK_TEXT, OPEN_TEXT, SHORTCUT as BREAKOUT_SHORTCUT, Breakouts
-from .app_shell import (NoScenarioState, RunProgressStrip, StatusBarItems, StatusChip, SteadyToolButton, TopBar,
-                        source_of)
-from .feedback import StaleResultsBanner, report, show_toast
+from .app_shell import (DockTitleBar, NoScenarioState, RunProgressStrip, StatusBarItems, StatusChip,
+                        SteadyToolButton, TopBar, source_of)
+from .feedback import StaleResultsBanner, report, show_status, show_toast
 from .icons import toolbar_icon
 from .data_panel_widget import NOT_READ, DataPanelWidget
 from .event_timeline_widget import EventTimelineWidget
@@ -110,8 +111,8 @@ from ..engine.live_view import LiveFeed
 from .mission_view_widget import LAYOUTS as MAP_LAYOUTS, MissionViewWidget
 from .run_page import RunModeControl, RunPage
 from .widgets import TabWidget, make_window, show_window
-from .theme import (CONTENT_MAX_WIDTH_PX, SPACE, apply_theme, current_theme, follow_system, icon, resolve_theme,
-                    set_theme_setting, theme_setting)
+from .theme import (CONTENT_MAX_WIDTH_PX, INSPECTOR_MIN_WINDOW_PX, INSPECTOR_WIDTH, apply_theme, current_theme,
+                    follow_system, icon, resolve_theme, set_theme_setting, theme_setting)
 from .compare_widget import CompareWidget
 from .workspace_panels import InspectorWidget, LogViewWidget, ProblemsWidget, install_log_view
 
@@ -144,10 +145,13 @@ _logger = logging.getLogger(__name__)
 # The Log's record of each run (M5a): start, end, warnings, where it is saved.
 _run_logger = logging.getLogger("spacemissionstudio.run")
 _RUN_END_STEP_MS = 4  # [ms] between the steps that show a run's end (M6b)
-_LAYOUT_VERSION = 5  # [-] saveState() version: bump when the docks change, so an old layout is ignored
-# A screen narrower than this starts with the Inspector hidden (G8): at
-# 1280 x 720 it took 380 px of the plot's width.
-_INSPECTOR_MIN_SCREEN_PX = 1600  # [px]
+# [-] saveState() version: bump when the docks change, so an old layout is ignored. 6: the docks' own title
+# bars and the Inspector's width (UI audit B8); a layout of version 5 opens the default layout.
+_LAYOUT_VERSION = 6
+# A new window narrower than this, or on a narrower screen, starts with the
+# Inspector hidden (G8; UI audit UI-06: from 1440 px, theme.INSPECTOR_MIN_WINDOW_PX):
+# beside a 1280 px window's content it took a quarter of the width.
+_INSPECTOR_MIN_SCREEN_PX = INSPECTOR_MIN_WINDOW_PX  # [px]
 
 
 def _duration_text(seconds: float) -> str:
@@ -499,19 +503,33 @@ class MainWindow(QMainWindow):
         self._busy_label = self.run_progress.time_label
         self._busy_progress = self.run_progress.bar
         self.run_chip = StatusChip()
-        # The rail and the areas (gui.shell). The top bar and, above the run
-        # views, the stale-results banner (U-20) sit over the area shown.
+        # The rail and the areas (gui.shell). Above the run views, the
+        # stale-results banner (U-20) sits over the area shown.
         self.shell = Shell()
         self.areas = self.shell.stack
-        self.shell.work_layout.insertWidget(0, self.top_bar)
-        self.shell.work_layout.insertWidget(1, self.stale_results_banner)
+        self.shell.work_layout.insertWidget(0, self.stale_results_banner)
         self.setCentralWidget(self.shell)
+        # The menu bar and the top bar span the window above the panels
+        # (UI audit UI-06): the window's menu widget holds both, so the
+        # Inspector starts under the top bar, not beside it.
+        # Made in the window, so the menu bar watches this window for Alt from the start.
+        self.window_header = QWidget(self)
+        self.window_header.setObjectName("windowHeader")
+        self._menu_bar = QMenuBar(self.window_header)
+        header_layout = QVBoxLayout(self.window_header)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(0)
+        header_layout.addWidget(self._menu_bar)
+        header_layout.addWidget(self.top_bar)
+        self.setMenuWidget(self.window_header)
         self._run_started_s: float | None = None  # time.monotonic() when the current run started
 
         self._build_actions()
+        for dock, command in ((self.side_dock, "view.inspector"), (self.problems_dock, "view.problems")):
+            dock.titleBarWidget().set_keys(self.commands[command].keys)  # Close's tooltip names its shortcut
         self._build_areas()
         self._set_scenario_open(False)  # the landing page: Home, with nothing open
-        self.resizeDocks([self.side_dock], [380], Qt.Orientation.Horizontal)  # [px]
+        self.resizeDocks([self.side_dock], [INSPECTOR_WIDTH], Qt.Orientation.Horizontal)  # [px] UI-56
         self.resizeDocks([self.problems_dock], [140], Qt.Orientation.Vertical)  # [px] about four rows
         self._hide_default_panels()
         self._default_layout = self.saveState(_LAYOUT_VERSION)
@@ -543,6 +561,7 @@ class MainWindow(QMainWindow):
         for widget in (self.run_progress, self.run_chip, *self.status_items.widgets):
             self.statusBar().addPermanentWidget(widget)
         self.status_items.set_details(self.status_details_action.isChecked())
+        self._refresh_status_chips()
         # A bound method, not a lambda: a lambda holding self on a child's
         # signal keeps the window alive until the interpreter exits, and its
         # web views are then torn down too late (exit segfault, as in #48).
@@ -578,8 +597,6 @@ class MainWindow(QMainWindow):
 
         # A file's message names the file; its path is the bar's tooltip
         # while the message shows (UI audit UI-09, _show_file_message).
-        self._file_message = ""
-        self.statusBar().messageChanged.connect(self._on_status_message_changed)
         self.statusBar().showMessage("Ready.")
         self._update_window_title()
 
@@ -1037,6 +1054,16 @@ class MainWindow(QMainWindow):
         self._update_window_title()
         self._refresh_breadcrumbs()
         self._refresh_breakout_commands()
+        self._refresh_status_chips()
+
+    def _refresh_status_chips(self) -> None:
+        """The status bar's run state and problem count only while a
+        scenario is open (UI audit B8): "No run yet" and "No problems" say
+        nothing about no scenario."""
+        if not hasattr(self, "status_items"):
+            return  # the status bar is built after the first switch
+        self.status_items.set_scenario_open(self._scenario_open)
+        self.run_chip.setVisible(self._scenario_open and self.run_progress.isHidden())
 
     def _run_going(self) -> bool:
         """A single run or a Monte Carlo batch is going."""
@@ -1125,11 +1152,18 @@ class MainWindow(QMainWindow):
         prepare_labels(self)  # start-up has settled: the messages' titles, a section per turn (once per process)
 
     # -- workspace: tabs, docks and their layout ---------------------------------
+    def menuBar(self) -> QMenuBar:  # noqa: N802 -- Qt API name
+        """The menu bar, in the window header above the top bar (UI audit
+        UI-06). QMainWindow's own ``menuBar()`` would put a new, empty menu
+        bar in place of the header."""
+        return self._menu_bar
+
     def _make_dock(self, title: str, name: str, widget: QWidget,
                    area: Qt.DockWidgetArea = Qt.DockWidgetArea.RightDockWidgetArea) -> QDockWidget:
         dock = QDockWidget(title, self)
         dock.setObjectName(name)  # saveState()/restoreState() find docks by name
         dock.setWidget(widget)
+        dock.setTitleBarWidget(DockTitleBar(dock, title))  # theme-sized Float and Close, with tooltips (UI-39)
         if area == Qt.DockWidgetArea.BottomDockWidgetArea:
             dock.setAllowedAreas(Qt.DockWidgetArea.BottomDockWidgetArea | Qt.DockWidgetArea.TopDockWidgetArea)
         else:
@@ -1693,12 +1727,13 @@ class MainWindow(QMainWindow):
     def _hide_default_panels(self) -> None:
         """The panels a new window starts without (G8): Problems, which a
         new error opens, the Calculation panel, which Show calculation
-        opens, and the Inspector on a screen narrower than
-        _INSPECTOR_MIN_SCREEN_PX. Ctrl+J and Ctrl+I show them."""
+        opens, and the Inspector in a window, or on a screen, narrower than
+        _INSPECTOR_MIN_SCREEN_PX (UI audit UI-06). Ctrl+J and Ctrl+I show them."""
         self.problems_dock.hide()
         self.calculation_dock.hide()  # until a page's Show calculation
         screen = self.screen() or QApplication.primaryScreen()
-        if screen is not None and screen.availableGeometry().width() < _INSPECTOR_MIN_SCREEN_PX:
+        room = self.width() if screen is None else min(self.width(), screen.availableGeometry().width())  # [px]
+        if room < _INSPECTOR_MIN_SCREEN_PX:
             self.side_dock.hide()
 
     def on_user_manual(self) -> None:
@@ -2273,9 +2308,9 @@ class MainWindow(QMainWindow):
         self._set_scenario_open(True)
         self._refresh_history()
         self.statusBar().showMessage("New blank scenario, in Orbit only: the Scenario page guides the next steps.")
-        show_toast(self, "New blank scenario")
         self.scenario_editor.show_scenario_page()
         self.show_view(self.scenario_editor)
+        show_toast(self, "New blank scenario")  # once the page it must not cover is shown (UI-54)
 
     def on_open(self) -> None:
         if not self._confirm_discard_unsaved():
@@ -2430,18 +2465,7 @@ class MainWindow(QMainWindow):
         the room left of the permanent entries, with the whole path as the
         bar's tooltip until another message replaces it (UI audit UI-09:
         the absolute path was clipped at the first entry)."""
-        bar = self.statusBar()
-        entries = [w for w in bar.findChildren(QWidget) if w.parent() is bar and w.isVisible()]
-        room = bar.width() - sum(w.sizeHint().width() + SPACE["xs"] for w in entries) - SPACE["md"]  # [px]
-        text = bar.fontMetrics().elidedText(f"{verb} {Path(path).name}", Qt.TextElideMode.ElideMiddle, max(room, 0))
-        self._file_message = text
-        bar.showMessage(text)
-        bar.setToolTip(str(path))
-
-    def _on_status_message_changed(self, message: str) -> None:
-        if message != self._file_message:
-            self._file_message = ""
-            self.statusBar().setToolTip("")
+        show_status(self, f"{verb} {Path(path).name}", tooltip=str(path))
 
     # -- run-in-progress feedback -------------------------------------------
     def _set_running(self, running: bool) -> None:
@@ -2519,7 +2543,7 @@ class MainWindow(QMainWindow):
                                           f"{time.strftime('%H:%M %Z')}, {chip_state}, {_duration_text(seconds)}")
             self._run_started_s = None
         self.run_chip.set_state(chip_state, chip_text)
-        self.run_chip.show()
+        self.run_chip.setVisible(self._scenario_open)  # the run state of no scenario says nothing (UI audit B8)
         self._set_running(False)
         self.abort_action.setEnabled(False)
         self._busy_timer.stop()

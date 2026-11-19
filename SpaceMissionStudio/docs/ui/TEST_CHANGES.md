@@ -2446,3 +2446,33 @@ tests are in `tests/gui/test_settings_page.py`.
 The tests that read `settings_page.buttons[...].defaultAction()` are
 unchanged: the new controls give their action through `defaultAction()`
 as the tool buttons did.
+
+## UI audit B8: top bar, panels, status bar and toasts
+
+The owner's batch B8 moves the top bar above the panels (UI-06), keeps
+the status bar's text whole (UI-09), gives the panels their own title
+bars (UI-39), keeps toasts off controls and panels (UI-54) and narrows
+the Inspector (UI-56). From the B7 review it hides the status bar's
+scenario chips while no scenario is open. Four existing GUI tests
+changed, and one test's docstring. No test outside `tests/gui/` changed.
+No golden file changed. The new tests are in
+`tests/gui/test_shell_chrome.py`.
+
+**How the test reaches the widget:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_wide_screen.py::test_forms_stay_at_a_readable_width` | the Environment and spacecraft forms' own width is at most `CONTENT_MAX_WIDTH_PX` | the width of the form inside their scroll areas (`_form_width`) is at most `CONTENT_MAX_WIDTH_PX`, as strictly | UI-56: the scroll areas take the page's width, so their scroll bars sit at its edge; the form inside keeps the cap |
+| `test_panels.py::test_a_run_is_a_job_in_the_status_bar_with_progress_and_cancel` | the run's job and chip, with no scenario open | the same assertions, with template 01 open first | B8: the run state chip shows only while a scenario is open |
+| `test_calm_home.py::test_the_status_bar_shows_what_needs_attention` | the problem count shows, with no scenario open | the same assertions, with template 01 open first | B8: the problem count shows only while a scenario is open |
+
+**A value changed with the layout:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_landing_page.py::test_the_window_size_is_kept_but_not_the_scenario` | the window is resized to 560 px high, and the next window opens 560 px high | 640 px, both | UI-06: the top bar is above the rail now, not beside it, so the window's least height grew by the top bar's (46 px): 592 px with a scenario open at the offscreen screen. The test still checks that the height is kept exactly. |
+
+**A docstring only:** `test_panels.py::test_a_new_window_on_a_small_screen_starts_without_the_inspector`
+named the old limit, 1600 px; it names 1440 px now. The test reads the
+limit from `main_window._INSPECTOR_MIN_SCREEN_PX`, so its code is
+unchanged.
