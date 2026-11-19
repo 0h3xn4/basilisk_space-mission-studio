@@ -149,8 +149,8 @@ def test_real_access_without_mode_switch_shows_no_link_breakdown(widget):
 
     assert widget.mode_badge.text() == "Sun-pointing"
     assert widget.link_status_badge.text() == "Not yet comms-pointing"
-    assert widget.margin_label.text() == "--"
-    assert widget.eirp_label.text() == "--"
+    assert widget.margin_label.text() == "–"
+    assert widget.eirp_label.text() == "–"
 
 
 def test_large_pointing_error_shows_slewing_badge_and_degraded_link(widget):
@@ -172,7 +172,7 @@ def test_large_pointing_error_shows_slewing_badge_and_degraded_link(widget):
 
     assert widget.tracking_badge.text() == "Slewing"
     assert widget.link_status_badge.text() == "Link degraded"
-    assert widget.margin_label.text() != "--"
+    assert widget.margin_label.text() != "–"
 
 
 def test_the_link_badge_and_breakdown_use_the_projects_link_parameters(widget):

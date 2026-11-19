@@ -86,7 +86,7 @@ def _add_valid_spacecraft(window):
 def test_initial_title_is_untitled(window):
     """A new scenario's title says it is untitled (the window's own title
     at start, "no scenario open", is test_landing_page.py's)."""
-    assert window.windowTitle() == "SpaceMissionStudio -- untitled"
+    assert window.windowTitle() == "SpaceMissionStudio – untitled"
 
 
 def _explained(window, qtbot) -> None:

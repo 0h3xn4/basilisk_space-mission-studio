@@ -146,7 +146,7 @@ def _dialogs():
 
             dialog = _ItemEditorDialog(SensorConfig if sensors else ActuatorConfig,
                                        SUPPORTED_SENSOR_KINDS if sensors else SUPPORTED_ACTUATOR_KINDS)
-            dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText(kind))
+            dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData(kind))
             if dialog.catalog_combo.count() > 1:
                 dialog.catalog_combo.setCurrentIndex(1)
             return dialog

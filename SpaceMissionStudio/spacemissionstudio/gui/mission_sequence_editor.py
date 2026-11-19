@@ -130,7 +130,7 @@ class _CommandEditorDialog(QDialog):
         self.kind_combo = ComboBox()
         self.kind_combo.setToolTip(
             "What this step in the mission sequence actually does, run in order (top to bottom "
-            "in the tree) starting from the scenario's own initial conditions -- each command "
+            "in the tree) starting from the scenario's own initial conditions – each command "
             "picks up exactly where the previous one left off:\n\n"
             "propagate: just advance the simulation (no maneuver) until a stop condition.\n"
             "maneuver: an instantaneous delta-V impulse.\n"
@@ -199,7 +199,7 @@ class _CommandEditorDialog(QDialog):
             "duration: after a fixed number of days (below).\n"
             "epoch: at a specific calendar date/time (below).\n"
             "event: as soon as a chosen spacecraft event happens (periapsis, apoapsis, or the start or "
-            "end of the next pass over a ground station) -- below."
+            "end of the next pass over a ground station) – below."
         )
         self.stop_condition_combo.addItems(list(SUPPORTED_STOP_CONDITIONS))
         index = self.stop_condition_combo.findText(params.get("stop_condition", "duration"))
@@ -298,7 +298,7 @@ class _CommandEditorDialog(QDialog):
         self.delta_v_z_spin = _spin_component(delta_v[2] if len(delta_v) > 2 else 0.0)
         _delta_v_tip = (
             "An INSTANTANEOUS velocity change applied the moment this command runs (an idealized "
-            "impulsive burn -- no finite burn duration or propellant/thrust-hardware modeling), "
+            "impulsive burn – no finite burn duration or propellant/thrust-hardware modeling), "
             "in the frame chosen below."
         )
         for box in (self.delta_v_x_spin, self.delta_v_y_spin, self.delta_v_z_spin):
@@ -379,7 +379,7 @@ class _CommandEditorDialog(QDialog):
         self.lambert_min_radius_spin.setValue(float(params.get("min_orbit_radius_m", 0.0)))
         self.lambert_min_radius_spin.setToolTip(
             "lambertValidator rejects the solution if the transfer trajectory dips below this radius from "
-            "the central body. 0 disables the check -- set it to the central body's own radius to avoid a "
+            "the central body. 0 disables the check – set it to the central body's own radius to avoid a "
             "transfer that clips the surface."
         )
         form.addRow("Min orbit radius [m]", self.lambert_min_radius_spin)
@@ -585,7 +585,7 @@ class _CommandEditorDialog(QDialog):
             return {"condition": self.condition_edit.text().strip()}
         if kind == "script_block":
             return {"code": self.script_code_edit.toPlainText()}
-        raise AssertionError(f"unhandled kind {kind!r} -- _KIND_PAGE_INDEX/SUPPORTED_COMMAND_KINDS out of sync")
+        raise AssertionError(f"unhandled kind {kind!r} – _KIND_PAGE_INDEX/SUPPORTED_COMMAND_KINDS out of sync")
 
     def _on_accept(self) -> None:
         try:
@@ -611,7 +611,7 @@ class _CommandEditorDialog(QDialog):
         # run. Reject it here instead, immediately, like the other two
         # spacecraft-name fields already are.
         if kind == "assignment" and not self.assignment_spacecraft_combo.currentText():
-            raise ValueError("command: assignment.target must name a spacecraft -- add a spacecraft under "
+            raise ValueError("command: assignment.target must name a spacecraft – add a spacecraft under "
                               "Resources first")
         command = Command(kind=kind, label=label, params=self._collect_params(kind))
         errors = command.validate("command")
@@ -1176,7 +1176,7 @@ class MissionSequenceEditorWidget(QWidget):
     def _show_form_title(self) -> None:
         if self._form_item is not None:
             command = self.command_of(self._form_item)
-            self.form_title.setText(f"{_KIND_TITLES.get(command.kind, command.kind)} -- "
+            self.form_title.setText(f"{_KIND_TITLES.get(command.kind, command.kind)} – "
                                     f"{self.path_of(self._form_item)}")
 
     def _show_form_problems(self) -> None:

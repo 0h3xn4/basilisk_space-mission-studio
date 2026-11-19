@@ -21,14 +21,22 @@
 
 - a ``QTableView`` over :class:`DataModel` (a ``QAbstractTableModel``),
   through :class:`_Filter` (a ``QSortFilterProxyModel``);
-- a sticky header; numeric columns right-aligned in the numeric font,
-  their unit in the header; no zebra; row hover (the style sheet);
+- a sticky header, its headings left-aligned (a numeric column's right);
+  numeric columns right-aligned in the numeric font, their unit in the
+  header (a cell of text in one, :class:`Row` ``plain``, left-aligned);
+  code columns (keys, identifiers) in the monospace font and the
+  secondary colour; no zebra, no grid lines (surfaces, not lines; UI audit
+  B4); row hover (the style sheet);
 - Ctrl+C and :meth:`DataTable.copy` copy the selected rows (or every
   shown row) as TSV with the header; :meth:`DataTable.text` is the same
   text for the rows shown;
 - the header's context menu shows and hides columns;
-- a group row (:class:`Row` ``group=True``) spans the table, in the
-  heading weight on the selected-row surface;
+- a cell can carry a muted second line (:class:`Row` ``notes``): a
+  parameter's key under its name, in the monospace font (UI-19); the rows
+  are then two lines high;
+- a group row (:class:`Row` ``group=True``) spans the table as a section
+  heading: the heading weight on the canvas surface, never selectable
+  (it looked selected on the selected-row surface, UI-19);
 - the rows can be any sequence of :class:`Row` (a long table's are made
   when the view asks for them, :class:`LazyRows`); such a table sorts
   itself (:meth:`DataTable.set_presorted`) instead of through the proxy;
@@ -45,16 +53,20 @@ from collections.abc import Callable, Sequence
 from collections.abc import Sequence as SequenceABC
 
 from PySide6.QtCore import QAbstractTableModel, QObject, QSortFilterProxyModel, Qt, Signal
-from PySide6.QtGui import QColor, QFontMetrics, QGuiApplication, QKeySequence
-from PySide6.QtWidgets import (QAbstractItemView, QHeaderView, QLabel, QMenu, QPushButton, QStackedWidget,
-                               QTableView, QVBoxLayout, QWidget)
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QKeySequence, QPalette
+from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLabel, QMenu, QPushButton,
+                               QStackedWidget, QStyle, QStyledItemDelegate, QStyleOptionViewItem, QTableView,
+                               QVBoxLayout, QWidget)
 
-from .theme import TOKENS, numeric_font, set_role, ui_font
+from . import units
+from .theme import TOKENS, icon, mono_font, numeric_font, set_role, ui_font
 
 _SORT_ROLE = Qt.ItemDataRole.UserRole  # a cell's sort key (Row.keys)
+NOTE_ROLE = Qt.ItemDataRole.UserRole + 1  # a cell's muted second line (Row.notes)
 _SIZED_ROWS = 200  # rows a column's width is measured from
 _CELL_PAD_PX = 16  # [px] beside a cell's text (the style sheet's padding and the grid)
 _HEADER_PAD_PX = 28  # [px] beside a heading (its padding and the sort indicator)
+_ICON_PAD_PX = 24  # [px] a status icon (16 px) and its gap, before a marked cell's text
 _MAX_COLUMN_PX = 480  # [px] a long text is elided past this; the column can still be dragged wider
 
 
@@ -64,7 +76,13 @@ class Row:
     values a sortable table sorts by (default: the texts); ``group`` makes
     it a heading row across the table (its first cell only); ``bold`` sets
     the row in the heading weight (Budget's worst case); ``muted`` are
-    columns in the secondary colour (Compare's "(same)")."""
+    columns in the secondary colour (Compare's "(same)"); ``plain`` are
+    cells of numeric columns that hold text (a model's name), left-aligned
+    in the UI font; ``marks`` give a cell a status's icon and text colour,
+    ``{column: (icon, icon ink, text ink)}`` ("circle-check",
+    "status.normal", "status.normal.text"): the word in the cell says the
+    status too, never the colour alone; ``notes`` are a muted second line
+    under a cell's text, in the monospace font (a key under a name)."""
 
     cells: Sequence[str]
     tooltips: dict[int, str] = field(default_factory=dict)
@@ -72,6 +90,9 @@ class Row:
     group: bool = False
     bold: bool = False
     muted: frozenset = frozenset()
+    plain: frozenset = frozenset()
+    marks: dict[int, tuple[str, str, str]] = field(default_factory=dict)
+    notes: dict[int, str] = field(default_factory=dict)
 
 
 class LazyRows(SequenceABC):
@@ -120,18 +141,23 @@ class DataModel(QAbstractTableModel):
         self.header_tooltips: dict[int, str] = {}
         self.bold_columns: set = set()
         self.numeric: set = set()  # columns of numbers
+        self.code: set = set()  # columns of keys and identifiers
         self.rows: Sequence[Row] = []
         self.has_groups = False
+        self.has_notes = False
         # Made once: data() is asked for every cell's font while the view sizes
         # its columns, and a QFont with its features is slow to make.
         self._numeric_font = numeric_font()
         self._heading_font = ui_font("small", "semibold")
+        self._code_font = mono_font()
 
-    def set_table(self, headers: Sequence[str], rows: Sequence[Row], numeric: Sequence[int] = ()) -> None:
+    def set_table(self, headers: Sequence[str], rows: Sequence[Row], numeric: Sequence[int] = (),
+                  code: Sequence[int] = ()) -> None:
         self.beginResetModel()
-        self.headers, self.numeric = list(headers), set(numeric)
+        self.headers, self.numeric, self.code = list(headers), set(numeric), set(code)
         self.rows = rows if isinstance(rows, LazyRows) else list(rows)
         self.has_groups = bool(self.rows.has_groups) if isinstance(rows, LazyRows) else any(r.group for r in rows)
+        self.has_notes = not isinstance(rows, LazyRows) and any(r.notes for r in rows)
         self.header_tooltips, self.bold_columns = {}, set()
         self.endResetModel()
 
@@ -158,6 +184,10 @@ class DataModel(QAbstractTableModel):
         cells = self.rows[row].cells
         return cells[column] if column < len(cells) else ""
 
+    def note(self, row: int, column: int) -> str:
+        """The muted second line of a cell ("" for none)."""
+        return self.rows[row].notes.get(column, "")
+
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
         if not index.isValid():
             return None
@@ -166,6 +196,8 @@ class DataModel(QAbstractTableModel):
             return self.text(index.row(), column)
         if role == Qt.ItemDataRole.ToolTipRole:
             return row.tooltips.get(column)
+        if role == NOTE_ROLE:
+            return row.notes.get(column)
         if role == _SORT_ROLE:
             return row.keys[column] if row.keys is not None and column < len(row.keys) else self.text(index.row(),
                                                                                                          column)
@@ -173,30 +205,46 @@ class DataModel(QAbstractTableModel):
             if role == Qt.ItemDataRole.FontRole:
                 return self._heading_font
             if role == Qt.ItemDataRole.BackgroundRole:
-                return QColor(TOKENS["bg.selected"])  # looked up when drawn: it follows a theme change
+                return QColor(TOKENS["bg.canvas"])  # a section's heading; looked up when drawn: follows a theme change
             return None
+        mark = row.marks.get(column)
+        if mark is not None:
+            if role == Qt.ItemDataRole.DecorationRole:
+                return icon(mark[0], mark[1])
+            if role == Qt.ItemDataRole.ForegroundRole:
+                return QColor(TOKENS[mark[2]])  # looked up when drawn: it follows a theme change
         if role == Qt.ItemDataRole.FontRole and row.bold:
             return self._heading_font
-        if role == Qt.ItemDataRole.ForegroundRole and column in row.muted:
+        if role == Qt.ItemDataRole.ForegroundRole and (column in row.muted or column in self.code):
             return QColor(TOKENS["text.secondary"])  # looked up when drawn: it follows a theme change
-        if column in self.numeric:
+        if column in self.code and role == Qt.ItemDataRole.FontRole:
+            return self._code_font
+        if column in self.numeric and column not in row.plain:
             if role == Qt.ItemDataRole.TextAlignmentRole:
                 return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             if role == Qt.ItemDataRole.FontRole:
                 return self._numeric_font
         return None
 
+    def flags(self, index):
+        flags = super().flags(index)
+        # A heading is not a row to pick. Only a table with headings looks (a lazy row is made when read).
+        if self.has_groups and index.isValid() and self.rows[index.row()].group:
+            flags &= ~Qt.ItemFlag.ItemIsSelectable
+        return flags
+
     def headerData(self, section, orientation, role=Qt.ItemDataRole.DisplayRole):  # noqa: N802 -- Qt API name
         if orientation != Qt.Orientation.Horizontal or not 0 <= section < len(self.headers):
             return None
         if role == Qt.ItemDataRole.DisplayRole:
-            return self.headers[section]
+            return units.label(self.headers[section])  # "[deg]" shows "[°]" (UI-35); the copy keeps the text
         if role == Qt.ItemDataRole.ToolTipRole:
             return self.header_tooltips.get(section)
         if role == Qt.ItemDataRole.FontRole and section in self.bold_columns:
             return self._heading_font
-        if role == Qt.ItemDataRole.TextAlignmentRole and section in self.numeric:
-            return int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        if role == Qt.ItemDataRole.TextAlignmentRole:
+            horizontal = Qt.AlignmentFlag.AlignRight if section in self.numeric else Qt.AlignmentFlag.AlignLeft
+            return int(horizontal | Qt.AlignmentFlag.AlignVCenter)
         return None
 
 
@@ -234,6 +282,42 @@ class _Direct:
 
     def invalidate(self) -> None:
         pass
+
+
+class _NoteDelegate(QStyledItemDelegate):
+    """Paints a cell with a second line (:data:`NOTE_ROLE`): its text, and
+    under it the note in the monospace font and the secondary colour, each
+    elided to the cell's width; any other cell as usual."""
+
+    def __init__(self, font: QFont, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self.note_font = font
+
+    def paint(self, painter, option, index) -> None:
+        note = index.data(NOTE_ROLE)
+        if not note:
+            super().paint(painter, option, index)
+            return
+        item = QStyleOptionViewItem(option)
+        self.initStyleOption(item, index)
+        text, item.text = item.text, ""
+        style = item.widget.style() if item.widget is not None else QApplication.style()
+        style.drawControl(QStyle.ControlElement.CE_ItemViewItem, item, painter, item.widget)  # surface, hover, focus
+        margin = style.pixelMetric(QStyle.PixelMetric.PM_FocusFrameHMargin, item, item.widget) + 1  # as Qt's own text
+        rect = style.subElementRect(QStyle.SubElement.SE_ItemViewItemText, item, item.widget).adjusted(
+            margin, 0, -margin, 0)
+        half = rect.height() // 2
+        left = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        painter.save()
+        painter.setFont(item.font)
+        painter.setPen(item.palette.color(QPalette.ColorRole.Text))
+        painter.drawText(rect.adjusted(0, 0, 0, -half), left,
+                         QFontMetrics(item.font).elidedText(text, Qt.TextElideMode.ElideRight, rect.width()))
+        painter.setFont(self.note_font)
+        painter.setPen(QColor(TOKENS["text.secondary"]))  # looked up when drawn: it follows a theme change
+        painter.drawText(rect.adjusted(0, half, 0, 0), left,
+                         QFontMetrics(self.note_font).elidedText(note, Qt.TextElideMode.ElideMiddle, rect.width()))
+        painter.restore()
 
 
 class _View(QTableView):
@@ -288,6 +372,9 @@ class DataTable(QWidget):
         self.view.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.view.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.view.setWordWrap(False)
+        self.view.setShowGrid(False)  # surfaces, not lines (UI audit B4)
+        self._one_line_px = self.view.verticalHeader().defaultSectionSize()  # [px] Qt's row height for the font
+        self._notes = _NoteDelegate(self.model._code_font, self.view)
         self.view.setTabKeyNavigation(False)  # read-only: Tab leaves the table; the arrows move in it (M9)
         self.view.setTextElideMode(Qt.TextElideMode.ElideMiddle)
         self.view.copy_requested.connect(lambda: QGuiApplication.clipboard().setText(self.copy_text()))
@@ -300,12 +387,12 @@ class DataTable(QWidget):
 
     # -- content ------------------------------------------------------------------------------
     def set_table(self, headers: Sequence[str], rows: Sequence[Row], numeric: Sequence[int] = (),
-                  stretch: int = 0) -> None:
+                  stretch: int = 0, code: Sequence[int] = ()) -> None:
         """Show ``rows`` under ``headers``; ``numeric`` are the columns of
-        numbers; column ``stretch`` takes the width left, the others their
-        content's."""
+        numbers, ``code`` those of keys and identifiers; column ``stretch``
+        takes the width left, the others their content's."""
         self.view.setUpdatesEnabled(False)
-        self.model.set_table(headers, rows, numeric)
+        self.model.set_table(headers, rows, numeric, code)
         header = self.view.horizontalHeader()
         for column in range(len(headers)):
             # Sized to their content once, here, not on every layout of the view
@@ -314,6 +401,7 @@ class DataTable(QWidget):
                                         else QHeaderView.ResizeMode.Interactive)
             self.view.setColumnHidden(column, False)
         self._size_columns(stretch)
+        self._show_notes()
         self._update_spans()
         self.view.setUpdatesEnabled(True)
         self.stack.setCurrentWidget(self.view if rows else self.empty)
@@ -326,18 +414,31 @@ class DataTable(QWidget):
         sample = range(min(len(rows), _SIZED_ROWS // 4))  # the first rows: a lazy table makes no others
         header_metrics = QFontMetrics(self._header_font())
         plain, numbers = QFontMetrics(self.view.font()), QFontMetrics(self.model._numeric_font)
+        codes = QFontMetrics(self.model._code_font)
         bold = QFontMetrics(self.model._heading_font)
         for column, heading in enumerate(self.model.headers):
             if column == stretch:
                 continue
             width = max(header_metrics.horizontalAdvance(line) for line in heading.split("\n")) + _HEADER_PAD_PX
-            metrics = numbers if column in self.model.numeric else plain
+            metrics = numbers if column in self.model.numeric else codes if column in self.model.code else plain
             for index in sample:
                 row = rows[index]
                 if row.group or column >= len(row.cells):
                     continue
-                width = max(width, (bold if row.bold else metrics).horizontalAdvance(row.cells[column]) + _CELL_PAD_PX)
+                font = bold if row.bold else plain if column in row.plain else metrics
+                width = max(width, font.horizontalAdvance(row.cells[column]) + _CELL_PAD_PX
+                            + (_ICON_PAD_PX if column in row.marks else 0))
             self.view.setColumnWidth(column, min(width, _MAX_COLUMN_PX))
+
+    def _show_notes(self) -> None:
+        """Rows two lines high, painted by the note delegate, while a row has a note."""
+        if self.model.has_notes:
+            self.view.setItemDelegate(self._notes)
+            self.view.verticalHeader().setDefaultSectionSize(
+                self._one_line_px + QFontMetrics(self.model._code_font).height())
+        elif self.view.itemDelegate() is self._notes:
+            self.view.setItemDelegate(QStyledItemDelegate(self.view))
+            self.view.verticalHeader().setDefaultSectionSize(self._one_line_px)
 
     def _header_font(self):
         return self.view.horizontalHeader().font()
@@ -460,6 +561,10 @@ class DataTable(QWidget):
         """The alignment flags of the shown row ``row``'s cell (0: the default, left)."""
         index = self.proxy.index(row, column)
         return int(self.proxy.data(index, Qt.ItemDataRole.TextAlignmentRole) or 0)
+
+    def cell_note(self, row: int, column: int) -> str:
+        """The muted second line of the shown row ``row``'s cell ("" for none)."""
+        return self.model.note(self.shown_rows()[row], column)
 
     def cell_tooltip(self, row: int, column: int) -> str | None:
         return self.model.rows[self.shown_rows()[row]].tooltips.get(column)

@@ -231,8 +231,9 @@ def orbit_rows(scenario) -> list[tuple[str, str, str]]:
         return []
 
 
-# Plain names for the attitude modes (shown instead of their code names).
-_FSW_MODE_NAMES = {
+# Plain names for the attitude modes (shown instead of their code names;
+# the window's forms show them too, gui.field_text.GUIDANCE_MODE_LABELS).
+FSW_MODE_NAMES = {
     "inertial3D": "Inertial hold",
     "hillPoint": "Orbit-frame (nadir) pointing",
     "velocityPoint": "Velocity pointing",
@@ -242,7 +243,7 @@ _FSW_MODE_NAMES = {
 
 
 def _mode_name(fsw_mode: str) -> str:
-    return _FSW_MODE_NAMES.get(fsw_mode, fsw_mode)
+    return FSW_MODE_NAMES.get(fsw_mode, fsw_mode)
 
 
 def _gravity_summary(gravity) -> str:

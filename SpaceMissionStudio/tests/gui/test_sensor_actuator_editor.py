@@ -58,7 +58,7 @@ def test_add_via_dialog(qtbot, monkeypatch):
     qtbot.mouseClick(widget.add_button, Qt.MouseButton.LeftButton)
     form = widget.inline.form
     form.name_edit.setText("rw-1")
-    form.kind_combo.setCurrentIndex(form.kind_combo.findText("reaction_wheel"))
+    form.kind_combo.setCurrentIndex(form.kind_combo.findData("reaction_wheel"))
     x, y, z = form._vector_boxes["gsHat_B"]  # spin-box row, not the JSON params box -- see module docstring
     x.setValue(1.0)
     y.setValue(0.0)
@@ -199,7 +199,7 @@ def test_new_item_dialog_prefills_params_with_kind_template(qtbot):
     for kind in ("star_tracker", "coarse_sun_sensor"):
         dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
         qtbot.addWidget(dialog)
-        dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText(kind))
+        dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData(kind))
         dialog.name_edit.setText("s-1")
         specs = _KIND_PARAM_SPECS[kind]
         assert set(dialog.param_form.fields) == {spec.key for spec in specs}
@@ -221,8 +221,8 @@ def test_switching_kind_does_not_clobber_params_until_reset_clicked(qtbot):
     dialog.param_form.set_value("noise_arcsec", 7.5)
     dialog.params_edit.setPlainText('{"hand_typed": true}')
 
-    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText("coarse_sun_sensor"))
-    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText("star_tracker"))
+    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData("coarse_sun_sensor"))
+    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData("star_tracker"))
     assert dialog.param_form.params() == {"noise_arcsec": 7.5, "hand_typed": True}
 
     dialog._on_reset_template()
@@ -256,9 +256,9 @@ def test_switching_kind_away_and_back_preserves_vector_edit(qtbot):
     y.setValue(0.0)
     z.setValue(0.0)
 
-    other_index = dialog.kind_combo.findText("star_tracker")
+    other_index = dialog.kind_combo.findData("star_tracker")
     dialog.kind_combo.setCurrentIndex(other_index)
-    original_index = dialog.kind_combo.findText("reaction_wheel")
+    original_index = dialog.kind_combo.findData("reaction_wheel")
     dialog.kind_combo.setCurrentIndex(original_index)
 
     x, y, z = dialog._vector_boxes["gsHat_B"]
@@ -315,7 +315,7 @@ def test_magnetic_torque_rod_shows_a_conditional_requirement_note(qtbot):
 
     dialog = _ItemEditorDialog(ActuatorConfig, SUPPORTED_ACTUATOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("magnetic_torque_rod")
+    index = dialog.kind_combo.findData("magnetic_torque_rod")
     dialog.kind_combo.setCurrentIndex(index)
     assert "not simulated yet" not in dialog.hint_label.text()
     assert "Magnetic momentum management" in dialog.hint_label.text()
@@ -333,7 +333,7 @@ def test_thruster_kind_is_implemented_and_round_trips(qtbot):
 
     dialog = _ItemEditorDialog(ActuatorConfig, SUPPORTED_ACTUATOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("thruster")
+    index = dialog.kind_combo.findData("thruster")
     dialog.kind_combo.setCurrentIndex(index)
     assert "not simulated yet" not in dialog.hint_label.text()
 
@@ -360,7 +360,7 @@ def test_thruster_position_vector_row_has_no_normalize_button(qtbot):
 
     dialog = _ItemEditorDialog(ActuatorConfig, SUPPORTED_ACTUATOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("thruster")
+    index = dialog.kind_combo.findData("thruster")
     dialog.kind_combo.setCurrentIndex(index)
 
     r_b_row_widget = dialog.param_form.widget("r_B")
@@ -393,7 +393,7 @@ def test_device_card_is_structured_rich_text(qtbot):
 
     dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
     qtbot.addWidget(dialog)
-    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText("imu"))
+    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData("imu"))
     dialog.catalog_combo.setCurrentIndex(1)
     entry = catalog_entries_for_kind("imu")[0]
     card = dialog.catalog_info_label.text()
@@ -414,7 +414,7 @@ def test_parameter_rows_show_units_and_optional_checkboxes(qtbot):
 
     dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
     qtbot.addWidget(dialog)
-    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText("imu"))
+    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData("imu"))
     box = dialog.param_form.widget("gyro_noise_rad_s")
     assert isinstance(box, QDoubleSpinBox) and "rad/s" in box.suffix()
     include = dialog.param_form.include_box("gyro_noise_rad_s")
@@ -438,7 +438,7 @@ def test_catalog_row_is_visible_for_a_kind_with_entries(qtbot):
 
     dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("star_tracker")
+    index = dialog.kind_combo.findData("star_tracker")
     dialog.kind_combo.setCurrentIndex(index)
 
     assert not dialog._catalog_container.isHidden()
@@ -461,7 +461,7 @@ def test_catalog_row_is_hidden_for_a_kind_with_no_entries(qtbot):
 
     dialog = _ItemEditorDialog(SensorConfig, ["star_tracker", "no_such_kind"])
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("no_such_kind")
+    index = dialog.kind_combo.findData("no_such_kind")
     dialog.kind_combo.setCurrentIndex(index)
 
     assert dialog._catalog_container.isHidden()
@@ -478,7 +478,7 @@ def test_selecting_a_catalog_entry_previews_its_info_without_changing_fields(qtb
 
     dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("star_tracker")
+    index = dialog.kind_combo.findData("star_tracker")
     dialog.kind_combo.setCurrentIndex(index)
     original_params = dialog.param_form.params()
 
@@ -502,7 +502,7 @@ def test_applying_a_catalog_entry_fills_real_device_params(qtbot):
 
     dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("coarse_sun_sensor")
+    index = dialog.kind_combo.findData("coarse_sun_sensor")
     dialog.kind_combo.setCurrentIndex(index)
     entry = catalog_entries_for_kind("coarse_sun_sensor")[0]
     dialog.catalog_combo.setCurrentIndex(1)
@@ -527,7 +527,7 @@ def test_applying_a_catalog_entry_leaves_the_result_freely_editable(qtbot):
 
     dialog = _ItemEditorDialog(ActuatorConfig, SUPPORTED_ACTUATOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("reaction_wheel")
+    index = dialog.kind_combo.findData("reaction_wheel")
     dialog.kind_combo.setCurrentIndex(index)
     entry = catalog_entries_for_kind("reaction_wheel")[0]
     dialog.catalog_combo.setCurrentIndex(1)
@@ -553,12 +553,12 @@ def test_catalog_combo_resets_to_custom_placeholder_when_kind_changes(qtbot):
 
     dialog = _ItemEditorDialog(SensorConfig, SUPPORTED_SENSOR_KINDS)
     qtbot.addWidget(dialog)
-    index = dialog.kind_combo.findText("star_tracker")
+    index = dialog.kind_combo.findData("star_tracker")
     dialog.kind_combo.setCurrentIndex(index)
     dialog.catalog_combo.setCurrentIndex(1)
     assert dialog.catalog_combo.currentIndex() == 1
 
-    index = dialog.kind_combo.findText("imu")
+    index = dialog.kind_combo.findData("imu")
     dialog.kind_combo.setCurrentIndex(index)
 
     assert dialog.catalog_combo.currentIndex() == 0
@@ -584,7 +584,7 @@ def test_every_catalog_entry_applies_and_validates(qtbot, entry_index):
     dialog = _ItemEditorDialog(SensorConfig if is_sensor else ActuatorConfig,
                                SUPPORTED_SENSOR_KINDS if is_sensor else SUPPORTED_ACTUATOR_KINDS)
     qtbot.addWidget(dialog)
-    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findText(entry.kind))
+    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData(entry.kind))
     dialog.catalog_combo.setCurrentIndex(catalog_entries_for_kind(entry.kind).index(entry) + 1)
     info = dialog.catalog_info_label.text()
     assert html.escape(entry.heritage) in info and html.escape(entry.procurement_status) in info
@@ -621,7 +621,7 @@ def test_the_model_field_offers_only_basilisks_own_models(qtbot, kind, key, name
 
     dialog = _ItemEditorDialog(ActuatorConfig, SUPPORTED_ACTUATOR_KINDS)
     qtbot.addWidget(dialog)
-    dialog.kind_combo.setCurrentText(kind)
+    dialog.kind_combo.setCurrentIndex(dialog.kind_combo.findData(kind))
     _spec, _include, field = dialog.param_form.fields[key]
     assert not field.isEditable()
     assert [field.itemText(i) for i in range(field.count())] == list(getattr(scenario, names))

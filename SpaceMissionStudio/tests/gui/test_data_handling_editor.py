@@ -66,7 +66,7 @@ def test_each_pattern_shows_only_its_own_controls(qtbot):
     dialog.rf_pattern_combo.setCurrentIndex(dialog.rf_pattern_combo.findData("cosine"))
     dialog.tx_antenna_gain_dbi.setValue(6.02)
     assert not dialog.rf_front_to_back_db.isHidden() and dialog.rf_gain_table.isHidden()
-    assert "half-power beamwidth 120 deg" in dialog.rf_pattern_hint.text()
+    assert "half-power beamwidth 120°" in dialog.rf_pattern_hint.text()
     sc = dialog.to_dataclass()
     assert sc.rf_link.antenna_pattern == "cosine" and sc.rf_link.antenna_gain_table == []
     dialog.rf_pattern_combo.setCurrentIndex(dialog.rf_pattern_combo.findData("fixed"))

@@ -690,7 +690,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         0.01, 100.0, decimals=2, step=0.1, suffix=" m^2",
                     ),
                     WizardField(
-                        "Drag coefficient", "A dimensionless shape factor -- most satellites fall "
+                        "Drag coefficient", "A dimensionless shape factor – most satellites fall "
                         "between about 2.0 and 2.5.",
                         lambda s: _sc(s).drag_coeff,
                         lambda s, v: setattr(_sc(s), "drag_coeff", v),
@@ -704,7 +704,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                 fields=[
                     WizardField(
                         "Deadband", "How far the satellite may decay below target altitude before a "
-                        "correction burn starts -- tighter means more frequent, smaller burns.",
+                        "correction burn starts – tighter means more frequent, smaller burns.",
                         lambda s: _sc(s).station_keeping.deadband_km,
                         lambda s, v: setattr(_sc(s).station_keeping, "deadband_km", v),
                         0.05, 50.0, decimals=2, step=0.1, suffix=" km",
@@ -717,7 +717,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         0.001, 10.0, decimals=3, step=0.01, suffix=" N",
                     ),
                     WizardField(
-                        "Specific impulse", "Thruster efficiency -- higher uses less propellant per "
+                        "Specific impulse", "Thruster efficiency – higher uses less propellant per "
                         "unit of delta-V.",
                         lambda s: _sc(s).station_keeping.isp_s,
                         lambda s, v: setattr(_sc(s).station_keeping, "isp_s", v),
@@ -814,7 +814,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         0.0, 180.0, decimals=2, step=1.0, suffix=" deg",
                     ),
                     WizardField(
-                        "Eccentricity", "0 is circular -- see '02' for a non-circular example.",
+                        "Eccentricity", "0 is circular – see '02' for a non-circular example.",
                         lambda s: _sc(s).orbit.eccentricity,
                         lambda s, v: setattr(_sc(s).orbit, "eccentricity", v),
                         0.0, 0.9, decimals=4, step=0.01, hint='0 is circular',
@@ -849,7 +849,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         6500.0, 100000.0, decimals=1, step=500.0, suffix=" km",
                     ),
                     WizardField(
-                        "Eccentricity", "How elongated the orbit is -- 0.7 here is a real GTO-like value.",
+                        "Eccentricity", "How elongated the orbit is – 0.7 here is a real GTO-like value.",
                         lambda s: _sc(s).orbit.eccentricity,
                         lambda s, v: setattr(_sc(s).orbit, "eccentricity", v),
                         0.0, 0.95, decimals=4, step=0.01, hint='How elongated; 0.7 is GTO-like',
@@ -973,7 +973,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         0.001, 10.0, decimals=3, step=0.01, suffix=" N",
                     ),
                     WizardField(
-                        "Specific impulse", "Thruster efficiency -- higher uses less propellant per "
+                        "Specific impulse", "Thruster efficiency – higher uses less propellant per "
                         "unit of delta-V.",
                         lambda s: _follower(s).station_keeping.isp_s,
                         lambda s, v: setattr(_follower(s).station_keeping, "isp_s", v),
@@ -1155,7 +1155,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
             ),
             WizardPageSpec(
                 title="Orbit altitude",
-                intro='Gravity-gradient torque falls off as 1/r^3: much stronger in low orbit.',
+                intro='Gravity-gradient torque falls off as 1/r³: much stronger in low orbit.',
                 fields=[
                     WizardField(
                         "Semi-major axis", "Lower means a stronger gravity-gradient effect.",
@@ -1444,7 +1444,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                 fields=[
                     WizardField(
                         "Minimum elevation", "The lowest elevation angle (above the local horizon) "
-                        "counted as real access -- lower means longer, more frequent, but lower "
+                        "counted as real access – lower means longer, more frequent, but lower "
                         "-quality passes.",
                         lambda s: s.ground_stations[0].min_elevation_deg,
                         lambda s, v: setattr(s.ground_stations[0], "min_elevation_deg", v),
@@ -1458,7 +1458,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                 intro='How much pointing error during mode switches costs in link margin.',
                 fields=[
                     WizardField(
-                        "Antenna beamwidth", "The downlink antenna's half-power beamwidth -- "
+                        "Antenna beamwidth", "The downlink antenna's half-power beamwidth – "
                         "narrower means a pointing error costs MORE link margin.",
                         lambda s: _sc(s).rf_link.antenna_beamwidth_deg,
                         lambda s, v: setattr(_sc(s).rf_link, "antenna_beamwidth_deg", v),
@@ -1500,7 +1500,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                 fields=[
                     WizardField(
                         "Surface area", "Larger means more solar absorption AND more radiative "
-                        "emission -- both scale together.",
+                        "emission – both scale together.",
                         lambda s: _thermal_sensor(s).params["area_m2"],
                         lambda s, v: _thermal_sensor(s).params.__setitem__("area_m2", v),
                         0.001, 10.0, decimals=3, step=0.01, suffix=" m^2",
@@ -1508,7 +1508,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                     ),
                     WizardField(
                         "Mass", "Combined with specific heat below, this is the sensor's thermal "
-                        "mass -- larger means a slower, smoother response to each sunlight/eclipse "
+                        "mass – larger means a slower, smoother response to each sunlight/eclipse "
                         "transition.",
                         lambda s: _thermal_sensor(s).params["mass_kg"],
                         lambda s, v: _thermal_sensor(s).params.__setitem__("mass_kg", v),
@@ -1517,7 +1517,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                     ),
                     WizardField(
                         "Internal power draw", "Electrical power dissipated as heat inside the "
-                        "sensor itself -- adds a constant heating term on top of the solar one.",
+                        "sensor itself – adds a constant heating term on top of the solar one.",
                         lambda s: _thermal_sensor(s).params["power_draw_w"],
                         lambda s, v: _thermal_sensor(s).params.__setitem__("power_draw_w", v),
                         0.0, 50.0, decimals=2, step=0.5, suffix=" W", hint='Heat generated inside the sensor',
@@ -1530,7 +1530,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                 fields=[
                     WizardField(
                         "Motor efficiency", "Closer to 1.0 means less waste heat and a flatter "
-                        "temperature curve -- 1.0 itself is rejected (modeled as a real "
+                        "temperature curve – 1.0 itself is rejected (modeled as a real "
                         "inefficiency).",
                         lambda s: _rw_with_motor_thermal(s).params["motor_thermal_efficiency"],
                         lambda s, v: _rw_with_motor_thermal(s).params.__setitem__(
@@ -1540,7 +1540,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                     ),
                     WizardField(
                         "Ambient thermal resistance", "Lower means heat dissipates to the "
-                        "surroundings faster -- the motor temperature settles closer to ambient.",
+                        "surroundings faster – the motor temperature settles closer to ambient.",
                         lambda s: _rw_with_motor_thermal(s).params["motor_thermal_ambient_resistance_w_c"],
                         lambda s, v: _rw_with_motor_thermal(s).params.__setitem__(
                             "motor_thermal_ambient_resistance_w_c", v),
@@ -1769,7 +1769,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         "First mode", "Each wing's first bending frequency with the hub held fixed.",
                         lambda s: _sc(s).solar_arrays[0].first_mode_hz,
                         lambda s, v: _set_all_arrays(s, "first_mode_hz", v),
-                        0.01, 100.0, decimals=3, step=0.05, suffix=" Hz", hint="0.05 Hz swings 0.94 deg",
+                        0.01, 100.0, decimals=3, step=0.05, suffix=" Hz", hint="0.05 Hz swings 0.94°",
                     ),
                     WizardField(
                         "Damping ratio", "Each wing's structural damping, as a fraction of critical.",
@@ -1818,13 +1818,13 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                     WizardField(
                         "Star tracker tilt", "How far below the arrays' plane st-1 looks.",
                         _tracker_tilt_deg, _set_tracker_tilt_deg,
-                        -30.0, 30.0, decimals=1, step=1.0, suffix=" deg", hint="0 deg: the array leaves its view",
+                        -30.0, 30.0, decimals=1, step=1.0, suffix=" deg", hint="0°: the array leaves its view",
                     ),
                     WizardField(
                         "Plume half-angle", "The station-keeping nozzle's plume cone, half its full angle.",
                         lambda s: _equipment(s, "sk thruster").mount.plume_half_angle_deg,
                         lambda s, v: setattr(_equipment(s, "sk thruster").mount, "plume_half_angle_deg", v),
-                        1.0, 89.0, decimals=1, step=1.0, suffix=" deg", hint="10 deg: the plume clears the array",
+                        1.0, 89.0, decimals=1, step=1.0, suffix=" deg", hint="10°: the plume clears the array",
                     ),
                 ],
             ),
@@ -1976,7 +1976,7 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                         "Largest phase angle", "Images from beyond this Sun-Mars-camera angle are not used.",
                         lambda s: _camera(s).max_phase_angle_deg,
                         lambda s, v: setattr(_camera(s), "max_phase_angle_deg", v),
-                        1.0, 180.0, decimals=1, step=5.0, suffix=" deg", hint="180 deg: the night side too",
+                        1.0, 180.0, decimals=1, step=5.0, suffix=" deg", hint="180°: the night side too",
                     ),
                     WizardField(
                         "Initial position uncertainty", "How far off the filter starts (1 sigma, each axis).",

@@ -163,7 +163,7 @@ class RoeFormationDialog(QDialog):
         self.safe_cross_m.setToolTip("Cross-track half-size of the relative ellipse [m].")
         self.safe_phase_deg = _double_spin(-360.0, 360.0, 1, 15.0, 90.0)  # [deg]
         self.safe_phase_deg.setToolTip(
-            "Angle of the parallel eccentricity and inclination vectors [deg]. 90 deg puts the inclination "
+            "Angle of the parallel eccentricity and inclination vectors [deg]. 90° puts the inclination "
             "vector along δiy, which J2 leaves alone.")
         safe_form.addRow("Along-track [m]", self.safe_along_m)
         safe_form.addRow("Radial half-size [m]", self.safe_radial_m)

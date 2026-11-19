@@ -84,8 +84,8 @@ _UNITS = {
     "dry_mass_kg": "kg",
     "attitude_sigma_bn": "rad, as Euler angles",
     "orbit_elements": "a spread on each element of the initial orbit",
-    "inertia_kg_m2": "kg m^2 on each diagonal element, added to the inertia",
-    "angular_rate_bn_b": "deg/s on each axis, added to the initial rate",
+    "inertia_kg_m2": "kg·m² on each diagonal element, added to the inertia",
+    "angular_rate_bn_b": "°/s on each axis, added to the initial rate",
     "drag_coeff": "drag coefficient Cd [-]",
     "srp_coeff": "radiation-pressure coefficient Cr [-]",
 }
@@ -142,7 +142,7 @@ class _DispersionEditorDialog(QDialog):
 
         self.quantity_combo = ComboBox()
         self.quantity_combo.setToolTip(
-            "Which quantity gets randomized, independently, on each Monte Carlo run -- e.g. a "
+            "Which quantity gets randomized, independently, on each Monte Carlo run – e.g. a "
             "real uncertainty in orbit insertion, mass properties, initial attitude or rate, or "
             "the drag and radiation-pressure coefficients. Every other dispersion on this "
             "spacecraft (if any) varies independently alongside it. See User Manual, section 10."
@@ -154,7 +154,7 @@ class _DispersionEditorDialog(QDialog):
 
         self.kind_combo = ComboBox()
         self.kind_combo.setToolTip(
-            "The probability distribution each run's random draw is taken from -- 'uniform' "
+            "The probability distribution each run's random draw is taken from – 'uniform' "
             "needs Bounds below (every value in range equally likely); 'normal' needs Mean/Std "
             "deviation below (a bell curve centered on Mean)."
         )
@@ -176,7 +176,7 @@ class _DispersionEditorDialog(QDialog):
         form.addRow("Mean", self.mean_spin)
         self.std_spin = _spin(0.0, 1.0e9, decimals=6, value=1.0)
         self.std_spin.setToolTip(
-            "The spread of the normal distribution -- about 68% of runs land within one std "
+            "The spread of the normal distribution – about 68% of runs land within one std "
             "deviation of the mean, ~95% within two."
         )
         form.addRow("Std deviation", self.std_spin)
@@ -286,9 +286,8 @@ class _DispersionEditorDialog(QDialog):
             self._set_row_visible(spin, orbit)
         self._set_row_visible(self.angle_std_spin, quantity == "inertia_kg_m2")
         self.units_label.setText(_UNITS.get(quantity, ""))
-        suffix = units.suffix(_FIELD_UNITS.get(quantity, "-"))
         for spin in (self.mean_spin, self.std_spin, self.bounds_lo_spin, self.bounds_hi_spin):
-            spin.setSuffix(suffix)
+            spin.setSuffix(units.suffix(_FIELD_UNITS.get(quantity, "-")))
 
     def _set_row_visible(self, field, visible: bool) -> None:
         label = self._form.labelForField(field)
@@ -310,7 +309,7 @@ class _DispersionEditorDialog(QDialog):
 
     def to_dataclass(self) -> DispersionConfig:
         if not self.spacecraft_combo.count():
-            raise ValueError("this scenario has no spacecraft to disperse yet -- add one first")
+            raise ValueError("this scenario has no spacecraft to disperse yet – add one first")
         kind = self.kind_combo.currentText()
         quantity = self.quantity_combo.currentText()
         orbit = quantity == "orbit_elements"
@@ -465,7 +464,7 @@ class MonteCarloGroupWidget(QGroupBox):
         self.enabled_check.setToolTip(
             "Checking this ON lets Run, in Monte Carlo mode (the run mode beside Run), run this scenario "
             "repeatedly (Number of runs below), each time with a fresh random draw for every dispersion "
-            "configured below, instead of a single run -- for statistically characterizing how "
+            "configured below, instead of a single run – for statistically characterizing how "
             "sensitive the outcome is to real initial-condition uncertainty."
         )
         self.enabled_check.toggled.connect(self.changed)

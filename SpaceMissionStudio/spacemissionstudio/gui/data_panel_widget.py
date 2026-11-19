@@ -26,6 +26,13 @@ from the Download menu, after a prompt that names the source, the files
 and their size; afterwards the panel says what changed. Space weather and
 Earth orientation files can also be imported from local files and rolled
 back to the previous version.
+
+The table is a :class:`gui.data_table.DataTable` (UI audit B4, UI-49):
+each status is a word with its status icon ("Present", "Out of date"),
+a file without dates shows "–" under Covers (the column is hidden when no
+file has dates), and the columns fit the window at 1280 x 720 without a
+horizontal scroll bar: a long name, date range or source is elided, and
+whole on hover.
 """
 
 from __future__ import annotations
@@ -35,16 +42,37 @@ import logging
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMenu, QMessageBox, QPushButton,
-                               QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMenu, QMessageBox, QPushButton, QToolButton,
+                               QVBoxLayout, QWidget)
 
 from .. import network
 from ..engine import reference_data
-from .theme import on_change
-from .theme.items import retint, tint
+from .data_table import DataTable, Row
 
 _logger = logging.getLogger(__name__)
 _COLUMNS = ["Kind", "File", "Status", "Covers", "SHA-256", "Installed", "Source"]
+_NO_DATES = "–"  # a file whose data have no dates (a SPICE kernel, a gravity field)
+# A file's status: the word shown, its icon and the icon's and the word's inks (never colour alone).
+STATUS_SHOWN = {
+    "ok": ("Present", "circle-check", "status.normal", "status.normal.text"),
+    "missing": ("Missing", "circle-x", "status.critical", "status.critical.text"),
+    "out of date": ("Out of date", "triangle-alert", "status.caution", "status.caution.text"),
+    reference_data.NOT_DOWNLOADED: ("Not downloaded", "circle-minus", "text.secondary", "text.secondary"),
+}
+# [px] the widest a column of long texts takes at first (drag it wider); the
+# columns then fit the window at 1280 x 720 (UI-49). Elided in the middle,
+# whole on hover.
+_LONG_COLUMN_PX = {"Kind": 170, "File": 200, "Covers": 200}
+
+
+def status_text(status: str) -> str:
+    """A status as the panel words it ("ok" -> "Present")."""
+    return STATUS_SHOWN[status][0] if status in STATUS_SHOWN else status[:1].upper() + status[1:]
+
+
+def kind_text(kind: str) -> str:
+    """A kind as the panel shows it: its first letter capitalised ("gravity field" -> "Gravity field")."""
+    return kind[:1].upper() + kind[1:]
 
 
 NOT_READ = object()  # DataPanelWidget.basilisk_version before a child process has read it
@@ -249,16 +277,8 @@ class DataPanelWidget(QWidget):
         status_row.addWidget(self.status_label, 1)
         status_row.addWidget(self.retry_button, 0, Qt.AlignmentFlag.AlignTop)
         layout.addLayout(status_row)
-        self.table = QTableWidget(0, len(_COLUMNS))
-        self.table.setTabKeyNavigation(False)  # read-only: Tab leaves the table; the arrows move in it (M9)
-        on_change(self._retint)
-        self.table.setHorizontalHeaderLabels(_COLUMNS)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setTextElideMode(Qt.TextElideMode.ElideMiddle)  # long URLs keep both ends
-        header = self.table.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(_COLUMNS.index("Source"), QHeaderView.ResizeMode.Stretch)
+        # Model/view, no grid lines; Ctrl+C copies the rows (UI-49). Long URLs keep both ends (elided in the middle).
+        self.table = DataTable("Reading the reference data files...")
         layout.addWidget(self.table)
 
         row = QHBoxLayout()
@@ -305,9 +325,6 @@ class DataPanelWidget(QWidget):
         return button
 
     # -- table ------------------------------------------------------------
-
-    def _retint(self, _mode: str) -> None:
-        retint(self.table)
 
     def refresh(self) -> None:
         """Re-read the local files (no network)."""
@@ -366,29 +383,31 @@ class DataPanelWidget(QWidget):
         self.basilisk_version = NOT_READ if basilisk_version is None else basilisk_version
         self.retry_button.hide()
         self._files = files
-        self.table.setRowCount(len(files))
-        tones = {"ok": "status.normal.text", "missing": "status.critical.text", "out of date": "status.caution.text",
-                 reference_data.NOT_DOWNLOADED: "text.secondary"}
-        for row, file in enumerate(files):
-            values = [file.kind, file.name, file.status, file.covers,
-                      file.sha256[:12] + ("..." if file.sha256 else ""), file.installed_utc[:10], file.source]
-            for column, value in enumerate(values):
-                item = QTableWidgetItem(value)
-                if column == _COLUMNS.index("SHA-256"):
-                    item.setToolTip(file.sha256 or "not computed (the file could not be read)")
-                elif column == _COLUMNS.index("File"):
-                    item.setToolTip(file.path or file.note)
-                elif column == _COLUMNS.index("Source"):
-                    item.setToolTip(file.source)
-                elif column == _COLUMNS.index("Status"):
-                    tint(item, tones.get(file.status, "text.primary"))
-                    item.setToolTip(file.note)
-                self.table.setItem(row, column, item)
+        status, covers = _COLUMNS.index("Status"), _COLUMNS.index("Covers")
+        rows = []
+        for file in files:
+            values = [kind_text(file.kind), file.name, status_text(file.status), file.covers or _NO_DATES,
+                      file.sha256[:12] + ("…" if file.sha256 else ""), file.installed_utc[:10], file.source]
+            mark = STATUS_SHOWN.get(file.status)
+            rows.append(Row(values, tooltips={
+                _COLUMNS.index("File"): file.path or file.note,
+                status: file.note,
+                covers: file.covers or "No dates: the data do not change with time",
+                _COLUMNS.index("SHA-256"): file.sha256 or "not computed (the file could not be read)",
+                _COLUMNS.index("Source"): file.source},
+                marks={status: mark[1:]} if mark is not None else {}))
+        self.table.set_table(_COLUMNS, rows, stretch=_COLUMNS.index("Source"),
+                             code=(_COLUMNS.index("SHA-256"),))
+        for name, width in _LONG_COLUMN_PX.items():
+            column = _COLUMNS.index(name)
+            self.table.view.setColumnWidth(column, min(self.table.view.columnWidth(column), width))
+        self.table.set_hidden_columns([covers] if not any(f.covers for f in files) else [])
         problems = [f for f in files if reference_data.needs_attention(f)]
         optional = [f for f in files if f.status == reference_data.NOT_DOWNLOADED]
         self.status_label.setText(
             f"{len(files)} reference data file(s); " + (
-                f"{len(problems)} need attention: " + ", ".join(f"{f.name} ({f.status})" for f in problems)
+                f"{len(problems)} need attention: " + ", ".join(f"{f.name} ({status_text(f.status).lower()})"
+                                                                for f in problems)
                 if problems else "all present and current" if not optional else "the others present and current")
             + (f"; {len(optional)} optional file(s) not downloaded (Download... gets them when needed)."
                if optional else "."))

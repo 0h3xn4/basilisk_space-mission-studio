@@ -30,6 +30,7 @@ sensors/actuators/FSW modes, which this editor deliberately omits).
 from __future__ import annotations
 
 import copy
+import re
 from datetime import UTC, datetime
 
 import shiboken6
@@ -267,13 +268,13 @@ class ScenarioEditorWidget(QWidget):
         self.simulation_mode_combo = ComboBox()
         self.simulation_mode_combo.addItem("Full attitude (sensors, actuators, FSW, power)",
                                             userData="full_attitude")
-        self.simulation_mode_combo.addItem("Orbit only (cannonball -- no attitude features)",
+        self.simulation_mode_combo.addItem("Orbit only (cannonball – no attitude features)",
                                             userData="orbit_only")
         self.simulation_mode_combo.setToolTip(
             "Full attitude: sensors, actuators, FSW pointing/control, and power budgets are all available.\n"
             "Orbit only: a simpler cannonball spacecraft (drag_area_m2/srp_area_m2 as its average cross-section) "
             "for pure orbit-propagation questions (delta-V budgets, orbit lifetime, station-keeping cadence, ...) "
-            "-- no sensors/actuators/FSW/power on any spacecraft in this mode."
+            "– no sensors/actuators/FSW/power on any spacecraft in this mode."
         )
         self.simulation_mode_combo.currentIndexChanged.connect(self.changed)
         form.addRow("Simulation mode", self.simulation_mode_combo)
@@ -281,12 +282,12 @@ class ScenarioEditorWidget(QWidget):
         self.epoch_edit = QLineEdit("2030-01-01T00:00:00")
         self.epoch_edit.setPlaceholderText("ISO 8601 UTC, e.g. 2030-01-01T00:00:00")
         self.epoch_edit.setToolTip(
-            "The real calendar date/time (UTC) the simulation starts at -- 'sim time 0' in "
+            "The real calendar date/time (UTC) the simulation starts at – 'sim time 0' in "
             "every plot. This matters beyond just a label: it fixes where the Sun and Moon "
             "actually are, so it affects eclipse timing, solar-panel power generation, Sun "
             "-pointing/Sun-safe attitude modes, and (for a Sun-synchronous orbit) which RAAN "
             "corresponds to a given local time of day. Must be ISO 8601 (as shown in the "
-            "placeholder) -- anything else fails validation."
+            "placeholder) – anything else fails validation."
         )
         self.epoch_edit.textChanged.connect(self.changed)
         form.addRow("Epoch (UTC)", self.epoch_edit)
@@ -630,7 +631,7 @@ class ScenarioEditorWidget(QWidget):
         if not name:
             error = f"{node.config.name}: name must not be empty"
         elif name in others:
-            error = f"{name}: name -- a {what} named {name!r} already exists"
+            error = f"{name}: name – a {what} named {name!r} already exists"
         else:
             try:
                 config = form.to_dataclass()
@@ -640,7 +641,8 @@ class ScenarioEditorWidget(QWidget):
             location = locate(error, [name, node.config.name]) if kind == "spacecraft" else \
                 locate(error, station_names=[name, node.config.name])
             path = location.path if location is not None and location.area == area else ""
-            form.show_problem(path or ("name" if "name" in error.split(" -- ")[0] else ""), error, focus=False)
+            before_dash = re.split(" (?:–|--) ", error, maxsplit=1)[0]  # the form's en dash, or a message's "--"
+            form.show_problem(path or ("name" if "name" in before_dash else ""), error, focus=False)
             self._form_errors[id(node)] = error
             self.revalidate()
             return

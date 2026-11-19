@@ -19039,3 +19039,85 @@ the scenario editor and the status bar, the Overview's tiles, Results ›
 Overview, Plots and the 3D View after a run of template 01, Budgets ›
 Propellant after the run, the control gains of template 06 and the
 IDM-CIC import preview.
+
+## UI audit batch B4: labels instead of identifiers (2026-11-19)
+
+The screenshot audit of 2026-11-17 grouped five defects under "labels
+instead of identifiers": the window showed codes where a user reads
+names, and the code's spelling where a user reads a unit or a dash.
+
+**Device kinds, guidance modes and bodies (UI-08).** The sensors and
+actuators read "star_tracker: st-1", the FSW mode field "sunSafePoint",
+the central body "mars barycenter". `gui/field_text.py` now has a label
+map for each: `DEVICE_KIND_LABELS` (the IDM-CIC import's names, with
+"Thermal sensor"), `GUIDANCE_MODE_LABELS` (the Overview's names,
+`scenario_explainer.FSW_MODE_NAMES`) and `BODY_LABELS` ("Mars
+barycentre", "433 Eros"). A list row reads "Star tracker: st-1"; the
+device's own name stays as the user wrote it. The Kind, FSW mode and
+central body fields show the labels and keep the code as the item's
+data; the third bodies keep theirs in `Qt.UserRole`. The code is on
+hover. The scenario file is written byte for byte as before: a test
+saves templates 07 and 30 from the editor. The guidance modes use
+"Sun pointing", not "Sun-safe pointing", because the golden files hold
+the Overview's name.
+
+**Scenario › Assumptions (UI-19).** The page was already a `DataTable`,
+but the table drew grid lines, centred its headings, painted the area
+rows in the selected-row colour and named every parameter by its code.
+Each parameter now has a name (`field_text.PARAMETER_LABELS`, 111
+names; `AREA_LABELS`, 19 areas) with its key as a muted second line in
+the monospace font (`Row.notes`, painted by a delegate). A key column
+was tried first: it made the table 1165 px wide on a 672 px page at
+1280 x 720 with the Inspector open. Values and defaults that are numbers
+are right-aligned, a model's name left-aligned (`Row.plain`); a unit
+shows as the window writes it ("°", "m per (m²/kg)", nothing for
+"[-]"). The area rows are section headings on `bg.canvas` that cannot be
+selected. Editing, the file, "Changed values only" and the details below
+the table work as before.
+
+The `DataTable` changes reach every table that uses it: no grid lines,
+left-aligned headings (a numeric column's right), group rows as section
+headings, and bracketed units in the headings typeset by the new
+`units.label` ("Off-nadir [°]"). The copied TSV keeps the headings as
+written.
+
+**Double hyphens (UI-34).** 184 strings of the GUI and 68 lines of the
+user manual used "--" as a dash; the Mission dashboard showed "--" for
+a figure the run does not give, and the window title read
+"SpaceMissionStudio -- untitled". They now use an en dash. Comments,
+docstrings, command-line flags and code spans keep their hyphens. The
+help texts' first part was found by splitting at " -- "; the split now
+takes either dash, so a core message still splits. The core's messages
+keep "--": the command line prints them, and tests and golden files
+read them. The Problems panel shows them as they are.
+
+**Units (UI-35).** The GUI wrote "0 deg = equatorial", "{x:.2f} deg",
+"kg m^2 on each diagonal element", "{capacity} W*h", and three spin-box
+helpers set " deg" as a suffix as it was. The prose now uses the display
+form ("0° = equatorial", "kg·m²", "Wh"); a suffix made from a unit goes
+through `units.suffix`; the value-mark note reads "Edited (computed
+97.59°)". Bracketed units in form labels stay: the form typesets them,
+and messages name the field with them. `units` learns "W/m^2", "g/m^3"
+and "m per (m^2/kg)". The manual follows where it quotes the window.
+
+**The Reference data window (UI-49).** Basilisk's `AtmosphereData` files
+(the tabular atmosphere's profiles) were listed as SPICE kernels; the
+statuses read "ok"; the Covers column was empty for most files; the
+`QTableWidget` drew grid lines and scrolled sideways at 1280 x 720. The
+inventory now calls them "atmosphere table". The panel is a
+`DataTable`: a kind starts with a capital, a status is a word with its
+status icon and ink (Present, Missing, Out of date, Not downloaded), a
+file without dates shows "–" (the column is hidden when no file has
+dates), and the window opens 1120 x 480 px with Kind, File and Covers at
+most 170, 200 and 200 px wide at first, elided and whole on hover. At
+980 px the columns needed 949 px before Source.
+
+Tests: the new files `tests/gui/test_labels.py` (15 tests) and
+`tests/test_gui_strings.py` (4 tests) failed before the fixes, except
+two guards that pass before and after (the scenario file written as
+before, and the Assumptions page without a sideways scroll bar).
+Sixteen existing GUI test files changed how their tests reach a widget,
+or assert the new words: `docs/ui/TEST_CHANGES.md` lists them. Screenshots taken
+offscreen at 1280 x 720 before and after show Scenario › Assumptions
+(template 33), the sensors of template 07 and its FSW mode list, the
+central and third bodies of template 30 and the Reference data window.

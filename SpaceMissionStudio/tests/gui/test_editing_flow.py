@@ -264,7 +264,7 @@ def test_a_devices_new_kind_has_its_fields_followed(qtbot):
     qtbot.addWidget(widget)
     widget._on_add()
     form = widget.inline.form
-    form.kind_combo.setCurrentIndex(form.kind_combo.findText("reaction_wheel"))
+    form.kind_combo.setCurrentIndex(form.kind_combo.findData("reaction_wheel"))
     qtbot.waitUntil(lambda: not widget.inline.pending, timeout=5000)
     assert widget.to_list()[0].kind == "reaction_wheel"
     x, _y, _z = form._vector_boxes["gsHat_B"]

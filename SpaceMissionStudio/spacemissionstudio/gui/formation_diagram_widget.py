@@ -159,7 +159,7 @@ class FormationDiagramWidget(QWidget):
         painter.drawText(
             QRectF(chief_x, track_y + 30, track_span_px, 16), Qt.AlignmentFlag.AlignHCenter,
             f"correction triggers past ±{diagram.tolerance_fraction * 100:g}% "
-            f"({trigger_half_km:.2g} km) -- settles within ±{diagram.restore_tolerance_fraction * 100:g}% "
+            f"({trigger_half_km:.2g} km) – settles within ±{diagram.restore_tolerance_fraction * 100:g}% "
             f"({restore_half_km:.2g} km)",
         )
 

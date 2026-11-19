@@ -120,8 +120,8 @@ class OrbitIcWidget(QWidget):
         self.type_combo.setToolTip(
             "How to describe where the spacecraft starts.\n\n"
             "Classical elements: size/shape/orientation of the orbit (easiest to reason "
-            "about -- e.g. 'a circular orbit at 500 km, tilted 97 deg').\n"
-            "Cartesian state: a raw position + velocity vector at the epoch -- use this if "
+            "about – e.g. 'a circular orbit at 500 km, tilted 97°').\n"
+            "Cartesian state: a raw position + velocity vector at the epoch – use this if "
             "you already have an exact state from another tool.\n"
             "Two-Line Element (TLE): paste a real satellite's TLE (e.g. from CelesTrak) to "
             "start from its actual, currently-published orbit."
@@ -299,7 +299,7 @@ class OrbitIcWidget(QWidget):
         self.raan_deg = _spin(0.0, 360.0, decimals=4, step=1.0)
         self.aop_deg = _spin(0.0, 360.0, decimals=4, step=1.0)
         self.sma_km.setToolTip(
-            "Half the distance across the orbit's long axis, measured from Earth's center -- "
+            "Half the distance across the orbit's long axis, measured from Earth's center – "
             "sets the orbit's SIZE and, by Kepler's third law, its PERIOD. Bigger = slower, "
             "longer orbit (e.g. ~6778 km is a ~400 km-altitude LEO with a ~92.6 min period; "
             "~42164 km is geostationary, one orbit per sidereal day)."
@@ -311,20 +311,20 @@ class OrbitIcWidget(QWidget):
             "so this field is capped below 1."
         )
         self.inc_deg.setToolTip(
-            "Tilt of the orbit plane relative to Earth's equator. 0 deg = equatorial (orbits "
-            "directly above the equator); 90 deg = polar (passes over both poles); around "
-            "97-98 deg at low altitude gives a Sun-synchronous orbit (see the RAAN field below) "
+            "Tilt of the orbit plane relative to Earth's equator. 0° = equatorial (orbits "
+            "directly above the equator); 90° = polar (passes over both poles); around "
+            "97-98° at low altitude gives a Sun-synchronous orbit (see the RAAN field below) "
             "that revisits the same local solar time on every pass."
         )
         self.raan_deg.setToolTip(
-            "Right ascension of the ascending node -- rotates the WHOLE orbit plane around "
+            "Right ascension of the ascending node – rotates the WHOLE orbit plane around "
             "Earth's spin axis, fixing where (in inertial space) the spacecraft crosses the "
             "equator heading north. Combined with inclination, this sets which longitudes the "
             "ground track passes over and, for a Sun-synchronous orbit, the local time of day "
             "those passes happen at."
         )
         self.aop_deg.setToolTip(
-            "Argument of periapsis -- rotates the ellipse's long axis WITHIN its own orbit "
+            "Argument of periapsis – rotates the ellipse's long axis WITHIN its own orbit "
             "plane, fixing where in the orbit the closest approach to Earth (periapsis) falls "
             "relative to the ascending node. Has no effect for a circular orbit (eccentricity "
             "0), since a circle has no distinct closest point."
@@ -369,7 +369,7 @@ class OrbitIcWidget(QWidget):
         self.sso_ltan_hour = _spin(0.0, 24.0, decimals=2, step=0.5, value=DEFAULT_LTAN_HOUR)
         self.sso_ltan_hour.setSuffix(" h LTAN")
         self.sso_ltan_hour.setToolTip(
-            "Local time of ascending node (24h clock) -- 10.5 (10:30 AM) is the most common "
+            "Local time of ascending node (24h clock) – 10.5 (10:30 AM) is the most common "
             "real choice for an Earth-observation/commercial smallsat."
         )
         raan_ltan_row.addWidget(sso_raan_button)
@@ -391,9 +391,9 @@ class OrbitIcWidget(QWidget):
             self.anomaly_type_combo.addItem(_ANOMALY_TYPE_LABELS[anomaly_type], userData=anomaly_type)
         self.anomaly_type_combo.setToolTip(
             "How the spacecraft's starting position ALONG the orbit (below) is specified. "
-            "True anomaly is the real geometric angle from periapsis -- easiest to visualize. "
+            "True anomaly is the real geometric angle from periapsis – easiest to visualize. "
             "Mean anomaly is a fictitious angle that increases at a constant rate over one "
-            "orbit -- easier for picking an exact starting TIME offset, but not the same "
+            "orbit – easier for picking an exact starting TIME offset, but not the same "
             "number as true anomaly except in a circular orbit. Switching this does NOT "
             "convert the typed value below (the two scales aren't numerically close in "
             "general); it resets it to 0 to avoid a silently wrong carry-over."
@@ -401,7 +401,7 @@ class OrbitIcWidget(QWidget):
         self.anomaly_deg = _spin(0.0, 360.0, decimals=4, step=1.0)
         self.anomaly_deg.setToolTip(
             "Where the spacecraft starts along the orbit at the epoch, as the angle type "
-            "selected on the left. 0 deg = starting exactly at periapsis (closest approach)."
+            "selected on the left. 0° = starting exactly at periapsis (closest approach)."
         )
         self.anomaly_deg.setSuffix(units.suffix("deg"))  # its label is the anomaly type's choice, not "[deg]"
         form.addRow(self.anomaly_type_combo, self.anomaly_deg)
@@ -423,7 +423,7 @@ class OrbitIcWidget(QWidget):
         for box in (self.pos_x_km, self.pos_y_km, self.pos_z_km):
             box.setToolTip(
                 "Spacecraft position at the epoch, in the inertial frame EME2000 (SPICE J2000), centred on the central body "
-                "frame -- not a frame that rotates with Earth, so these numbers don't 'point' "
+                "frame – not a frame that rotates with Earth, so these numbers don't 'point' "
                 "at a fixed place on the ground the way latitude/longitude would. Distance "
                 "from Earth's center, not altitude above the surface."
             )
@@ -431,7 +431,7 @@ class OrbitIcWidget(QWidget):
             box.setToolTip(
                 "Spacecraft velocity at the epoch, in the same Earth-centered inertial frame as "
                 "the position above. Position and velocity together fully determine the orbit "
-                "-- get either one wrong and the resulting orbit can look nothing like what "
+                "– get either one wrong and the resulting orbit can look nothing like what "
                 "you intended (e.g. a mismatched speed turns a circular orbit into a highly "
                 "elliptical, or escaping, one)."
             )
@@ -452,15 +452,15 @@ class OrbitIcWidget(QWidget):
         self.tle_line1 = QLineEdit()
         self.tle_line1.setPlaceholderText("1 25544U 98067A   24001.00000000  .00000000  00000-0  00000-0 0  9990")
         self.tle_line1.setToolTip(
-            "The FIRST of a real satellite's two-line element (TLE) lines -- starts with '1', "
+            "The FIRST of a real satellite's two-line element (TLE) lines – starts with '1', "
             "encodes its catalog number, epoch, and drag term. Copy both lines exactly as "
-            "published (e.g. from CelesTrak) -- a single changed character produces a garbage "
+            "published (e.g. from CelesTrak) – a single changed character produces a garbage "
             "or rejected orbit."
         )
         self.tle_line2 = QLineEdit()
         self.tle_line2.setPlaceholderText("2 25544  51.6400   0.0000 0000000   0.0000   0.0000 15.50000000000000")
         self.tle_line2.setToolTip(
-            "The SECOND of the same satellite's two TLE lines -- starts with '2', encodes the "
+            "The SECOND of the same satellite's two TLE lines – starts with '2', encodes the "
             "classical orbital elements (inclination, RAAN, eccentricity, etc.) at that epoch. "
             "Must be the matching second line for the SAME satellite as line 1 above."
         )
@@ -497,7 +497,7 @@ class OrbitIcWidget(QWidget):
                 age_days = tle.state_at(line1, line2, epoch_utc).age_days
                 text += f" ({abs(age_days):.1f} d {'before' if age_days >= 0 else 'after'} the scenario epoch)"
             except (tle.TLEError, ValueError) as exc:
-                text += f" -- {exc}"
+                text += f" – {exc}"
         self.tle_status.setText(text)
 
     def _on_compute_sso_inclination(self) -> None:
@@ -592,10 +592,10 @@ def describe_orbit(orbit: OrbitIC | None) -> str:
     if orbit is None:
         return ""
     if orbit.type == "classical_elements":
-        anomaly = (f"mean anomaly {orbit.mean_anomaly_deg:.4f} deg" if orbit.anomaly_type == "mean"
-                   else f"true anomaly {orbit.true_anomaly_deg:.4f} deg")
-        return (f"a {orbit.semi_major_axis_km:.3f} km, e {orbit.eccentricity:.6f}, i {orbit.inclination_deg:.4f} deg, "
-                f"RAAN {orbit.raan_deg:.4f} deg, arg. of periapsis {orbit.arg_periapsis_deg:.4f} deg, {anomaly}")
+        anomaly = (f"mean anomaly {orbit.mean_anomaly_deg:.4f}°" if orbit.anomaly_type == "mean"
+                   else f"true anomaly {orbit.true_anomaly_deg:.4f}°")
+        return (f"a {orbit.semi_major_axis_km:.3f} km, e {orbit.eccentricity:.6f}, i {orbit.inclination_deg:.4f}°, "
+                f"RAAN {orbit.raan_deg:.4f}°, arg. of periapsis {orbit.arg_periapsis_deg:.4f}°, {anomaly}")
     if orbit.type == "cartesian":
         r = ", ".join(f"{v:.3f}" for v in orbit.position_km)
         v = ", ".join(f"{v:.6f}" for v in orbit.velocity_km_s)

@@ -39,7 +39,7 @@ _DISPLAY = {
     "s": "s", "ms": "ms", "min": "min", "h": "h", "hr": "h", "day": "days", "days": "days", "y": "years",
     "kg": "kg", "g": "g", "kg m^2": "kg·m²", "kg*m^2": "kg·m²", "kg/s": "kg/s",
     "N": "N", "mN": "mN", "N*m": "N·m", "N m": "N·m", "N*m*s": "N·m·s", "N m s": "N·m·s",
-    "W": "W", "W*hr": "Wh", "W*h": "Wh", "Wh": "Wh", "V": "V", "A": "A", "A*m^2": "A·m²", "A m^2": "A·m²",
+    "W": "W", "W/m^2": "W/m²", "W*hr": "Wh", "W*h": "Wh", "Wh": "Wh", "V": "V", "A": "A", "A*m^2": "A·m²", "A m^2": "A·m²",
     "T": "T", "nT": "nT", "K": "K", "degC": "°C",
     "1/(N*m*s^2)": "1/(N·m·s²)",
     "Hz": "Hz", "GHz": "GHz", "MHz": "MHz", "1/s": "1/s", "1/s^2": "1/s²",
@@ -47,6 +47,8 @@ _DISPLAY = {
     "bit": "bit", "kbit/s": "kbit/s", "Mbit/s": "Mbit/s", "Gbit": "Gbit",
     "px": "px", "%": "%", "RPM": "RPM", "steps": "steps",
     "m^2/s^3 per kg": "m²/s³ per kg",
+    "g/m^3": "g/m³", "m per (m^2/kg)": "m per (m²/kg)",
+    "kW*h": "kWh", "g*cm^2": "g·cm²", "mN*m": "mN·m", "mN*m*s": "mN·m·s",
 }
 
 # "Name [unit]" or "Name [unit] (more)": the unit and the rest around it.
@@ -81,6 +83,23 @@ def suffix(unit: str) -> str:
     if not shown:
         return ""
     return shown if shown in ("°", "°/s", "%") else f" {shown}"
+
+
+_BRACKETED = re.compile(r"\s*\[(?P<unit>[^\[\]]+)\]")
+
+
+def label(text: str) -> str:
+    """A heading or label as the window shows it: each "[unit]" of a known
+    unit in its display form ("Field of view [deg]" -> "Field of view [°]",
+    "Off-nadir [deg]" in a table's header), a dimensionless "[-]" left out.
+    A bracket that is not a unit ("[deg, dBi]") stays as it is."""
+    def shown_unit(match: re.Match) -> str:
+        known = display(match.group("unit"))
+        if known is None:
+            return match.group(0)
+        return f" [{known}]" if known else ""
+
+    return _BRACKETED.sub(shown_unit, text)
 
 
 def split_label(text: str) -> tuple[str, str | None]:

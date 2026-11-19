@@ -65,11 +65,11 @@ def is_vector(spec) -> bool:
 
 
 def short_label(spec) -> tuple[str, str]:
-    """(label, unit) for a spec. The text before " -- " in the help is used.
-    For example, "1-sigma gyro noise [rad/s] -- ..." gives
+    """(label, unit) for a spec. The text before " – " (or " -- ") in the
+    help is used. For example, "1-sigma gyro noise [rad/s] – ..." gives
     ("1-sigma gyro noise", "rad/s"). A non-empty ``spec.label`` overrides
     the label text."""
-    first = spec.help_text.split(" -- ")[0]
+    first = re.split(" (?:–|--) ", spec.help_text, maxsplit=1)[0]
     unit = ""
     if "[" in first and "]" in first:
         unit = first[first.rfind("[") + 1:first.rfind("]")]

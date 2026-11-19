@@ -19,6 +19,7 @@
 import pytest
 
 pytestmark = pytest.mark.requires_gui
+_CODE = 0x0100  # Qt.ItemDataRole.UserRole: a body's code beside its label (UI-08)
 
 
 @pytest.fixture(autouse=True)
@@ -162,8 +163,9 @@ def test_cache_dir_blank_stays_none(dialog):
 
 def test_central_body_removed_from_third_body_choices(dialog):
     """The central body is not offered as a third body."""
-    dialog.central_body_combo.setCurrentText("sun")
-    choices = [dialog.third_body_list.item(i).text() for i in range(dialog.third_body_list.count())]
+    dialog.central_body_combo.setCurrentIndex(dialog.central_body_combo.findData("sun"))
+    choices = [dialog.third_body_list.item(i).data(_CODE)
+               for i in range(dialog.third_body_list.count())]  # the bodies' codes (UI-08)
     assert "sun" not in choices
     assert "earth" in choices
 
@@ -288,7 +290,7 @@ def test_a_central_body_without_a_field_disables_and_clears_harmonics(dialog):
     dialog.enable_harmonics_check.setChecked(True)
     dialog.central_body_degree_spin.setValue(20)
 
-    dialog.central_body_combo.setCurrentText("moon")
+    dialog.central_body_combo.setCurrentIndex(dialog.central_body_combo.findData("moon"))
 
     assert not dialog.enable_harmonics_check.isEnabled()
     assert not dialog.enable_harmonics_check.isChecked()
@@ -302,7 +304,7 @@ def test_mars_offers_harmonics_up_to_the_ggm2b_degree(dialog):
     dialog.enable_harmonics_check.setChecked(True)
     dialog.central_body_degree_spin.setValue(120)
 
-    dialog.central_body_combo.setCurrentText("mars barycenter")
+    dialog.central_body_combo.setCurrentIndex(dialog.central_body_combo.findData("mars barycenter"))
 
     assert dialog.enable_harmonics_check.isEnabled()
     assert dialog.enable_harmonics_check.isChecked()
@@ -310,7 +312,7 @@ def test_mars_offers_harmonics_up_to_the_ggm2b_degree(dialog):
     assert dialog.to_gravity().central_body_degree == 80
     assert "GGM2B" in dialog.enable_harmonics_check.toolTip()
 
-    dialog.central_body_combo.setCurrentText("earth")
+    dialog.central_body_combo.setCurrentIndex(dialog.central_body_combo.findData("earth"))
     assert dialog.central_body_degree_spin.maximum() == 180
 
 
@@ -428,9 +430,9 @@ def test_albedo_is_offered_for_bodies_with_an_albedo_map(qtbot):
     qtbot.addWidget(d)
     assert d.albedo_check.isEnabled() and d.albedo_check.isChecked()
     assert d.to_gravity().albedo is True
-    d.central_body_combo.setCurrentText("mars barycenter")
+    d.central_body_combo.setCurrentIndex(d.central_body_combo.findData("mars barycenter"))
     assert d.albedo_check.isEnabled()
-    d.central_body_combo.setCurrentText("moon")
+    d.central_body_combo.setCurrentIndex(d.central_body_combo.findData("moon"))
     assert not d.albedo_check.isEnabled() and not d.albedo_check.isChecked()
     assert d.to_gravity().albedo is False
 

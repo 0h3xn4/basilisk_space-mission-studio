@@ -54,7 +54,7 @@ def test_the_dialog_offers_the_system_modes_and_the_panel_sides(qtbot, tmp_path)
     dialog = _dialog(qtbot, tmp_path)
     assert [dialog.bus_combo.itemText(i) for i in range(dialog.bus_combo.count())] == [
         "system mode Cruise: 10.5 W", "system mode Downlink: 4.5 W", "duty-cycle average: 9.3 W"]
-    assert dialog.normal_combo.itemText(1).startswith("- [0, -1, 0]: 0.96 m^2, 1 panel(s)")
+    assert dialog.normal_combo.itemText(1).startswith("- [0, -1, 0]: 0.96 m², 1 panel(s)")
     assert not dialog.power_choice().any
     dialog.bus_check.setChecked(True)
     dialog.bus_combo.setCurrentIndex(2)

@@ -107,7 +107,7 @@ from ..schema.scenario import (
     SimSettings,
     SpaceWeatherConfig,
 )
-from .field_text import field_title, labelled
+from .field_text import body_label, field_title, labelled
 from .feedback import ProblemBanner, bring_into_view, clear_field_error, clear_on_edit, show_field_error
 from .problem_location import PROPAGATION, locate
 from .theme import set_role
@@ -200,15 +200,21 @@ class PropagationSetupDialog(QDialog):
         form = QFormLayout(group)
 
         self.central_body_combo = ComboBox()
-        self.central_body_combo.addItems(SUPPORTED_CENTRAL_BODIES + SMALL_BODY_CENTRAL_BODIES)
-        self.central_body_combo.setCurrentText(gravity.central_body)
+        for body in SUPPORTED_CENTRAL_BODIES + SMALL_BODY_CENTRAL_BODIES:  # its label shown, its code kept (UI-08)
+            self.central_body_combo.addItem(body_label(body), body)
+            self.central_body_combo.setItemData(self.central_body_combo.count() - 1, f"central_body: {body}",
+                                                Qt.ItemDataRole.ToolTipRole)
+        index = self.central_body_combo.findData(gravity.central_body)
+        if index >= 0:
+            self.central_body_combo.setCurrentIndex(index)
         self.central_body_combo.setToolTip(
-            "Which body's gravity dominates this scenario's orbit -- every spacecraft's "
+            "Which body's gravity dominates this scenario's orbit – every spacecraft's "
             "position/velocity is relative to this body, and it's what 'altitude' means "
             "throughout this app. Changing it also changes which bodies are even available as "
             "third-body perturbers below (a body can't perturb itself)."
         )
-        self.central_body_combo.currentTextChanged.connect(self._on_central_body_changed)
+        self.central_body_combo.currentIndexChanged.connect(lambda _index: self._on_central_body_changed(
+            self.central_body()))
         form.addRow("Central body", self.central_body_combo)
 
         # Spherical-harmonics gravity: an explicit enable checkbox, SEPARATE
@@ -229,7 +235,7 @@ class PropagationSetupDialog(QDialog):
             gravity.central_body_degree if gravity.central_body_degree > 0 else _DEFAULT_HARMONICS_DEGREE
         )
         self.central_body_degree_spin.setToolTip(
-            "How many terms of the real gravity field to include -- higher captures finer "
+            "How many terms of the real gravity field to include – higher captures finer "
             "mass-distribution detail at the cost of more compute per step. Degree 2 alone "
             "already captures J2 (by far the dominant term); low double digits (e.g. 8-10) is "
             "a common practical choice for most mission-design work.\n"
@@ -252,9 +258,9 @@ class PropagationSetupDialog(QDialog):
         self.albedo_check.setChecked(gravity.albedo)
         self.albedo_check.setToolTip(
             "The sunlight the central body reflects onto the coarse sun sensors (Basilisk's albedo module): "
-            "Earth from the CERES 2018 albedo map, Mars from the TES map, 5 x 5 deg cells. An Earth-facing "
+            "Earth from the CERES 2018 albedo map, Mars from the TES map, 5° × 5° cells. An Earth-facing "
             "sensor can see a quarter of the direct sunlight, which biases a sun heading estimated from "
-            "the sensors (template 14). Needs 'sun' among the third bodies. Solar panels are not affected "
+            "the sensors (template 14). Needs the Sun among the third bodies. Solar panels are not affected "
             "(Basilisk's simpleSolarPanel takes no albedo).")
         form.addRow(self.albedo_check)
 
@@ -262,7 +268,7 @@ class PropagationSetupDialog(QDialog):
         self.third_body_list.setFixedHeight(130)
         self.third_body_list.setToolTip(
             "Other bodies whose OWN gravity also pulls on the spacecraft (in addition to the "
-            "central body above) -- e.g. checking 'sun'/'moon' for an Earth-orbiting "
+            "central body above) – e.g. checking the Sun and the Moon for an Earth-orbiting "
             "spacecraft adds real lunisolar perturbation, which matters more the higher the "
             "orbit (negligible in low LEO, significant at GEO and beyond)."
         )
@@ -271,6 +277,10 @@ class PropagationSetupDialog(QDialog):
 
         self._on_central_body_changed(gravity.central_body)  # applies the gravity-field gate immediately
         return group
+
+    def central_body(self) -> str:
+        """The central body chosen, as the scenario file writes it ("mars barycenter")."""
+        return self.central_body_combo.currentData()
 
     def _on_central_body_changed(self, text: str) -> None:
         self._refresh_third_body_choices()
@@ -299,7 +309,7 @@ class PropagationSetupDialog(QDialog):
         else:
             tooltip = (
                 f"Checking this ON replaces the idealized point-mass gravity model with the central body's "
-                f"real, lumpy mass distribution (the {field[0]} gravity field, up to degree {field[1]}) -- this "
+                f"real, lumpy mass distribution (the {field[0]} gravity field, up to degree {field[1]}) – this "
                 "is what makes effects like J2 nodal/apsidal precession real rather than absent, and is "
                 "REQUIRED for a genuine Sun-synchronous orbit to actually stay Sun-synchronous over time. "
                 "Point-mass gravity alone (this unchecked) has no such precession at all."
@@ -313,13 +323,15 @@ class PropagationSetupDialog(QDialog):
 
     def _refresh_third_body_choices(self, checked: list | None = None) -> None:
         checked = set(checked) if checked is not None else self._checked_third_bodies()
-        central = self.central_body_combo.currentText()
+        central = self.central_body()
         self.third_body_list.blockSignals(True)
         self.third_body_list.clear()
         for body in SUPPORTED_CENTRAL_BODIES:
             if body == central:
                 continue
-            item = QListWidgetItem(body)
+            item = QListWidgetItem(body_label(body))  # its label shown, its code kept (UI-08)
+            item.setData(Qt.ItemDataRole.UserRole, body)
+            item.setToolTip(body)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             item.setCheckState(Qt.CheckState.Checked if body in checked else Qt.CheckState.Unchecked)
             self.third_body_list.addItem(item)
@@ -330,7 +342,7 @@ class PropagationSetupDialog(QDialog):
         for i in range(self.third_body_list.count()):
             item = self.third_body_list.item(i)
             if item.checkState() == Qt.CheckState.Checked:
-                result.append(item.text())
+                result.append(item.data(Qt.ItemDataRole.UserRole))
         return result
 
     def _build_sim_settings_group(self, sim_settings: SimSettings) -> QGroupBox:
@@ -344,7 +356,7 @@ class PropagationSetupDialog(QDialog):
         self.duration_days_spin.setToolTip(
             "Total simulated time, starting from the epoch. Longer means more wall-clock run "
             "time (roughly proportional to duration / task rate below) and a bigger recorded "
-            "dataset -- pick just enough to see what you're looking for (e.g. a few orbits for "
+            "dataset – pick just enough to see what you're looking for (e.g. a few orbits for "
             "a quick geometry check, weeks/months for a real decay/station-keeping study). "
             "Over 100 days runs as several shorter simulations, chained."
         )
@@ -361,7 +373,7 @@ class PropagationSetupDialog(QDialog):
         self.task_rate_spin.setDecimals(3)
         self.task_rate_spin.setValue(sim_settings.dynamics_task_rate_s)
         self.task_rate_spin.setToolTip(
-            "How often the dynamics are integrated and recorded -- the real numerical time "
+            "How often the dynamics are integrated and recorded – the real numerical time "
             "step. Smaller = finer resolution and better numerical accuracy, but more compute "
             "(more steps for the same duration). A fast-moving/rotating spacecraft (active "
             "attitude control, a fast orbit) typically needs a smaller rate than a slow, "
@@ -386,9 +398,9 @@ class PropagationSetupDialog(QDialog):
         self.integrator_combo.setCurrentText(sim_settings.integrator)
         self.integrator_combo.setToolTip(
             "The numerical method used to step the dynamics forward in time. 'euler'/'rk2' are "
-            "simple, lower-order fixed-step methods -- fast per step, but need a smaller task "
+            "simple, lower-order fixed-step methods – fast per step, but need a smaller task "
             "rate above to stay accurate. 'rkf45'/'rkf78' are higher-order Runge-Kutta-Fehlberg "
-            "methods -- more accurate per step, the better default choice for most scenarios "
+            "methods – more accurate per step, the better default choice for most scenarios "
             "(rkf78 is this app's own default)."
         )
         form.addRow("Integrator", self.integrator_combo)
@@ -460,7 +472,7 @@ class PropagationSetupDialog(QDialog):
             "atmospheric drag' checkbox) is actually computed from. NRLMSISE-00 is a real, "
             "physically-detailed density model that responds to solar/geomagnetic activity "
             "(set via Source/Solar activity below); Exponential is a much simpler fallback with "
-            "no space-weather dependence at all -- only use it when you specifically want to "
+            "no space-weather dependence at all – only use it when you specifically want to "
             "isolate drag's effect from solar-cycle variability."
         )
         self.atmosphere_model_combo.currentIndexChanged.connect(self._on_atmosphere_model_changed)
@@ -486,7 +498,7 @@ class PropagationSetupDialog(QDialog):
         self.space_weather_source_combo.addItems(list(SUPPORTED_SPACE_WEATHER_SOURCES))
         self.space_weather_source_combo.setCurrentText(space_weather.source)
         self.space_weather_source_combo.setToolTip(
-            "Where NRLMSISE-00's observed F10.7 and Ap come from -- real data only. 'bundled': "
+            "Where NRLMSISE-00's observed F10.7 and Ap come from – real data only. 'bundled': "
             "CelesTrak's record shipped with the app (since 1957, plus a 45-day forecast); a newer "
             "copy from the startup download is used automatically. 'local_file': your own CelesTrak "
             "file. Later days use NASA MSFC's prediction (below)."
@@ -497,7 +509,7 @@ class PropagationSetupDialog(QDialog):
         local_file_row = QHBoxLayout()
         self.local_file_edit = QLineEdit(space_weather.local_file_path or "")
         self.local_file_edit.setToolTip(
-            "A CelesTrak space-weather file (SW-All.txt or .csv) you downloaded yourself -- "
+            "A CelesTrak space-weather file (SW-All.txt or .csv) you downloaded yourself – "
             "only read when Source above is 'local_file'. This app never fetches it at run time."
         )
         self.local_file_edit.setPlaceholderText("only used when Source is local_file")
@@ -548,7 +560,7 @@ class PropagationSetupDialog(QDialog):
         self.cache_dir_edit.setPlaceholderText("(default cache directory)")
         self.cache_dir_edit.setToolTip(
             "Overrides where engine.spaceweather caches fetched space-weather data on disk. "
-            "Rarely needed -- leave blank unless you specifically need a non-default cache "
+            "Rarely needed – leave blank unless you specifically need a non-default cache "
             "location (e.g. a read-only home directory)."
         )
         form.addRow("Cache directory (advanced)", self.cache_dir_edit)
@@ -614,7 +626,7 @@ class PropagationSetupDialog(QDialog):
     # -- (dis)assembly -------------------------------------------------------
     def to_gravity(self) -> GravityConfig:
         return GravityConfig(
-            central_body=self.central_body_combo.currentText(),
+            central_body=self.central_body(),
             central_body_degree=(
                 self.central_body_degree_spin.value() if self.enable_harmonics_check.isChecked() else 0
             ),

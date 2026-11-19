@@ -483,7 +483,7 @@ class MainWindow(QMainWindow):
         self._licences_dialog = None  # Help > Third-Party Licences' window, once opened
         self._history_window = None  # File > Change History's window, once opened
         self.data_dialog.setWindowTitle("Reference data")
-        self.data_dialog.resize(980, 460)  # [px]
+        self.data_dialog.resize(1120, 480)  # [px] every column without a sideways scroll on a 1280 x 720 screen (UI-49)
         data_layout = QVBoxLayout(self.data_dialog)
         data_layout.addWidget(self.data_panel_widget)
         self._refresh_scenario_explainer()  # initial paint for the default scenario reset_to_default() just set up
@@ -1801,13 +1801,13 @@ class MainWindow(QMainWindow):
 
     def _update_window_title(self) -> None:
         if not self._scenario_open:
-            self.setWindowTitle("SpaceMissionStudio -- no scenario open")
+            self.setWindowTitle("SpaceMissionStudio – no scenario open")
             self.breakouts.set_document("")
             self._refresh_top_bar()
             return
         name = self._current_path.name if self._current_path else "untitled"
         star = "*" if self._dirty else ""
-        self.setWindowTitle(f"SpaceMissionStudio -- {name}{star}")
+        self.setWindowTitle(f"SpaceMissionStudio – {name}{star}")
         self.breakouts.set_document(f"{name}{star}")
         self._refresh_top_bar()
 
@@ -3066,7 +3066,7 @@ class MainWindow(QMainWindow):
         total = getattr(self, "_mc_total", 0)
         self._stop_busy(
             f"Monte Carlo complete with {len(failures)} failed run(s)." if failures
-            else "Monte Carlo complete -- all runs succeeded.",
+            else "Monte Carlo complete – all runs succeeded.",
             "failed" if failures else "done", f"{len(failures)} runs failed" if failures else "Done",
         )
         took = f" in {_duration_text(self.last_run_seconds)}" if self.last_run_seconds is not None else ""

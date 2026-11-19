@@ -410,7 +410,7 @@ class IdmImportDialog(QDialog):
         if target is not None:
             unit.addItem("Choose the unit", "")
             for name, _factor in target.units:
-                unit.addItem(name, name)
+                unit.addItem(units.shown(name), name)  # "W*h" shows "Wh"; the mapping keeps the code (UI-35)
             offered = chosen if chosen is not None else idm_properties.suggested_unit(self._property_rows[row][1],
                                                                                       target)
             unit.setCurrentIndex(max(0, unit.findData(offered)))
@@ -475,7 +475,7 @@ class IdmImportDialog(QDialog):
             for sign in (1, -1):
                 shown = [0.0 if v == 0.0 else sign * v for v in normal]
                 self.normal_combo.addItem(f"{'+' if sign > 0 else '-'} [{', '.join(f'{v:.4g}' for v in shown)}]: "
-                                          f"{area:.6g} m^2, {len(members)} panel(s)", sign)
+                                          f"{area:.6g} m², {len(members)} panel(s)", sign)
         for check, combo, any_found in ((self.bus_check, self.bus_combo, bool(modes)),
                                         (self.panels_check, self.normal_combo, bool(groups))):
             check.setChecked(False)
@@ -508,7 +508,7 @@ class IdmImportDialog(QDialog):
         self.battery_check.setEnabled(capacity is not None and self._devices_allowed)
         if capacity is None:
             self.battery_check.setChecked(False)
-        self.battery_label.setText(f"{capacity:.6g} W*h from {len(read)} battery unit(s)" if capacity is not None
+        self.battery_label.setText(f"{capacity:.6g} Wh from {len(read)} battery unit(s)" if capacity is not None
                                    else "map the batteries' capacity property on the Properties tab")
 
     def _fill_devices(self, findings: list) -> None:

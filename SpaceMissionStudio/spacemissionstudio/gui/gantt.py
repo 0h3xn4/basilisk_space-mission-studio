@@ -139,7 +139,7 @@ class PlanGantt(GanttView):
                 if ("station", item.station) in index:
                     self.bars.append(GanttBar(index[("station", item.station)], item.aos_s, item.los_s, "pass",
                                               f"pass of {item.spacecraft}, max elevation "
-                                              f"{item.max_elevation_deg:.1f} deg"))
+                                              f"{item.max_elevation_deg:.1f}°"))
         for activity in plan.activities:
             low, high = self._range(activity, opportunities)
             slew_s = activity.predicted.get("slew_s") or 0.0

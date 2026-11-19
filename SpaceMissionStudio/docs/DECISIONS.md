@@ -3891,3 +3891,88 @@ open in its own window.
   **Why:** UI-51. The canvas was sized while the page still had a scroll
   bar; the theme's CSS then hid the overflow and the host grew by 16 px
   with no resize event, which left a dark strip at the right edge.
+
+## Labels instead of identifiers (UI audit B4, 2026-11-19)
+
+- **Decision:** the label maps live in `gui/field_text.py`:
+  `DEVICE_KIND_LABELS`, `GUIDANCE_MODE_LABELS`, `BODY_LABELS`,
+  `AREA_LABELS` and `PARAMETER_LABELS`, with `kind_label`, `mode_label`,
+  `body_label`, `area_label` and `parameter_label`. An unknown code (a
+  plugin's parameter) shows as it is. **Why:** UI-08, UI-19; one place
+  for the window's names of codes, beside the messages' field titles.
+- **Decision:** the labels are the ones the app already uses. The device
+  kinds are the IDM-CIC import's names (`idm_devices.KIND_LABELS`:
+  "Star tracker", "Gyro / IMU", "Sun sensor", "Magnetorquer"), with
+  "Thermal sensor" added. The guidance modes are the Overview's and the
+  run summaries' names (`scenario_explainer.FSW_MODE_NAMES`, made
+  public): `sunSafePoint` is "Sun pointing", not "Sun-safe pointing".
+  The bodies take the manual's spelling ("Mars barycentre"), and Eros is
+  "433 Eros", its title in `engine.small_bodies`. **Why:** the golden
+  files hold the Overview's names, so they cannot change; one name for
+  one thing across the window.
+- **Decision:** a form shows the label and keeps the code as the item's
+  data (`currentData()`, `Qt.UserRole`); the code is the item's tooltip
+  ("kind: star_tracker", "fsw_mode: sunSafePoint"). A device's own name
+  stays as the user wrote it, and a new device is still named after its
+  kind's code ("star_tracker-1"). **Why:** the scenario file is written
+  exactly as before; an engineer can still find the JSON key.
+- **Decision:** the configuration parameters' names are a GUI map, not a
+  new field of `config.registry.Parameter`. **Why:** the registry, its
+  defaults file and the command line stay unchanged; a test checks that
+  every registered parameter and area has a name.
+- **Decision:** Scenario › Assumptions shows the key as a muted second
+  line under the name (`Row.notes`, the monospace font, the secondary
+  colour), not as a column. The rows are two lines high. **Why:** UI-19
+  asked for "a muted line or column"; a key column made the table
+  1165 px wide on a 672 px page at 1280 x 720 with the Inspector open.
+  The name takes the width left; Value, Default, Unit and Source start
+  at most 96, 96, 72 and 152 px wide and are elided, whole on hover and
+  under the table.
+- **Decision:** a model's name in Value or Default is left-aligned
+  (`Row.plain`); a number and a list of numbers are right-aligned. The
+  value stays the code the file takes ("ad10_equations"): it is what the
+  Value field below the table accepts. **Why:** UI-19; the detail line
+  names the models with their titles already.
+- **Decision:** the `DataTable` changes apply to every table that uses
+  it: no grid lines, left-aligned headings (a numeric column's right),
+  group rows on `bg.canvas` and not selectable, bracketed units in the
+  headings typeset (`units.label`). The copied TSV keeps the headings as
+  written. **Why:** the design rules ("surfaces, not lines"); UI-19 and
+  UI-49 named the grid lines, the centred headings and the heading row
+  that looked selected. UI-27 and UI-33 (batches B9 and B7) gain the grid
+  and heading part of their fix.
+- **Decision:** the reference data panel is a `DataTable`. A status is a
+  word with its status icon and ink: Present, Missing, Out of date, Not
+  downloaded (`data_panel_widget.STATUS_SHOWN`). A kind starts with a
+  capital in the window. A file without dates shows "–" under Covers;
+  the column is hidden when no file has dates. Kind, File and Covers
+  start at most 170, 200 and 200 px wide, elided in the middle and whole
+  on hover, and the window opens 1120 x 480 px (it was 980 x 460).
+  **Why:** UI-49; at 980 px the columns needed 949 px before Source.
+  The inventory's statuses and kinds (`engine.reference_data`) keep
+  their codes.
+- **Decision:** `engine.reference_data` lists Basilisk's
+  `AtmosphereData` files as "atmosphere table", not "SPICE kernel".
+  **Why:** UI-49; they are the tabular atmosphere's CSV and text
+  profiles. Only the window reads the inventory's kinds.
+- **Decision:** "--" used as a dash in the GUI's strings and in the user
+  manual's prose is an en dash with spaces; the Mission dashboard's "--"
+  for no value is "–" (`mission_dashboard_widget.NO_VALUE`); the window
+  title reads "SpaceMissionStudio – untitled". Comments, docstrings,
+  command-line flags and code spans keep their hyphens. The help texts'
+  first part is split at " – " or " -- " (`param_form.short_label`,
+  `wizard_settings`, the editor's name check), so a message of the core,
+  which keeps "--", still splits. **Why:** UI-34. The core's messages,
+  which the command line prints and tests and golden files read, are
+  unchanged; the Problems panel shows them as they are.
+- **Decision:** the GUI writes units in their display form: "°", "m²",
+  "kg·m²", "Wh", "N·m·s" in prose and in values beside a unit; a suffix
+  made from a unit goes through `units.suffix` (`budget_widget._spin`,
+  `model_editor_dialog._spin`, `roe_formation_editor._spin`, the
+  navigation errors' rows, the value-mark note: "Edited (computed
+  97.59°)"). Bracketed units in form labels stay as they are: the form
+  typesets them, and messages name the field with them. `units` learns
+  "W/m^2", "g/m^3" and "m per (m^2/kg)". **Why:** UI-35. Field names,
+  JSON keys, the command line's output and the file formats keep their
+  spelling; text the core makes (the pass summary's "peak 61 deg", the
+  value-mark consequences' "deg/day") is unchanged.

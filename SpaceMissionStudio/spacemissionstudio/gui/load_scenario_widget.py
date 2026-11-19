@@ -195,7 +195,7 @@ def orbit_summary(scenario) -> str:
         else:
             parts.append(f"{sma * (1.0 - ecc) - radius:.0f} × {sma * (1.0 + ecc) - radius:.0f} km")
     if inc is not None:
-        parts.append(f"i {inc:.1f} deg")
+        parts.append(f"i {inc:.1f}°")
     if _is_sun_synchronous(orbit, gravity):
         parts.append("Sun-synchronous")
     return " · ".join(parts)
@@ -351,7 +351,7 @@ class TemplateCard(QFrame):
             button.setAccessibleName(f"Customize: {scenario.name}")
             button.setToolTip(
                 f"Customize '{scenario.name}': a short, guided wizard over just this template's own key tunable "
-                "parameters, then opens the result in the Scenario Editor -- the original template file "
+                "parameters, then opens the result in the Scenario Editor – the original template file "
                 "is never modified."
             )
             button.clicked.connect(lambda: self.customize_requested.emit(self.path))

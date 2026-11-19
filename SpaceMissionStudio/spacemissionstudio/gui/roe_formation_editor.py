@@ -29,6 +29,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 from ..engine.roe import min_radial_normal_separation, safe_formation
 from ..schema.scenario import RoeTargetConfig
+from . import units
 from .data_handling_editor import _TableEditor
 from .widgets import PreciseDoubleSpinBox, flow_row
 
@@ -46,7 +47,7 @@ def _spin(minimum: float, maximum: float, value: float, suffix: str) -> PreciseD
     box.setRange(minimum, maximum)
     box.setDecimals(1)
     box.setValue(value)
-    box.setSuffix(f" {suffix}")
+    box.setSuffix(units.suffix(suffix))  # "deg" shows "°" (UI-35); "m radial" as it is
     return box
 
 
@@ -76,7 +77,7 @@ class RoeTargetTableWidget(_TableEditor):
             "Adds a target one day after the last row: the follower centred the given distance along-track from "
             "the chief, circling it on an ellipse of the given radial and cross-track half-sizes, with parallel "
             "eccentricity and inclination vectors. The two spacecraft then never cross in the radial/cross-track "
-            "plane, even when the along-track spacing is lost. A phase of 90 deg is the one J2 keeps.")
+            "plane, even when the along-track spacing is lost. A phase of 90° is the one J2 keeps.")
         self.safe_add_button.clicked.connect(self.add_safe_formation)
         # On a line of its own: beside the four boxes it made the Power tab
         # wider than a 1280 px window (with the app's font).

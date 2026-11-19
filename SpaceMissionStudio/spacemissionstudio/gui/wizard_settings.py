@@ -36,6 +36,7 @@ need the full editor, which validates them in context.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from ..schema.scenario import Scenario
@@ -296,10 +297,10 @@ def _device_param_label(kind: str, key: str) -> tuple[str, str]:
         if spec.key == key:
             if meta:
                 return meta.label, meta.suffix, spec.help_text
-            # "spin-axis direction, body frame, unit vector [-] -- ..." ->
+            # "spin-axis direction, body frame, unit vector [-] – ..." ->
             # label "Spin-axis direction", no unit; "max wheel speed [RPM]" ->
             # "Max wheel speed", " RPM".
-            first = spec.help_text.split(" -- ")[0]
+            first = re.split(" (?:–|--) ", spec.help_text, maxsplit=1)[0]
             unit = first[first.rfind("[") + 1:first.rfind("]")] if "[" in first else ""
             short = first.split("[")[0].split(",")[0].strip()
             return short[:1].upper() + short[1:], ("" if unit in ("", "-") else f" {unit}"), spec.help_text

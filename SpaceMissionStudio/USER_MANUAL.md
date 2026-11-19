@@ -1,6 +1,6 @@
 # SpaceMissionStudio User Manual
 
-A beginner-friendly, step-by-step guide to using the SpaceMissionStudio app --
+A beginner-friendly, step-by-step guide to using the SpaceMissionStudio app –
 no programming and no prior spacecraft-engineering background assumed.
 Every screenshot and command name below is taken directly from the real
 application.
@@ -39,7 +39,7 @@ This manual only covers *using the app once it's installed*.
 ## 1. What is SpaceMissionStudio?
 
 SpaceMissionStudio is a desktop application for planning and simulating space
-missions -- things like "what orbit should this satellite be in?",
+missions – things like "what orbit should this satellite be in?",
 "how much fuel does it take to keep a satellite parked over one spot on
 Earth?", or "how does this spacecraft's pointing behave if I swap its
 sensors?". You build a **scenario** (one or more spacecraft, their
@@ -49,14 +49,14 @@ accuracy, ground-station visibility, and more.
 
 Under the hood, every number comes from [Basilisk](https://avslab.github.io/basilisk/),
 a real astrodynamics simulation framework built by the University of
-Colorado Boulder's Autonomous Vehicle Systems (AVS) Lab -- the same kind
+Colorado Boulder's Autonomous Vehicle Systems (AVS) Lab – the same kind
 of software used for real mission analysis. SpaceMissionStudio is a friendly
 graphical front end over it: you never write code or touch Basilisk
 directly.
 
 You do **not** need to be an orbital-mechanics expert to get useful
 results. The built-in template missions (Section 4) are a safe, guided
-way to learn by doing -- pick one, run it, and see what happens before
+way to learn by doing – pick one, run it, and see what happens before
 you ever build a scenario from scratch.
 
 SpaceMissionStudio is an independent personal project. It is not
@@ -455,14 +455,14 @@ and the **Budgets** area. The 3D View's 2D map can too, on its own
 ## 4. Your first simulation, in five minutes
 
 1. **Pick a template.** Home shows all 34 built-in example missions as
-   cards, numbered roughly from simplest to most advanced -- "01 -
+   cards, numbered roughly from simplest to most advanced – "01 -
    Two-body circular orbit" is the simplest possible case (one
    satellite, one orbit, nothing else going on) and a good first choice.
    Click its card once; its description appears on the right,
    explaining what it demonstrates and what to look for.
 2. Click **Open template** (or the card's **Open**, or double-click the
    card). The
-   app shows the mission's **Scenario** page -- you don't need to look at
+   app shows the mission's **Scenario** page – you don't need to look at
    or understand it yet, just confirm something loaded (its name appears
    in the "Name" field at the top).
 3. Click **Run** in the top bar (or press `Ctrl+R`).
@@ -480,14 +480,14 @@ and the **Budgets** area. The 3D View's 2D map can too, on its own
 
 That's the whole loop: **pick -> open -> run -> look at Results.**
 Every other feature in the app builds on top of this one. Try a few
-more templates before moving on -- the cards' descriptions (and
+more templates before moving on – the cards' descriptions (and
 [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md))
 tell you what each one teaches, from simple circular orbits up through
 constellations, formation flying, attitude control, and propellant
 tracking.
 
 **Nothing happened when you clicked Run?** See
-[Section 11](#11-common-questions-and-problems) -- the most common
+[Section 11](#11-common-questions-and-problems) – the most common
 cause is that Basilisk, the simulation engine itself, isn't installed
 yet; the app will say so clearly rather than failing silently.
 
@@ -520,7 +520,7 @@ by step (Section 6).
 Say "22 - Starter: your first LEO satellite" is close to what you
 want, but you'd like a lower orbit or a heavier satellite, without
 learning the full Scenario Editor. Every template card on Home has
-its own **Customize...** button -- click the one on that template's
+its own **Customize...** button – click the one on that template's
 card (no need to select the card first; the description on the right
 has **Customize...** too, for the selected card):
 
@@ -533,12 +533,12 @@ topic. The list on the left jumps to a section; the filter box finds a
 setting by name ("drag", "duration"). Change what you like, then
 **Open in editor**: the result opens in the Scenario Editor, ready to
 run. The original template file on disk is never modified, whether you
-use this dialog or the full editor -- so you can always come back to a
+use this dialog or the full editor – so you can always come back to a
 clean copy later.
 
 ## 6. A tour of the Scenario Editor
 
-You don't need to understand every field here to use SpaceMissionStudio --
+You don't need to understand every field here to use SpaceMissionStudio –
 most people start from a template (Section 4) or its customize wizard
 (Section 5) and never touch most of this. This section is for when you
 want to build something more specific, or just want to know what you're
@@ -553,14 +553,14 @@ it back), and a page whose values do not validate marks the field, lists
 it in **Problems**, and keeps the scenario from running until it is
 fixed:
 
-* **Scenario** -- the mission's name, its **Simulation mode**
+* **Scenario** – the mission's name, its **Simulation mode**
   ("Full attitude" if you need sensors/actuators/pointing control, or
   the simpler "Orbit only" if you just care about trajectories; a blank
   scenario starts in Orbit only), the **Epoch** (the real calendar
   date/time the simulation starts, in UTC), the **Build your mission**
   guide (the steps to a first run, and what else the tool does) and a
   free-text **Description**.
-* **Environment** -- which planet you're orbiting, how detailed its
+* **Environment** – which planet you're orbiting, how detailed its
   gravity model is (spherical harmonics for Earth, to degree 180, and
   Mars, to degree 80), which other bodies' gravity to include (Sun, Moon,
   ...), the numerical integrator, how long to simulate, and atmospheric
@@ -584,7 +584,7 @@ fixed:
   device's name, so no two devices draw the same noise. The same seed
   gives the same run; change it for another realisation of the noise. The
   run's provenance lists every seed.
-* **Spacecraft** -- the list of spacecraft in the mission, and under it a
+* **Spacecraft** – the list of spacecraft in the mission, and under it a
   node for each one. A spacecraft's page has a node per part: **Orbit /
   mass**, **Sensors / actuators**, **Attitude control**, **Power /
   propulsion / link budget**, **3D model** and **Budget (AD10)**
@@ -600,7 +600,7 @@ fixed:
   not (a name already taken) is not applied, and the form says why. An orbit can be specified as classical orbital
   elements (semi-major axis, eccentricity, inclination, ...), Cartesian
   position/velocity, or a TLE (the format real tracked satellites are
-  published in) -- pick whichever you have on hand. Switching between
+  published in) – pick whichever you have on hand. Switching between
   them asks first: **Convert and switch** keeps the same orbit (it shows
   the values before and after, converted by Basilisk's own `orbitalMotion`
   at the scenario epoch), or **Use the ... page's values** takes what that
@@ -616,11 +616,11 @@ fixed:
   flat plates (**Box + solar array...** fills in a bus and an array).
   Drag and solar pressure then follow the attitude, and an off-centre
   plate adds a torque the wheels must absorb (template 21).
-* **Ground stations** -- optional stations on the ground to check
+* **Ground stations** – optional stations on the ground to check
   visibility/communication with (each spacecraft's contact windows,
   signal link margin, etc.), each a node with its own page. **Add** adds
   one and opens its page.
-* **Mission sequence** -- an optional, ordered list of commands (coast
+* **Mission sequence** – an optional, ordered list of commands (coast
   for a while, do a burn, take a snapshot, ...) for missions more
   complex than "just propagate forward for N days". Each step reads as a
   sentence ("Propagate until sat-1's next pass over berlin-gs starts"),
@@ -646,8 +646,8 @@ fixed:
   instant change of velocity only: it uses no propellant and leaves the
   mass unchanged. For propellant, use the **Budgets > Propellant** page (Section 11)
   or a fuel tank with station-keeping or constant thrust.
-* **Monte Carlo** -- see Section 10.
-* **Assumptions** -- the rules and margins the analyses use, each with
+* **Monte Carlo** – see Section 10.
+* **Assumptions** – the rules and margins the analyses use, each with
   its value in effect, unit and source, and the project configuration
   file the scenario names: **Choose...** an existing one, **New...** to
   write one listing every parameter (commented out), or **Remove**.
@@ -721,7 +721,7 @@ ignore it.
 
 A **validation message** at the very bottom of the Scenario area updates live as
 you type, in plain language (e.g. naming exactly which field is missing
-or invalid) -- you don't have to guess why Run is unavailable. It names
+or invalid) – you don't have to guess why Run is unavailable. It names
 the first problem and how many more there are; **Problems** lists them
 all. A message names a field as its form does, after its section ("my-sat:
 Station keeping: Reboost thrust [N] must be > 0"); the command line and the
@@ -766,11 +766,11 @@ The quickest way to a mission of your own is a starter template (22 or
    this altitude** and **Compute RAAN for LTAN...** (10:30 is the usual
    local time). A value they compute is marked so under its field
    ("Computed: Sun-synchronous inclination at ..."; hover for its source).
-   Edit it and the note reads "Edited (computed 97.59 deg)", with **Give a
+   Edit it and the note reads "Edited (computed 97.59°)", with **Give a
    reason...**: the reason you give marks the value overridden, and it is
    kept with the scenario and in every run's provenance. A line under the
-   note says what the change does (for 98 deg in place of a computed
-   97.87 deg at 7000 km: "Not Sun-synchronous: the node moves +0.0157
+   note says what the change does (for 98° in place of a computed
+   97.87° at 7000 km: "Not Sun-synchronous: the node moves +0.0157
    deg/day against the Sun, so its local time moves +0.06 min/day ...")
    ([Computed and overridden values](docs/models/value-marks.md)). A
    Walker constellation's computed elements, and a template wizard's
@@ -781,7 +781,7 @@ The quickest way to a mission of your own is a starter template (22 or
    and paste it. Then set the **Dry mass**, and tick **Enable atmospheric
    drag** with its area (and **Enable solar radiation pressure**).
 4. **Ground stations**: **Add**, then its name, latitude, longitude and the
-   lowest usable elevation (10 deg is common).
+   lowest usable elevation (10° is common).
 5. Look at the top bar: when **Run** is available, the scenario is valid
    (a warning does not stop a run). Otherwise the **Problems** panel (click
    the problem count in the top bar, or `Ctrl+J`) names the field to fix,
@@ -820,7 +820,7 @@ degree-10 gravity, Sun, Moon and drag):
 * Hill-frame PD holds 1 km for about 0.9 m/s a day. It fights every
   natural relative motion, J2's included.
 * Hill-frame PD cannot hold template 05's 50 km. Its straight-line
-  feedforward needs 6.5e-4 m/s^2 there, five times what the thruster
+  feedforward needs 6.5e-4 m/s² there, five times what the thruster
   gives. When it asks for more than the thruster can give, it diverges;
   Explain (**Overview**) warns before you run.
 
@@ -898,14 +898,14 @@ estimates position and velocity.
 
 The central body must be Earth, the Mars barycentre or the Jupiter
 barycentre, with the Sun in the run: images from beyond the **Largest
-phase angle** (90 deg by default, the night side) are not used. In an
+phase angle** (90° by default, the night side) are not used. In an
 orbit-only run the camera points at the body perfectly; with attitude,
 point it with **locationPointing** on the central body along the
 camera's boresight. Results are under `{spacecraft}.optical_navigation.`:
 the filter's error and 3-sigma bounds, one image's error, the disk on the
 detector and whether each image was used.
 
-Measured on template 30 (an 18 000 km x 0.2 orbit around Mars, a 40 deg
+Measured on template 30 (an 18 000 km x 0.2 orbit around Mars, a 40°
 512 px camera, 0.5 px noise): one image alone is good to 56 km (median);
 the filter, started 68 km off, is within 2 km by day 1 and 1.6 km
 (median) after it, up to 12 km just after each night-side stretch. See
@@ -933,7 +933,7 @@ shape's gravity and the Sun in the run. Results are under
 `{spacecraft}.landmark_navigation.`.
 
 Measured on template 31 (a 35 km orbit over Eros's poles, 100 landmarks,
-a 30 deg 1024 px camera): the filter, started 100 m off, is within 0.35 m
+a 30° 1024 px camera): the filter, started 100 m off, is within 0.35 m
 (median) after the first image, up to 4.8 m just after the night-side
 stretches. See
 [Fly around an asteroid and navigate from its landmarks](docs/user-manual/small-body-navigation.md).
@@ -982,7 +982,7 @@ the gain toward the station at every step, from the simulated attitude:
 
 The cos^n model takes the gain as the directivity. A real patch's gain
 is below its directivity, so for the same gain its beam is narrower than
-the model's (120 deg wide at half power for 6 dBi): a datasheet table is
+the model's (120° wide at half power for 6 dBi): a datasheet table is
 closer. Basilisk's own antenna model (`simpleAntenna`) is not used: it
 needs a directivity above 9 dB, which a patch does not have.
 
@@ -1378,7 +1378,7 @@ it.
   to the grid, clear the tick to take it out. With ground stations the
   Link group also has **Ground Station Access Timeline**: every
   station's passes over every spacecraft in one chart.
-* **Layout** -- how many plots the grid shows, from 1 x 1 to 3 x 2 (six
+* **Layout** – how many plots the grid shows, from 1 x 1 to 3 x 2 (six
   at most). Ticking more plots than fit picks a bigger layout by itself,
   and clearing a tick makes the grid smaller again, so the plots always
   fill the area: one plot takes all of it, two share it, and three in a
@@ -1395,13 +1395,13 @@ it.
 * **The readout** lists every shown series' value with its unit: at the
   time under the pointer while it is over a plot, else at the time
   cursor. Values between two samples are interpolated; a mode, a state or
-  an angle that wraps at 360 deg shows the last sample instead.
-* **Suggested** -- one-click shortcuts to the series the scenario's own
+  an angle that wraps at 360° shows the last sample instead.
+* **Suggested** – one-click shortcuts to the series the scenario's own
   description points at under "What to look at" (e.g. template 19's
   access window, pointing error, battery and link margin). A new run
   opens on the first of them. For your own scenarios, write series names
   in that section of the Description and they show up here too.
-* **X-axis** -- for every plot: elapsed time (with "t0 = ... UTC" under
+* **X-axis** – for every plot: elapsed time (with "t0 = ... UTC" under
   each title; it is the simulation's clock, TDB seconds since t0, which
   runs within a few milliseconds of UTC's apart from a leap second; the
   CSV's `time_s` is the same clock), the calendar date (UTC, both taken
@@ -1409,11 +1409,11 @@ it.
   spacecraft's revolutions counted from the ascending node (orbit 0 is
   the one in progress at the epoch; an equatorial orbit counts from the
   inertial X axis).
-* **Events** -- eclipses, passes, burns, thruster firings, mode changes
+* **Events** – eclipses, passes, burns, thruster firings, mode changes
   and downlinks drawn behind each spacecraft's plots, in the Timeline's
   colours; each button switches its kind on or off. A kind with
   more than 400 events on one plot is not drawn, and a note says so.
-* **Export CSV...** -- saves every series (not just the shown ones) to
+* **Export CSV...** – saves every series (not just the shown ones) to
   `.csv` files in SI units, for a spreadsheet or another tool.
   **Export all...** saves every shown plot as a PNG or SVG image,
   numbered in grid order, with each plot's series as CSV and the run's
@@ -1425,7 +1425,7 @@ it.
   as run and copies of the files it refers to) that
   `spacemissionstudio reproduce <folder>` runs again on any computer and
   says what differs ([Use the command line](docs/user-manual/command-line.md#reproduce-a-result)).
-* **Compare with** -- once there is an earlier run: draws the same
+* **Compare with** – once there is an earlier run: draws the same
   series from it, dashed, in the same colours. **Input differences...**
   lists every scenario input that differs between the two runs, e.g.
   `spacecraft[sat-1].orbit.semi_major_axis_km`.
@@ -1515,7 +1515,7 @@ thruster firings and mode changes (Sun or ground-station pointing,
 phasing drift). They are drawn as a timeline, one row per spacecraft and
 kind, above a table you can sort by any column. Each heading gives the
 time system or the unit ("Start (UTC)", "Duration [min]"), and each
-measured value has its own column ("Max elevation [deg]", "Lowest
+measured value has its own column ("Max elevation [°]", "Lowest
 sunlight [%]", "Delta-V [m/s]", "Data [Gbit]"); a column shows only when
 some event has a value for it. Untick a kind to hide it; type in the
 search box (**Ctrl+F**; every word must match) or pick a ground station
@@ -1572,17 +1572,17 @@ other views: it doesn't need a run at all, and it follows your edits: a
 quarter of a second after you stop typing, worked out in the background
 so typing never waits for it. It's a
 short, at-a-glance recipe of what the CURRENT scenario is actually
-configured to do -- a handful of stat tiles (spacecraft count,
+configured to do – a handful of stat tiles (spacecraft count,
 duration, gravity model, ...), colored badges for what's turned on
 (station-keeping, Sun-synchronous, drag, ...), and, once a scenario has
 two or more spacecraft, a side-by-side comparison table. It never shows
-prose -- where a badge uses a term you don't recognize (Sun
+prose – where a badge uses a term you don't recognize (Sun
 -synchronous, spherical-harmonics gravity, ...), check the glossary in
 [Section 12](#12-a-short-glossary). Unlike the free-text Description
 box at the top of the Scenario Editor (which is hand-written and only
 really meaningful for the bundled templates), Explain is built fresh
 from the scenario's actual current fields every time, so it's never out
-of date -- useful for checking that a bespoke scenario you built from
+of date – useful for checking that a bespoke scenario you built from
 scratch actually ended up configured the way you intended.
 
 Explain also checks the scenario before you run it:
@@ -1753,14 +1753,14 @@ are, not to measure them: the plots and exports hold the run's numbers.
 
 ## 10. Monte Carlo: running many variations at once
 
-Real spacecraft never have perfectly known mass, attitude, etc. --
+Real spacecraft never have perfectly known mass, attitude, etc. –
 **Monte Carlo** mode runs your scenario many times with small, randomized
 variations and reports the spread of outcomes, instead of one single
 result. On the scenario tree's **Monte Carlo** page, check
 **Enabled**, set how many runs (up to 100 000) and how many to run in
 parallel (each in its own process; at most one per CPU is used), and add
 one or more **dispersions** (which quantity varies, and by how much;
-**Add** adds one, and the selected one's form is under the list) --
+**Add** adds one, and the selected one's form is under the list) –
 then set the run mode beside **Run** to **Monte Carlo** and press
 **Run**. While Monte Carlo is off, the Run page says so, with **Enable
 Monte Carlo**, which turns it on and opens this page. This is a more advanced feature; most people won't need it
@@ -1805,9 +1805,9 @@ What can vary, each spacecraft on its own:
 |---|---|---|
 | `dry_mass_kg` | dry mass [kg] | uniform, normal |
 | `attitude_sigma_bn` | starting attitude, as random Euler angles | uniform |
-| `orbit_elements` | each orbital element around the spacecraft's starting orbit: semi-major axis [km], eccentricity, inclination, RAAN, argument of periapsis, true anomaly [deg] | normal (1-sigma), uniform (half-width) |
-| `inertia_kg_m2` | each diagonal element of the inertia [kg m^2], plus an optional small rotation that adds products of inertia | normal |
-| `angular_rate_bn_b` | starting body rate, each axis [deg/s], on top of the configured rate | normal, uniform |
+| `orbit_elements` | each orbital element around the spacecraft's starting orbit: semi-major axis [km], eccentricity, inclination, RAAN, argument of periapsis, true anomaly [°] | normal (1-sigma), uniform (half-width) |
+| `inertia_kg_m2` | each diagonal element of the inertia [kg·m²], plus an optional small rotation that adds products of inertia | normal |
+| `angular_rate_bn_b` | starting body rate, each axis [°/s], on top of the configured rate | normal, uniform |
 | `drag_coeff`, `srp_coeff` | the drag or radiation-pressure coefficient | uniform, normal |
 
 The orbit varies as orbital elements, never as raw position and velocity,
@@ -1825,12 +1825,12 @@ SpaceMissionStudio's graphical shell opens fine on its own, but actually
 *running* a simulation needs the separate Basilisk engine installed too.
 If you used an installer or the install script, this should already be set up;
 if not, see [Getting started](docs/getting-started.md). The app
-always reports this clearly rather than crashing -- if you see a plain
+always reports this clearly rather than crashing – if you see a plain
 error message naming Basilisk, that's exactly what's going on, not a bug.
 
 **Run says a support-data file is not installed.** Runs never
 download anything. The installers bring the standard reference files
-(SPICE kernels -- leap seconds, planet positions -- plus the gravity
+(SPICE kernels – leap seconds, planet positions – plus the gravity
 fields and magnetic model, around 117 MB); the install script fetches
 them once. If they are missing (a development checkout, a cleared
 cache), open the **Reference data**
@@ -1840,12 +1840,12 @@ does the same from the command line.
 
 **The Results plot area stays blank after a run.** The plots run inside
 an embedded web-rendering component. On a very minimal Linux install,
-you may need a few extra system libraries --
+you may need a few extra system libraries –
 [Troubleshooting](docs/troubleshooting.md#the-results-plot-stays-blank) has the exact package names.
 
 **A simulation is taking too long, or you started the wrong one.**
 **Cancel** in the status bar (`Esc`, or **Cancel Run**) stops it
-safely at the next checkpoint (not instantly) and keeps whatever partial results were already produced --
+safely at the next checkpoint (not instantly) and keeps whatever partial results were already produced –
 it's always safe to use, never a forced/unsafe kill.
 
 **You want to simulate years, not weeks.** Set the duration (up to about
@@ -1917,7 +1917,7 @@ From the command line: `spacemissionstudio budget <scenario>
 --altitudes 400,450,500`.
 
 **You're not sure what a field in the Scenario Editor means.** Hover
-over it -- most fields have a tooltip explaining what it does in plain
+over it – most fields have a tooltip explaining what it does in plain
 language. The validation message at the bottom of the Scenario Editor
 also explains, in plain language, exactly what's wrong if something
 doesn't validate.
@@ -1935,22 +1935,22 @@ licence. **Settings > About > Third-Party Licences...** shows the texts.
 Plain-language explanations of terms you'll run into in the app, for
 anyone who hasn't worked with spacecraft before:
 
-* **Epoch** -- the real calendar date/time a simulation starts at (e.g.
+* **Epoch** – the real calendar date/time a simulation starts at (e.g.
   `2030-01-01T00:00:00` UTC). Needed because gravity from the Sun/Moon,
   atmospheric density, and a satellite's position relative to the
   ground all depend on exactly *when* you're simulating, not just how
   long.
-* **Orbit (classical) elements** -- six numbers that describe an orbit's
+* **Orbit (classical) elements** – six numbers that describe an orbit's
   size, shape, and orientation in space: semi-major axis (roughly, the
   orbit's average size), eccentricity (how stretched/elliptical it is),
   inclination (tilt relative to the equator), RAAN and argument of
   periapsis (orientation), and an anomaly (where the spacecraft starts
   along that orbit).
-* **TLE** -- "Two-Line Element set", the compact text format real
+* **TLE** – "Two-Line Element set", the compact text format real
   tracked satellites' orbits are published in (e.g. by
-  [celestrak.org](https://celestrak.org)) -- a second way to describe a
+  [celestrak.org](https://celestrak.org)) – a second way to describe a
   starting orbit, if you already have one.
-* **Operations plan** -- the activities each spacecraft does over a
+* **Operations plan** – the activities each spacecraft does over a
   horizon (images, contacts with ground stations, calibrations), with
   their times, checked against the battery, the memory and the slews.
   **Run › Plan** makes one. An *opportunity* is a time an activity can
@@ -1958,90 +1958,90 @@ anyone who hasn't worked with spacecraft before:
   station *pass* (the station sees the spacecraft). A *contact* is a
   pass the plan uses to send data down. *Replanning* keeps what has
   already happened and plans the rest again.
-* **Attitude** -- which way a spacecraft is *pointing* (as opposed to
+* **Attitude** – which way a spacecraft is *pointing* (as opposed to
   where it *is*). "Attitude control" is keeping a spacecraft pointed at
   a target (the ground, the Sun, a planet, ...).
-* **FSW (Flight Software) mode** -- which built-in attitude-pointing
+* **FSW (Flight Software) mode** – which built-in attitude-pointing
   behavior a spacecraft uses, e.g. pointing nadir (straight down at the
   ground), at the Sun, or at a ground station.
-* **Sensors/actuators** -- hardware a spacecraft can carry: sensors
+* **Sensors/actuators** – hardware a spacecraft can carry: sensors
   (star trackers, sun sensors, ...) measure where it's pointing;
   actuators (reaction wheels, thrusters, magnetic torque rods) change
   where it's pointing or correct its orbit.
-* **Facet model** -- the spacecraft described as flat plates, each with
+* **Facet model** – the spacecraft described as flat plates, each with
   its own area, facing direction and centre of pressure. Drag and solar
   pressure push on each plate that faces the flow or the Sun, so both
   depend on the attitude and can twist the spacecraft.
-* **Center of mass** -- the point the spacecraft's mass balances on.
+* **Center of mass** – the point the spacecraft's mass balances on.
   A force that does not pass through it turns the spacecraft.
-* **Moments of inertia** -- how hard the spacecraft is to turn about each
-  axis, the rotational counterpart of mass, in kg m^2.
-* **Orbital lifetime** -- how long drag takes to bring an orbit down to
+* **Moments of inertia** – how hard the spacecraft is to turn about each
+  axis, the rotational counterpart of mass, in kg·m².
+* **Orbital lifetime** – how long drag takes to bring an orbit down to
   re-entry (here: the perigee reaching 120 km). Disposal rules cap it
   after the mission ends: 5 years under ESA's Zero Debris approach and
   the FCC, 25 years under the older IADC guideline.
-* **Drag coefficient (Cd)** -- how strongly the thin upper atmosphere
+* **Drag coefficient (Cd)** – how strongly the thin upper atmosphere
   drags on a spacecraft for its size. ESA's AD10 guideline uses 3.0 for
   operations (a conservative, higher drag) and 2.2 for end of life.
-* **Station-keeping** -- firing small thruster burns periodically to
+* **Station-keeping** – firing small thruster burns periodically to
   correct a satellite's orbit as it naturally drifts (from gravity
   irregularities, drag, etc.), so it stays where it's supposed to be.
-* **Phasing (along-track separation)** -- how far ahead of or behind
+* **Phasing (along-track separation)** – how far ahead of or behind
   another spacecraft (the "chief") a satellite sits along the SAME
   orbit, measured as a distance along the direction of travel.
   "Phasing-keeping" holds that separation steady over time, the same
   way station-keeping holds altitude steady.
-* **Relative orbital elements (ROE)** -- six numbers that describe one
+* **Relative orbital elements (ROE)** – six numbers that describe one
   spacecraft's orbit relative to another's: a drift, an along-track
   offset, and two small vectors (eccentricity and inclination) that set
   the radial and cross-track motion around that offset.
-* **Passive safety** -- a formation whose two spacecraft never meet in
+* **Passive safety** – a formation whose two spacecraft never meet in
   the radial/cross-track plane, even if the along-track spacing is lost:
   its eccentricity and inclination vectors are parallel.
-* **Sun-synchronous orbit** -- an orbit whose plane rotates (from
+* **Sun-synchronous orbit** – an orbit whose plane rotates (from
   Earth's own gravity being slightly non-spherical) at exactly the same
-  rate the Sun appears to move around the sky over a year -- so the
+  rate the Sun appears to move around the sky over a year – so the
   satellite crosses any given latitude at the same local solar time on
   every pass. The most common choice for Earth-observation satellites,
   since lighting conditions on the ground stay consistent.
-* **Spherical-harmonics gravity** -- a more detailed model of a
-  planet's gravity than "a single point mass at the center" -- it
+* **Spherical-harmonics gravity** – a more detailed model of a
+  planet's gravity than "a single point mass at the center" – it
   accounts for the planet's real, slightly lumpy/non-spherical shape
   (Earth bulges at the equator, for instance). Higher "degree" means
   more detail, at the cost of more computation.
-* **Third-body perturbation** -- the small extra pull on a spacecraft
-  from a body OTHER than the one it's orbiting -- e.g. the Sun or Moon's
+* **Third-body perturbation** – the small extra pull on a spacecraft
+  from a body OTHER than the one it's orbiting – e.g. the Sun or Moon's
   gravity acting on a satellite orbiting Earth. Usually a small effect
   next to the central body's own gravity, but real over long enough runs.
-* **Flexible appendage** -- a large, light part of a spacecraft, such
+* **Flexible appendage** – a large, light part of a spacecraft, such
   as a solar-array wing, that bends and swings when the spacecraft turns.
   Its **first mode** is its lowest bending frequency; its **damping
   ratio** says how quickly the swinging dies away by itself.
-* **Interface control document (ICD)** -- a document that lists every
+* **Interface control document (ICD)** – a document that lists every
   message a piece of software reads and writes: its fields, units, who
   produces it and who reads it. Each flight-software export has one.
-* **Software in the loop (SIL)** -- running the real flight software as
+* **Software in the loop (SIL)** – running the real flight software as
   its own program against the simulated spacecraft, step by step: the
   simulation sends it the sensor readings and flies the spacecraft with
   its commands, to check it before it ever runs on the spacecraft.
-* **Ground station** -- a fixed point on Earth's surface a spacecraft
+* **Ground station** – a fixed point on Earth's surface a spacecraft
   might need to communicate with; SpaceMissionStudio can compute exactly
   when each spacecraft is visible to each ground station.
-* **Link margin** -- how much stronger the received radio signal is than
+* **Link margin** – how much stronger the received radio signal is than
   the receiver needs (Eb/N0 above the required value, in dB). At 0 dB or
   more the link closes and data can be sent; below 0 dB it cannot. A
   project can require more (`link.required_margin_db`).
-* **Patch antenna** -- a flat antenna on a face of the spacecraft, the
+* **Patch antenna** – a flat antenna on a face of the spacecraft, the
   kind most small satellites fly. Its gain is highest straight out of the
   face (its boresight) and falls off toward the sides, so the link to a
   station depends on where the spacecraft points.
-* **Delta-V** -- how much a spacecraft's velocity changes from a
+* **Delta-V** – how much a spacecraft's velocity changes from a
   maneuver/burn; the standard way to measure "how much fuel does this
   cost", independent of the specific spacecraft.
-* **Monte Carlo** -- running the same scenario many times with small
+* **Monte Carlo** – running the same scenario many times with small
   random variations, to see a *range* of outcomes instead of one
   single answer (see Section 10).
-* **SPICE kernels** -- the reference data files (planet positions, leap
+* **SPICE kernels** – the reference data files (planet positions, leap
   seconds, etc.) Basilisk needs for real-world time/position math (see
   Section 11).
 

@@ -65,7 +65,7 @@ from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QColorDialog, QDialog, Q
                                QMenu, QMessageBox, QPushButton, QRadioButton, QScrollArea, QSplitter, QToolButton,
                                QVBoxLayout, QWidget)
 
-from . import export_log
+from . import export_log, units
 from ..model3d import equipment as equipment_module
 from ..model3d import mass_import, obj_io
 from ..model3d import model as model3d
@@ -110,7 +110,7 @@ def _spin(minimum: float, maximum: float, value: float, decimals: int = 3, step:
     box.setSingleStep(step)
     box.setValue(value)
     if suffix:
-        box.setSuffix(suffix)
+        box.setSuffix(units.suffix(suffix))
     return box
 
 

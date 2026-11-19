@@ -136,7 +136,7 @@ class StartupFetchWorker(QThread):
             from ..engine import kernels
         except ImportError as exc:
             return False, (
-                f"Basilisk is not installed/built ({exc}) -- support-data kernels are unavailable until it is."
+                f"Basilisk is not installed/built ({exc}) – support-data kernels are unavailable until it is."
             )
         try:
             statuses = kernels.ensure_kernels()
@@ -147,7 +147,7 @@ class StartupFetchWorker(QThread):
         if ok_count == len(statuses):
             return True, f"{ok_count}/{len(statuses)} support-data file(s) available."
         failed = "; ".join(f"{s.name} ({s.error})" for s in statuses if not s.available)
-        return False, f"{ok_count}/{len(statuses)} support-data file(s) available -- failed: {failed}"
+        return False, f"{ok_count}/{len(statuses)} support-data file(s) available – failed: {failed}"
 
     @staticmethod
     def _fetch_earth_orientation() -> tuple[bool, str]:
@@ -178,16 +178,16 @@ def choice_boxes() -> tuple[QCheckBox, QCheckBox, QCheckBox]:
     from ..engine.reference_data import DOWNLOADS
 
     support, weather = DOWNLOADS["support_data"], DOWNLOADS["space_weather"]
-    kernels = QCheckBox(f"Support data (SPICE, gravity, magnetic field) -- {support.approx_size}")
+    kernels = QCheckBox(f"Support data (SPICE, gravity, magnetic field) – {support.approx_size}")
     kernels.setChecked(True)
     kernels.setToolTip(
         f"From {support.source}: {', '.join(support.files)}. "
-        "Normally only needed once, ever (every packaging/ installer already pre-fetches these) -- "
+        "Normally only needed once, ever (every packaging/ installer already pre-fetches these) – "
         "this is a safety net for a dev checkout or a corrupted/cleared cache, and a no-op (no "
         "network touched) if everything is already cached."
     )
 
-    space_weather = QCheckBox(f"Space weather from CelesTrak (SW-All.csv) -- {weather.approx_size}")
+    space_weather = QCheckBox(f"Space weather from CelesTrak (SW-All.csv) – {weather.approx_size}")
     space_weather.setChecked(True)
     space_weather.setToolTip(
         f"From {weather.source}. The file is checked before it replaces the current one, which is kept "
@@ -199,7 +199,7 @@ def choice_boxes() -> tuple[QCheckBox, QCheckBox, QCheckBox]:
 
     installed = eo.installed()
     until = eo.high_accuracy_until(installed)
-    earth_orientation = QCheckBox("Earth orientation from NAIF (ITRF93 Earth PCKs) -- about 36 MB")
+    earth_orientation = QCheckBox("Earth orientation from NAIF (ITRF93 Earth PCKs) – about 36 MB")
     # Checked when nothing is installed or the high-accuracy span is over.
     earth_orientation.setChecked(not installed or until is None or until < datetime.now(UTC).replace(tzinfo=None))
     earth_orientation.setToolTip(

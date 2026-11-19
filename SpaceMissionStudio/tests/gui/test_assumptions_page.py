@@ -51,7 +51,8 @@ def test_without_a_file_every_parameter_shows_its_default(page):
     assert names == [p.name for p in registry.parameters()]
     row = _row(page, "propellant_budget.cam_count_factor")
     assert page.table.model.text(row, 1) == "4.0" and not page.table.row_is_bold(row)
-    assert page.table.model.text(_row(page, "propellant_budget.cam_count_factor") - 1, 0) == "propellant_budget"
+    assert page._areas[_row(page, "propellant_budget.cam_count_factor") - 1] == "propellant_budget"
+    assert page.table.model.text(_row(page, "propellant_budget.cam_count_factor") - 1, 0) == "Propellant budget"
     assert "every value is its default" in page.status_label.text()
     page.select("link.required_margin_db")
     assert not page.set_button.isEnabled() and "configuration file" in page.set_button.toolTip()
@@ -76,7 +77,8 @@ def test_a_file_chosen_is_named_relative_to_the_scenario_and_its_values_shown(pa
     page.changed_only.setChecked(True)
     shown = [page.table.proxy.mapToSource(page.table.proxy.index(r, 0)).row()
              for r in range(page.table.proxy.rowCount())]
-    assert [page.table.model.text(r, 0) for r in shown] == ["propellant_budget", "propellant_budget.residual_fraction"]
+    assert [page._names[r] or page._areas[r] for r in shown] == ["propellant_budget",
+                                                                 "propellant_budget.residual_fraction"]
 
 
 def test_a_value_set_is_checked_and_written_into_its_line(page, qtbot, tmp_path, monkeypatch):
