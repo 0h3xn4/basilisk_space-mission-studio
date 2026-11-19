@@ -2482,6 +2482,11 @@ unchanged.
 B9 fits Reports › Exports to its width (UI-27), names the reference data
 kinds from Basilisk's registry (UI-49), gives the Problems panel and the
 other tables the DataTable look, keeps every thermal heading whole and
-names the Flight Software card's pointing mode. No existing test
-changed. The new tests are in `tests/gui/test_tables.py`. No golden file
-changed.
+names the Flight Software card's pointing mode. The new tests are in
+`tests/gui/test_tables.py`. No golden file changed.
+
+One existing test changed:
+
+| Test | Change | Reason |
+|---|---|---|
+| `tests/gui/test_form_grid.py::test_the_thermal_editor_fits_the_page` | It asked that no thermal table is wider than its viewport. It now asks that a table is wider only when the sum of its heading widths is wider than the viewport. The page must still never scroll sideways. | B9's rule says a heading is never cut, so a table whose headings alone do not fit scrolls itself. Heading widths depend on the platform's fonts. On Windows CI one table needed 892 px for its headings in an 850 px viewport, so the old check failed there while the B9 rule held. The new check asks for the B9 rule on every platform. |
