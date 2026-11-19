@@ -444,8 +444,7 @@ class CompareWidget(QWidget):
                 # the base solid, the others dashed: where runs agree, both still show
                 line=dict(color=SERIES_COLORS[index % len(SERIES_COLORS)], width=2,
                           dash="solid" if index == 0 else "dash")))
-        y_title = f"{display.y_label} [{display.unit}]" if display.y_label else (f"[{display.unit}]" if display.unit
-                                                                                  else None)
+        y_title = units.axis_title(display.y_label, display.unit)
         axis = dict(pt.axis(TOKENS), exponentformat="none", separatethousands=True)
         fig.update_layout(
             **_template_layout(),

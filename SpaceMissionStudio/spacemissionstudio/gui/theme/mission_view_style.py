@@ -18,7 +18,8 @@
 """The look of Results › 3D View's page (``gui/assets/mission_view/``),
 as data the page applies with ``MV.setStyle``: the colours of what it
 depicts (the same in both themes), each spacecraft's colour (the
-categorical palette, in order), and the CSS of its overlays (the
+categorical palette's dark steps in order, in both themes: they are drawn
+on black space), and the CSS of its overlays (the
 time/speed panel and the labels), which take the theme's surfaces, text
 colours, fonts, sizes and radii. The page itself holds no colour, font
 or size of its own."""
@@ -26,7 +27,7 @@ or size of its own."""
 from __future__ import annotations
 
 from .palettes import (ATMOSPHERE_COLOUR, AXIS_COLOURS, LINE_OF_SIGHT_COLOUR, NADIR_COLOUR, PLAIN_BODY_COLOUR,
-                       SPACE_COLOUR, STATION_COLOUR, STATION_OUTLINE_COLOUR, SUN_COLOUR, VELOCITY_COLOUR, categorical)
+                       SPACE_COLOUR, STATION_COLOUR, STATION_OUTLINE_COLOUR, SUN_COLOUR, VELOCITY_COLOUR, depicted)
 from .plotly_template import font_faces
 from .tokens import tokens
 from .typography import BORDER, RADIUS, SIZE, SPACE, WEB_FONT_STACK, WEB_MONO_STACK, WEIGHT
@@ -80,7 +81,7 @@ def mission_view_style(mode: str) -> dict:
     """Everything ``MV.setStyle`` takes for theme ``mode``."""
     t = tokens(mode)
     return {
-        "mode": mode, "css": overlay_css(t), "space": SPACE_COLOUR, "crafts": categorical(mode),
+        "mode": mode, "css": overlay_css(t), "space": SPACE_COLOUR, "crafts": depicted(),
         "sun": SUN_COLOUR, "plain": PLAIN_BODY_COLOUR, "atmosphere": ATMOSPHERE_COLOUR,
         "axes": list(AXIS_COLOURS), "nadir": NADIR_COLOUR, "velocity": VELOCITY_COLOUR,
         "station": STATION_COLOUR, "link": LINE_OF_SIGHT_COLOUR, "fov": t["accent"], "plume": t["status.caution"],

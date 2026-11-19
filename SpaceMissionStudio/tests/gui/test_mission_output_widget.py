@@ -67,8 +67,8 @@ def test_summary_shows_one_column_per_report_and_one_row_per_value(qtbot):
     assert widget.summary_label.text() == "7 commands run · 2 reports"
     header = text.splitlines()[0]
     assert header == "Quantity\tcheckpoint 100 s\tReport 2 2 h\tChange"
-    assert "Inertial Position (ECI) X [m]\t1\t–\t–" in text  # named like its plot; absent in report 2
-    assert "Inertial Position (ECI) Z [m]\t3\t–\t–" in text
+    assert "Inertial Position (ECI) X [km]\t0.001\t–\t–" in text  # named like its plot (km); absent in report 2
+    assert "Inertial Position (ECI) Z [km]\t0.003\t–\t–" in text
     assert "sat-1.mass_kg\t–\t500\t–" in text  # an uncategorized series keeps its code name
     assert widget.table.cell_tooltip(0, 0) == "sat-1.position_N"
 
@@ -188,7 +188,7 @@ def test_two_spacecraft_name_their_rows_and_groups(qtbot):
     })]))
     text = widget.table_text()
     assert "chief-1: Osculating elements" in text and "follower-1: Osculating elements" in text
-    assert "chief-1: Inertial Position (ECI) X [m]" in text
+    assert "chief-1: Inertial Position (ECI) X [km]" in text
 
 
 def test_export_button_tooltip_notes_filter_does_not_affect_export(qtbot):

@@ -51,6 +51,12 @@ STYLE_KEYS = ("background", "text", "muted", "grid", "frame", "font", "mono", "s
               "colours", "operating", "survival")
 
 
+# The time axis: "h" (the default, the exported files' axis) or "s" (the
+# screen copy with Settings > Plot units "As recorded"): (seconds per unit,
+# axis title).
+TIME_UNITS = {"h": (3600.0, "Time from the run's start [h]"), "s": (1.0, "Time from the run's start [s]")}
+
+
 def _ticks(low: float, high: float, count: int = 6) -> list[float]:
     """Round tick values covering [low, high]."""
     if not math.isfinite(low) or not math.isfinite(high) or high <= low:
@@ -176,13 +182,16 @@ def _decimated(time_s: np.ndarray, values: np.ndarray, most: int = 1500) -> tupl
 
 
 def temperature_svg(case, nodes: list[str] | None = None, band_node: str | None = None, width: int = 900,
-                    height: int = 420, title: str | None = None, style: dict | None = None) -> str:
+                    height: int = 420, title: str | None = None, style: dict | None = None,
+                    time_unit: str = "h") -> str:
     """The temperatures of ``case`` (a ``thermal.results.CaseResult``)
     against hours, one line per node of ``nodes`` (all by default), with
     ``band_node``'s operating (green) and survival (orange) ranges.
-    ``style`` (:data:`STYLE_KEYS`) draws it in other colours and fonts."""
+    ``style`` (:data:`STYLE_KEYS`) draws it in other colours and fonts;
+    ``time_unit`` "s" (:data:`TIME_UNITS`) against seconds."""
     names = nodes if nodes else list(case.network.names)
-    hours = case.time_s / 3600.0
+    seconds, time_title = TIME_UNITS[time_unit]
+    hours = case.time_s / seconds
     columns = [case.temperature_c(n) for n in names]
     summary = {s.name: s for s in case.summary}
     lows = [float(np.min(c)) for c in columns]
@@ -195,7 +204,7 @@ def temperature_svg(case, nodes: list[str] | None = None, band_node: str | None 
     low, high = min(lows), max(highs)
     pad = max(2.0, 0.06 * (high - low))
     axes = _Axes(width, height, (float(hours[0]), float(hours[-1]) if hours[-1] > hours[0] else float(hours[0]) + 1),
-                 (low - pad, high + pad), title or f"Temperatures, {case.name} case", "Time from the run's start [h]",
+                 (low - pad, high + pad), title or f"Temperatures, {case.name} case", time_title,
                  "Temperature [°C]", legend=True, style=style)
     colours = COLOURS if style is None else style["colours"]
     operating, survival = (_OPERATING, _SURVIVAL) if style is None else (style["operating"], style["survival"])
@@ -215,12 +224,13 @@ def temperature_svg(case, nodes: list[str] | None = None, band_node: str | None 
 
 
 def heat_flow_svg(case, node: str, width: int = 900, height: int = 420, title: str | None = None,
-                  style: dict | None = None) -> str:
+                  style: dict | None = None, time_unit: str = "h") -> str:
     """The heat flows into ``node`` by kind against hours (positive in);
-    kinds that stay zero are left out. ``style`` as for
+    kinds that stay zero are left out. ``style`` and ``time_unit`` as for
     :func:`temperature_svg`."""
     flows = case.flows[node]
-    hours = case.time_s / 3600.0
+    seconds, time_title = TIME_UNITS[time_unit]
+    hours = case.time_s / seconds
     kinds = [k for k in _FLOW_KINDS if k in flows and np.any(np.abs(flows[k]) > 1e-9)]
     values = [flows[k] for k in kinds] or [np.zeros(len(hours))]
     low = min(0.0, min(float(np.min(v)) for v in values))
@@ -228,7 +238,7 @@ def heat_flow_svg(case, node: str, width: int = 900, height: int = 420, title: s
     pad = max(1.0, 0.06 * (high - low))
     axes = _Axes(width, height, (float(hours[0]), float(hours[-1]) if hours[-1] > hours[0] else float(hours[0]) + 1),
                  (low - pad, high + pad), title or f"Heat flows into {node}, {case.name} case",
-                 "Time from the run's start [h]", "Heat in [W]", legend=True, style=style)
+                 time_title, "Heat in [W]", legend=True, style=style)
     colours = COLOURS if style is None else style["colours"]
     for index, kind in enumerate(kinds):
         colour = colours[index % len(colours)]

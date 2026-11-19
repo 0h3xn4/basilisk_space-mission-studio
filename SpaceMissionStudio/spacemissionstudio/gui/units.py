@@ -40,7 +40,7 @@ _DISPLAY = {
     "kg": "kg", "g": "g", "kg m^2": "kg·m²", "kg*m^2": "kg·m²", "kg/s": "kg/s",
     "N": "N", "mN": "mN", "N*m": "N·m", "N m": "N·m", "N*m*s": "N·m·s", "N m s": "N·m·s",
     "W": "W", "W/m^2": "W/m²", "W*hr": "Wh", "W*h": "Wh", "Wh": "Wh", "V": "V", "A": "A", "A*m^2": "A·m²", "A m^2": "A·m²",
-    "T": "T", "nT": "nT", "K": "K", "degC": "°C",
+    "T": "T", "nT": "nT", "K": "K", "degC": "°C", "deg C": "°C",
     "1/(N*m*s^2)": "1/(N·m·s²)",
     "Hz": "Hz", "GHz": "GHz", "MHz": "MHz", "1/s": "1/s", "1/s^2": "1/s²",
     "dB": "dB", "dBi": "dBi", "dBW": "dBW", "dB-Hz": "dB-Hz", "dBm": "dBm",
@@ -83,6 +83,21 @@ def suffix(unit: str) -> str:
     if not shown:
         return ""
     return shown if shown in ("°", "°/s", "%") else f" {shown}"
+
+
+def plot_unit(unit: str) -> str:
+    """A plot's unit as its axis title and the readout show it: the display
+    form ("deg" as "°", "N*m" as "N·m"), with "-" (dimensionless) kept, so
+    an axis without a name still says "[-]"."""
+    return unit if unit.strip() in ("", "-") else shown(unit)
+
+
+def axis_title(name: str, unit: str) -> str | None:
+    """A plot's value axis title: "Position [km]", "[-]" without a name, or
+    None with neither."""
+    if name:
+        return f"{name} [{plot_unit(unit)}]"
+    return f"[{plot_unit(unit)}]" if unit else None
 
 
 _BRACKETED = re.compile(r"\s*\[(?P<unit>[^\[\]]+)\]")

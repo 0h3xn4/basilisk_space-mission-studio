@@ -95,6 +95,11 @@ unambiguous, not follow a plot-only display preference):
   series actually *is* instead (see its own docstring), with each
   category's own explicit unit choice, and only an uncategorized/future
   series (``_legacy_display()``) falls back to the old blanket rule.
+  Since Settings > Appearance > Plot units the display units are
+  one of two choices: "Display units (km, °, h)" shows position in km,
+  angles and rates in degrees and a wheel speed in RPM (UI audit B10);
+  "As recorded" shows every series in the SI unit it records (position
+  in metres, as the request above asked), as the CSV export does.
   Orbital angle elements (inclination/RAAN/argument of periapsis/true
   anomaly, osculating and mean alike) additionally display in degrees,
   not Basilisk's native radians -- matching every angle INPUT field this
@@ -1286,7 +1291,7 @@ class ResultsWidget(QWidget):
         traces += self._comparison_traces(name, display)
 
         axis_common = pt.axis(TOKENS)
-        y_title = f"{display.y_label} [{display.unit}]" if display.y_label else (f"[{display.unit}]" if display.unit else None)
+        y_title = units.axis_title(display.y_label, display.unit)  # "Inclination [°]" (UI audit B10)
         y_axis = dict(axis_common, title_text=y_title)
         x_axis = dict(axis_common, title_text=x_label)
         if not is_datetime_axis:
@@ -1896,7 +1901,8 @@ class ResultsWidget(QWidget):
             if len(series.columns) == 1 and not labels and display.y_label:
                 labels = {series.columns[0]: display.y_label}
             lines = [(labels.get(column, column), value_at(series, i, time_s, display.factor,
-                                                           wraps=display.wrap_period is not None), display.unit)
+                                                           wraps=display.wrap_period is not None),
+                      units.plot_unit(display.unit))
                      for i, column in enumerate(series.columns)]
             blocks.append((self._chip_label(name), lines))
         self.readout.show_rows(f"{heading} ({source})", blocks)

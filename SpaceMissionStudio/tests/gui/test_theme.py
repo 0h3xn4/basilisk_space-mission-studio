@@ -304,6 +304,107 @@ def test_the_categorical_palette_is_distinct_and_readable():
         assert min(delta_e(a, b) for a, b in zip(series, series[1:])) >= 15.0, mode
 
 
+# Machado, Oliveira and Fernandes (2009), severity 1.0, on linear sRGB.
+_CVD = {
+    "protan": ((0.152286, 1.052583, -0.204868), (0.114503, 0.786281, 0.099216), (-0.003882, -0.048116, 1.051998)),
+    "deutan": ((0.367322, 0.860646, -0.227968), (0.280085, 0.672501, 0.047413), (-0.011820, 0.042940, 0.968881)),
+    "tritan": ((1.255528, -0.076749, -0.178779), (-0.078411, 0.930809, 0.147602), (0.004733, 0.691367, 0.303900)),
+}
+
+
+def _cielab(colour, cvd=None):
+    """CIE L*a*b* (D65) of ``colour``, seen with the colour-vision
+    deficiency ``cvd`` (a key of _CVD) or normal vision."""
+    import math
+
+    rgb = [int(colour[i:i + 2], 16) / 255.0 for i in (1, 3, 5)]
+    rgb = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+    if cvd is not None:
+        rgb = [min(1.0, max(0.0, sum(m * c for m, c in zip(row, rgb)))) for row in _CVD[cvd]]
+    xyz = [sum(m * c for m, c in zip(row, rgb)) / white for row, white in zip(
+        ((0.4124564, 0.3575761, 0.1804375), (0.2126729, 0.7151522, 0.0721750), (0.0193339, 0.1191920, 0.9503041)),
+        (0.95047, 1.0, 1.08883))]
+    f = [math.cbrt(v) if v > (6 / 29) ** 3 else v / (3 * (6 / 29) ** 2) + 4 / 29 for v in xyz]
+    return 116.0 * f[1] - 16.0, 500.0 * (f[0] - f[1]), 200.0 * (f[1] - f[2])
+
+
+def _ciede2000(lab1, lab2):
+    """CIEDE2000 colour difference (Sharma, Wu and Dalal 2005)."""
+    import math
+
+    (l1, a1, b1), (l2, a2, b2) = lab1, lab2
+    c_mean = (math.hypot(a1, b1) + math.hypot(a2, b2)) / 2.0
+    g = 0.5 * (1.0 - math.sqrt(c_mean ** 7 / (c_mean ** 7 + 25.0 ** 7)))
+    a1, a2 = (1.0 + g) * a1, (1.0 + g) * a2
+    c1, c2 = math.hypot(a1, b1), math.hypot(a2, b2)
+    h1 = math.degrees(math.atan2(b1, a1)) % 360.0 if c1 else 0.0
+    h2 = math.degrees(math.atan2(b2, a2)) % 360.0 if c2 else 0.0
+    dh = 0.0 if c1 * c2 == 0 else (h2 - h1 if abs(h2 - h1) <= 180 else h2 - h1 - 360 if h2 > h1 else h2 - h1 + 360)
+    d_l, d_c = l2 - l1, c2 - c1
+    d_h = 2.0 * math.sqrt(c1 * c2) * math.sin(math.radians(dh / 2.0))
+    l_mean, c_mean = (l1 + l2) / 2.0, (c1 + c2) / 2.0
+    if c1 * c2 == 0:
+        h_mean = h1 + h2
+    elif abs(h1 - h2) <= 180:
+        h_mean = (h1 + h2) / 2.0
+    else:
+        h_mean = (h1 + h2 + 360.0) / 2.0 if h1 + h2 < 360 else (h1 + h2 - 360.0) / 2.0
+    t = (1 - 0.17 * math.cos(math.radians(h_mean - 30)) + 0.24 * math.cos(math.radians(2 * h_mean))
+         + 0.32 * math.cos(math.radians(3 * h_mean + 6)) - 0.20 * math.cos(math.radians(4 * h_mean - 63)))
+    s_l = 1 + 0.015 * (l_mean - 50) ** 2 / math.sqrt(20 + (l_mean - 50) ** 2)
+    s_c, s_h = 1 + 0.045 * c_mean, 1 + 0.015 * c_mean * t
+    r_t = (-math.sin(math.radians(60 * math.exp(-(((h_mean - 275) / 25) ** 2))))
+           * 2 * math.sqrt(c_mean ** 7 / (c_mean ** 7 + 25.0 ** 7)))
+    return math.sqrt((d_l / s_l) ** 2 + (d_c / s_c) ** 2 + (d_h / s_h) ** 2 + r_t * (d_c / s_c) * (d_h / s_h))
+
+
+def test_ciede2000_matches_the_published_test_data():
+    """Three pairs of Sharma, Wu and Dalal's (2005) test data, so the
+    palette test below measures what it says."""
+    assert _ciede2000((50.0, 2.6772, -79.7751), (50.0, 0.0, -82.7485)) == pytest.approx(2.0425, abs=1e-4)
+    assert _ciede2000((50.0, 2.5, 0.0), (73.0, 25.0, -18.0)) == pytest.approx(27.1492, abs=1e-4)
+    assert _ciede2000((2.0776, 0.0795, -1.1350), (0.9033, -0.0636, -0.5514)) == pytest.approx(0.9082, abs=1e-4)
+
+
+def test_the_series_a_plot_shows_together_differ_in_every_pair():
+    """UI audit UI-12: a position plot drew x and z in two near-identical
+    purples. Every pair of the first six slots (the most series a standard
+    plot shows: x, y, z, a quaternion's four parts, the timeline's six
+    event kinds) differs by CIEDE2000 Delta E 18 or more, and still by 10
+    with protanopia or deuteranopia and 7.5 with tritanopia; x, y and z by
+    30, and 20 with each deficiency. Each is 3:1 or more against the plot
+    background, in both themes."""
+    import itertools
+
+    from spacemissionstudio.gui.theme import palettes, tokens
+
+    assert palettes.SHOWN_TOGETHER == 6
+    floors = {None: (18.0, 30.0), "protan": (10.0, 20.0), "deutan": (10.0, 20.0), "tritan": (7.5, 20.0)}
+    for mode in tokens.MODES:
+        series = palettes.CATEGORICAL[mode][:palettes.SHOWN_TOGETHER]
+        surface = tokens.tokens(mode)["bg.surface"]
+        for colour in series:
+            assert tokens.contrast(colour, surface) >= 3.0, (mode, colour)
+        for cvd, (floor, xyz_floor) in floors.items():
+            for (i, a), (j, b) in itertools.combinations(enumerate(series), 2):
+                difference = _ciede2000(_cielab(a, cvd), _cielab(b, cvd))
+                assert difference >= (xyz_floor if j < 3 else floor), (mode, cvd or "normal", i, j, round(difference, 1))
+
+
+def test_what_is_drawn_on_space_takes_the_dark_steps():
+    """The 3D View and the live map draw spacecraft on black space or the
+    Earth's image in both themes, so they take the dark steps, made for a
+    dark surface: each at least 3:1 against black."""
+    from spacemissionstudio.gui.theme import palettes, tokens
+    from spacemissionstudio.gui.theme.ground_map_style import ground_map_style
+    from spacemissionstudio.gui.theme.mission_view_style import mission_view_style
+
+    for mode in tokens.MODES:
+        assert mission_view_style(mode)["crafts"] == ground_map_style(mode)["crafts"] == palettes.depicted()
+    assert palettes.depicted() == palettes.CATEGORICAL["dark"]
+    assert all(tokens.contrast(colour, palettes.SPACE_COLOUR) >= 3.0 for colour in palettes.depicted())
+
+
 def test_the_charts_share_the_live_series_colours(restored_theme):
     """Plots and the event timeline read the theme's categorical palette,
     one slot per event kind, and follow a theme change."""

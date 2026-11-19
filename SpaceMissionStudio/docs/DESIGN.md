@@ -162,14 +162,29 @@ error; a tooltip counts each kind.
 (`theme/palettes.py`), stepped for each theme's surface:
 
 - **Order:** fixed, assigned in order and never cycled.
-- **Validated** with the data-visualisation palette validator for adjacent
-  pairs (lines, bars): worst colour-vision-deficiency Delta E 14.3 (light)
-  and 14.8 (dark), every colour at least 3:1 against its surface.
+- **Every pair of the first six slots differs** (`palettes.SHOWN_TOGETHER`,
+  the most series a standard plot shows: x, y, z, a quaternion, the
+  timeline's six event kinds; UI audit B10): CIEDE2000 Delta E 18 or more
+  with normal vision, 10 with simulated protanopia or deuteranopia and 7.5
+  with tritanopia (Machado 2009, severity 1); x, y and z 30, and 20 with
+  each deficiency
+  (`tests/gui/test_theme.py::test_the_series_a_plot_shows_together_differ_in_every_pair`).
+  A new palette meets the same floors.
+- **Validated** with the data-visualisation palette validator in both
+  themes, for adjacent pairs of all eight and for all pairs of the first
+  six; every colour at least 3:1 against its surface.
 - **Distinct from status and the accent:** every colour is at least
   Delta E 8 from each status colour and from the accent
   (`tests/gui/test_theme.py::test_the_categorical_palette_is_distinct_and_readable`).
-- **A legend always:** with all 28 pairs side by side (a scatter of eight
-  groups) two pairs fall below the floors, so colour is never the only cue.
+- **One hue family per slot in both themes:** indigo, olive, brick, teal,
+  magenta, violet, plum, orchid.
+- **A legend always:** slots 7 and 8 are checked against their neighbours
+  only, so colour is never the only cue.
+- **On space or the Earth's image** (3D View, live map) the spacecraft take
+  the dark steps in both themes (`palettes.depicted()`): the light steps are
+  made for a white surface.
+- **Data, not the accent:** a chart line takes a categorical colour, never
+  the accent (End of Life's altitudes, UI audit B10).
 
 The 3D view's body axes use x red, y green, z blue
 (`palettes.AXIS_COLOURS`): an identity convention for geometry, not a
@@ -205,7 +220,13 @@ exported files keep their fixed 900 x 420 look.
 (`theme/plotly_template.py`): Inter, transparent backgrounds over
 `bg.surface`, gridlines in `border.subtle`, axis text in
 `text.secondary`, hover labels on `bg.raised`. Axis titles carry their
-units. The time cursor is drawn in the accent: it is a selection.
+units, written as the window writes them (`units.axis_title`: "Inclination
+[°]", "Torque [N·m]"; "[-]" for a dimensionless axis without a name). The
+values and units follow Settings > Appearance > Plot units
+(`plot_categories.shown`): the display units (km, °, h; body rates in °/s,
+wheel speeds in RPM, velocity and delta-V in m/s) or as recorded (SI); the
+Thermal plots' time axis follows it too, and no exported file changes. The
+time cursor is drawn in the accent: it is a selection.
 
 ### Type
 

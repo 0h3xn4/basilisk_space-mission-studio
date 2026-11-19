@@ -774,10 +774,13 @@ def test_typing_an_exact_series_name_and_pressing_enter_redraws_the_plot(widget,
 def test_position_series_plots_in_raw_meters(widget):
     """Regression guard for a real, explicit user request ("state vector
     elements shall be displayed in meters for position and m/s for
-    velocity") that REVERSED this module's own earlier km-conversion
-    decision for exactly these two series -- see results_widget's module
-    docstring and _vector_display()'s own docstring.
+    velocity"): with Settings > Plot units "As recorded" the position
+    plots in raw metres. The display units show it in km (UI audit B10,
+    tests/gui/test_plot_units.py); see _vector_display()'s docstring.
     """
+    from spacemissionstudio.gui import units
+
+    units.set_plot_units("recorded")
     rs = _sample_result_set()
     raw_x_m = rs.series["sat-1.position_N"].data[:, 0]
 
@@ -867,7 +870,7 @@ def test_mean_orbital_element_series_is_plotted_and_labeled_distinctly_from_oscu
 
     plotted = np.asarray(w.figure.data[0].y)
     np.testing.assert_allclose(plotted, np.degrees(raw_i_rad))
-    assert w.figure.layout.yaxis.title.text == "Inclination [deg]"
+    assert w.figure.layout.yaxis.title.text == "Inclination [°]"
     assert w.figure.layout.title.text == "sat-1: Mean (first-order J2) Inclination"
 
 
