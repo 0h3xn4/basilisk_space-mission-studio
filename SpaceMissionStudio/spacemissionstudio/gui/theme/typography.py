@@ -66,6 +66,8 @@ TOP_BAR_COMPACT_BELOW = 1040  # [px]
 # so it never squeezes a 1280 px window.
 INSPECTOR_WIDTH = 320  # [px]
 INSPECTOR_MIN_WINDOW_PX = 1440  # [px]
+# A small dialog's width (About, UI audit UI-48): room for its licence lines at a readable measure.
+DIALOG_WIDTH = {"small": 480}  # [px]
 # A dock's title bar (UI audit UI-39): its title and its Float and Close
 # buttons, icons of the interface size on compact buttons.
 DOCK_TITLE_HEIGHT = CONTROL_HEIGHT["compact"] + SPACE["xs"]  # [px]

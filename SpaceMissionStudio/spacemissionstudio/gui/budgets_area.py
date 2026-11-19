@@ -53,18 +53,18 @@ import io
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, fields, is_dataclass
 
-from PySide6.QtCore import QAbstractTableModel, Qt, Signal
+from PySide6.QtCore import QAbstractTableModel, QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QGuiApplication, QKeySequence, QValidator
 from PySide6.QtWidgets import (QAbstractItemView, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit,
                                QScrollArea, QSizePolicy, QSplitter, QStackedWidget, QStyledItemDelegate, QTableView,
-                               QToolButton, QVBoxLayout, QWidget)
+                               QToolButton, QToolTip, QVBoxLayout, QWidget)
 
 from .. import output_provenance
 from ..schema.budgets import (MASS_COLUMNS, BudgetBusConfig, BudgetEquipmentConfig, BudgetModeConfig,
                               BudgetPowerModeConfig, BudgetsConfig, PowerMarginConfig, SourcedValue, mass_policy_of,
                               powered)
 from .badges import SUCCESS, WARNING, set_badge
-from .data_table import DataTable, Row
+from .data_table import DataTable, Row, fit_widths, text_elided
 from .feedback import show_toast
 from .theme import SPACE, icon, numeric_font, set_role
 from .value_sheet import NoteList, ValueSheet
@@ -101,6 +101,7 @@ class Column:
     tip: str = ""
     editable: Callable | None = None
     display: Callable | None = None  # row -> the text shown, when it differs from the value edited
+    heading: str = ""  # the heading shown, when it differs from ``header`` (two lines: "Average\n[W]", UI audit B12)
 
     @property
     def numeric(self) -> bool:
@@ -189,7 +190,7 @@ class GridModel(QAbstractTableModel):
             return None
         column = self.columns[section]
         if role == Qt.ItemDataRole.DisplayRole:
-            return column.header
+            return column.heading or column.header
         if role == Qt.ItemDataRole.ToolTipRole:
             return column.tip or None
         if role == Qt.ItemDataRole.TextAlignmentRole and column.numeric:
@@ -265,7 +266,16 @@ class _NumberValidator(QValidator):
 
 class _Delegate(QStyledItemDelegate):
     """A combo box for a choice, a line edit (numbers only for a number)
-    for the rest."""
+    for the rest. On hover, a cell's tooltip, or its whole text when its
+    column elides it (as a DataTable's, UI audit B9)."""
+
+    def helpEvent(self, event, view, option, index) -> bool:  # noqa: N802 -- Qt API name
+        if event.type() == QEvent.Type.ToolTip and index.isValid() and text_elided(view, index):
+            tip = index.data(Qt.ItemDataRole.ToolTipRole)
+            text = str(index.data(Qt.ItemDataRole.DisplayRole))
+            QToolTip.showText(event.globalPos(), f"{text}\n{tip}" if tip else text, view)
+            return True
+        return super().helpEvent(event, view, option, index)
 
     def createEditor(self, parent, option, index):  # noqa: N802 -- Qt API name
         model = index.model()
@@ -295,7 +305,15 @@ class _Delegate(QStyledItemDelegate):
 
 
 class _GridView(QTableView):
-    """The grid: Ctrl+C copies the selected rows (all when none is) as TSV."""
+    """The grid: Ctrl+C copies the selected rows (all when none is) as TSV.
+    ``resized``: its width changed, so its columns fit again."""
+
+    resized = Signal()
+
+    def resizeEvent(self, event):  # noqa: N802 -- Qt API name
+        super().resizeEvent(event)
+        if event.size().width() != event.oldSize().width():
+            self.resized.emit()
 
     def keyPressEvent(self, event):  # noqa: N802 -- Qt API name
         if event.matches(QKeySequence.StandardKey.Copy):
@@ -377,6 +395,16 @@ class EditableTable(QWidget):
         self.view.horizontalHeader().setStretchLastSection(True)
         self.view.horizontalHeader().setResizeContentsPrecision(_SIZED_ROWS)  # a long list: its first rows
         self.view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        # The columns fit the grid's width (UI audit B12, as a DataTable's set_fit_width): each its content's
+        # width when they all fit, else the widest elided (whole on hover), never below its heading.
+        self._natural: list[int] = []  # [px] each column's width for its heading and content
+        self._floors: list[int] = []  # [px] each column's heading width, as the style draws it
+        self._fit_timer = QTimer(self)
+        self._fit_timer.setSingleShot(True)
+        self._fit_timer.setInterval(0)
+        self._fit_timer.timeout.connect(self.fit_columns)
+        self.view.resized.connect(self._fit_timer.start)
+        self.view.verticalScrollBar().rangeChanged.connect(lambda *_range: self._fit_timer.start())
         self.stack.addWidget(self.view)
         layout.addWidget(self.stack, 1)
 
@@ -388,9 +416,32 @@ class EditableTable(QWidget):
         else:
             for column in range(2):
                 self.view.resizeColumnToContents(column)
+        header = self.view.horizontalHeader()
+        self._natural = [self.view.columnWidth(column) for column in range(self.model.columnCount())]
+        self._floors = [min(header.sectionSizeHint(column), natural) for column, natural in enumerate(self._natural)]
+        self.fit_columns()
         self.stack.setCurrentWidget(self.view if self.model.rows else self.empty)
         if current is not None and self.model.rows:
             self.select_row(min(current, len(self.model.rows) - 1))
+
+    def fit_columns(self) -> None:
+        """The columns fitted to the grid's width (:func:`data_table.fit_widths`;
+        the last one takes what is left)."""
+        room = self.view.viewport().width()
+        if not self._natural or room <= 0:
+            return
+        widths = fit_widths(self._natural, self._floors, room)
+        # Every width set here, the last taking the rest: a stretched last section never went below
+        # Qt's default section size (100 px), so a narrow grid scrolled sideways by its last column.
+        self.view.horizontalHeader().setStretchLastSection(False)
+        for column, width in enumerate(widths):
+            self.view.setColumnWidth(column, width)
+
+    def needed_width(self) -> int:
+        """[px] the least width the grid shows every heading whole at, and
+        the width its headings and content want: (floor, natural)."""
+        frame = 2 * self.view.frameWidth()
+        return sum(self._floors) + frame, sum(self._natural) + frame
 
     def current_row(self) -> int | None:
         index = self.view.currentIndex()
@@ -556,6 +607,17 @@ class EquipmentPage(QWidget):
         lower.setChildrenCollapsible(False)
         for table in (self.modes_table, self.system_modes_table, self.settings_table):
             lower.addWidget(table)
+        # The three grids share the row by what they need (UI audit B12): each its headings and
+        # content when they fit, else each its headings and a share of the rest, until the user
+        # drags a divider. Equal thirds made the power modes and settings scroll sideways at 1280 px.
+        self.lower = lower
+        self._lower_by_user = False
+        lower.splitterMoved.connect(self._on_lower_moved)
+        lower.installEventFilter(self)
+        self._lower_timer = QTimer(self)
+        self._lower_timer.setSingleShot(True)
+        self._lower_timer.setInterval(0)
+        self._lower_timer.timeout.connect(self.fit_lower)
         self.splitter = QSplitter(Qt.Orientation.Vertical)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.addWidget(self.items_table)
@@ -629,6 +691,7 @@ class EquipmentPage(QWidget):
         self._reload_modes()
         self._reload_system_modes()
         self._reload_settings()
+        self._lower_timer.start()  # the grids' needs changed: their widths follow
 
     def _picked_item_name(self) -> str | None:
         row = self.items_table.current_row()
@@ -661,6 +724,37 @@ class EquipmentPage(QWidget):
         if self.section is not None:
             self._reload_modes()
 
+    # -- the lower row's widths ---------------------------------------------------------------------------------
+    def _on_lower_moved(self, *_args) -> None:
+        self._lower_by_user = True  # the user's widths stay
+
+    def eventFilter(self, watched, event) -> bool:  # noqa: N802 -- Qt API name
+        if watched is getattr(self, "lower", None) and event.type() in (QEvent.Type.Resize, QEvent.Type.Show):
+            self._lower_timer.start()
+        return super().eventFilter(watched, event)
+
+    def fit_lower(self) -> None:
+        """The power modes, system modes and power settings side by side, each
+        as wide as it needs (:meth:`EditableTable.needed_width`): all their
+        content when it fits, else every heading whole and the rest shared
+        by what each still wants, else by their headings' widths."""
+        lower = self.lower
+        tables = [lower.widget(index) for index in range(lower.count())]
+        room = lower.width() - lower.handleWidth() * (len(tables) - 1)
+        if self._lower_by_user or room <= 0:
+            return
+        floors, naturals = zip(*(table.needed_width() for table in tables))
+        if sum(naturals) <= room:
+            base, weights = naturals, naturals
+        elif sum(floors) <= room:
+            base, weights = floors, [natural - floor for floor, natural in zip(floors, naturals)]
+        else:
+            base, weights = [0] * len(tables), floors
+        spare, total = room - sum(base), sum(weights) or 1
+        sizes = [int(width + spare * weight / total) for width, weight in zip(base, weights)]
+        sizes[-1] += room - sum(sizes)
+        lower.setSizes(sizes)
+
     # -- the columns ----------------------------------------------------------------------------------------------
     def _item_columns(self) -> list[Column]:
         def mass(item):
@@ -682,7 +776,7 @@ class EquipmentPage(QWidget):
             Column("Subsystem", lambda i: i.subsystem, lambda i, v: setattr(i, "subsystem", v),
                    tip="The functional subsystem (AOCS, DHS, EPS...): the power budget groups by it"),
             Column("Mass column", lambda i: i.mass_column, lambda i, v: setattr(i, "mass_column", v), "choice",
-                   lambda _i: list(MASS_COLUMNS), empty="(largest)",
+                   lambda _i: list(MASS_COLUMNS), empty="(largest)", heading="Mass\ncolumn",
                    tip="The AIAA S-120 column of the mass growth allowance; empty: the largest of the row"),
             Column("Bus", lambda i: i.bus, lambda i, v: setattr(i, "bus", v), "choice",
                    lambda _i: [""] + [bus.name for bus in self.section.buses],
@@ -690,12 +784,12 @@ class EquipmentPage(QWidget):
             Column("Maturity", lambda i: i.maturity, lambda i, v: setattr(i, "maturity", v), "choice",
                    lambda _i: [""] + list(self._categories),
                    tip="The maturity category: the mass growth allowance and the power margin"),
-            Column("Mass [kg]", mass, put_mass, "number", placeholder=mass_placeholder,
+            Column("Mass [kg]", mass, put_mass, "number", placeholder=mass_placeholder, heading="Mass\n[kg]",
                    empty="", tip="The basic mass; empty with Mass in model ticked: the 3D model holds it"),
             Column("Mass source", lambda i: i.mass_kg.source if i.mass_kg is not None else "", put_mass_source,
-                   tip='Where the mass comes from; "TBD" marks a placeholder'),
+                   heading="Mass\nsource", tip='Where the mass comes from; "TBD" marks a placeholder'),
             Column("Mass in model", lambda i: i.mass_in_model, self._put_mass_in_model, "check",
-                   tip="The 3D model already holds this mass: the mass budget adds no line for it"),
+                   heading="Mass in\nmodel", tip="The 3D model already holds this mass: the mass budget adds no line for it"),
         ]
 
     def _put_mass_in_model(self, item, on: bool) -> None:
@@ -723,15 +817,18 @@ class EquipmentPage(QWidget):
         return [
             Column("Name", lambda m: m.name, self._rename_power_mode, tip="Unique for the item"),
             Column("Average [W]", lambda m: m.average_w.value, put_average, "number",
-                   placeholder=lambda m: m.average_w.placeholder, tip="While in the mode and switched on"),
-            Column("Average source", lambda m: m.average_w.source, put_average_source),
+                   placeholder=lambda m: m.average_w.placeholder, tip="While in the mode and switched on",
+                   heading="Average\n[W]"),
+            Column("Average source", lambda m: m.average_w.source, put_average_source, heading="Average\nsource",
+                   tip="Where the average power comes from"),
             Column("Peak [W]", lambda m: m.peak_w.value if m.peak_w is not None else None,
                    lambda m, v: setattr(m, "peak_w", with_value(m.peak_w, v)), "number",
                    placeholder=lambda m: is_placeholder(m.peak_w), empty="= average",
-                   tip="Empty: the average; at least the average"),
+                   tip="Empty: the average; at least the average", heading="Peak\n[W]"),
             Column("Peak source", lambda m: m.peak_w.source if m.peak_w is not None else "",
-                   lambda m, v: setattr(m, "peak_w", with_source(m.peak_w, v))),
-            Column("Duty cycle [-]", lambda m: m.duty_cycle, put_duty, "number",
+                   lambda m, v: setattr(m, "peak_w", with_source(m.peak_w, v)), heading="Peak\nsource",
+                   tip="Where the peak power comes from"),
+            Column("Duty cycle [-]", lambda m: m.duty_cycle, put_duty, "number", heading="Duty\ncycle [-]",
                    tip="The share of the time the item is switched on, 0 to 1 (empty: 1)"),
         ]
 
@@ -751,7 +848,7 @@ class EquipmentPage(QWidget):
 
         columns = [
             Column("Name", lambda m: m.name, self._rename_system_mode, tip="Unique among the system modes"),
-            Column("Duty cycle [-]", lambda m: m.duty_cycle, put_duty, "number",
+            Column("Duty cycle [-]", lambda m: m.duty_cycle, put_duty, "number", heading="Duty\ncycle [-]",
                    tip="The share of the time in this mode, 0 to 1; empty: not stated"),
         ]
         for item in self.section.equipment:
@@ -992,8 +1089,11 @@ def _show_status(badge: QLabel, complete: bool, complete_text: str, unknown_text
 
 def _fitted(table: DataTable) -> DataTable:
     """A table as tall as its rows (:func:`_fit`), no taller: the page
-    scrolls, not each table."""
+    scrolls, not each table. Its columns fit its width (UI audit B12): its
+    headings are two lines, the name above the unit, so a table of the
+    Power page fits at 1280 px with the Inspector open."""
     table.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+    table.set_fit_width()
     return table
 
 
@@ -1013,8 +1113,10 @@ def _scroll(widget: QWidget) -> QScrollArea:
     return scroll
 
 
-_FLOW_HEADERS = ("Load [W]", "With unit margins [W]", "With system margin [W]", "Source [W]",
-                 "Source with margins [W]")
+# Two lines where a heading is long: the line breaks before the word with the unit, as units.label
+# joins a unit to its word ("Load [W]" stays one line).
+_FLOW_HEADERS = ("Load [W]", "With unit\nmargins [W]", "With system\nmargin [W]", "Source [W]",
+                 "Source with\nmargins [W]")
 
 
 def _flow_cells(flow) -> tuple:
@@ -1128,7 +1230,7 @@ class PowerPage(QWidget):
         average = budget.duty_cycle_average()
         if average is not None and rows:
             rows.append(Row(("Duty-cycle average", "1", *_flow_cells(average), "", ""), bold=True))
-        self.totals_table.set_table(("Mode", "Duty [-]", *_FLOW_HEADERS, "Peak [W]", "Peak source with margins [W]"),
+        self.totals_table.set_table(("Mode", "Duty [-]", *_FLOW_HEADERS, "Peak [W]", "Peak source\nwith margins [W]"),
                                     rows, numeric=range(1, 9), stretch=0)
         _fit(self.totals_table)
         current = self.mode_combo.currentText()
@@ -1154,19 +1256,19 @@ class PowerPage(QWidget):
         mode = next((m for m in budget.modes if m.mode == self.mode_combo.currentText()), None) if budget else None
         rows = mode.rows if mode is not None else ()
         self.items_table.set_table(
-            ("Item", "Subsystem", "Bus", "Maturity", "Power mode", "Average [W]", "Duty [-]", "Effective [W]",
-             "Margin [%]", "With margin [W]", "Peak [W]", "Peak with margin [W]"),
+            ("Item", "Subsystem", "Bus", "Maturity", "Power\nmode", "Average [W]", "Duty [-]", "Effective [W]",
+             "Margin [%]", "With\nmargin [W]", "Peak [W]", "Peak with\nmargin [W]"),
             [Row((r.item, r.subsystem, r.bus, r.maturity, r.power_mode or NOT_LISTED_TEXT, _w(r.average_w),
                   f"{r.duty_cycle:g}", _w(r.effective_w), _ratio(r.margin_percent), _w(r.margined_w), _w(r.peak_w),
                   _w(r.margined_peak_w)),
                  tooltips={4: "Not listed in this system mode: the item's power is unknown"} if not r.power_mode
                  else {}) for r in rows], numeric=range(5, 12), stretch=0)
         self.subsystems_table.set_table(
-            ("Subsystem", "Effective [W]", "With margins [W]", "Peak [W]", "Peak with margins [W]"),
+            ("Subsystem", "Effective [W]", "With\nmargins [W]", "Peak [W]", "Peak with\nmargins [W]"),
             [Row((s.subsystem or "(none)", _w(s.effective_w), _w(s.margined_w), _w(s.peak_w), _w(s.margined_peak_w)))
              for s in (mode.subsystems if mode is not None else ())], numeric=range(1, 5), stretch=0)
         self.buses_table.set_table(
-            ("Bus", "Efficiency [-]", *_FLOW_HEADERS, "Peak source with margins [W]"),
+            ("Bus", "Efficiency [-]", *_FLOW_HEADERS, "Peak source\nwith margins [W]"),
             [Row((b.bus, _ratio(b.converter_efficiency), *_flow_cells(b.average), _w(b.peak.source_margined_w)))
              for b in (mode.buses if mode is not None else ())], numeric=range(1, 8), stretch=0)
         for table in (self.items_table, self.subsystems_table, self.buses_table):

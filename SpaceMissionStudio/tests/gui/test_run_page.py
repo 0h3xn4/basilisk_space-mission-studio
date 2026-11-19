@@ -135,4 +135,4 @@ def test_sil_without_a_program_says_what_to_do(window, monkeypatch):
     window.on_run()
     assert runs == [] and window.current_view() is window.run_page
     assert window.run_page.sil_combo.currentText() == "my-sat" and window.run_page.sil_form is not None
-    assert toasts and "Run > Run" in toasts[-1]
+    assert toasts and "Run › Run" in toasts[-1]

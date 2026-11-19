@@ -160,6 +160,33 @@ fixes bugs.
   list of support data, so no file is called a SPICE kernel by default.
 - The Flight Software card names the pointing mode ("Sun pointing"),
   not its code ("sunSafePoint").
+- **Home, command palette, run pages, log and dialogs** (UI audit batch
+  B12). Home's template cards are as tall as their title and kind, and
+  the selected card has an accent edge. A card has no buttons of its
+  own: Open template opens the selected one (so do a double-click and
+  Enter), and Customize and open... runs the wizard first.
+- Home's recent list says what it lists: a scenario file you open or
+  save. A template opens unsaved, so it is listed once you save it. The
+  list follows an open or a save at once.
+- The command palette shows each shortcut in a column of its own at the
+  right, in the monospace font. A command that cannot run now says why,
+  under its name and on hover. Every command the window turns off now
+  has a reason.
+- The window writes a path with "›" only: Run › Run, the tooltips, the
+  palette and the Problems panel.
+- Run › Run in SIL mode shows the "Spacecraft" label only with its list.
+- Run › Log no longer fills with about 60 "x% complete" lines per run:
+  the progress is in the status bar, and the log file keeps the lines.
+- About is a small window in the app's look, with the version, the
+  Basilisk version, the licence and buttons for the licences and the
+  manual. A confirmation shows the theme's caution sign, not a question
+  mark.
+- The Problems panel keeps the warnings listed while the scenario has an
+  error, under the errors.
+- Reports › Exports wraps its long entries onto more lines, so each reads
+  whole at 1280 px with the Inspector open. The Budgets grids fit the
+  window at 1280 px: long headings are two lines, and the three grids
+  under the equipment list share the row by what each needs.
 
 ## 2.12.0 (2026-11-18)
 

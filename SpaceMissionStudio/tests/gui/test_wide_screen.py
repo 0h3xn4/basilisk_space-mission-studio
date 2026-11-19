@@ -152,22 +152,26 @@ def test_list_buttons_keep_their_own_width(qtbot, window):
 
 def test_a_template_row_keeps_its_customize_button_close(qtbot, window):
     """A template card is less than two least card widths wide (the wide
-    page holds more columns instead), so a card's Customize... sits within
-    it, next to its title."""
+    page holds more columns instead). Customize and open... (UI audit B12:
+    in the details, a card has no buttons of its own) sits beside Open
+    template, under the selected template's title, within the details."""
     from spacemissionstudio.gui.load_scenario_widget import CARD_MIN_WIDTH_PX
     from spacemissionstudio.gui.theme import CONTENT_MAX_WIDTH_PX, SPACE
 
     templates = window.load_scenario_widget
     window.show_view(templates)
     qtbot.waitUntil(templates.isVisible)
-    rows = [card for card in templates.cards if card.customize_button is not None]
+    rows = [card for card in templates.cards if card.customizable]
     assert rows
     assert templates.width() > CONTENT_MAX_WIDTH_PX + 300  # [px]
     qtbot.waitUntil(lambda: templates.grid.columns() >= 3)
     assert rows[0].width() < 2 * CARD_MIN_WIDTH_PX + SPACE["md"]  # [px]
-    button = rows[0].customize_button
-    right = button.mapTo(rows[0], button.rect().topRight()).x()
-    assert right <= rows[0].width() and right < CARD_MIN_WIDTH_PX  # [px] beside Open, within the card
+    templates.select(rows[0].name)
+    button, details = templates.customize_template_button, templates.description_scroll.viewport()
+    qtbot.waitUntil(button.isVisible)
+    opener = templates.open_template_button
+    right = button.mapTo(details, button.rect().topRight()).x()
+    assert right <= details.width() and button.x() > opener.x()  # [px] beside Open template, within the details
 
 
 @pytest.mark.parametrize("width_px, expected_px", [(1000, (250, 250)), (2200, (330, 400))])

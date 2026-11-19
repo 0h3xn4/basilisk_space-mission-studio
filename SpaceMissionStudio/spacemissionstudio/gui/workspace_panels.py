@@ -209,6 +209,18 @@ class Problem:
     tip: str = ""  # its tooltip's first part, when the row brings one (a run warning's rule)
 
 
+# A path in the window, as the engine writes one ("Settings > Reference data"): a name, ">" and a
+# name with a capital. A comparison ("must be > 0") is not one.
+_MESSAGE_PATH = re.compile(r"(?<=[\w.)]) > (?=[A-Z])")
+
+
+def window_path(text: str) -> str:
+    """``text`` with each path written as the window writes it, with "›"
+    (UI audit UI-23, UI-40): the engine's messages, the command line and the
+    Log keep ">"; the Problems panel shows "Settings › Reference data"."""
+    return _MESSAGE_PATH.sub(" › ", text)
+
+
 def problem_row(severity: str, text: str, shown: str, spacecraft: Sequence[str] = (),
                 stations: Sequence[str] = (), tip: str = "", obj: str = "") -> Problem:
     """A problem with its ID (the field path it is about, "-" when it names
@@ -217,6 +229,7 @@ def problem_row(severity: str, text: str, shown: str, spacecraft: Sequence[str] 
     given, e.g. the run a run warning comes from). ``tip``: the tooltip's
     first part in place of the warning's rule."""
     location = locate(text, spacecraft, stations)
+    shown = window_path(shown)
     if location is None:
         return Problem(severity, text, shown, "-", obj or "Scenario", tip)
     return Problem(severity, text, shown, location.path or "-", obj or _AREA_OBJECT.get(location.area, location.name),

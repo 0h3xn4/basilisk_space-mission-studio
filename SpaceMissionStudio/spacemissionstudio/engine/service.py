@@ -2266,7 +2266,9 @@ class SimulationService:
                 self.log_last_known_state()
                 raise_clear_execution_error(exc)
             fraction_complete = 1.0 if not finished else min(1.0, next_stop_ns / stop_time_ns)
-            _logger.info(
+            # DEBUG, not INFO (UI audit UI-31): the status bar shows the progress, the
+            # log file keeps these lines, and the window's Log keeps the records that matter.
+            _logger.debug(
                 "run_live: %.1f%% complete (t=%.1f s of %.1f s)",
                 100.0 * fraction_complete, next_stop_ns * macros.NANO2SEC, stop_time_s,
             )

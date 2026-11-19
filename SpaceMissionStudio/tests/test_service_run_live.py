@@ -161,3 +161,20 @@ def test_run_live_honors_explicit_step():
     # since a chunk can never be shorter than one task tick).
     assert 3 <= len(calls) <= 6
     assert calls[-1] == 1.0
+
+
+def test_run_live_logs_its_progress_at_debug_only(caplog):
+    """UI audit UI-31: a run's progress lines ("run_live: x% complete") are
+    DEBUG records, so the window's Log (INFO and above) keeps the records
+    that matter; the log file, which takes DEBUG, still has every one. The
+    status bar shows the progress itself."""
+    import logging
+
+    from spacemissionstudio.engine.service import SimulationService
+
+    caplog.set_level(logging.DEBUG, logger="spacemissionstudio.engine.service")
+    fractions = []
+    SimulationService(load_scenario(SCENARIO_PATH)).run_live(lambda partial, fraction: fractions.append(fraction))
+    progress = [record for record in caplog.records if "% complete" in record.getMessage()]
+    assert len(progress) == len(fractions) > 1
+    assert {record.levelno for record in progress} == {logging.DEBUG}
