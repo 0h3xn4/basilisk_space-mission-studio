@@ -302,11 +302,18 @@ bar and no toolbar:
   as fit (at least 264 px each) with a filter, and the selected card's
   whole description with Open template (the page's one accent button
   while no scenario is open; with one open, the top bar's Run is the
-  accent and Open template is secondary) and Customize. A card is a `card` surface: hover `bg.hover`, selected
-  `bg.selected` with an accent edge, focus the 2 px ring; its three
-  lines (attitude mode, orbit, the description's first sentence) are
-  read from the template file. The cards are one Tab stop; the arrow
-  keys, Home and End move between them, Enter opens.
+  accent and Open template is secondary) and Customize and open... (the
+  wizard first, then the result opens unsaved: its name says what it does
+  differently, UI audit UI-38). A card is a `card` surface as tall as its
+  title and kind, with no buttons of its own: hover `bg.hover`, selected
+  `bg.selected` with a 2 px accent edge (the focus ring's width), focus
+  the 2 px ring; its lines (attitude mode, orbit, the description's
+  first sentence) are read from the template file, the card shows the
+  first. The cards are one Tab stop; the arrow keys, Home and End move
+  between them, Enter or a double-click opens. The recent list holds the
+  files opened or saved, and follows an open or a save at once; a
+  template opens unsaved, so it is listed once saved, and the empty
+  state says so (UI audit UI-32).
 - **Scenario area:** the scenario tree on the left. Each spacecraft has a
   node per part of its editor. The first form is **General** (name,
   mode, epoch, description): the area and the breadcrumb already say
@@ -406,7 +413,9 @@ bar and no toolbar:
   start); the provenance in a popover (a card).
 - **The Log's record of a run (M5a):** the GUI logs each run's start,
   end, warnings and where it is saved (`spacemissionstudio.run`), in
-  JetBrains Mono, with the level filter, the search and Copy.
+  JetBrains Mono, with the level filter, the search and Copy. A run's
+  progress is the status bar's: the engine logs it at DEBUG, so the log
+  file keeps it and the Log (INFO and above) does not (UI audit UI-31).
 - **The end of a run (M5a):** saving and pruning in a worker; Compare
   refreshed when shown; the results drawn once.
 - **Results › Overview (M6a):** `gui.results_overview`: one metric card
@@ -438,7 +447,9 @@ bar and no toolbar:
   export records with `gui.export_log.record(key, path)` once its files
   are written. A new export adds a row to `EXPORTS` and records itself.
   The table fits the page (`set_fit_width`, UI audit UI-27): no sideways
-  scroll at 1280 px with the Inspector open or closed.
+  scroll at 1280 px with the Inspector open or closed. Its text columns
+  wrap (`set_fit_width(wrap=...)`, UI audit B12), so every entry reads
+  whole without hover; the time last written stays on one line.
 - **Motion and scale (M8):** toasts fade in and out over
   `feedback.TOAST_FADE_MS` (150 ms, ease-out), the only motion; with
   `theme.reduce_motion()` they appear and go at once. The UI scale
@@ -469,6 +480,10 @@ bar and no toolbar:
   never below their heading's. A heading is never cut. A cell whose text
   is elided shows it whole on hover (its own tooltip first). Only a table
   whose headings alone are too wide scrolls sideways, every value whole.
+  A short table of text names its `wrap` columns instead (UI audit B12):
+  their text wraps at word boundaries, never narrower than its longest
+  word, the other columns keep their whole text, and each row is as tall
+  as its tallest cell (at least `ROW_HEIGHT`).
   A table of numbers to compare (Output, Monte Carlo) keeps its columns
   and scrolls instead.
 - **No heading cut (UI audit B9):** a column is at least as wide as its
@@ -491,7 +506,13 @@ bar and no toolbar:
   than its heading, so a table whose headings do not fit (the conductors
   and the nodes with the Inspector open at 1280 px) scrolls sideways
   itself (UI audit B9); a list without a row shows its compact empty
-  state with Add. The thermal model's ten kinds of
+  state with Add. The Budgets grids fit their width the same way
+  (`EditableTable.fit_columns`, UI audit B12): a long heading is two
+  lines, the name above the unit ("Average" over "[W]"), and the three
+  grids under the equipment list share their row by what each needs
+  (`EquipmentPage.fit_lower`) until the user drags a divider. At 1280 px
+  no grid scrolls sideways; a system mode grid with many items (a column
+  each) is the one that can. The thermal model's ten kinds of
   record are six tabs that fit 1280 x 720: Nodes, Faces, Couplings, Heat
   loads, Cases and Solver.
 - **Run › Run (M5b):** the run mode as a segmented control in the Run
@@ -500,12 +521,15 @@ bar and no toolbar:
   uses for the mode chosen: Live plot for a single
   run, the archive folder (a field and Browse..., remembered per
   scenario) for a Monte Carlo batch, the spacecraft and the program for
-  a SIL run. Forms that were dialogs are embedded (`embed_dialog`) and
+  a SIL run. The SIL page's "Spacecraft" label shows only with its list:
+  with no spacecraft to choose, only the note that says why (UI audit
+  UI-23). Forms that were dialogs are embedded (`embed_dialog`) and
   applied as edited; no OK.
 - **Problems panel, at the bottom (Ctrl+J):** a `QTableView` over
   `ProblemsModel`: Severity (icon and word), ID (the field path), Object,
-  Message; errors first, any column sorts, Ctrl+C copies TSV, Enter or a
-  double-click goes to the field. It has the DataTable look and no frame
+  Message; errors first, then the warnings, which stay listed while an
+  error is there (UI audit UI-50), any column sorts, Ctrl+C copies TSV,
+  Enter or a double-click goes to the field. It has the DataTable look and no frame
   of its own in the dock (UI audit B9). Its counts are on its title, in the
   status bar and the top bar.
 - **One place for a warning (UI audit B5, UI-37):** a problem or a
@@ -589,6 +613,8 @@ bar and no toolbar:
 | Results plot list | 16 % of the pane, 250 to 400 px, until the user drags the divider | `gui/results_widget.py` |
 | Toast | as wide as its text on one line, at most 360 px; 16 px from the work area's edge, 8 px apart | `theme.TOAST`, `gui/feedback.py` |
 | Inspector | 320 px; a new window under 1440 px starts without it | `theme.INSPECTOR_WIDTH`, `theme.INSPECTOR_MIN_WINDOW_PX` |
+| A small dialog (About) | 480 px wide | `theme.DIALOG_WIDTH["small"]` |
+| A message box's icon | 32 px, the theme's status sign | `theme.style.MESSAGE_ICON_PX`, `MESSAGE_ICONS` |
 | A panel's title bar | a compact button's height and 4 px; 16 px icons on 28 px buttons | `theme.DOCK_TITLE_HEIGHT` |
 
 **What keeps the full width:** plots, tables, the event timeline, the
@@ -717,7 +743,19 @@ with spaces (" – "), never "--"; a figure the run does not give is "–"
   has all of it.
 
 **Confirmations name the object and the consequence** ("Replace the
-earlier export?"). They are the only message boxes the app uses.
+earlier export?"). They are the only message boxes the app uses. A
+confirmation shows the theme's caution sign (the Lucide triangle in
+`status.caution`), never Qt's "?": the application style
+(`theme/style.py`, `MESSAGE_ICONS`) gives every message box the theme's
+status icons at `MESSAGE_ICON_PX` (UI audit UI-48).
+
+**About (UI audit UI-48):** Help › About is a small window of the app
+(`gui.about_dialog.AboutDialog`, `theme.DIALOG_WIDTH["small"]`), not a
+modal message box: the name, the version, the Basilisk version and the
+licence (a row each, the value in the monospace font), the licence
+lines, and the Third-Party Licences and User Manual commands as
+buttons; Close is its default button. One window, kept when
+closed.
 
 ### Feedback: which one
 
@@ -772,7 +810,22 @@ A command that cannot run now is disabled in every place at once: the
 menu, the palette, the header or top-bar button and its shortcut. Its
 tooltip and its palette entry say why (`ActionRegistry.set_available`):
 Run with no scenario, with an error in the scenario or while a run goes;
-Clear Time Cursor while no cursor is set (UI audit B2).
+Clear Time Cursor while no cursor is set (UI audit B2); the scenario's
+commands with no scenario open, Undo and Redo with nothing to change
+back, Cancel Run with no run going, Open in Own Window on a view without
+a window of its own (UI audit B12). A palette row (UI audit UI-40) shows
+the command's name, its path written with "›"; its shortcut in a column
+of its own at the right, in the monospace font; and under a disabled
+command the reason, also its tooltip (the registry's reason, else the
+"Off:" line of `widgets.set_off_reason`'s form).
+
+**One path separator (UI audit UI-23, UI-40):** the window writes a
+path ("Settings › Keyboard", "Run › Run") with "›" only, never ">". A
+palette entry keeps "Category > Command" as its key (the shortcut table
+below, the tests); the palette shows it with "›". An engine message
+keeps ">" (the command line, the Log, the files); the Problems panel
+shows it with "›" (`workspace_panels.window_path`). A test walks every
+label, button, tooltip, action, tab and palette row of the window.
 
 Commands with a **standard key** take the platform's own key for it
 (Qt's `QKeySequence.StandardKey`), so their keys differ between systems.
@@ -970,6 +1023,7 @@ decision "Breakout windows" in `docs/DECISIONS.md`):
 | A device kind, guidance mode, body and configuration parameter has a label in `gui/field_text.py` | `tests/gui/test_labels.py` |
 | Every input box has a visible border in both themes | `tests/gui/test_input_borders.py` |
 | A command on a page or in an area header looks like a button, a check box or a segment, never plain text | `tests/gui/test_settings_page.py` |
+| A path in the window is written with "›", never ">" (a palette row, a tooltip, a label, a Problems row) | `tests/gui/test_home_palette_run.py::test_the_window_writes_every_path_with_the_single_angle_quote` |
 
 ## Checking a change
 
@@ -1012,7 +1066,8 @@ Where the app does not meet `docs/ui/UI_OVERHAUL.md` after the overhaul
   observers, the 3D model's face properties and envelope, the IDM-CIC
   import and the input differences dialog are still `QTableWidget`s; they
   have the DataTable look (`set_table_look`, UI audit B9), but not its
-  copy, column menu or fitting. The Budgets grids at 1280 px scroll
-  sideways inside the grid.
+  copy, column menu or fitting. With the Inspector open at 1280 px,
+  Budgets › Power's table of the items (twelve columns) scrolls sideways
+  inside the table: its headings alone are wider than the page.
 - **Spacing:** the 4 px grid is in the style sheet and the theme's
   `SPACE`; some layouts built in code still set their own margins.

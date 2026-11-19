@@ -2526,3 +2526,37 @@ and the two `test_mission_output_widget.py` tests with position rows.
 `test_results_widget.py::test_series_colors_palette_is_8_distinct_valid_hex_colors`
 and `test_settings_page.py::test_the_settings_forms_share_one_label_column`
 (the new Plot units name shows whole) pass as they are.
+
+## UI audit B12: Home, command palette, run pages, log and dialogs
+
+B12 fixes UI-23, UI-31, UI-32, UI-38, UI-40, UI-48 and UI-50, wraps the
+text of Reports › Exports and fits the Budgets grids. The new tests are in
+`tests/gui/test_home_palette_run.py` and one in
+`tests/test_service_run_live.py`. No golden file changed.
+
+**How a test reaches a widget or an entry changed:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_home.py::test_a_cards_open_button_opens_that_template` | clicks the card's Open button | double-clicks the card, its Open now | UI-38: a card has no buttons; a double-click or Enter opens it, as before |
+| `test_home.py::test_customize_opens_the_wizard_from_the_window` | clicks the card's Customize... | selects the card, clicks the details' Customize and open... | UI-38: the details hold the one Customize |
+| `test_load_scenario_widget.py::_customize_button` (the helper of four tests) | the card's button with the accessible name "Customize: <name>" | selects the template's card and returns the details' Customize and open... | UI-38, as above. The four tests assert what they did: the button is enabled for every template with a wizard, and it emits the customized template on accept and nothing on cancel |
+| `test_command_palette.py::test_enter_runs_the_highlighted_command_and_skips_disabled_ones` | the row's text starts "Run > Run Simulation" | "Run › Run Simulation" | UI-40: the palette shows a path with "›"; the entry's label (its key) keeps ">", and the test still checks it |
+| `test_run_page.py::test_sil_without_a_program_says_what_to_do` | the toast names "Run > Run" | "Run › Run" | UI-23: the window writes a path with "›" |
+| `test_main_window.py::test_about_dialog_shows_version_and_basilisk_status` | patches `QMessageBox.about` and reads its text | reads the text of the About window (`AboutDialog.text`) | UI-48: About is a window of the app, not a message box; the same three facts are checked |
+| `test_dialogs_fit_the_screen.py::_FACTORIES` | no entry for About | `about_dialog.AboutDialog` | A new dialog class gets an entry (the test's own rule) |
+
+**A test of a removed feature changed to the feature that replaces it:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_calm_home.py::test_a_card_shows_its_title_and_kind_and_its_buttons_when_picked`, now `..._and_is_marked_when_picked` | the card picked shows its Open and Customize..., the others do not | the card has no buttons, and the card picked is marked selected, one at a time | UI-38: the hidden buttons kept their room on every card (the blank lower third) and repeated the details' buttons. The title-and-kind half of the test is unchanged |
+| `test_load_scenario_widget.py::test_customize_clicked_is_independent_of_the_lists_current_selection` | the card's own Customize... works whatever card is selected | the details' Customize and open... acts on the card selected last, whatever was selected before | UI-38. The test still selects template 01 first and checks that template 18 is customized |
+| `test_load_scenario_widget.py::test_every_customize_button_is_inside_the_list` | every card's Customize... is inside the grid's width | every card is inside the grid's width, and the details' Customize and open... inside the details | UI-38. The grid still has to follow the narrower window |
+| `test_wide_screen.py::test_a_template_row_keeps_its_customize_button_close` | at 2560 px a card's Customize... sits within the card, beside Open | a card is still under two least card widths wide, and Customize and open... sits beside Open template within the details | UI-38. On a wide screen the Customize command stays next to the template it acts on |
+
+**A rule changed, so an assertion changed:**
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_tables.py::test_the_exports_fit_the_page_with_every_heading_whole` | every row is `ROW_HEIGHT`; with the Inspector some cells are elided (whole on hover) | every row is at least `ROW_HEIGHT`; no cell is elided, with the Inspector open or closed | B9 review, carried into B12: the text columns of Exports wrap and the rows grow, so every entry reads whole without hover. The new rule is stricter on elision; the row height follows the wrap |

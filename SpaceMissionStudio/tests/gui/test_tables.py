@@ -154,8 +154,10 @@ def _not_centred(view) -> bool:
 @pytest.mark.parametrize("inspector", _INSPECTOR)
 def test_the_exports_fit_the_page_with_every_heading_whole(window, qtbot, inspector):
     """At 1280 x 720 the table does not scroll sideways, the last column is
-    in view, no heading is cut, a long cell is elided and whole on hover,
-    and the rows are at the table-row height."""
+    in view, no heading is cut, and the rows are at least the table-row
+    height. No cell is elided: since UI audit B12 the text columns wrap and
+    a row grows to its tallest cell (a cell that were elided would show
+    whole on hover)."""
     from spacemissionstudio.gui.exports_page import EXPORTS
     from spacemissionstudio.gui.theme import ROW_HEIGHT
 
@@ -168,11 +170,10 @@ def test_the_exports_fit_the_page_with_every_heading_whole(window, qtbot, inspec
     assert view.horizontalScrollBar().maximum() == 0
     assert view.horizontalHeader().length() <= view.viewport().width()
     assert _cut_headings(view) == []
-    assert {view.rowHeight(r) for r in range(table.row_count())} == {ROW_HEIGHT}
+    assert min(view.rowHeight(r) for r in range(table.row_count())) >= ROW_HEIGHT
     elided = [(row, column) for row in range(table.row_count()) for column in table.shown_columns()
               if table.cell_elided(row, column)]
-    if inspector:
-        assert elided  # 1280 px with the Inspector is too narrow for the longest texts
+    assert elided == []  # the text columns wrap (UI audit B12), with the Inspector too
     for row, column in elided:
         assert table.hover_text(row, column) in (table.cell(row, column), table.cell_tooltip(row, column))
     assert len(EXPORTS) == table.row_count()

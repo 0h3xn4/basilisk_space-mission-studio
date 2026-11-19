@@ -26,6 +26,12 @@ style sheet:
 - every :class:`QDialog`: as tall as its wrapped text needs, so nothing
   is cut off (theme/dialogs.py).
 
+and it gives a message box the theme's status icons (UI audit UI-48):
+a confirmation (Qt's question box) shows the caution sign, the theme's
+warning, never Qt's "?"; a warning the same sign; an error the critical
+sign; a note the info sign. Each is a Lucide icon in its status token,
+drawn at :data:`MESSAGE_ICON_PX`.
+
 Set by :func:`theme.apply_theme`; the style sheet goes on top of it.
 """
 
@@ -34,6 +40,18 @@ from __future__ import annotations
 from PySide6.QtWidgets import QComboBox, QDialog, QProxyStyle, QStyle
 
 from . import combo, dialogs
+from .icons import icon
+from .typography import SPACE
+
+MESSAGE_ICON_PX = SPACE["xxl"]  # [px] a message box's icon: 32 px, two lines of its text
+# A message box's icon: (Lucide name, token). A confirmation names what it does and its
+# consequence (docs/DESIGN.md, "Messages"): it is a caution, not a question mark.
+MESSAGE_ICONS = {
+    QStyle.StandardPixmap.SP_MessageBoxQuestion: ("triangle-alert", "status.caution"),
+    QStyle.StandardPixmap.SP_MessageBoxWarning: ("triangle-alert", "status.caution"),
+    QStyle.StandardPixmap.SP_MessageBoxCritical: ("octagon-alert", "status.critical"),
+    QStyle.StandardPixmap.SP_MessageBoxInformation: ("info", "text.secondary"),
+}
 
 
 class AppStyle(QProxyStyle):
@@ -49,6 +67,17 @@ class AppStyle(QProxyStyle):
         elif isinstance(arg, QDialog):
             dialogs.prepare(arg)
         return result
+
+    def standardIcon(self, standard_icon, option=None, widget=None):  # noqa: N802 -- Qt's name
+        named = MESSAGE_ICONS.get(standard_icon)
+        if named is not None:
+            return icon(*named)
+        return super().standardIcon(standard_icon, option, widget)
+
+    def pixelMetric(self, metric, option=None, widget=None):  # noqa: N802 -- Qt's name
+        if metric == QStyle.PixelMetric.PM_MessageBoxIconSize:
+            return MESSAGE_ICON_PX
+        return super().pixelMetric(metric, option, widget)
 
     def styleHint(self, hint, option=None, widget=None, return_data=None):  # noqa: N802 -- Qt's name
         if hint == QStyle.StyleHint.SH_ComboBox_Popup:

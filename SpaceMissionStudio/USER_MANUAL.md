@@ -210,7 +210,9 @@ A few things to notice right away:
     Section 7, Compare) and the **Log** (what the app logged in this
     session: each run's start, end, warnings and where it is saved, in a
     fixed-width font, filterable by level and text, with **Copy**; a
-    failed run opens it at its warnings and errors).
+    failed run opens it at its warnings and errors). A run's progress is
+    in the status bar, not in the Log; the log file (**Open log file**)
+    keeps every line.
   * **Results**, which fills in when you run something (Section 7), with
     the run's **Overview** (its headline figures), the **Plots**, the
     **Dashboard**, the mission **Output**, **Compare**: your saved runs,
@@ -233,7 +235,8 @@ A few things to notice right away:
     (`spacemissionstudio reproduce` runs it again, Section 7), events,
     mission output, the Monte Carlo runs table, the lifetime estimate,
     the budget, the flight-software project, the SIL report, the 3D
-    model and the CCSDS orbit files. Each row gives the
+    model and the CCSDS orbit files. A long entry wraps onto a second
+    line, so every entry reads whole. Each row gives the
     format, the view and button that make it, where it goes by default,
     the provenance written with it (the versions, the run or the
     scenario's SHA-256 and the time, in the file or beside it; the 3D
@@ -302,7 +305,8 @@ A few things to notice right away:
     Item, Remove Equipment Item, Copy as CSV), Check a CCSDS File...,
     Reference Data... and Check Reference Data.
   * **Help**: this manual, Keyboard Shortcuts, Third-Party Licences... and
-    About.
+    About (a small window with the version, the Basilisk version and the
+    licence, and buttons for the third-party licences and this manual).
 
   A menu item shows its shortcut and is greyed out when its command is.
   **View > Menu Bar** hides the menu bar (the window remembers it); every
@@ -330,7 +334,8 @@ A few things to notice right away:
   and the status bar only count them): **Severity** (an icon and the
   word), **ID** (the field it is about), **Object** (the scenario, the
   propagation setup, a spacecraft or ground station, the mission
-  sequence, or the run a run warning comes from) and **Message**. Errors come first; click a column's heading
+  sequence, or the run a run warning comes from) and **Message**. Errors come first, and the warnings stay
+  listed while there is an error; click a column's heading
   to sort by it, and `Ctrl+C` copies the selected rows. Double-click a row,
   or select it and press `Enter`, to go where it is fixed: the field on
   its page of the Scenario area (the **General** or **Environment** page,
@@ -421,8 +426,10 @@ choice, **Start from scratch** (**New blank scenario**), does what
 its Scenario page ("Building your own scenario, step by step", below).
 
 * **Recent scenarios** lists the last 10 scenario files you opened or
-  saved, newest first (the templates are not listed: they have their
-  cards). `Enter` or a double-click opens one; hover over it for its
+  saved, newest first, at once. A template opens as an unsaved scenario,
+  so it is listed once you save it (`Ctrl+S` asks where); its card stays
+  on Home. With no file yet, the list says so. `Enter` or a double-click
+  opens one; hover over it for its
   folder. A file that was moved or deleted says **(missing)** with a
   warning icon; `Delete` takes the selected entry off the list (the file
   stays where it is) and **Clear** empties it.
@@ -434,11 +441,14 @@ its Scenario page ("Building your own scenario, step by step", below).
   it is); and the first sentence of the template's description. The
   **Filter templates** box narrows the cards to those with every word
   you type ("monte carlo", "formation", "mars").
-* Click a card to select it: its whole description appears on the
-  right, with **Open template** and **Customize...**. The keyboard
-  reaches the cards with `Tab`; the arrow keys move between them and
-  `Enter` opens one. A card's own **Open** and **Customize...** act on
-  that card, whatever is selected.
+* Click a card to select it: the selected card has an accent edge, and
+  its whole description appears on the right, with **Open template** and
+  **Customize and open...**. **Open template** (or a double-click on the
+  card, or `Enter`) opens the template as it is. **Customize and
+  open...** first asks for the template's key settings in a short
+  wizard, then opens the result as a new, unsaved scenario (Section 5).
+  The keyboard reaches the cards with `Tab`; the arrow keys move between
+  them and `Enter` opens one.
 
 ### Open a view in its own window
 
@@ -544,10 +554,8 @@ by step (Section 6).
 
 Say "22 - Starter: your first LEO satellite" is close to what you
 want, but you'd like a lower orbit or a heavier satellite, without
-learning the full Scenario Editor. Every template card on Home has
-its own **Customize...** button – click the one on that template's
-card (no need to select the card first; the description on the right
-has **Customize...** too, for the selected card):
+learning the full Scenario Editor. Select the template's card on Home,
+then click **Customize and open...** in its description on the right:
 
 ![The Customize dialog for template 22: its key settings first, every other setting below, with a section list and a filter on the left](docs/images/customize_wizard.png)
 
@@ -1312,7 +1320,9 @@ they computed.
 1. Export the flight software and build it (above): the program is
    `<folder>/build/fsw_host`. For flight software of your own, build
    `fsw_adapter_host` from the export's `adapter/` (its `ADAPTER_GUIDE.md`).
-2. Choose **SIL** (the Run area's run mode). The **Run** page finds the
+2. Choose **SIL** (the Run area's run mode). The **Run** page lists the
+   spacecraft whose flight software can be exported (with none, it says
+   that **Reports › Flight Software** says why). It finds the
    export's `fsw_host`, or choose another program. It shows the
    program's SHA-256. Tick that you trust it (it runs with your user's
    rights) and press **Run**. Until the program is chosen and confirmed,
@@ -1671,7 +1681,9 @@ start a fresh history.
 The command palette (Ctrl+K, or the top bar's search) finds any command, area,
 page, spacecraft, ground station, setting, template or result series by a
 few letters of its name ("save as", "events", "sat-1", "05 formation",
-"velocity"). Arrows choose, Enter runs it.
+"velocity"). Arrows choose, Enter runs it. Each row shows its shortcut at
+the right. A command that cannot run now is grey, with the reason under
+its name ("No run is going.").
 
 ## 9. 3D visualization
 

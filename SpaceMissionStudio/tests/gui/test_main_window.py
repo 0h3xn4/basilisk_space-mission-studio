@@ -1410,17 +1410,11 @@ def test_about_dialog_shows_version_and_basilisk_status(window, monkeypatch):
     GUI surfaced it anywhere -- no Help menu, no About dialog, no
     version visible at all.
     """
-    from PySide6.QtWidgets import QMessageBox
-
     import spacemissionstudio
 
-    calls = []
-    monkeypatch.setattr(QMessageBox, "about", staticmethod(lambda *a, **k: calls.append(a)))
+    window.on_about()  # a window of the app since UI audit B12 (UI-48), not QMessageBox.about
 
-    window.on_about()
-
-    assert len(calls) == 1
-    shown_text = calls[0][2]
+    shown_text = window._about_dialog.text()
     assert spacemissionstudio.__version__ in shown_text
     assert "Basilisk" in shown_text
     assert "Licensed under the EUPL" in shown_text and "ISC" in shown_text  # legal milestone M2

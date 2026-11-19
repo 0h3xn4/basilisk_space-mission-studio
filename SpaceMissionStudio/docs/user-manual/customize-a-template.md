@@ -3,8 +3,9 @@
 How to change a template's key settings (altitude, mass, duration, ...)
 without learning the whole Scenario Editor.
 
-1. On **Home**, find the template's card and click its
-   **Customize...** button (you don't need to select the card first).
+1. On **Home**, click the template's card, then **Customize and
+   open...** in its description on the right. (**Open template** opens
+   it as it is.)
 2. The dialog lists every setting of that template, with its current
    value. The most important ones are under **Key settings** at the top.
    - The list on the left jumps to a section.

@@ -48,7 +48,11 @@
 - a table that fits its width (:meth:`DataTable.set_fit_width`, UI audit
   UI-27): the columns share the width of the view, the longest texts
   elided first and never a heading cut (:func:`fit_widths`); it scrolls
-  sideways only when even its headings do not fit;
+  sideways only when even its headings do not fit. A short table of text
+  can name its ``wrap`` columns instead (UI audit B12, Reports ›
+  Exports): their text wraps at word boundaries, never narrower than its
+  longest word, and each row grows to its tallest cell, so every entry
+  reads whole without hover; the other columns keep their whole text;
 - a cell whose text is elided shows it whole on hover (its own tooltip
   first).
 """
@@ -59,7 +63,7 @@ from dataclasses import dataclass, field
 from collections.abc import Callable, Sequence
 from collections.abc import Sequence as SequenceABC
 
-from PySide6.QtCore import QAbstractTableModel, QEvent, QObject, QSortFilterProxyModel, Qt, QTimer, Signal
+from PySide6.QtCore import QAbstractTableModel, QEvent, QObject, QRect, QSortFilterProxyModel, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QGuiApplication, QKeySequence, QPalette
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QHeaderView, QLabel, QMenu, QPushButton,
                                QStackedWidget, QStyle, QStyledItemDelegate, QStyleOptionViewItem, QTableView,
@@ -319,8 +323,19 @@ class _Direct:
         pass
 
 
+def _wrapped_height(metrics: QFontMetrics, text: str, room: int) -> int:
+    """[px] ``text`` wrapped at word boundaries to ``room``: its lines' height."""
+    return metrics.boundingRect(QRect(0, 0, max(room, 1), 1 << 20), int(Qt.TextFlag.TextWordWrap), text).height()
+
+
+def _longest_word(metrics: QFontMetrics, text: str) -> int:
+    """[px] the widest word of ``text``: a wrapped column is never narrower."""
+    return max((metrics.horizontalAdvance(word) for word in str(text).split()), default=0)
+
+
 def _elided(view: QTableView, index) -> bool:
-    """Whether the text of cell ``index`` is wider than its column leaves it."""
+    """Whether the text of cell ``index`` is wider than its column leaves it
+    (in a wrapping column: a word wider than it, or more lines than its row holds)."""
     text = index.data(Qt.ItemDataRole.DisplayRole)
     if not text:
         return False
@@ -328,7 +343,22 @@ def _elided(view: QTableView, index) -> bool:
     room = view.columnWidth(index.column()) - _CELL_PAD_PX
     if index.data(Qt.ItemDataRole.DecorationRole) is not None:
         room -= _ICON_PAD_PX
-    return QFontMetrics(font).horizontalAdvance(str(text)) > room
+    metrics = QFontMetrics(font)
+    if index.column() in getattr(view, "wrap_columns", ()):
+        lines = _wrapped_height(metrics, str(text), room)
+        return _longest_word(metrics, str(text)) > room or lines > view.rowHeight(index.row()) - _row_pad(view)
+    return metrics.horizontalAdvance(str(text)) > room
+
+
+def text_elided(view: QTableView, index) -> bool:
+    """Whether the text of cell ``index`` of ``view`` (any table view) is
+    elided: wider than its column leaves it."""
+    return _elided(view, index)
+
+
+def _row_pad(view: QTableView) -> int:
+    """[px] a row's height above and below its text: the table-row height less one line."""
+    return max(ROW_HEIGHT - QFontMetrics(view.font()).height(), 0)
 
 
 class _CellDelegate(QStyledItemDelegate):
@@ -382,6 +412,7 @@ class _NoteDelegate(_CellDelegate):
 class _View(QTableView):
     copy_requested = Signal()
     resized = Signal()  # its width changed: a table that fits its width fits again
+    wrap_columns: frozenset = frozenset()  # the columns whose text wraps (DataTable.set_fit_width)
 
     def resizeEvent(self, event):  # noqa: N802 -- Qt API name
         super().resizeEvent(event)
@@ -506,27 +537,39 @@ class DataTable(QWidget):
                 self._natural.append(floor)
                 continue
             width = floor
+            word = 0  # [px] the widest word: a wrapping column is never narrower (UI audit B12)
             metrics = numbers if column in self.model.numeric else codes if column in self.model.code else plain
             for index in sample:
                 row = rows[index]
                 if row.group or column >= len(row.cells):
                     continue
                 font = bold if row.bold else plain if column in row.plain else metrics
-                width = max(width, font.horizontalAdvance(row.cells[column]) + _CELL_PAD_PX
-                            + (_ICON_PAD_PX if column in row.marks else 0))
+                pad = _CELL_PAD_PX + (_ICON_PAD_PX if column in row.marks else 0)
+                width = max(width, font.horizontalAdvance(row.cells[column]) + pad)
+                word = max(word, _longest_word(font, row.cells[column]) + pad)
             self._natural.append(min(width, _MAX_COLUMN_PX))
+            if self.view.wrap_columns:  # a wrapping column down to its longest word; the others whole
+                self._floors[-1] = max(floor, word) if column in self.view.wrap_columns else self._natural[-1]
             self.view.setColumnWidth(column, self._natural[-1])
 
-    def set_fit_width(self, on: bool = True) -> None:
+    def set_fit_width(self, on: bool = True, wrap: Sequence[int] = ()) -> None:
         """Fit the columns to the view's width (UI audit UI-27): call before
         :meth:`set_table`. The longest texts are elided first (whole on
         hover), a heading is never cut, the ``stretch`` column takes what
         is left; only a table whose headings alone are too wide scrolls
-        sideways."""
+        sideways.
+
+        ``wrap`` (UI audit B12, for a short table of text such as Reports ›
+        Exports): these columns' text wraps instead of being elided, never
+        narrower than its longest word; the others keep their whole text;
+        each row is as tall as its tallest cell. Every entry then reads
+        whole without hover."""
         if on and not self._fit_width:
             self.view.resized.connect(self._fit_timer.start)
             self.view.verticalScrollBar().rangeChanged.connect(lambda *_range: self._fit_timer.start())
         self._fit_width = on
+        self.view.wrap_columns = frozenset(wrap) if on else frozenset()
+        self.view.setWordWrap(bool(self.view.wrap_columns))
 
     def _fit_columns(self) -> None:
         """The shown columns fitted to the view's width (:func:`fit_widths`)."""
@@ -541,6 +584,22 @@ class DataTable(QWidget):
         for column, width in zip(columns, widths):
             if column != self._grow:  # the stretching column takes the rest itself
                 self.view.setColumnWidth(column, width)
+        if self.view.wrap_columns:
+            self._fit_row_heights(dict(zip(columns, widths)))
+
+    def _fit_row_heights(self, widths: dict[int, int]) -> None:
+        """Each row as tall as its tallest wrapped cell at ``widths`` (the
+        columns' widths), at least the table-row height (UI audit B12)."""
+        header = self.view.verticalHeader()
+        pad = _row_pad(self.view)
+        metrics = QFontMetrics(self.view.font())
+        for row in range(self.proxy.rowCount()):
+            lines = metrics.height()
+            for column in self.view.wrap_columns:
+                if column in widths:
+                    text = self.proxy.index(row, column).data(Qt.ItemDataRole.DisplayRole) or ""
+                    lines = max(lines, _wrapped_height(metrics, str(text), widths[column] - _CELL_PAD_PX))
+            header.resizeSection(row, max(self._one_line_px, lines + pad))
 
     def cell_elided(self, row: int, column: int) -> bool:
         """Whether the shown row ``row``'s cell in ``column`` is elided (too long for its column)."""

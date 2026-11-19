@@ -67,17 +67,15 @@ def test_no_selection_disables_open_button_and_clears_description(qtbot):
 
 
 def _customize_button(widget, name_substring: str):
-    """Finds a template row's own "Customize..." button (accessible name
-    "Customize: <template name>") -- see this module's docstring for why
-    each row has its own always-enabled button rather than one shared,
-    selection-dependent button.
+    """The template's "Customize and open..." button: its card selected, the
+    details' button (UI audit B12: a card has no buttons of its own; the
+    details hold Open template and Customize and open... for the card
+    selected).
     """
-    from PySide6.QtWidgets import QPushButton
-
-    matches = [b for b in widget.findChildren(QPushButton)
-               if b.accessibleName().startswith("Customize: ") and name_substring in b.accessibleName()]
-    assert len(matches) == 1, f"expected exactly one Customize button matching {name_substring!r}, got {matches}"
-    return matches[0]
+    matches = [card for card in widget.cards if name_substring in card.name]
+    assert len(matches) == 1, f"expected exactly one template matching {name_substring!r}, got {matches}"
+    widget.select(matches[0].name)
+    return widget.customize_template_button
 
 
 def test_left_pane_content_fits_a_default_window_without_horizontal_scrolling(wide_screen, qtbot, restored_theme):
@@ -125,9 +123,8 @@ def test_customize_button_exists_for_every_template_with_a_registered_wizard_spe
     for scenario_name, path in widget._template_paths.items():
         if get_wizard_spec(path.name) is None:
             continue
-        # Has one, and it's enabled without any prior selection --
-        # these buttons are standalone actions, not gated on
-        # widget.selected_card().
+        # Has one: Customize and open... is enabled for its card (UI audit
+        # B12: the details' button, for the card selected).
         button = _customize_button(widget, scenario_name)
         assert button.isEnabled()
 
@@ -172,8 +169,9 @@ def test_customize_clicked_emits_nothing_on_cancel(qtbot, monkeypatch):
 def test_customize_clicked_is_independent_of_the_lists_current_selection(qtbot, monkeypatch):
     """Regression test for the earlier (replaced) design, where a single
     shared "Customize..." button only worked for whatever template was
-    currently selected in the list above -- these standalone buttons
-    must work regardless of that selection.
+    currently selected in the list above. Since UI audit B12 the details'
+    Customize and open... acts on the card selected last, whatever was
+    selected before it.
     """
     from spacemissionstudio.gui.load_scenario_widget import LoadScenarioWidget
     from spacemissionstudio.gui.template_wizard import TemplateCustomizeWizard
@@ -415,8 +413,9 @@ def test_the_selected_templates_title_stays_readable(qtbot, restored_theme):
 
 def test_every_customize_button_is_inside_the_list(qtbot):
     """In the main window the template grid is narrower than when its cards
-    were first laid out; the cards follow it, so each card's Customize...
-    button stays inside the grid instead of past its right edge."""
+    were first laid out; the cards follow it, so each card stays inside the
+    grid instead of past its right edge, and the details' Customize and
+    open... (UI audit B12: a card has no buttons) is inside the details."""
     from spacemissionstudio.gui.load_scenario_widget import LoadScenarioWidget
     from spacemissionstudio.gui.main_window import MainWindow
 
@@ -427,10 +426,14 @@ def test_every_customize_button_is_inside_the_list(qtbot):
     qtbot.waitExposed(window)
     widget = window.findChildren(LoadScenarioWidget)[0]
     viewport = widget.grid_scroll.viewport()
-    buttons = [card.customize_button for card in widget.cards if card.customize_button is not None]
-    assert buttons
+    cards = list(widget.cards)
+    assert cards
 
     def outside():
-        return [b.accessibleName() for b in buttons if b.mapTo(viewport, b.rect().topRight()).x() >= viewport.width()]
+        return [c.accessibleName() for c in cards if c.mapTo(viewport, c.rect().topRight()).x() >= viewport.width()]
 
     qtbot.waitUntil(lambda: outside() == [], timeout=3000)  # the grid lays its cards out again on its own time
+    widget.select(0)
+    button, details = widget.customize_template_button, widget.description_scroll.viewport()
+    qtbot.waitUntil(button.isVisible)
+    assert button.mapTo(details, button.rect().topRight()).x() < details.width()

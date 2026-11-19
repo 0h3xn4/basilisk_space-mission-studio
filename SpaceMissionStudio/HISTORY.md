@@ -19494,3 +19494,118 @@ Tests: `tests/gui/test_plot_units.py` (4), three in `test_theme.py`,
 one in `test_lifetime_widget.py` and one in `test_thermal_views.py`.
 Three existing GUI tests changed; `docs/ui/TEST_CHANGES.md` lists them.
 The golden files and the exported files are unchanged.
+
+## UI audit batch B12: Home, command palette, run pages, log and dialogs (2026-11-19)
+
+The screenshot audit of 2026-11-17 found seven defects in these views.
+Run › Run in SIL mode showed a "Spacecraft" label with no list beside it
+(UI-23). Run › Log had about 60 "run_live: x% complete" lines per run
+(UI-31). Home's recent list still said "No recent scenarios yet" after
+template 01 opened (UI-32). The template cards had a blank lower third,
+the selected card had no visible accent edge, and Open and Customize
+were on the card and in the details (UI-38). The command palette joined
+the shortcut to the name with spaces and greyed a disabled command with
+no reason (UI-40). About was Qt's plain message box, and a confirmation
+had Qt's "?" icon (UI-48). The Problems panel dropped the warnings while
+the scenario had an error (UI-50). The B9 review added two more: Reports ›
+Exports elided most "Made in", "Format" and "Provenance" cells with the
+Inspector open, and the Budgets grids scrolled sideways at 1280 px.
+
+**One path separator (UI-23, UI-40).** The Run page, the run modes' and
+the shortcut list's tooltips and the Reference data card wrote paths with
+">". They now use "›". A palette entry keeps "Category > Command" as its
+key, which DESIGN.md's shortcut table test and many test lookups read;
+`PaletteEntry.shown` writes it with "›". The engine's messages keep ">"
+(the golden files, the command line); `workspace_panels.window_path`
+shows them with "›" in the Problems panel. A test walks every label,
+button, tooltip, action, tab and palette row of the window in each run
+mode.
+
+**SIL's label (UI-23).** The label and its list are one row. With no
+spacecraft whose flight software can be exported the row is hidden and
+the note says why; with one, the label names its list (its buddy).
+
+**The Log (UI-31).** `SimulationService.run_live` logs its progress at
+DEBUG. The window's Log takes INFO and above, so a run's records are its
+start, its end, its warnings and where it is saved. The log file takes
+DEBUG and keeps the progress lines. The command line's `run` calls
+`SimulationService.run`, so its output is the same; a run of the
+two-body validation scenario before and after printed the same lines.
+
+**Recent scenarios (UI-32).** The rule stays: a file opened or saved is
+listed. A template opens unsaved, so it is listed once saved. The empty
+state is now the `EmptyState` of every list, and it says the rule. The
+list already followed an open and a save at once; a test now checks it
+without showing Home again.
+
+**Template cards (UI-38).** A card has its title and kind and no
+buttons. The buttons were hidden but kept their room on every card, which
+was the blank lower third. One way to open: Open template in the
+details, or a double-click or Enter on the card. The details' second
+button is "Customize and open...", which names what it does
+differently. The selected card's edge is the accent at the focus ring's
+2 px; the 1 px accent border did not show on the selected surface.
+
+**The command palette (UI-40).** `_EntryDelegate` draws a row: the name
+on the left, the shortcut right-aligned at the row's inset in the
+monospace font, and under a disabled command its reason in the caption
+size. The reason is the registry's (`ActionRegistry.set_available`),
+else the "Off:" line of the action's tooltip. Most commands were
+disabled with `setEnabled` and no reason. The window now uses
+`set_available` with a reason for the scenario's commands, Undo and
+Redo, Cancel Run, the run mode and Live plot during a run, and Open in
+Own Window. A test opens a window with and without a scenario and finds
+a reason for every disabled command.
+
+**About and confirmations (UI-48).** `gui.about_dialog.AboutDialog` is
+a window of the app, not modal, kept when closed: the name, the
+version, the Basilisk version and the licence (a row each, the value in
+the monospace font), the licence lines, and the Third-Party Licences and
+User Manual commands as buttons; Close is the default button. A value
+sheet right-aligns its values as numbers, which looked ragged for
+"EUPL-1.2", so the rows are a plain grid. The confirmations keep `QMessageBox.question`, which 67 tests
+answer. The application style (`theme/style.py`) gives every message
+box the theme's status icons instead: the caution sign for a
+confirmation and a warning, the critical sign for an error, the info
+sign for a note, 32 px.
+
+**Problems (UI-50).** `ScenarioEditorWidget.revalidate` computed the
+plausibility warnings only when the scenario validated. It now computes
+them always and lists them after the errors. A "check not run" line is
+left out while there is an error: the check failed because of it.
+
+**Reports › Exports (B9 review).** `DataTable.set_fit_width` takes
+`wrap`, the columns whose text wraps. A wrapped column is never
+narrower than its longest word, so no word is elided; the other columns
+keep their whole text; each row is as tall as its tallest wrapped cell
+(`_fit_row_heights`), at least `ROW_HEIGHT`. `cell_elided` knows a
+wrapped column. Exports wraps all its columns except the time last
+written.
+
+**The Budgets grids (B9 review).** An `EditableTable` fits its columns
+to its width with `data_table.fit_widths`, as a `DataTable`. Its last
+column no longer stretches: a stretched last section never went below
+Qt's default section size (100 px), so a narrow grid still scrolled by
+its last column. Long headings are two lines (`Column.heading`). The
+three grids under the equipment list sat in equal thirds; they now
+share the row by what each needs (`EquipmentPage.fit_lower`) until the
+user drags a divider. Budgets › Power's tables fit their width too,
+their long headings on two lines. At 1280 px no grid scrolls sideways,
+with the Inspector open or closed. Budgets › Power's table of the items
+(twelve columns) still scrolls inside itself with the Inspector open:
+its headings alone are wider than the page.
+
+Tests: the new file `tests/gui/test_home_palette_run.py` has 16 tests
+(19 cases, some with the Inspector open and closed), and
+`tests/test_service_run_live.py` one more. Every case failed before the
+fixes but one: the Budgets case with the Inspector open, which asks only
+that no heading is cut and that the page does not scroll. Thirteen
+existing tests and one test helper changed how they reach a widget or
+follow the new rules; `docs/ui/TEST_CHANGES.md` lists each. The full
+suites passed: 2174 GUI tests and 3526 others. The golden files and the
+export files are unchanged. Screenshots at 1280 x 720 (Inspector open
+and closed) and 1920 x 1080, light and dark, before and after, show
+Home (fresh, a card selected, after a template and after a save), the
+command palette with disabled commands, Run › Run in each mode, Run ›
+Log after a short run, About, a confirmation, the Problems panel with
+an error and warnings, Reports › Exports and the Budgets pages.

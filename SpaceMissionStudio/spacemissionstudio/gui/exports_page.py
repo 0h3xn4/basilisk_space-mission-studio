@@ -109,6 +109,7 @@ EXPORTS = (
 )
 _HEADERS = ("Export", "Last written\n[UTC]", "Format", "Made in", "Default destination", "Provenance")
 _LAST = 1  # the column of the time last written
+_WRAPPED = (0, 2, 3, 4, 5)  # the columns of text, which wrap; the time stays on one line
 
 
 class ExportsPage(QWidget):
@@ -127,7 +128,8 @@ class ExportsPage(QWidget):
         note.setWordWrap(True)
         layout.addWidget(note)
         self.table = DataTable("No exports.")
-        self.table.set_fit_width()  # no sideways scroll at 1280 px (UI-27)
+        # No sideways scroll at 1280 px (UI-27); the text columns wrap, so every entry reads whole (UI audit B12).
+        self.table.set_fit_width(wrap=_WRAPPED)
         self.table.view.activated.connect(self._on_activated)
         layout.addWidget(self.table, 1)
         export_log.signals.changed.connect(self._on_logged)

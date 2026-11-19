@@ -134,6 +134,7 @@ _FACTORIES = {
     "phasing_formation_dialog.PhasingFormationDialog": _formation("phasing_formation_dialog",
                                                                   "PhasingFormationDialog"),
     "licences_dialog.LicencesDialog": _simple("licences_dialog", "LicencesDialog"),
+    "about_dialog.AboutDialog": _simple("about_dialog", "AboutDialog"),
     "change_history_dialog.ChangeHistoryDialog": lambda p: importlib.import_module(
         "spacemissionstudio.gui.change_history_dialog").ChangeHistoryDialog(p / "scenario.json"),
     "provenance_view.ProvenanceDialog": _simple("provenance_view", "ProvenanceDialog", "a run", None),

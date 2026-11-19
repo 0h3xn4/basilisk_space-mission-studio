@@ -31,22 +31,31 @@ three columns:
   itself (:func:`mission_type`, :func:`orbit_summary`,
   :func:`first_sentence`); no metadata is added for them. Text only, no
   thumbnails (plan §9, Q4). A filter narrows the cards.
-* **Details**: the selected template's whole description, with Open and
-  Customize.
+* **Details**: the selected template's whole description, with Open
+  template and Customize and open....
 
 The page only picks: a path (:attr:`path_chosen`), a customized scenario
 (:attr:`scenario_customized`) or a blank one (:attr:`blank_requested`);
 ``MainWindow`` opens it, so one place knows how to open a scenario.
 
-Each card's Customize... acts on THAT card's template, never on the
-selection (users missed a single Customize button gated on a selection).
-The keyboard: Tab reaches the cards once, the arrow keys move between
-them, Enter opens one; the details' Customize... is the next Tab stop.
+One way to open a template (UI audit UI-38): select its card (a click,
+the arrow keys), then Open template in the details, or double-click the
+card or press Enter on it. A card has no buttons of its own: they showed
+on the card under the pointer and kept their room on every other card,
+so the lower third of each card was blank, and they repeated the details'
+buttons. Customize and open... does something else: a short wizard over
+the template's key settings first, then the result opens as a new,
+unsaved scenario. The keyboard: Tab reaches the cards once, the arrow
+keys move between them, Enter opens one; the details' buttons are the
+next Tab stops.
+
+The recent scenarios are the files opened or saved (decision B12-2 in
+``docs/DECISIONS.md``): a template opens unsaved, so it is listed once it
+is saved; its card stays on Home.
 """
 
 from __future__ import annotations
 
-import functools
 import html
 import logging
 import re
@@ -104,6 +113,10 @@ CARD_MIN_WIDTH_PX = 264  # [px] a card's least width; the columns follow the pan
 _CARD_LINES = 4  # the one line wraps to at most this many lines, then elides
 _START_WIDTH_PX = 280  # [px] the Start column's width in a new window
 _DETAILS_WIDTH_PX = 320  # [px] the details column's width in a new window
+# Home's recent list while it is empty: the rule of what it lists (UI audit UI-32, decision B12-2).
+RECENT_EMPTY = ("No recent scenario files",
+                "A scenario file you open or save is listed here. A template opens unsaved: save it "
+                "(Ctrl+S) to list it.")
 _CIRCULAR_BELOW = 0.01  # [-] an eccentricity below this is shown as a circular orbit
 
 # A sentence ends at ".", "!" or "?" before a space; "e.g." and the like do not end one.
@@ -296,12 +309,13 @@ class _CardText(QWidget):
 
 
 class TemplateCard(QFrame):
-    """One template: its title, mission type, orbit and one line, with
-    Open and (if it has a wizard) Customize...."""
+    """One template: its title and mission type (its orbit and one line are
+    read for the filter and the details). No buttons: a double-click or
+    Enter opens it, the details hold Open template and Customize and open...
+    (UI audit UI-38). ``customizable``: it has a wizard."""
 
     selected = Signal(object)  # this card, when clicked or focused
     open_requested = Signal(object)  # Path
-    customize_requested = Signal(object)  # Path
 
     def __init__(self, scenario, path: Path, customizable: bool, parent: QWidget | None = None):
         super().__init__(parent)
@@ -332,71 +346,16 @@ class TemplateCard(QFrame):
         # still reads them.
         self.orbit_label.hide()
         self.line_label.hide()
+        self.customizable = customizable
+        # Sized to its content: the title and the kind, at the top of the grid's row (UI audit UI-38).
         layout.addStretch(1)
-
-        self.buttons_holder = QWidget()
-        buttons = QHBoxLayout(self.buttons_holder)
-        buttons.setContentsMargins(0, 0, 0, 0)
-        buttons.setSpacing(SPACE["xs"])
-        # Not Tab stops: the cards are one stop (the arrow keys move between
-        # them, Enter opens) and the details hold the same two buttons.
-        self.open_button = QPushButton("Open")
-        self.open_button.setAccessibleName(f"Open: {scenario.name}")
-        self.open_button.setToolTip(f"Open '{scenario.name}' in the Scenario area (Enter)")
-        self.open_button.clicked.connect(lambda: self.open_requested.emit(self.path))
-        buttons.addWidget(self.open_button)
-        self.customize_button: QPushButton | None = None
-        if customizable:
-            button = QPushButton("Customize...")
-            button.setObjectName("rowCustomizeButton")
-            button.setAccessibleName(f"Customize: {scenario.name}")
-            button.setToolTip(
-                f"Customize '{scenario.name}': a short, guided wizard over just this template's own key tunable "
-                "parameters, then opens the result in the Scenario Editor – the original template file "
-                "is never modified."
-            )
-            button.clicked.connect(lambda: self.customize_requested.emit(self.path))
-            buttons.addWidget(button)
-            self.customize_button = button
-        for button in (self.open_button, self.customize_button):
-            if button is not None:
-                button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-                button.setCursor(Qt.CursorShape.PointingHandCursor)
-                set_role(button, variant="ghost")
-        buttons.addStretch(1)
-        layout.addWidget(self.buttons_holder)
-        # Shown on the card under the pointer and the card picked; their room
-        # is kept (and laid out), so the grid does not move.
-        for button in self._buttons():
-            policy = button.sizePolicy()
-            policy.setRetainSizeWhenHidden(True)
-            button.setSizePolicy(policy)
-        self._show_buttons(False)
-
-    def _buttons(self) -> list:
-        return [button for button in (self.open_button, self.customize_button) if button is not None]
-
-    def _show_buttons(self, shown: bool) -> None:
-        for button in self._buttons():
-            button.setVisible(shown)
-
-    def buttons_shown(self) -> bool:
-        return self.open_button.isVisibleTo(self)
-
-    def enterEvent(self, event) -> None:
-        self._show_buttons(True)
-        super().enterEvent(event)
-
-    def leaveEvent(self, event) -> None:
-        self._show_buttons(self.is_selected())
-        super().leaveEvent(event)
 
     def text_for_filter(self) -> str:
         return " ".join((self.name, self.type_label.text(), self.orbit_label.text(), self.description)).casefold()
 
     def set_selected(self, selected: bool) -> None:
+        """Mark the card selected: the theme's selected surface and its accent edge (``theme/qss.py``)."""
         set_role(self, selected="true" if selected else None)
-        self._show_buttons(selected or self.underMouse())
 
     def is_selected(self) -> bool:
         return self.property("selected") == "true"
@@ -611,11 +570,13 @@ class LoadScenarioWidget(QWidget):
         self.recent_list.itemActivated.connect(self._on_recent_activated)
         self.recent_list.installEventFilter(self)
         column.addWidget(self.recent_list)
-        # The empty state; its primary action, Open, is the button under it
-        # (CLAUDE.md, "Shell").
-        self.recent_empty = set_role(QLabel("No recent scenarios yet. Scenarios you open or save are listed here."),
-                                     tone="secondary")
-        self.recent_empty.setWordWrap(True)
+        # The empty state; its action, Open, is the button under it (CLAUDE.md, "Shell"). What it
+        # says is the rule (decision B12-2): a file opened or saved is listed, a template once saved.
+        self.recent_empty = EmptyState(*RECENT_EMPTY, compact=True)
+        self.recent_empty.layout().setContentsMargins(0, 0, 0, 0)  # at the column's inset, as its title
+        # As tall as its wrapped lines at the column's width: the compact form's Maximum height is its
+        # height at its preferred, wider width, which cut the last line in this narrow column.
+        self.recent_empty.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         column.addWidget(self.recent_empty)
         self.browse_button = QPushButton("Open a scenario file...")
         self.browse_button.setIcon(icon("folder-open", "text.secondary"))
@@ -750,8 +711,6 @@ class LoadScenarioWidget(QWidget):
             card = TemplateCard(scenario, path, spec is not None)
             card.selected.connect(self._select_card)
             card.open_requested.connect(self.path_chosen)
-            card.customize_requested.connect(
-                functools.partial(self._on_customize_card, scenario.name))
             self.grid.add(card)
             self.cards.append(card)
         self._update_count()
@@ -812,10 +771,12 @@ class LoadScenarioWidget(QWidget):
         self.set_primary(True)
         self.open_template_button.setEnabled(False)
         self.open_template_button.clicked.connect(self._on_open_template_clicked)
-        self.customize_template_button = QPushButton("Customize...")
+        # What it does differently from Open template is in its name (UI audit UI-38).
+        self.customize_template_button = QPushButton("Customize and open...")
         self.customize_template_button.setEnabled(False)
-        self.customize_template_button.setToolTip("A short, guided wizard over this template's key settings; "
-                                                  "the template file is never modified.")
+        self.customize_template_button.setToolTip("Set this template's key values in a short wizard first; the "
+                                                  "result opens as a new, unsaved scenario. The template file "
+                                                  "stays as shipped.")
         self.customize_template_button.clicked.connect(self._on_customize_selected)
         buttons.addWidget(self.open_template_button)
         buttons.addWidget(self.customize_template_button)
@@ -870,7 +831,7 @@ class LoadScenarioWidget(QWidget):
             fold.show()  # at once, not when Qt gets round to it
             self.folds.append(fold)
         self.open_template_button.setEnabled(card is not None)
-        self.customize_template_button.setEnabled(card is not None and card.customize_button is not None)
+        self.customize_template_button.setEnabled(card is not None and card.customizable)
         if card is not None:
             self.open_template_button.setToolTip(f"Open '{card.name}' (Enter on its card)")
 
@@ -884,8 +845,8 @@ class LoadScenarioWidget(QWidget):
             self._on_customize_card(self._selected.name)
 
     def _on_customize_card(self, name: str, _path=None) -> None:
-        """A card's own Customize...: acts on that card's template, whatever
-        is selected."""
+        """Customize and open... for the template ``name``: its wizard, then
+        :attr:`scenario_customized` with the result."""
         path, spec = self._template_paths[name], self._specs.get(name)
         if spec is None:
             return
