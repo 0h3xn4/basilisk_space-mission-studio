@@ -20045,3 +20045,47 @@ and that only a Python reference keeps must keep no Python attribute.
 - The two filters keep no Python attribute and still work.
 No existing test changed. The conftest change is logged in
 `docs/ui/TEST_CHANGES.md`.
+
+## Release 2.13.1 prepared (2026-11-20)
+
+A patch release. It fixes bugs in the window and changes no file
+format. Contents since 2.13.0: the 2.13.0 publication record (#299), the
+plot items (#301, K-46), the small window fixes (#300, K-46) and the
+background-thread crashes (#302, K-44). #299 to #301 are merged into
+`develop`. #302 was still in CI when this release was prepared, at head
+`ed436170f7`. The branch `release/2.13.1` starts from that head, so the
+release pull request carries #302 until #302 merges.
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4. The version
+is 2.13.1 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+No other file or test names the version. The CHANGELOG's Unreleased
+entries are under 2.13.1, with an introduction, Who should update and
+Known limits; the K-44 entry has a bold lead, as the others have.
+SRelD issue 47 records the release: K-44 is partly fixed, K-46 is
+closed, and K-13 and K-45 are extended. The SDP, SRS, ICD, CSD, SUM,
+limitations and both READMEs name 2.13.1. `BACKLOG.md` is unchanged:
+the three pull requests already moved their items.
+
+The space weather was not refreshed. 2.13.0 refreshed it on 2026-11-19,
+the day before (observations to 2026-11-18), so 2.13.1 carries 2.13.0's
+file.
+
+Compatibility was checked on the code, not by a run of 2.13.0's code.
+`schema/`, the templates, the golden files and `packaging/` have no
+change since the 2.13.0 tag `c3eeb85`. Outside `gui/`, only
+`engine/series_names.py` changed: it adds `device_column_labels`, a map
+of wheel names for the window. The code that saves and opens a scenario
+file is unchanged, so 2.13.0 and 2.13.1 save and open the same files.
+
+CI's "Windows (MAX Python)" job still fails the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45). By the owner's decision, the release pull request may be merged
+with that check red, for that framework test only.
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4 -p no:cacheprovider -o faulthandler_timeout=600` as CI
+runs it: 5752 passed (3526 outside `tests/gui/` and 2226 in it; 5725 at
+2.13.0), none failed. The release changed no test, so
+`docs/ui/TEST_CHANGES.md` is unchanged. The release check
+(`packaging/release_check.py`) passed, and the AppStream metadata for
+2.13.1 passed `appstreamcli validate --no-net`.
