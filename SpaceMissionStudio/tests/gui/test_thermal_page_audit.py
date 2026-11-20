@@ -260,7 +260,7 @@ def test_studies_choose_a_parameter_by_its_label(qtbot, solved):
     widget.run_sweep()
     qtbot.waitUntil(lambda: widget._study_worker is None and not widget.study_table.isHidden(), timeout=120000)
     assert widget.study_table.row_count() == 2
-    assert widget.study_table.header_text(1) == "bus min\n[°C]"  # the user's name as it is
+    assert widget.study_table.header_text(1) == "bus\nmin [°C]"  # the user's name as it is
     assert widget.study_label.text().startswith("Sweep of Face radiator: emissivity in the nominal case")
 
 
@@ -408,3 +408,85 @@ def test_no_tab_makes_the_page_wider_than_its_header(qtbot, solved):
     _tab(widget, qtbot, "Notes")
     assert widget.notes_values.isAncestorOf(widget.solution_table)
     assert widget.solution_table.width() >= widget.solution_table.minimumSizeHint().width()  # whole at 1280 px
+
+
+# -- 2.13.1: small window fixes --------------------------------------------------------------------------
+
+def _figures(text: str) -> int:
+    """The significant figures of a number as the window writes it
+    ("5.11e+03" 3, "4.9e+03" 2, "0.400" 3, "490" 3)."""
+    digits = text.lower().split("e")[0].lstrip("+-").replace(".", "")
+    return len(digits.lstrip("0")) or 1
+
+
+def test_each_solution_column_has_one_number_of_significant_figures():
+    """Run › Thermal › Notes wrote the energy residual with two or three
+    significant figures in one column (5.11e+03 and 4.9e+03): a trailing
+    zero was dropped. Each number column now has three in every row; the
+    values are the analysis's own."""
+    from types import SimpleNamespace
+
+    from spacemissionstudio.gui.thermal_widget import solution_rows
+
+    def case(name, residual, throughput, step):
+        solution = SimpleNamespace(periodic=SimpleNamespace(converged=True, orbits=3), energy_residual_j=residual,
+                                   energy_throughput_j=throughput, step_check_k=step)
+        return SimpleNamespace(name=name, solution=solution)
+
+    analysis = SimpleNamespace(cases=[case("nominal", 5110.0, 6.94e6, 0.463), case("cold", -4900.0, 6.5e6, 0.4),
+                                      case("hot", 490.0, 7.0e6, 0.045)])
+    rows = solution_rows(analysis)
+    for column in (3, 4, 5):
+        assert {_figures(row[column]) for row in rows} == {3}, [row[column] for row in rows]
+    assert [row[3] for row in rows] == ["5.11e+03", "4.90e+03", "490"]
+    for row, value in zip(rows, (5110.0, 4900.0, 490.0)):
+        assert float(row[3]) == pytest.approx(value, rel=1e-2)
+
+
+def test_the_heater_energy_heading_writes_its_unit_as_the_other_energy_columns():
+    """The heaters' energy heading read "W·h"; the window writes an energy
+    in watt-hours "Wh" everywhere else (``units.shown("W*h")``, UI audit
+    UI-35)."""
+    from spacemissionstudio.gui import units
+    from spacemissionstudio.gui.thermal_widget import heading
+
+    assert heading("energy_wh") == f"Energy [{units.shown('W*h')}]" == "Energy [Wh]"
+    assert "·h" not in units.label(heading("energy_wh"))
+
+
+@pytest.mark.requires_basilisk
+def test_the_heaters_table_writes_the_energy_in_wh(qtbot, solved):
+    """Heaters and radiators: the energy column's heading is "Energy" over
+    "[Wh]", as the other energy columns write it."""
+    widget = _page(qtbot, solved)
+    _tab(widget, qtbot, "Heaters and radiators")
+    table = widget.tables["heaters"][1]
+    headings = [table.header_text(c) for c in range(table.column_count())]
+    assert "Energy\n[Wh]" in headings and not [h for h in headings if "W·h" in h], headings
+
+
+@pytest.mark.requires_basilisk
+@pytest.mark.parametrize("inspector", [True, False], ids=["inspector", "no-inspector"])
+def test_the_sweep_table_fits_the_page_at_1280(qtbot, monkeypatch, solved, inspector):
+    """Studies: the sweep's table (a column for each node's minimum and
+    maximum) scrolled sideways at 1280 x 720. Each heading is now the
+    node's name over "min [°C]" or "max [°C]": the table fits the page
+    with the Inspector open or closed, no heading is cut and every value
+    is whole."""
+    window, page = _window(qtbot, monkeypatch, solved)
+    window.side_dock.setVisible(inspector)
+    page.choose_parameter("faces[radiator].emissivity")
+    page.sweep_values.setText("0.8, 0.9")
+    page.run_sweep()
+    qtbot.waitUntil(lambda: page._study_worker is None and not page.study_table.isHidden(), timeout=120000)
+    _tab(page, qtbot, "Studies")
+    table = page.study_table
+    view = table.view
+    assert table.row_count() == 2 and view.isVisible()
+    qtbot.waitUntil(lambda: view.horizontalScrollBar().maximum() == 0, timeout=3000)
+    header = view.horizontalHeader()
+    assert [table.header_text(c) for c in range(table.column_count())
+            if header.sectionSize(c) < header.sectionSizeHint(c)] == []
+    assert [(r, c) for r in range(table.row_count()) for c in range(table.column_count())
+            if table.cell_elided(r, c)] == []
+    window._mark_clean()

@@ -33,18 +33,6 @@
   follow-up). Add a test that fails without the fix where one can be
   made; otherwise record the measurements and move the item to
   `## Needs human`.
-- Run › Thermal › Notes: "Energy residual [J]" mixes significant
-  figures (5.11e+03 and 4.9e+03). Give the column one number of
-  significant figures, as the design rules ask for one quantity.
-- Budgets › Power: with the Inspector open at 1280 px, the items table
-  scrolls inside itself. Make it fit the page, as the other Budgets
-  grids do since B12, and add a test at 1280 px with the Inspector open.
-- Three small window items seen while 2.13.0 was prepared. Home's
-  template cards show "--" in some descriptions, although B4 writes a
-  dash as "–". The thermal sweep table scrolls sideways at 1280 px. The
-  heater energy heading reads "W·h"; write the unit as the other
-  energy columns do. Change only what the window shows; the scenario
-  files and the exported files must not change.
 - A pointing error budget (the owner's feedback, 2026-11-18). Checked on
   2026-11-19: the app has none. The Budgets area has mass, power and
   propellant; the System Budget Studio merge plan

@@ -4646,3 +4646,43 @@ JSON and HTML exports and the golden files are unchanged.
   indices for now (not in the audit's list).
 - **Noted:** a plot saved as PNG or SVG from the window is a picture of
   the window's figure, so it shows the grey bands and the wheel names.
+
+## Small window fixes (2.13.1, 2026-11-20)
+
+- **Decision:** a fitted `DataTable` without a sort indicator may squeeze
+  a column to the heading's width as the style draws it
+  (`sectionSizeHint`). The 12 px of the sort indicator count only when
+  the table shows one. With room, a column keeps its old width. **Why:**
+  Budgets › Power's table of the items and the thermal sweep table
+  scrolled sideways at 1280 px. Of the fitted tables, none shows a sort
+  indicator.
+- **Decision:** Budgets › Power's table of the items writes every
+  number's heading in two or three lines, the name above the unit, as
+  the Equipment grids do (B12). **Why:** with one-line headings the
+  twelve columns needed 988 px; the table has 879 px beside the
+  Inspector. Two-line headings needed 821 px on Linux, and Windows CI
+  showed that this was not enough there. With "Duty", "With margin" and
+  "Peak with margin" on one more line they need 786 px on Linux.
+- **Decision:** a fitted `DataTable` whose headings do not fit even at
+  their least widths scrolls sideways, and its stretching column then
+  keeps its whole width (Interactive mode). With room again, the column
+  stretches. **Why:** in Qt's Stretch mode an overflowing table
+  squeezed the stretching column below its heading (Budgets › Power's
+  "Item" on Windows CI, PR #300).
+- **Decision:** a sweep's heading is the node's name over its extreme
+  and unit ("radiator" over "min [°C]"). The table keeps a column per
+  node and extreme. **Why:** template 33's 13 columns needed 1257 px;
+  the page has 1005 px beside the Inspector. Now they need 947 px. A
+  table in rows of node and value was not chosen: it changes how users
+  read a sweep. B11's "Left as it is" for this table no longer holds.
+- **Decision:** Run › Thermal › Notes writes the solution checks with
+  three significant figures and keeps a trailing zero ("4.90e+03").
+  **Why:** `:.3g` dropped it, so one column had two and three figures.
+- **Decision:** Home shows a template description's " -- " as " – "
+  when it shows the text. The template files keep "--". **Why:** B4
+  changed the window's own strings, not the templates; the golden files
+  and the command line read the files. A name ("bus--avionics") and a
+  flag ("--out") keep their hyphens.
+- **Decision:** a thermal heading writes an energy unit "Wh"
+  (`units.shown("W*h")`), as the other energy columns do. **Why:** B4
+  (UI-35) chose "Wh"; the thermal headings had their own map.

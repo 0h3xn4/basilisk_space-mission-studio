@@ -135,7 +135,7 @@ def test_table_headings_carry_their_units():
     from spacemissionstudio.gui.thermal_widget import heading
 
     assert [heading(k) for k in ("min_c", "cold_margin_k", "energy_wh", "area_m2", "heat pipes_w", "duty")] == [
-        "Min [°C]", "Cold margin [K]", "Energy [W·h]", "Area [m²]", "Heat pipes [W]", "Duty"]
+        "Min [°C]", "Cold margin [K]", "Energy [Wh]", "Area [m²]", "Heat pipes [W]", "Duty"]
 
 
 def test_the_timeline_shows_thermal_limit_events_added_after_the_run(qtbot):
