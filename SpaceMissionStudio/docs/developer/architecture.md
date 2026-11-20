@@ -87,6 +87,12 @@ days (`engine/long_run.py`).
   pool from there, each run in its own process. The start-up reading of
   the reference data also runs in a child process
   (`gui/reference_data_process.py`), so the window does not stall.
+- Garbage is collected on the GUI thread only (`gui/background_threads.py`,
+  SRelD K-44). The app turns Python's automatic collection off at start
+  and checks every 20 ms on the GUI thread whether a collection is due. A
+  collection in a worker thread destroyed widgets there, and the process
+  crashed. A heavy first import off the GUI thread (the start-up
+  warm-ups, a run's engine) holds `background_threads.FIRST_IMPORTS`.
 
 ## Where things live
 

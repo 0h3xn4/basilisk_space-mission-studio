@@ -174,12 +174,18 @@ def icon_file(name: str, colour: str, stroke_width: float | None = None) -> Path
 
 class _KeepIcon(QObject):
     """Sets an icon on a tool button again after its action changes (Qt
-    copies the action's icon onto the button on every change)."""
+    copies the action's icon onto the button on every change).
+
+    It keeps no Python attribute: no Python reference keeps it, so Qt can
+    call it through a new wrapper that has none (the toast follower's
+    lesson, B11; SRelD K-44). Its button is its parent and the icon is in a
+    Qt property."""
+
+    _ICON_PROPERTY = "keptIcon"
 
     def __init__(self, button, qicon: QIcon) -> None:
         super().__init__(button)
-        self._button = button
-        self._icon = qicon
+        self.setProperty(self._ICON_PROPERTY, qicon)
         button.setIcon(qicon)
         button.installEventFilter(self)
 
@@ -190,8 +196,10 @@ class _KeepIcon(QObject):
         return False
 
     def _apply(self) -> None:
-        if isValid(self._button):
-            self._button.setIcon(self._icon)
+        button = self.parent()
+        icon = self.property(self._ICON_PROPERTY)
+        if button is not None and isValid(button) and isinstance(icon, QIcon):
+            button.setIcon(icon)
 
 
 def keep_icon(button, qicon: QIcon) -> None:

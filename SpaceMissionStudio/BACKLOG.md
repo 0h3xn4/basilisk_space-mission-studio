@@ -16,23 +16,6 @@
   plus 10 ms" rule) and record the change in `docs/ui/TEST_CHANGES.md`. If the cause is Qt's own drawing on the
   runner and no change in the app helps, move the item to
   `## Needs human` with the measurements.
-- Find the cause of the intermittent crashes around background threads
-  (SRelD K-44). Seen on 2026-11-19, none reproduced on demand:
-  - Windows CI, the platforms job's 3D step (`test_live_run_3d`): an
-    access violation in the thread `_SpaceWeatherWarmUp` during a
-    garbage collection, while `_FigureWarmUp` imported plotly and
-    `RunWorker` imported `engine.service`;
-  - Linux CI, one xdist worker: a segmentation fault in
-    `tests/gui/test_results_widget.py::test_an_export_runs_off_the_gui_thread_with_progress_and_cancel`;
-  - a template wizard test: the Qt error "Slot 'MainWindow::' not found".
-  Investigate them as one item. Serialize the warm-up imports (one
-  warm-up thread, or import plotly and the engine on the GUI thread at
-  start) and check for a CPython 3.14 import or garbage-collection
-  problem. Also check every other QObject that keeps Python state while
-  only a Python attribute refers to it, as the toast follower did (B11
-  follow-up). Add a test that fails without the fix where one can be
-  made; otherwise record the measurements and move the item to
-  `## Needs human`.
 - Make the small plot items clear (UI audit, 2026-11-19; SRelD K-46): the event
   bands share hues with the plotted lines; some Timeline events use the
   accent colour, which is only for the primary action, selection and
@@ -67,3 +50,20 @@
 ## Done
 
 ## Needs human
+
+- The rest of SRelD K-44 (fix/k44-thread-crashes, 2026-11-20). The
+  access violation in `_SpaceWeatherWarmUp` and the export test's
+  segmentation fault had one cause, now fixed: a garbage collection in a
+  worker thread destroyed widgets of the GUI thread (HISTORY.md, "2.13.1:
+  background-thread crashes (K-44)"). Two faults were not reproduced and
+  have no cause yet:
+  - Windows CI on #297: the child process of
+    `test_results_widget.py::test_the_figure_warm_up_loads_what_the_first_plot_needs`
+    ended with 0xC0000005 and empty stdout and stderr. It has no Python
+    worker thread; it passed eight runs in eight on Linux.
+  - A template wizard test reported "Slot 'MainWindow::' not found". No
+    log of that run was found.
+  Needs a human: watch CI after this fix. If either fault comes back,
+  keep the job's log and add it to K-44. The child process prints no
+  stack today; a decision to run it with `-X faulthandler` would change
+  that test.

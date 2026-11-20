@@ -71,6 +71,7 @@ from pathlib import Path
 from PySide6.QtCore import QThread, Signal
 
 from ..schema.command import runs_sequence
+from .background_threads import FIRST_IMPORTS
 from .monte_carlo_process import BatchCancelled, failure_text, run_batch
 from ..schema.scenario import MonteCarloConfig, Scenario
 
@@ -129,7 +130,8 @@ class RunWorker(QThread):
 
     def run(self) -> None:
         try:
-            from ..engine.service import SimulationCancelled, SimulationService
+            with FIRST_IMPORTS:  # not with a start-up warm-up's imports (SRelD K-44)
+                from ..engine.service import SimulationCancelled, SimulationService
         except ImportError as exc:
             self.failed.emit(
                 f"Basilisk is not installed/built ({exc}) – cannot run a simulation until it is. "
