@@ -8,7 +8,7 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## 2.13.0 (2026-11-19)
+## 2.13.0 (2026-11-20)
 
 SpaceMissionStudio 2.13.0 is about a window that feels finished. Every
 view was photographed and checked, and this release works through what

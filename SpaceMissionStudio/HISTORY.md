@@ -19785,3 +19785,10 @@ The fix:
 - New tests: `tests/gui/test_layout_items.py`. One of them gives
   `show_window` a stale handle; it fails with the CI error without the
   guard. Another test finds any raw `itemAt()` in the window's code.
+
+### 2.13.0: the CHANGELOG heading dated 2026-11-20
+
+The fix of #297 was merged after midnight UTC. The release check requires
+the newest CHANGELOG section to carry the day of the tag (UTC), so the
+heading `## 2.13.0` now reads 2026-11-20. Nothing else changed. The
+records that say the release was prepared on 2026-11-19 stay as they are.
