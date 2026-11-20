@@ -4601,6 +4601,92 @@ open in its own window.
 - **A tab never sets the thermal page's least width beyond its header row.** The page's own window must fit on a small screen beside the main window, also with Windows' fonts. A wide table without a scroll area takes an Ignored horizontal size policy instead. The design keeps scroll areas out of the thermal page (`test_thermal_views`).
 - **A QObject that Qt calls back (an event filter, a timer) keeps no Python attribute** when only a Python attribute of another object refers to it. It reads what it needs from Qt: its parent, or a Qt property. The toast follower is the first such object.
 
+## Small plot items (2.13.1, SRelD K-46, 2026-11-20)
+
+The B10 section above left three points open; the UI audit added a
+fourth. Only the window changes. The series, their columns, the CSV,
+JSON and HTML exports and the golden files are unchanged.
+
+- **Decision K46-1:** the Results plots' event bands and mode-change
+  lines take one neutral token, `chart.band` (`text.secondary`: light
+  `#50565F`, dark `#A1A8B3`), drawn at 16 % behind the lines as before.
+  **Why:** a band in a series hue can be read as a line. A grey is the
+  simplest colour that no series, status colour or the accent uses
+  (`tests/gui/test_plot_items.py` checks it in both themes). The kind of a band is named by the
+  Events buttons above the plots, which switch each kind; the Timeline
+  keeps its colour per kind. The mode line is drawn solid and keeps 3:1
+  against the surface (`CONTRAST_PAIRS`).
+- **Decision K46-2:** the Timeline draws the model analyses', thermal
+  limits' and plan's events in `chart.event` (also `text.secondary`),
+  not in the accent. **Why:** the accent is for the primary action,
+  selection and focus; the categorical slots 7 and 8 are too few for
+  three groups, and the palette is never cycled. Each group has its own
+  named row and check box, so colour is not the only cue. The time
+  cursor stays in the accent: it is a selection.
+- **Decision K46-3:** a Results plot's y axis includes, through
+  Plotly's `autorangeoptions.include`, a span of at least `1e-6` of the
+  largest value it shows, centred on the data
+  (`results_widget._MIN_Y_SPAN_SHARE`). **Why:** the axis shows no
+  offset or exponent notation (an earlier user request), so a series
+  that moves by 1e-11 deg read "97.03000000000399". With the floor the
+  labels have about seven significant figures ("97.03001"). A relative
+  floor keeps real changes visible: 1e-6 of a 6,928 km semi-major axis
+  is 7 m. Autorange stays on, so zoom and double-click still work, and
+  the plotted values are the series' own.
+- **Decision K46-4:** a reaction wheel's line, its readout row, its
+  compared run's line and its Compare column are named after the wheel
+  in the scenario (`engine.series_names.device_column_labels`: the
+  spacecraft's `reaction_wheel` actuators in listed order, as
+  `engine.service` records `wheel_0`, `wheel_1` ...). The main window
+  hands the labels to the Results tab when a run starts, with the
+  featured series; a compared run and the Compare tab read their own
+  run's scenario. **Why:** the window should name the device the user
+  named; the columns stay `wheel_N`, so the CSV files and the golden
+  files do not change. Thruster and torque-rod columns keep their
+  indices for now (not in the audit's list).
+- **Noted:** a plot saved as PNG or SVG from the window is a picture of
+  the window's figure, so it shows the grey bands and the wheel names.
+
+## Small window fixes (2.13.1, 2026-11-20)
+
+- **Decision:** a fitted `DataTable` without a sort indicator may squeeze
+  a column to the heading's width as the style draws it
+  (`sectionSizeHint`). The 12 px of the sort indicator count only when
+  the table shows one. With room, a column keeps its old width. **Why:**
+  Budgets › Power's table of the items and the thermal sweep table
+  scrolled sideways at 1280 px. Of the fitted tables, none shows a sort
+  indicator.
+- **Decision:** Budgets › Power's table of the items writes every
+  number's heading in two or three lines, the name above the unit, as
+  the Equipment grids do (B12). **Why:** with one-line headings the
+  twelve columns needed 988 px; the table has 879 px beside the
+  Inspector. Two-line headings needed 821 px on Linux, and Windows CI
+  showed that this was not enough there. With "Duty", "With margin" and
+  "Peak with margin" on one more line they need 786 px on Linux.
+- **Decision:** a fitted `DataTable` whose headings do not fit even at
+  their least widths scrolls sideways, and its stretching column then
+  keeps its whole width (Interactive mode). With room again, the column
+  stretches. **Why:** in Qt's Stretch mode an overflowing table
+  squeezed the stretching column below its heading (Budgets › Power's
+  "Item" on Windows CI, PR #300).
+- **Decision:** a sweep's heading is the node's name over its extreme
+  and unit ("radiator" over "min [°C]"). The table keeps a column per
+  node and extreme. **Why:** template 33's 13 columns needed 1257 px;
+  the page has 1005 px beside the Inspector. Now they need 947 px. A
+  table in rows of node and value was not chosen: it changes how users
+  read a sweep. B11's "Left as it is" for this table no longer holds.
+- **Decision:** Run › Thermal › Notes writes the solution checks with
+  three significant figures and keeps a trailing zero ("4.90e+03").
+  **Why:** `:.3g` dropped it, so one column had two and three figures.
+- **Decision:** Home shows a template description's " -- " as " – "
+  when it shows the text. The template files keep "--". **Why:** B4
+  changed the window's own strings, not the templates; the golden files
+  and the command line read the files. A name ("bus--avionics") and a
+  flag ("--out") keep their hyphens.
+- **Decision:** a thermal heading writes an energy unit "Wh"
+  (`units.shown("W*h")`), as the other energy columns do. **Why:** B4
+  (UI-35) chose "Wh"; the thermal headings had their own map.
+
 ## Background-thread crashes (SRelD K-44, 2026-11-20)
 
 - **Garbage is collected on the GUI thread only** (`gui/background_threads.py`).

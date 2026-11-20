@@ -226,6 +226,29 @@ def featured_series(scenario: Scenario) -> list[str]:
     return found
 
 
+def _field(item, key: str):
+    """``item``'s ``key``: a dict's entry or an object's attribute (None if missing)."""
+    return item.get(key) if isinstance(item, dict) else getattr(item, key, None)
+
+
+def device_column_labels(scenario: Scenario | dict) -> dict[str, dict[str, str]]:
+    """The names of the devices a series' columns stand for, for the
+    window's legends and readout only (SRelD K-46):
+    ``{"sat-1.rw_speeds": {"wheel_0": "rw-1", ...}}``. ``engine.service``
+    records a spacecraft's wheel speeds in the listed order of its
+    ``reaction_wheel`` actuators, as ``wheel_0``, ``wheel_1`` ...; the
+    series and the exported files keep those columns. ``scenario`` is a
+    :class:`Scenario` or its ``to_dict()`` (a kept run's). A half-edited
+    scenario never raises: what cannot be read is left out."""
+    labels: dict[str, dict[str, str]] = {}
+    for sc in _field(scenario, "spacecraft") or []:
+        wheels = [_field(a, "name") for a in _field(sc, "actuators") or [] if _field(a, "kind") == "reaction_wheel"]
+        named = {f"wheel_{index}": str(wheel) for index, wheel in enumerate(wheels) if wheel}
+        if named and _field(sc, "name"):
+            labels[f"{_field(sc, 'name')}.rw_speeds"] = named
+    return labels
+
+
 def _what_to_look_at(description: str) -> list[str]:
     """Lines of the "What to look at..." section, up to the next heading."""
     lines = description.splitlines()

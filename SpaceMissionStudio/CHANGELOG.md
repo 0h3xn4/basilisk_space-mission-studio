@@ -12,6 +12,40 @@ fixes bugs.
 
 ### Fixed
 
+- **Plots read more clearly in four small ways.** The shaded event
+  bands behind the Results plots (eclipses, passes, burns and the rest)
+  are now a quiet grey, and a mode change is a grey dashed line, so a
+  band can no longer be mistaken for one of the lines in front of it.
+  The Timeline draws model-analysis, thermal-limit and planned-activity
+  events in a neutral grey rather than the blue reserved for the main
+  action and for selection. A value that barely moves, such as an
+  osculating inclination that drifts by a hundred-billionth of a degree,
+  now gets short tick labels like "97.03001" instead of
+  "97.03000000000399"; the plotted values are untouched. And reaction
+  wheel lines carry the wheel's name from the scenario ("rw-1") in the
+  legend, the readout and the Compare tab, where they used to say
+  `wheel_0`. The series names, the CSV columns and every exported file
+  stay exactly as they were.
+- **Run › Thermal › Notes writes each check with three significant
+  figures.** The energy residual column showed 5.11e+03 next to 4.9e+03,
+  because a trailing zero was dropped; it now reads 4.90e+03, and the
+  throughput and half-step columns follow the same rule.
+- **Budgets › Power fits beside the Inspector.** On a 1280 px window
+  with the Inspector open, the table of the items scrolled sideways
+  inside itself. Its number headings now sit on two or three lines, the
+  name above the unit, as on the Equipment page, and the page's tables
+  fit. A table that still cannot fit its headings scrolls sideways and
+  keeps its first column whole.
+- **The thermal sweep table fits at 1280 px.** Each column heading is
+  now the node's name over "min [°C]" or "max [°C]", so a sweep of
+  template 33 no longer scrolls sideways, with or without the
+  Inspector.
+- **Home writes a dash as a dash.** A few template descriptions showed
+  "--" where a dash belongs; Home now shows "–". The template files
+  themselves are unchanged.
+- **The heater energy column reads "Wh".** Run › Thermal › Heaters and
+  radiators wrote "W·h"; it now writes watt-hours the way the rest of
+  the window does.
 - The window could crash now and then while something ran in the
   background: at start-up, during a run, or while an export was being
   written. Python's garbage collector ran in whichever thread happened to

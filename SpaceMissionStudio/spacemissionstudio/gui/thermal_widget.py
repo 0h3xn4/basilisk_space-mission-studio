@@ -86,7 +86,8 @@ def _text(value) -> str:
     return str(value)
 
 
-_UNITS = (("_wh", "W·h"), ("_m2", "m²"), ("_w", "W"), ("_c", "°C"), ("_k", "K"))
+# A key's unit as the window writes it: an energy in watt-hours "Wh", as everywhere else (units.shown("W*h")).
+_UNITS = (("_wh", "Wh"), ("_m2", "m²"), ("_w", "W"), ("_c", "°C"), ("_k", "K"))
 
 
 def heading(key: str) -> str:
@@ -233,9 +234,16 @@ def summary_rows(analysis) -> tuple[list[str], list[Row]]:
     return [_two_lines(h) for h in headers], rows
 
 
+def _figures(value: float, figures: int = 3) -> str:
+    """``value`` with ``figures`` significant figures, a trailing zero
+    kept ("4.90e+03", not "4.9e+03"): one column, one number of figures."""
+    return f"{value:#.{figures}g}".replace(".e", "e").rstrip(".")
+
+
 def solution_rows(analysis) -> list[list[str]]:
     """Run › Thermal › Notes: per case how it started and the solution's
-    checks, one value per cell (they were sentences, UI audit UI-07)."""
+    checks, one value per cell (they were sentences, UI audit UI-07), each
+    column with three significant figures."""
     rows = []
     for case in analysis.cases:
         solution = case.solution
@@ -243,8 +251,8 @@ def solution_rows(analysis) -> list[list[str]]:
         start = ("Initial temperatures" if periodic is None else
                  "Periodic" if periodic.converged else "Not periodic")
         rows.append([case.name, start, "–" if periodic is None else str(periodic.orbits),
-                     f"{abs(solution.energy_residual_j):.3g}", f"{solution.energy_throughput_j:.3g}",
-                     "–" if solution.step_check_k is None else f"{solution.step_check_k:.3g}"])
+                     _figures(abs(solution.energy_residual_j)), _figures(solution.energy_throughput_j),
+                     "–" if solution.step_check_k is None else _figures(solution.step_check_k)])
     return rows
 
 
@@ -931,15 +939,16 @@ class ThermalWidget(QWidget):
     def _show_sweep(self, path: str, case: str, points) -> None:
         label, unit = parameter_label(path)
         nodes = [n.name for n in points[0].summary]
-        # The user's node names as they are ("array +y min", not "Array +y min"; UI audit B11).
+        # The user's node names as they are ("array +y", not "Array +y"; UI audit B11), each over its
+        # extreme and unit ("min [°C]"), so the table fits the page at 1280 px (2.13.1).
         headers = [units.label(f"Value [{unit}]") if unit else "Value"]
-        headers += [f"{node} {end}\n[°C]" for node in nodes for end in ("min", "max")]
+        headers += [f"{node}\n{end} [°C]" for node in nodes for end in ("min", "max")]
         rows = []
         for point in points:
             by_node = {n.name: n for n in point.summary}
             rows.append(Row((_text(point.value), *(_text(getattr(by_node[node], f"{end}_c")) for node in nodes
                                                    for end in ("min", "max")))))
-        # Numbers to compare: every column whole, the table scrolls sideways when they do not fit (DESIGN.md).
+        # Numbers to compare: every column whole; the table scrolls sideways only when its headings do not fit.
         self.study_table.set_table(headers, rows, numeric=range(len(headers)), stretch=-1)
         self._show_study_table(True)
         self.study_label.setText(f"Sweep of {label} in the {case} case: each node's extremes at each value.")

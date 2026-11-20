@@ -1441,6 +1441,10 @@ it.
   cursor. Zooming or panning one plot does the same to the others: their
   time axes are linked (the access timeline, always in elapsed hours, is
   not).
+* **Lines and axes:** a reaction wheel's line is named after the wheel
+  in the scenario ("rw-1"); its CSV column stays `wheel_0`. A series that
+  hardly changes gets an axis at least a millionth of its value wide, so
+  the tick labels stay short ("97.03001"); the values are not changed.
 * **The readout** lists every shown series' value with its unit: at the
   time under the pointer while it is over a plot, else at the time
   cursor. Values between two samples are interpolated; a mode, a state or
@@ -1459,8 +1463,9 @@ it.
   the one in progress at the epoch; an equatorial orbit counts from the
   inertial X axis).
 * **Events** – eclipses, passes, burns, thruster firings, mode changes
-  and downlinks drawn behind each spacecraft's plots, in the Timeline's
-  colours; each button switches its kind on or off. A kind with
+  and downlinks drawn behind each spacecraft's plots, as grey bands (a
+  mode change as a dashed line), so no band shares a colour with a line;
+  each button switches its kind on or off. A kind with
   more than 400 events on one plot is not drawn, and a note says so.
 * **Export CSV...** – saves every series (not just the shown ones) to
   `.csv` files in SI units, for a spreadsheet or another tool.

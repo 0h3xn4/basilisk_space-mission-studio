@@ -19822,6 +19822,132 @@ materials, downloaded from the release, pass `sha256sum -c`. SRelD
 issue 46, the SDP, H05 and `releasing.md` record the tag, the runs and
 the files' digests.
 
+### 2.13.1: plot items (K-46)
+
+Branch `ui/plot-items`. B10 left three plot points open, and the UI
+audit of 2026-11-19 added a fourth (SRelD K-46). All four change only
+the window. The series, their columns, the CSV, JSON and HTML exports
+and the golden files do not change. The owner's units stay: delta-V in
+m/s, altitudes and semi-major axes in km, position in m and velocity in
+m/s.
+
+**Event bands.** The Results plots drew each band in the Timeline's
+colour for its kind, so an eclipse band had the hue of a line. Bands and
+mode lines now take a new token, `chart.band`. It is `text.secondary`
+(light `#50565F`, dark `#A1A8B3`), a grey that no series colour, status
+colour or the accent uses. The bands stay at 16 % behind the lines. The
+Events buttons name each kind and switch it.
+
+**Timeline.** The Timeline drew the model analyses', thermal limits' and
+plan's events in the accent. They now take a new token, `chart.event`
+(also `text.secondary`). Each group has its own named row and check
+box. The time cursor stays in the accent, because it is a selection.
+Both new tokens are in `CONTRAST_PAIRS` at 3:1 on the canvas and the
+surface, and in DESIGN.md's token table.
+
+**Tick labels.** A nearly constant series, such as template 01's
+osculating inclination, read "97.03000000000399", because the axis
+shows no offset or exponent notation. A y axis now includes a span of at
+least 1e-6 of its largest value, centred on the data, through Plotly's
+`autorangeoptions.include` (`results_widget._MIN_Y_SPAN_SHARE`). The
+labels now read "97.03001". Autorange stays on, so zoom and double-click
+still work. A floor relative to the value keeps real changes visible:
+1e-6 of a 6,928 km semi-major axis is 7 m.
+
+**Wheel names.** `engine.series_names.device_column_labels` maps a
+spacecraft's `wheel_N` column to the name of its Nth `reaction_wheel`
+actuator, the order in which `engine.service` records them. The main
+window hands the map to the Results tab when a run starts. The legend,
+the readout, a compared run's lines (from that run's scenario) and the
+Compare tab's column picker show "rw-1", not `wheel_0`. Thruster and
+torque-rod columns keep their indices; the audit did not list them.
+
+**Looked at.** Offscreen renders of a 2 x 2 grid (position, a constant
+inclination, wheel speeds, with eclipses and a mode change) and of the
+Timeline with every extra kind, in both themes. The bands read as grey,
+the ticks are short, the legend names the wheels, and no Timeline bar is
+in the accent. No docs screenshot shows these items, so none was taken
+again.
+
+Tests: `tests/gui/test_plot_items.py` (5) and one new test in
+`tests/gui/test_main_window.py`. Each failed before the fix. No existing
+test changed.
+
+Tests on the branch, Linux, Python 3.14, one run of `pytest tests -q -n
+4` as CI runs it: 5735 passed, none failed (5725 at 2.13.0). The
+golden-output and series-name tests passed (156). The compliance
+generators changed `SDD_components.md` and `SUITP_test_cases.md` once
+and nothing on a second run; `check_drds.py` found no problem.
+
+### 2.13.1: small window fixes
+
+Five small window items from `BACKLOG.md` "Next release" and SRelD K-46
+are fixed. Only what the window shows changed. The scenario files, the
+templates, the exported files and the golden outputs are the same.
+
+**Significant figures in Run › Thermal › Notes.** The energy residual
+column showed "5.11e+03" and "4.9e+03". The format `:.3g` drops a
+trailing zero. The new helper `thermal_widget._figures` keeps it
+(`:#.3g`, without a bare point). The residual, the throughput and the
+half-step change now have three significant figures in every row
+("4.90e+03", "490", "0.400").
+
+**Budgets › Power beside the Inspector.** At 1280 x 720 with the
+Inspector open, the table of the items has 879 px. Its twelve headings
+needed 988 px, so it scrolled sideways inside itself. Two changes fix
+it:
+- Every number's heading is two or three lines, the name above the
+  unit ("Average" over "[W]", "With" over "margin" over "[W]"), as on
+  the Equipment page (B12).
+- A fitted `DataTable` counted 12 px for a sort indicator in each
+  heading's least width. A table without a sort indicator now gives up
+  these 12 px before it scrolls. The least width is never below the
+  heading as the style draws it (`sectionSizeHint`). The hint is read
+  again at each fit, so a table filled before it was shown is safe.
+  With room, a column keeps its old width. No fitted table shows a sort
+  indicator today.
+The headings now need 786 px. The copied TSV and "Copy as CSV" are as
+before.
+
+Windows CI of PR #300 showed that two-line headings (821 px) were not
+enough there: Windows draws the same text wider. Two changes followed:
+- "Duty", "With margin" and "Peak with margin" now break once more
+  ("Duty" over "[-]", "With" over "margin" over "[W]"). On Linux the
+  headings need 786 px of 879 px, 11 % to spare instead of 5 %.
+- When even the headings of a fitted `DataTable` do not fit, the table
+  scrolls sideways and its stretching column ("Item") keeps its width.
+  In Qt's Stretch mode that column was squeezed below its heading on
+  Windows. With room again, the column stretches as before. A new test
+  in `tests/gui/test_data_table.py` checks this.
+
+**The thermal sweep table.** Template 33's sweep has 13 columns. At
+1280 px they needed 1257 px; the page has 1172 px, or 1005 px with the
+Inspector open. Each heading is now the node's name over its extreme and
+unit ("radiator" over "min [°C]"), not "radiator min" over "[°C]". With
+the change above, the headings need 947 px. The table keeps a column per
+node and extreme, so a user reads a sweep as before. A model with many
+more nodes can still scroll sideways.
+
+**Dashes on Home.** Five template descriptions write a dash as "--"
+(templates 03, 08, 20, 21 and 22). B4 (UI-34) changed the window's own
+strings and the manual, not the template files: the golden files and
+the command line read those files. Home now shows " -- " as " – " in a
+card's line, its accessible description and the details
+(`load_scenario_widget.shown_dashes`). A name such as "bus--avionics" and
+a flag such as "--out" keep their hyphens. The files are unchanged.
+
+**The heater energy unit.** The thermal headings had their own unit map,
+which wrote "W·h". B4 (UI-35) writes watt-hours "Wh" everywhere else
+(`units.shown("W*h")`). The heaters' energy heading now reads "Energy"
+over "[Wh]".
+
+Tests: six new tests (seven cases) failed before the fixes
+(`docs/ui/TEST_CHANGES.md` lists them). Two existing tests pinned the
+old texts and now pin the new ones; one docstring changed. Offscreen
+screenshots at 1280 x 720 show the four places after the fixes, and
+Budgets › Power, the sweep, the notes and the heaters before them. `docs/images/load_scenario_tab.png` showed "--"
+in template 22's description and was taken again.
+
 ### 2.13.1: background-thread crashes (K-44)
 
 SRelD K-44 listed four faults from CI on 2026-11-19. None was reproduced

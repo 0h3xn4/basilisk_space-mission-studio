@@ -119,8 +119,17 @@ RECENT_EMPTY = ("No recent scenario files",
                 "(Ctrl+S) to list it.")
 _CIRCULAR_BELOW = 0.01  # [-] an eccentricity below this is shown as a circular orbit
 
+# A double hyphen on its own, between spaces or at a line's ends, is a dash; "bus--avionics" and "--out" are not.
+_DOUBLE_HYPHEN = re.compile(r"(?<!\S)--(?!\S)")
 # A sentence ends at ".", "!" or "?" before a space; "e.g." and the like do not end one.
 _SENTENCE_END = re.compile(r"(?<!\be\.g\.)(?<!\bi\.e\.)(?<!\bvs\.)(?<=[.!?])\s+")
+
+
+def shown_dashes(text: str) -> str:
+    """A template's text as the window writes it: "--" used as a dash is
+    "–" (UI audit B4, UI-34). The template files keep their text: their
+    golden outputs and the command line read it."""
+    return _DOUBLE_HYPHEN.sub("–", text)
 
 
 def description_html(text: str) -> str:
@@ -165,8 +174,9 @@ def split_description(text: str) -> tuple[str, list[tuple[str, str]]]:
 # -- what a card says, read from the template ---------------------------------------
 
 def first_sentence(description: str) -> str:
-    """The description's first sentence: the card's one line."""
-    paragraph = " ".join(description.strip().split("\n\n", 1)[0].split())
+    """The description's first sentence: the card's one line, a dash
+    written as the window writes it (:func:`shown_dashes`)."""
+    paragraph = " ".join(shown_dashes(description).strip().split("\n\n", 1)[0].split())
     return _SENTENCE_END.split(paragraph, 1)[0] if paragraph else ""
 
 
@@ -815,7 +825,7 @@ class LoadScenarioWidget(QWidget):
         self.description_title.setText(card.name if card is not None else "")
         self.description_meta.setText(
             f"{card.type_label.text()}\n{card.orbit_label.text()}" if card is not None else "")
-        gist, sections = split_description(card.description) if card is not None else ("", [])
+        gist, sections = split_description(shown_dashes(card.description)) if card is not None else ("", [])
         self.description_label.setText(description_html(gist) if gist else "")
         while self.folds:
             fold = self.folds.pop()

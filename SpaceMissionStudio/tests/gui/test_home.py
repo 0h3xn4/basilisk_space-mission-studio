@@ -236,6 +236,37 @@ def test_a_selected_card_is_marked_and_the_details_follow(home):
     assert not home.details_empty.isVisible()
 
 
+
+def test_no_card_shows_a_double_hyphen_as_a_dash(home):
+    """Some template descriptions write a dash as "--" ("another snapshot
+    -- instead of"); the window writes a dash as "–" (UI audit B4, UI-34).
+    A card's line, its accessible description and the details of every
+    card show "–"; the template files keep their text, and a name such as
+    "bus--avionics" or a flag such as "--out" keeps its hyphens."""
+    import re
+
+    from PySide6.QtWidgets import QLabel
+
+    from spacemissionstudio.gui.load_scenario_widget import first_sentence, shown_dashes
+    from spacemissionstudio.schema import load_scenario
+
+    dash = re.compile(r"(?<!\S)--(?!\S)")
+    with_dashes = [card for card in home.cards if dash.search(load_scenario(card.path).description)]
+    assert len(with_dashes) >= 5
+    for index, card in enumerate(home.cards):
+        home.select(index)
+        shown = [card.line_label.text(), card.accessibleDescription(), home.description_label.text(),
+                 *(fold.button.text() for fold in home.folds),
+                 *(label.text() for fold in home.folds for label in fold.findChildren(QLabel))]
+        assert [text for text in shown if dash.search(text)] == [], card.name
+    sequence = next(card for card in home.cards if card.name.startswith("08"))
+    home.select(home.cards.index(sequence))
+    assert "another snapshot – instead of" in first_sentence(sequence.description)
+    assert "another snapshot – instead of" in sequence.line_label.text()
+    assert "-- instead of" in load_scenario(sequence.path).description  # the file is as it was
+    assert shown_dashes("bus--avionics, --out, a -- b\n-- c") == "bus--avionics, --out, a – b\n– c"
+
+
 # -- recent scenarios -----------------------------------------------------------------
 
 def test_recent_scenarios_start_empty_with_open_beside_them(home, qtbot):

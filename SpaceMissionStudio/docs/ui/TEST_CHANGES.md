@@ -2632,6 +2632,28 @@ item as before; no assertion changed.
 
 Added: `tests/gui/test_layout_items.py` (4 tests).
 
+## 2.13.1: small window fixes
+
+Three existing GUI tests changed. Two pin text that the fixes change on
+purpose. One docstring said that a table scrolls; a new test now asks
+that it does not.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `test_thermal_pages.py::test_table_headings_carry_their_units` | `heading("energy_wh") == "Energy [W·h]"` | `== "Energy [Wh]"` | the window writes an energy in watt-hours "Wh", as the other energy columns do (B4, UI-35) |
+| `test_thermal_page_audit.py::test_studies_choose_a_parameter_by_its_label` | the sweep's heading 1 is `"bus min\n[°C]"` | it is `"bus\nmin [°C]"` | the node's name over its extreme and unit, so the sweep fits at 1280 px; the user's name is still as it is |
+| `test_home_palette_run.py::test_the_budgets_grids_fit_their_width` (docstring only) | "the power table of the items, twelve columns, scrolls inside itself" with the Inspector open | a grid can scroll inside itself; Budgets › Power is checked by the new test | the items table now fits beside the Inspector; no assertion changed |
+
+Added:
+- `test_thermal_page_audit.py`: `test_each_solution_column_has_one_number_of_significant_figures`,
+  `test_the_heater_energy_heading_writes_its_unit_as_the_other_energy_columns`,
+  `test_the_heaters_table_writes_the_energy_in_wh`,
+  `test_the_sweep_table_fits_the_page_at_1280` (Inspector open and closed);
+- `test_home_palette_run.py::test_the_power_items_fit_beside_the_inspector`;
+- `test_home.py::test_no_card_shows_a_double_hyphen_as_a_dash`.
+
+Each new test failed before its fix.
+
 ## 2.13.1: garbage collected on the GUI thread (SRelD K-44)
 
 No existing test changed. `tests/gui/conftest.py` gained one autouse

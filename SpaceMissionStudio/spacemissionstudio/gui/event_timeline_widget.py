@@ -58,7 +58,7 @@ from ..engine.results import ResultSet
 from .calculation_panel import Explanation
 from .data_table import DataTable, LazyRows, Row
 from .feedback import report
-from .theme import PALETTE, SERIES_COLORS, set_role
+from .theme import PALETTE, SERIES_COLORS, TOKENS, set_role
 from .time_cursor import TimeCursor, describe
 from .value_sheet import NoteList
 from .widgets import EmptyState
@@ -71,8 +71,12 @@ PLAN_BOX = "plan"  # one box for every kind of event_model.PLAN_KINDS
 
 
 def kind_colour(kind: str) -> str:
-    """The colour of an event kind in the theme in use."""
-    return SERIES_COLORS[KIND_SLOTS[kind]] if kind in KIND_SLOTS else PALETTE["accent"]
+    """The colour of an event kind in the theme in use: its categorical
+    slot, or the neutral ``chart.event`` for the model analyses', the
+    thermal limits' and the plan's kinds (each on its own named row). Never
+    the accent, which is for the primary action, selection and focus
+    (SRelD K-46)."""
+    return SERIES_COLORS[KIND_SLOTS[kind]] if kind in KIND_SLOTS else TOKENS["chart.event"]
 _ALL_STATIONS = "All stations"
 _NO_RUN = ("No run yet", "Run a scenario to see its passes, eclipses, burns and mode changes.")
 _RIGHT = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
