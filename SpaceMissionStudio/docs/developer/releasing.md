@@ -563,6 +563,18 @@ sizes on a 2560 x 1440 offscreen screen, because the offscreen platform's
 Basilisk framework job, fails one framework test on the runner image
 20261111 (MSVC 19.52); by the owner's decision of 2026-11-19 the release
 pull request is merged with that check red (SRelD K-45).
+It was published on 2026-11-20 at 02:02 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 46). After #296's
+merge, CI on `develop` failed one Windows test twice: a stale layout item
+wrapper was returned for a new window. #297 fixed the cause before any
+tag. It was merged after midnight UTC, so #298 dated the CHANGELOG
+heading 2026-11-20 for the release check. CI passed on `c3eeb85`
+([run 44652910748](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44652910748)); the tag workflow
+([run 44653376716](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44653376716)) passed the release check and tagged
+it at 01:25; the release workflow ([run 44653476286](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44653476286))
+built, installed and checked every file, attached the eleven and
+published the release 37 minutes later. It was never a public release
+without files.
 
 ---
 
