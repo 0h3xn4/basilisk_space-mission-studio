@@ -19792,3 +19792,32 @@ The fix of #297 was merged after midnight UTC. The release check requires
 the newest CHANGELOG section to carry the day of the tag (UTC), so the
 heading `## 2.13.0` now reads 2026-11-20. Nothing else changed. The
 records that say the release was prepared on 2026-11-19 stay as they are.
+
+## Release 2.13.0 published (2026-11-20)
+
+The release pull request #296 was merged at 20:10 UTC on 2026-11-19.
+The first tag run stopped at the release check, because CI on the merge
+commit `88ac9e01d9` was still running; nothing was tagged. That CI run
+then failed one Windows test twice, the one re-run included: moving the
+Budgets area into its own window got a stale `QWidgetItem` wrapper from
+`windowHandle()`. #297 fixed the cause ("2.13.0: stale layout item
+wrappers" above) and was merged at 23:32 UTC with every check green;
+one Windows job on it had failed once in an unrelated plotly subprocess
+and passed on its one re-run (K-44). #297 was merged after midnight UTC,
+so #298 dated the CHANGELOG heading 2026-11-20 for the release check.
+
+CI passed on `develop`'s head `c3eeb85`
+([run 44652910748](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44652910748)). As the owner asked, the assistant
+started the tag workflow at 01:24 UTC with version 2.13.0, ref
+`develop` and **publish** on. The release check passed and the workflow
+tagged `c3eeb85` at 01:25 ([run 44653376716](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44653376716)). The
+release workflow it started ([run 44653476286](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44653476286)) passed
+every test on Linux and Windows, built, installed and ran both
+installers, attached the eleven files and published the release at
+02:02:31, so it was never public without its files. The digests of the
+`.deb`, the setup program and the LGPL sources equal the checksums in
+`SHA256SUMS-*`, and those of the `.deb` and the setup program also the
+checksums in its notes; the wheel, the sdist and both bills of
+materials, downloaded from the release, pass `sha256sum -c`. SRelD
+issue 46, the SDP, H05 and `releasing.md` record the tag, the runs and
+the files' digests.

@@ -67,8 +67,8 @@ instead of codes, value sheets, one form grid and page inset, the
 Settings page, the top bar, docks, status bar and toasts, one table
 style, plot colours and display units, the thermal page, and Home, the
 command palette, the run pages, the log and the dialogs, with the space
-weather refreshed and the scenario format unchanged (prepared
-2026-11-19); before it 2.12.0, windows and
+weather refreshed and the scenario format unchanged (published
+2026-11-20); before it 2.12.0, windows and
 views: Results › 3D View, Run › Thermal and the Budgets area in windows
 of their own, ground tracks, ground stations and a live 2D map, the
 thermal results as tabs and on the 3D View, dialogs that fit a
