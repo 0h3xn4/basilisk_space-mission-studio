@@ -20089,3 +20089,27 @@ runs it: 5752 passed (3526 outside `tests/gui/` and 2226 in it; 5725 at
 `docs/ui/TEST_CHANGES.md` is unchanged. The release check
 (`packaging/release_check.py`) passed, and the AppStream metadata for
 2.13.1 passed `appstreamcli validate --no-net`.
+
+### Release 2.13.1 published (2026-11-20)
+
+The release pull request #303 was merged at 14:50 UTC. CI
+("SpaceMissionStudio") passed on `develop`'s head `a9af24e`, the merge
+of #303 (run 44757407951). The tag workflow (run 44768019598) ran the
+release check on `a9af24e`, passed it and tagged
+`spacemissionstudio-v2.13.1` at 15:55 UTC. The release workflow (run
+44768147987) built, installed and checked every file. It attached the
+eleven files and published "SpaceMissionStudio 2.13.1" at 16:50:10 UTC,
+55 minutes after the tag. The release was never public without its
+files.
+
+The files' digests were checked after the publication:
+- Each file's GitHub digest equals its line in `SHA256SUMS-linux`,
+  `SHA256SUMS-windows` or `SHA256SUMS-sources`.
+- The `.deb`'s and the setup program's digests are also in the release
+  notes.
+- The wheel, the sdist and both bills of materials, downloaded from the
+  release, give the same digests.
+- The LGPL sources are the same files as 2.13.0's.
+
+SRelD issue 48, the SDP, H05 and `releasing.md` record the tag, the runs
+and the files' digests.

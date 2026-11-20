@@ -65,7 +65,7 @@ signed (decision 11). The current release is 2.13.1, a patch release:
 garbage collected on the GUI thread only (one cause of the
 background-thread crashes), grey event bands and Timeline events, short
 tick labels, wheel names in the plots, and tables that fit at 1280 px,
-with the scenario format unchanged (prepared 2026-11-20); before it
+with the scenario format unchanged (published 2026-11-20); before it
 2.13.0, the UI audit's batches B2 to B12: one primary action per view, empty states, labels
 instead of codes, value sheets, one form grid and page inset, the
 Settings page, the top bar, docks, status bar and toasts, one table
