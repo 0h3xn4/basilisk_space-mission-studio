@@ -8,7 +8,21 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.13.1 (2026-11-20)
+
+SpaceMissionStudio 2.13.1 is a small patch on top of 2.13.0, and its
+most important fix is one you will hopefully never have noticed. Now
+and then the window could crash while a run, an export or the start-up
+checks were busy in the background; the main cause turned out to be
+Python's garbage collector tidying up the window from the wrong thread,
+and it now only ever runs on the window's own thread.
+
+The rest is polish that the UI audit left over. Event bands and some
+Timeline events no longer borrow the colours of the data, a value that
+barely moves gets short tick labels, reaction wheels are called by their
+names, and the Budgets › Power and thermal sweep tables fit a 1280 px
+window. Nothing the tool computes has changed, and 2.13.0 and 2.13.1
+open each other's files.
 
 ### Fixed
 
@@ -46,8 +60,8 @@ fixes bugs.
 - **The heater energy column reads "Wh".** Run › Thermal › Heaters and
   radiators wrote "W·h"; it now writes watt-hours the way the rest of
   the window does.
-- The window could crash now and then while something ran in the
-  background: at start-up, during a run, or while an export was being
+- **The window could crash now and then while something ran in the
+  background:** at start-up, during a run, or while an export was being
   written. Python's garbage collector ran in whichever thread happened to
   be allocating, and when it ran in a worker it could tear down parts of
   the window from that worker. Qt does not allow that, and the process
@@ -56,6 +70,52 @@ fixes bugs.
   warm-ups no longer import their heavy packages at the same time as each
   other or as a run (SRelD K-44). Two small event filters also no longer
   keep their own Python state, so Qt can call them safely at any time.
+
+### Who should update
+
+- **Everyone on 2.13.0:** the crash fix alone is worth it, and nothing
+  you computed before changes.
+- **Anyone who reads plots closely:** event bands, mode changes and the
+  extra Timeline events are now grey, so only the data and your
+  selection carry colour, and wheel lines are named after the wheels in
+  your scenario.
+- **Anyone on a 1280 px wide screen:** Budgets › Power and the thermal
+  sweep table fit, also with the Inspector open.
+- **Compatibility:** the scenario format is unchanged (schema version
+  5), and so are the templates, the command line, the exported files
+  and every result. 2.13.0 and 2.13.1 open each other's files.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.13.1_amd64.deb` replaces 2.13.0; on Windows, run
+  the 2.13.1 setup over 2.13.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **Two rare test faults are still unexplained.** The crash fixed here
+  accounts for two of the four faults seen in CI on 2026-11-19. The other
+  two, a Windows access violation in a separate process that builds a
+  plot and a Qt "slot not found" message in a template wizard test, have
+  not come back and could not be reproduced. Neither has been reported
+  from use of the app.
+- **One CI check of the Basilisk framework is still red on Windows,** as
+  in 2.13.0. The framework test
+  `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+  fails in the "Windows (MAX Python)" job with the MSVC 19.52 compiler.
+  It belongs to the framework, which SpaceMissionStudio never changes,
+  and the installers carry Basilisk 2.12.0 from PyPI. The owner decided
+  to merge with this one check red; SpaceMissionStudio's own workflow,
+  which tests and builds the release, is a separate check.
+- **The bundled space weather is 2.13.0's,** with observations to
+  2026-11-18. Fetch the current file before a drag study near today's
+  date.
+- **The Budgets area can take 50 ms or more to show on a slow Windows
+  machine,** as in 2.13.0.
+- **The 3D View without a graphics card is slow,** as before: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.13.0 (2026-11-20)
 

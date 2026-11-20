@@ -1,7 +1,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-![Version 2.13.0](https://img.shields.io/badge/version-2.13.0-blue)
+![Version 2.13.1](https://img.shields.io/badge/version-2.13.1-blue)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -149,8 +149,12 @@ internet needed.
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.13.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.13.0),
-  [changelog](CHANGELOG.md)): a window that feels finished, from the UI
+- **Version:** 2.13.1 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.13.1),
+  [changelog](CHANGELOG.md)): fixes for 2.13.0: one cause of rare
+  crashes removed (a garbage collection in a background thread), clearer
+  plot bands, Timeline events, tick labels and wheel names, and tables
+  that fit at 1280 px; results and the scenario format are 2.13.0's.
+  2.13.0 made a window that feels finished, from the UI
   audit's batches B2 to B12: one accent button per view, empty states
   that say what fills them, labels instead of codes, values as sheets,
   one form grid and page inset, a Settings page, top bar, panels, status
@@ -210,7 +214,7 @@ internet needed.
   relative-orbital-element formations, optical and landmark navigation,
   asteroid Eros, Mars's gravity field and albedo on the sun sensors; and
   1.0.0 was the first release of the renewed tool.
-- **Platforms:** 2.13.0 has the Linux `.deb`, the Windows setup program
+- **Platforms:** 2.13.1 has the Linux `.deb`, the Windows setup program
   and the wheel. Both installers carry their own Python, Basilisk and
   reference data; each was installed and run offline by the release
   workflow, the `.deb` also by hand in a container

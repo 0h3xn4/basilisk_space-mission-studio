@@ -576,6 +576,19 @@ built, installed and checked every file, attached the eleven and
 published the release 37 minutes later. It was never a public release
 without files.
 
+2.13.1 was prepared on 2026-11-20 by this checklist, a patch release
+with three fixes: one cause of the background-thread crashes removed
+(#302, SRelD K-44, partly fixed), the small plot items (#301) and small
+window fixes (#300, both K-46), with the 2.13.0 publication record
+(#299). #302 was still in CI, so the release branch starts from its
+head `ed436170f7` and the release pull request carries #302 until #302
+merges. No file format changed: `schema/`, the templates, the golden
+files and `packaging/` are as at the 2.13.0 tag `c3eeb85`. The space
+weather was not refreshed: 2.13.0 refreshed it the day before
+(observations to 2026-11-18). By the owner's decision (SRelD K-45), the
+release pull request may be merged with CI's "Windows (MAX Python)" job
+red, for the Basilisk framework test `LambertInputValidation` only.
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·
