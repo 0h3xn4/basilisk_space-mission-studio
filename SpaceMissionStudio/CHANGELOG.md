@@ -8,6 +8,29 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Fixed
+
+- **Run › Thermal › Notes writes each check with three significant
+  figures.** The energy residual column showed 5.11e+03 next to 4.9e+03,
+  because a trailing zero was dropped; it now reads 4.90e+03, and the
+  throughput and half-step columns follow the same rule.
+- **Budgets › Power fits beside the Inspector.** On a 1280 px window
+  with the Inspector open, the table of the items scrolled sideways
+  inside itself. Its number headings now sit on two lines, the name
+  above the unit, as on the Equipment page, and the page's tables fit.
+- **The thermal sweep table fits at 1280 px.** Each column heading is
+  now the node's name over "min [°C]" or "max [°C]", so a sweep of
+  template 33 no longer scrolls sideways, with or without the
+  Inspector.
+- **Home writes a dash as a dash.** A few template descriptions showed
+  "--" where a dash belongs; Home now shows "–". The template files
+  themselves are unchanged.
+- **The heater energy column reads "Wh".** Run › Thermal › Heaters and
+  radiators wrote "W·h"; it now writes watt-hours the way the rest of
+  the window does.
+
 ## 2.13.0 (2026-11-20)
 
 SpaceMissionStudio 2.13.0 is about a window that feels finished. Every

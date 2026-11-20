@@ -19821,3 +19821,60 @@ checksums in its notes; the wheel, the sdist and both bills of
 materials, downloaded from the release, pass `sha256sum -c`. SRelD
 issue 46, the SDP, H05 and `releasing.md` record the tag, the runs and
 the files' digests.
+
+### 2.13.1: small window fixes
+
+Five small window items from `BACKLOG.md` "Next release" and SRelD K-46
+are fixed. Only what the window shows changed. The scenario files, the
+templates, the exported files and the golden outputs are the same.
+
+**Significant figures in Run › Thermal › Notes.** The energy residual
+column showed "5.11e+03" and "4.9e+03". The format `:.3g` drops a
+trailing zero. The new helper `thermal_widget._figures` keeps it
+(`:#.3g`, without a bare point). The residual, the throughput and the
+half-step change now have three significant figures in every row
+("4.90e+03", "490", "0.400").
+
+**Budgets › Power beside the Inspector.** At 1280 x 720 with the
+Inspector open, the table of the items has 879 px. Its twelve headings
+needed 988 px, so it scrolled sideways inside itself. Two changes fix
+it:
+- Every number's heading is two lines, the name above the unit
+  ("Average" over "[W]"), as on the Equipment page (B12).
+- A fitted `DataTable` counted 12 px for a sort indicator in each
+  heading's least width. A table without a sort indicator now gives up
+  these 12 px before it scrolls. The least width is never below the
+  heading as the style draws it (`sectionSizeHint`). The hint is read
+  again at each fit, so a table filled before it was shown is safe.
+  With room, a column keeps its old width. No fitted table shows a sort
+  indicator today.
+The headings now need 821 px. The copied TSV and "Copy as CSV" are as
+before.
+
+**The thermal sweep table.** Template 33's sweep has 13 columns. At
+1280 px they needed 1257 px; the page has 1172 px, or 1005 px with the
+Inspector open. Each heading is now the node's name over its extreme and
+unit ("radiator" over "min [°C]"), not "radiator min" over "[°C]". With
+the change above, the headings need 947 px. The table keeps a column per
+node and extreme, so a user reads a sweep as before. A model with many
+more nodes can still scroll sideways.
+
+**Dashes on Home.** Five template descriptions write a dash as "--"
+(templates 03, 08, 20, 21 and 22). B4 (UI-34) changed the window's own
+strings and the manual, not the template files: the golden files and
+the command line read those files. Home now shows " -- " as " – " in a
+card's line, its accessible description and the details
+(`load_scenario_widget.shown_dashes`). A name such as "bus--avionics" and
+a flag such as "--out" keep their hyphens. The files are unchanged.
+
+**The heater energy unit.** The thermal headings had their own unit map,
+which wrote "W·h". B4 (UI-35) writes watt-hours "Wh" everywhere else
+(`units.shown("W*h")`). The heaters' energy heading now reads "Energy"
+over "[Wh]".
+
+Tests: six new tests (seven cases) failed before the fixes
+(`docs/ui/TEST_CHANGES.md` lists them). Two existing tests pinned the
+old texts and now pin the new ones; one docstring changed. Offscreen
+screenshots at 1280 x 720 show the four places after the fixes, and
+Budgets › Power, the sweep, the notes and the heaters before them. `docs/images/load_scenario_tab.png` showed "--"
+in template 22's description and was taken again.

@@ -4600,3 +4600,35 @@ open in its own window.
 
 - **A tab never sets the thermal page's least width beyond its header row.** The page's own window must fit on a small screen beside the main window, also with Windows' fonts. A wide table without a scroll area takes an Ignored horizontal size policy instead. The design keeps scroll areas out of the thermal page (`test_thermal_views`).
 - **A QObject that Qt calls back (an event filter, a timer) keeps no Python attribute** when only a Python attribute of another object refers to it. It reads what it needs from Qt: its parent, or a Qt property. The toast follower is the first such object.
+
+## Small window fixes (2.13.1, 2026-11-20)
+
+- **Decision:** a fitted `DataTable` without a sort indicator may squeeze
+  a column to the heading's width as the style draws it
+  (`sectionSizeHint`). The 12 px of the sort indicator count only when
+  the table shows one. With room, a column keeps its old width. **Why:**
+  Budgets › Power's table of the items and the thermal sweep table
+  scrolled sideways at 1280 px. Of the fitted tables, none shows a sort
+  indicator.
+- **Decision:** Budgets › Power's table of the items writes every
+  number's heading in two lines, the name above the unit, as the
+  Equipment grids do (B12). **Why:** with one-line headings the twelve
+  columns needed 988 px; the table has 879 px beside the Inspector. Now
+  they need 821 px.
+- **Decision:** a sweep's heading is the node's name over its extreme
+  and unit ("radiator" over "min [°C]"). The table keeps a column per
+  node and extreme. **Why:** template 33's 13 columns needed 1257 px;
+  the page has 1005 px beside the Inspector. Now they need 947 px. A
+  table in rows of node and value was not chosen: it changes how users
+  read a sweep. B11's "Left as it is" for this table no longer holds.
+- **Decision:** Run › Thermal › Notes writes the solution checks with
+  three significant figures and keeps a trailing zero ("4.90e+03").
+  **Why:** `:.3g` dropped it, so one column had two and three figures.
+- **Decision:** Home shows a template description's " -- " as " – "
+  when it shows the text. The template files keep "--". **Why:** B4
+  changed the window's own strings, not the templates; the golden files
+  and the command line read the files. A name ("bus--avionics") and a
+  flag ("--out") keep their hyphens.
+- **Decision:** a thermal heading writes an energy unit "Wh"
+  (`units.shown("W*h")`), as the other energy columns do. **Why:** B4
+  (UI-35) chose "Wh"; the thermal headings had their own map.

@@ -480,6 +480,9 @@ bar and no toolbar:
   never below their heading's. A heading is never cut. A cell whose text
   is elided shows it whole on hover (its own tooltip first). Only a table
   whose headings alone are too wide scrolls sideways, every value whole.
+  A table that shows no sort indicator gives up the indicator's room
+  (12 px a column) before it scrolls, never the room the style draws the
+  heading in (`sectionSizeHint`, 2.13.1).
   A short table of text names its `wrap` columns instead (UI audit B12):
   their text wraps at word boundaries, never narrower than its longest
   word, the other columns keep their whole text, and each row is as tall
@@ -534,13 +537,19 @@ bar and no toolbar:
   findings as a `badges.StatusBadge` (an icon and words) and **Show in
   Problems**, a framed button. Values are tables: Summary has a Status
   column (an icon and words), the Notes tab each case's solution
-  checks in a `ValueTable`. Heat flows' table asks for its rows' height
-  and the plot takes the rest (at least 160 px). A study's parameter is
-  chosen by its label and unit, its path on hover, with "Other
-  parameter, by its path" for any other.
+  checks in a `ValueTable`, each column with three significant figures
+  ("4.90e+03", not "4.9e+03"; 2.13.1). Heat flows' table asks for its
+  rows' height and the plot takes the rest (at least 160 px). A study's
+  parameter is chosen by its label and unit, its path on hover, with
+  "Other parameter, by its path" for any other. A sweep's headings are
+  the node's name over its extreme and unit ("radiator" over "min
+  [°C]"), so template 33's sweep fits at 1280 px with the Inspector open
+  (2.13.1).
 - **A heading in two lines:** a table heading may put its unit on a
   second line ("Conduction\n[W]"), so a table of many numbers fits;
-  `units.label` keeps it there.
+  `units.label` keeps it there. Budgets › Power's table of the items
+  writes every number's heading so ("Average" over "[W]"): its twelve
+  columns fit beside the Inspector at 1280 px (2.13.1).
 - **Problems panel, at the bottom (Ctrl+J):** a `QTableView` over
   `ProblemsModel`: Severity (icon and word), ID (the field path), Object,
   Message; errors first, then the warnings, which stay listed while an
@@ -748,7 +757,9 @@ they are (UI audit B4, UI-08, UI-19).
 
 **Dashes.** A dash in the window's text and in the manual is an en dash
 with spaces (" – "), never "--"; a figure the run does not give is "–"
-(UI audit B4, UI-34). Command-line flags keep their hyphens.
+(UI audit B4, UI-34). Command-line flags keep their hyphens. A
+template's description keeps its "--" in the file; Home shows it as "–"
+(`load_scenario_widget.shown_dashes`, 2.13.1).
 
 **One line first.**
 
@@ -1083,8 +1094,6 @@ Where the app does not meet `docs/ui/UI_OVERHAUL.md` after the overhaul
   observers, the 3D model's face properties and envelope, the IDM-CIC
   import and the input differences dialog are still `QTableWidget`s; they
   have the DataTable look (`set_table_look`, UI audit B9), but not its
-  copy, column menu or fitting. With the Inspector open at 1280 px,
-  Budgets › Power's table of the items (twelve columns) scrolls sideways
-  inside the table: its headings alone are wider than the page.
+  copy, column menu or fitting.
 - **Spacing:** the 4 px grid is in the style sheet and the theme's
   `SPACE`; some layouts built in code still set their own margins.

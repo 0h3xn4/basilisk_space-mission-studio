@@ -77,6 +77,7 @@ NOTE_ROLE = Qt.ItemDataRole.UserRole + 1  # a cell's muted second line (Row.note
 _SIZED_ROWS = 200  # rows a column's width is measured from
 _CELL_PAD_PX = 16  # [px] beside a cell's text (the style sheet's padding and the grid)
 _HEADER_PAD_PX = 28  # [px] beside a heading (its padding and the sort indicator)
+_SORT_MARK_PX = 12  # [px] of _HEADER_PAD_PX: the sort indicator, which only a sortable table shows
 _ICON_PAD_PX = 24  # [px] a status icon (16 px) and its gap, before a marked cell's text
 _MAX_COLUMN_PX = 480  # [px] a long text is elided past this; the column can still be dragged wider
 
@@ -528,11 +529,15 @@ class DataTable(QWidget):
         bold = QFontMetrics(self.model._heading_font)
         self._natural, self._floors = [], []
         header = self.view.horizontalHeader()
+        # A table without a sort indicator need not keep its room when the columns are squeezed (2.13.1:
+        # Budgets › Power's items beside the Inspector); a column still asks for it when there is room.
+        squeeze = 0 if header.isSortIndicatorShown() else _SORT_MARK_PX
         for column, heading in enumerate(self.model.headers):
             # The heading's width, and at least its size as the style draws it (font, padding, margins, sort arrow).
-            floor = max(max(header_metrics.horizontalAdvance(line) for line in units.label(heading).split("\n"))
-                        + _HEADER_PAD_PX, header.sectionSizeHint(column))
-            self._floors.append(floor)
+            text = max(header_metrics.horizontalAdvance(line) for line in units.label(heading).split("\n"))
+            hint = header.sectionSizeHint(column)
+            floor = max(text + _HEADER_PAD_PX, hint)
+            self._floors.append(max(text + _HEADER_PAD_PX - squeeze, hint))
             if column == stretch:
                 self._natural.append(floor)
                 continue
@@ -580,7 +585,10 @@ class DataTable(QWidget):
         if not columns or room <= 0:
             return
         grow = columns.index(self._grow) if self._grow in columns else -1
-        widths = fit_widths([self._natural[c] for c in columns], [self._floors[c] for c in columns], room, grow)
+        # A heading as the style draws it now (the table may have been filled before it was shown and styled).
+        header = self.view.horizontalHeader()
+        floors = [max(self._floors[c], header.sectionSizeHint(c)) for c in columns]
+        widths = fit_widths([self._natural[c] for c in columns], floors, room, grow)
         for column, width in zip(columns, widths):
             if column != self._grow:  # the stretching column takes the rest itself
                 self.view.setColumnWidth(column, width)
