@@ -19839,8 +19839,9 @@ half-step change now have three significant figures in every row
 Inspector open, the table of the items has 879 px. Its twelve headings
 needed 988 px, so it scrolled sideways inside itself. Two changes fix
 it:
-- Every number's heading is two lines, the name above the unit
-  ("Average" over "[W]"), as on the Equipment page (B12).
+- Every number's heading is two or three lines, the name above the
+  unit ("Average" over "[W]", "With" over "margin" over "[W]"), as on
+  the Equipment page (B12).
 - A fitted `DataTable` counted 12 px for a sort indicator in each
   heading's least width. A table without a sort indicator now gives up
   these 12 px before it scrolls. The least width is never below the
@@ -19848,8 +19849,19 @@ it:
   again at each fit, so a table filled before it was shown is safe.
   With room, a column keeps its old width. No fitted table shows a sort
   indicator today.
-The headings now need 821 px. The copied TSV and "Copy as CSV" are as
+The headings now need 786 px. The copied TSV and "Copy as CSV" are as
 before.
+
+Windows CI of PR #300 showed that two-line headings (821 px) were not
+enough there: Windows draws the same text wider. Two changes followed:
+- "Duty", "With margin" and "Peak with margin" now break once more
+  ("Duty" over "[-]", "With" over "margin" over "[W]"). On Linux the
+  headings need 786 px of 879 px, 11 % to spare instead of 5 %.
+- When even the headings of a fitted `DataTable` do not fit, the table
+  scrolls sideways and its stretching column ("Item") keeps its width.
+  In Qt's Stretch mode that column was squeezed below its heading on
+  Windows. With room again, the column stretches as before. A new test
+  in `tests/gui/test_data_table.py` checks this.
 
 **The thermal sweep table.** Template 33's sweep has 13 columns. At
 1280 px they needed 1257 px; the page has 1172 px, or 1005 px with the

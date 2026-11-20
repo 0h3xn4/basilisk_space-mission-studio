@@ -101,3 +101,30 @@ def test_an_empty_table_shows_its_text_and_action(qtbot):
         view.empty_button.click()
     view.clear("Nothing ran.")
     assert view.empty_label.text() == "Nothing ran." and view.model.rowCount(QModelIndex()) == 0
+
+
+def test_a_fitted_table_too_narrow_for_its_headings_scrolls_and_keeps_its_stretching_column(qtbot):
+    """When even the headings of a fitted table do not fit its width, the
+    table scrolls sideways and its stretching column keeps its heading
+    whole: Qt's Stretch mode squeezed it below its heading (2.13.1, Budgets
+    › Power's items beside the Inspector on Windows). With room again, the
+    column stretches as before."""
+    from PySide6.QtWidgets import QHeaderView
+
+    from spacemissionstudio.gui.data_table import DataTable, Row
+
+    view = DataTable()
+    qtbot.addWidget(view)
+    view.set_fit_width()
+    headers = ["Equipment item"] + [f"Quantity {n}\n[W]" for n in range(8)]
+    view.set_table(headers, [Row(["camera", *("12.5",) * 8])], numeric=range(1, 9), stretch=0)
+    view.resize(300, 200)
+    view.show()
+    qtbot.waitExposed(view)
+    header = view.view.horizontalHeader()
+    qtbot.waitUntil(lambda: view.view.horizontalScrollBar().maximum() > 0, timeout=3000)
+    qtbot.waitUntil(lambda: header.sectionSize(0) >= header.sectionSizeHint(0), timeout=3000)
+    assert header.sectionResizeMode(0) == QHeaderView.ResizeMode.Interactive
+    view.resize(2000, 200)
+    qtbot.waitUntil(lambda: header.sectionResizeMode(0) == QHeaderView.ResizeMode.Stretch, timeout=3000)
+    qtbot.waitUntil(lambda: view.view.horizontalScrollBar().maximum() == 0, timeout=3000)

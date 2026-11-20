@@ -1255,11 +1255,12 @@ class PowerPage(QWidget):
         budget = self.budget
         mode = next((m for m in budget.modes if m.mode == self.mode_combo.currentText()), None) if budget else None
         rows = mode.rows if mode is not None else ()
-        # Twelve columns beside the Inspector at 1280 px: every number's heading is two lines, the name
-        # above the unit (2.13.1; one-line headings made the table scroll sideways inside itself).
+        # Twelve columns beside the Inspector at 1280 px: every number's heading is two or three lines, the
+        # name above the unit (2.13.1; one-line headings made the table scroll sideways inside itself, and
+        # two-line ones still did with the wider font metrics on Windows).
         self.items_table.set_table(
-            ("Item", "Subsystem", "Bus", "Maturity", "Power\nmode", "Average\n[W]", "Duty [-]", "Effective\n[W]",
-             "Margin\n[%]", "With\nmargin [W]", "Peak\n[W]", "Peak with\nmargin [W]"),
+            ("Item", "Subsystem", "Bus", "Maturity", "Power\nmode", "Average\n[W]", "Duty\n[-]", "Effective\n[W]",
+             "Margin\n[%]", "With\nmargin\n[W]", "Peak\n[W]", "Peak with\nmargin\n[W]"),
             [Row((r.item, r.subsystem, r.bus, r.maturity, r.power_mode or NOT_LISTED_TEXT, _w(r.average_w),
                   f"{r.duty_cycle:g}", _w(r.effective_w), _ratio(r.margin_percent), _w(r.margined_w), _w(r.peak_w),
                   _w(r.margined_peak_w)),

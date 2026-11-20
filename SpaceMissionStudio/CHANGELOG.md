@@ -18,8 +18,10 @@ fixes bugs.
   throughput and half-step columns follow the same rule.
 - **Budgets › Power fits beside the Inspector.** On a 1280 px window
   with the Inspector open, the table of the items scrolled sideways
-  inside itself. Its number headings now sit on two lines, the name
-  above the unit, as on the Equipment page, and the page's tables fit.
+  inside itself. Its number headings now sit on two or three lines, the
+  name above the unit, as on the Equipment page, and the page's tables
+  fit. A table that still cannot fit its headings scrolls sideways and
+  keeps its first column whole.
 - **The thermal sweep table fits at 1280 px.** Each column heading is
   now the node's name over "min [°C]" or "max [°C]", so a sweep of
   template 33 no longer scrolls sideways, with or without the

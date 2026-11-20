@@ -4611,10 +4611,18 @@ open in its own window.
   scrolled sideways at 1280 px. Of the fitted tables, none shows a sort
   indicator.
 - **Decision:** Budgets › Power's table of the items writes every
-  number's heading in two lines, the name above the unit, as the
-  Equipment grids do (B12). **Why:** with one-line headings the twelve
-  columns needed 988 px; the table has 879 px beside the Inspector. Now
-  they need 821 px.
+  number's heading in two or three lines, the name above the unit, as
+  the Equipment grids do (B12). **Why:** with one-line headings the
+  twelve columns needed 988 px; the table has 879 px beside the
+  Inspector. Two-line headings needed 821 px on Linux, and Windows CI
+  showed that this was not enough there. With "Duty", "With margin" and
+  "Peak with margin" on one more line they need 786 px on Linux.
+- **Decision:** a fitted `DataTable` whose headings do not fit even at
+  their least widths scrolls sideways, and its stretching column then
+  keeps its whole width (Interactive mode). With room again, the column
+  stretches. **Why:** in Qt's Stretch mode an overflowing table
+  squeezed the stretching column below its heading (Budgets › Power's
+  "Item" on Windows CI, PR #300).
 - **Decision:** a sweep's heading is the node's name over its extreme
   and unit ("radiator" over "min [°C]"). The table keeps a column per
   node and extreme. **Why:** template 33's 13 columns needed 1257 px;

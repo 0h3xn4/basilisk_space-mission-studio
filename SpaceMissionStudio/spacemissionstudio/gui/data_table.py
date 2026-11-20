@@ -589,8 +589,15 @@ class DataTable(QWidget):
         header = self.view.horizontalHeader()
         floors = [max(self._floors[c], header.sectionSizeHint(c)) for c in columns]
         widths = fit_widths([self._natural[c] for c in columns], floors, room, grow)
+        # When even the headings do not fit, the table scrolls sideways and the stretching column keeps its
+        # whole width: in Stretch mode Qt would squeeze it below its heading (2.13.1, seen on Windows).
+        overflow = sum(min(f, self._natural[c]) for f, c in zip(floors, columns)) >= room
+        if self._grow in columns:
+            mode = QHeaderView.ResizeMode.Interactive if overflow else QHeaderView.ResizeMode.Stretch
+            if self.view.horizontalHeader().sectionResizeMode(self._grow) != mode:
+                self.view.horizontalHeader().setSectionResizeMode(self._grow, mode)
         for column, width in zip(columns, widths):
-            if column != self._grow:  # the stretching column takes the rest itself
+            if column != self._grow or overflow:  # else the stretching column takes the rest itself
                 self.view.setColumnWidth(column, width)
         if self.view.wrap_columns:
             self._fit_row_heights(dict(zip(columns, widths)))

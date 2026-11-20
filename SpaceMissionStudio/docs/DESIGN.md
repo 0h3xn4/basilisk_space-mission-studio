@@ -548,8 +548,10 @@ bar and no toolbar:
 - **A heading in two lines:** a table heading may put its unit on a
   second line ("Conduction\n[W]"), so a table of many numbers fits;
   `units.label` keeps it there. Budgets › Power's table of the items
-  writes every number's heading so ("Average" over "[W]"): its twelve
-  columns fit beside the Inspector at 1280 px (2.13.1).
+  writes every number's heading so ("Average" over "[W]"; "With" over
+  "margin" over "[W]"): its twelve columns fit beside the Inspector at
+  1280 px (2.13.1). A fitted table whose headings still do not fit
+  scrolls sideways and keeps its stretching column whole.
 - **Problems panel, at the bottom (Ctrl+J):** a `QTableView` over
   `ProblemsModel`: Severity (icon and word), ID (the field path), Object,
   Message; errors first, then the warnings, which stay listed while an
