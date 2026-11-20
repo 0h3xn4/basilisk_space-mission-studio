@@ -588,6 +588,14 @@ weather was not refreshed: 2.13.0 refreshed it the day before
 (observations to 2026-11-18). By the owner's decision (SRelD K-45), the
 release pull request may be merged with CI's "Windows (MAX Python)" job
 red, for the Basilisk framework test `LambertInputValidation` only.
+It was published on 2026-11-20 at 16:50 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 48). #303 was merged at
+14:50 UTC; CI passed on `a9af24e` ([run 44757407951](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44757407951));
+the tag workflow ([run 44768019598](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44768019598)) passed the release
+check and tagged it at 15:55; the release workflow
+([run 44768147987](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/44768147987)) built, installed and checked every
+file, attached the eleven and published the release 55 minutes later.
+It was never a public release without files.
 
 ---
 
