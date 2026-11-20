@@ -179,6 +179,13 @@ def _build(mode: str) -> dict[str, str]:
     t["diff.removed"] = t["status.critical.soft"]
     t["diff.changed"] = t["status.caution.soft"]
     t["shadow"] = SHADOW[mode]
+    # Charts (SRelD K-46): an event band behind a plot's lines (drawn at
+    # results_widget._BAND_OPACITY) and a mode change's dashed line; and a
+    # Timeline bar of an event kind without a categorical slot (the model
+    # analyses', the thermal limits' and the plan's). Neutral, so no series,
+    # status or accent hue is shared; 3:1 against the surface (CONTRAST_PAIRS).
+    t["chart.band"] = t["text.secondary"]
+    t["chart.event"] = t["text.secondary"]
     return t
 
 
@@ -207,6 +214,8 @@ CONTRAST_PAIRS = (
     + [("border.focus", bg, 3.0) for bg in ("bg.canvas", "bg.surface", "bg.raised", "bg.field")]
     + [("border.control", bg, 3.0) for bg in ("bg.canvas", "bg.surface", "bg.raised", "bg.field", "bg.hover")]
     + [("accent", bg, 3.0) for bg in ("bg.canvas", "bg.surface")]
+    # A mode change's line on a plot and an event bar on the Timeline.
+    + [(key, bg, 3.0) for key in ("chart.band", "chart.event") for bg in ("bg.canvas", "bg.surface")]
     # The JSON page's text, on its field, its current line and a matched bracket.
     + [(f"code.{kind}", bg, 4.5) for kind in ("key", "string", "number", "literal", "punctuation")
        for bg in ("bg.field", "code.current_line", "code.bracket")]

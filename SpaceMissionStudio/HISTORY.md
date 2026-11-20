@@ -19821,3 +19821,60 @@ checksums in its notes; the wheel, the sdist and both bills of
 materials, downloaded from the release, pass `sha256sum -c`. SRelD
 issue 46, the SDP, H05 and `releasing.md` record the tag, the runs and
 the files' digests.
+
+### 2.13.1: plot items (K-46)
+
+Branch `ui/plot-items`. B10 left three plot points open, and the UI
+audit of 2026-11-19 added a fourth (SRelD K-46). All four change only
+the window. The series, their columns, the CSV, JSON and HTML exports
+and the golden files do not change. The owner's units stay: delta-V in
+m/s, altitudes and semi-major axes in km, position in m and velocity in
+m/s.
+
+**Event bands.** The Results plots drew each band in the Timeline's
+colour for its kind, so an eclipse band had the hue of a line. Bands and
+mode lines now take a new token, `chart.band`. It is `text.secondary`
+(light `#50565F`, dark `#A1A8B3`), a grey that no series colour, status
+colour or the accent uses. The bands stay at 16 % behind the lines. The
+Events buttons name each kind and switch it.
+
+**Timeline.** The Timeline drew the model analyses', thermal limits' and
+plan's events in the accent. They now take a new token, `chart.event`
+(also `text.secondary`). Each group has its own named row and check
+box. The time cursor stays in the accent, because it is a selection.
+Both new tokens are in `CONTRAST_PAIRS` at 3:1 on the canvas and the
+surface, and in DESIGN.md's token table.
+
+**Tick labels.** A nearly constant series, such as template 01's
+osculating inclination, read "97.03000000000399", because the axis
+shows no offset or exponent notation. A y axis now includes a span of at
+least 1e-6 of its largest value, centred on the data, through Plotly's
+`autorangeoptions.include` (`results_widget._MIN_Y_SPAN_SHARE`). The
+labels now read "97.03001". Autorange stays on, so zoom and double-click
+still work. A floor relative to the value keeps real changes visible:
+1e-6 of a 6,928 km semi-major axis is 7 m.
+
+**Wheel names.** `engine.series_names.device_column_labels` maps a
+spacecraft's `wheel_N` column to the name of its Nth `reaction_wheel`
+actuator, the order in which `engine.service` records them. The main
+window hands the map to the Results tab when a run starts. The legend,
+the readout, a compared run's lines (from that run's scenario) and the
+Compare tab's column picker show "rw-1", not `wheel_0`. Thruster and
+torque-rod columns keep their indices; the audit did not list them.
+
+**Looked at.** Offscreen renders of a 2 x 2 grid (position, a constant
+inclination, wheel speeds, with eclipses and a mode change) and of the
+Timeline with every extra kind, in both themes. The bands read as grey,
+the ticks are short, the legend names the wheels, and no Timeline bar is
+in the accent. No docs screenshot shows these items, so none was taken
+again.
+
+Tests: `tests/gui/test_plot_items.py` (5) and one new test in
+`tests/gui/test_main_window.py`. Each failed before the fix. No existing
+test changed.
+
+Tests on the branch, Linux, Python 3.14, one run of `pytest tests -q -n
+4` as CI runs it: 5735 passed, none failed (5725 at 2.13.0). The
+golden-output and series-name tests passed (156). The compliance
+generators changed `SDD_components.md` and `SUITP_test_cases.md` once
+and nothing on a second run; `check_drds.py` found no problem.
