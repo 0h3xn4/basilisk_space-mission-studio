@@ -12,6 +12,20 @@ fixes bugs.
 
 ### Fixed
 
+- **Plots read more clearly in four small ways.** The shaded event
+  bands behind the Results plots (eclipses, passes, burns and the rest)
+  are now a quiet grey, and a mode change is a grey dashed line, so a
+  band can no longer be mistaken for one of the lines in front of it.
+  The Timeline draws model-analysis, thermal-limit and planned-activity
+  events in a neutral grey rather than the blue reserved for the main
+  action and for selection. A value that barely moves, such as an
+  osculating inclination that drifts by a hundred-billionth of a degree,
+  now gets short tick labels like "97.03001" instead of
+  "97.03000000000399"; the plotted values are untouched. And reaction
+  wheel lines carry the wheel's name from the scenario ("rw-1") in the
+  legend, the readout and the Compare tab, where they used to say
+  `wheel_0`. The series names, the CSV columns and every exported file
+  stay exactly as they were.
 - **Run › Thermal › Notes writes each check with three significant
   figures.** The energy residual column showed 5.11e+03 next to 4.9e+03,
   because a trailing zero was dropped; it now reads 4.90e+03, and the

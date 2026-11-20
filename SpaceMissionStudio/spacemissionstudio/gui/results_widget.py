@@ -323,6 +323,24 @@ def _break_at_wraps(x: np.ndarray, y: np.ndarray, period: float):
     return np.insert(x, jumps, x[jumps - 1]), np.insert(y.astype(float), jumps, np.nan)
 
 
+def _least_y_span(traces: list) -> list[float] | None:
+    """``[low, high]`` for a y axis to include besides the data when the
+    traces' values span less than ``_MIN_Y_SPAN_SHARE`` of the largest of
+    them (centred on the data), else None: Plotly's own range. The values
+    are not changed (SRelD K-46)."""
+    values = [np.asarray(trace.y, dtype=float).ravel() for trace in traces if trace.y is not None]
+    values = np.concatenate(values) if values else np.empty(0)
+    values = values[np.isfinite(values)]
+    if not values.size:
+        return None
+    low, high = float(values.min()), float(values.max())
+    least = _MIN_Y_SPAN_SHARE * max(abs(low), abs(high))
+    if least == 0.0 or high - low >= least:
+        return None
+    centre = 0.5 * (low + high)
+    return [centre - 0.5 * least, centre + 0.5 * least]
+
+
 def _shown(name: str, series: TimeSeries):
     """How ``series`` is plotted, in the units Settings > Appearance > Plot
     units chooses (``plot_categories.shown``)."""
@@ -464,6 +482,12 @@ _EVENT_LABELS = {event_model.ECLIPSE: "Eclipses", event_model.ACCESS: "Passes", 
                  event_model.DOWNLINK: "Downlinks"}
 # [-] band opacity behind the lines: light enough that every line stays readable
 _BAND_OPACITY = 0.16
+# [-] the least span of a y axis, as a share of the largest value it shows: a
+# series that hardly moves (template 01's osculating inclination moves by
+# 1e-11 deg) gets ticks such as "97.03001", not "97.03000000000399", as the
+# axis shows no offset or exponent notation (SRelD K-46). Only the axis
+# range: the plotted values stay the series' own.
+_MIN_Y_SPAN_SHARE = 1e-6
 # Bands of one kind drawn on one plot at most: Plotly redraws every shape on
 # each zoom, and a year of LEO eclipses (~5,500) made zooming crawl.
 _MAX_BANDS_PER_KIND = 400
@@ -645,6 +669,9 @@ class ResultsWidget(QWidget):
         # Filled from set_featured_series(); hidden when there are none. A
         # chip shows its plot in the selected cell.
         self._featured: list = []
+        # The names of the devices a series' columns stand for, from the
+        # scenario being run (set_device_labels): {series: {column: name}}.
+        self._device_labels: dict = {}
         self._suggestion_chips: list = []
         self.suggestion_row = QWidget()
         suggestion_layout = QHBoxLayout(self.suggestion_row)
@@ -910,6 +937,24 @@ class ResultsWidget(QWidget):
         result opens on the first of them (unless a layout was saved)."""
         self._featured = list(names)
         self._refresh_suggestions()
+
+    def set_device_labels(self, labels: dict) -> None:
+        """The device names the plots, their legends and the readout show for
+        a series' columns, normally
+        ``engine.series_names.device_column_labels(scenario)`` for the
+        scenario being run: ``{"sat-1.rw_speeds": {"wheel_0": "rw-1"}}``
+        (SRelD K-46). The series and the exported files keep their columns."""
+        self._device_labels = {name: dict(columns) for name, columns in labels.items()}
+        self._figure_cache = {}
+
+    def _column_labels(self, name: str, display, scenario: dict | None = None) -> dict:
+        """The labels of ``name``'s columns: the category's
+        (``plot_categories``), then the device names of the run shown, or
+        of ``scenario`` (a kept run's ``Scenario.to_dict()``) when given."""
+        from ..engine.series_names import device_column_labels
+
+        devices = (device_column_labels(scenario) if scenario is not None else self._device_labels).get(name, {})
+        return {**(display.columns or {}), **devices}
 
     def set_layout_key(self, key: str | None) -> None:
         """The scenario whose layout and plots the grid keeps (its name);
@@ -1264,7 +1309,7 @@ class ResultsWidget(QWidget):
         self._x_is_epoch = is_datetime_axis
 
         traces = []
-        column_labels = display.columns or {}
+        column_labels = self._column_labels(name, display)
         x_array = np.asarray(x_values, dtype=object if isinstance(x_values, list) else None)
         # A Monte Carlo batch's per-run series (columns run_0, run_1, ...):
         # the runs are interchangeable, so one thin, translucent colour and
@@ -1294,6 +1339,9 @@ class ResultsWidget(QWidget):
         axis_common = pt.axis(TOKENS)
         y_title = units.axis_title(display.y_label, display.unit)  # "Inclination [°]" (UI audit B10)
         y_axis = dict(axis_common, title_text=y_title)
+        steady = _least_y_span(traces)
+        if steady is not None:
+            y_axis["autorangeoptions"] = dict(include=steady)
         x_axis = dict(axis_common, title_text=x_label)
         if not is_datetime_axis:
             # Never an offset/scientific tick notation (the complaint that
@@ -1346,10 +1394,10 @@ class ResultsWidget(QWidget):
 
     def _event_shapes(self, name: str) -> list:
         """The run's events behind ``name``'s lines (U-27): a band from start
-        to end of each, in the Events tab's colour; a mode change a dashed
-        line at its start. Only the plot's own spacecraft's events."""
-        from .event_timeline_widget import kind_colour
-
+        to end of each; a mode change a dashed line at its start. Only the
+        plot's own spacecraft's events. Bands and lines take the neutral
+        ``chart.band``, so none shares a hue with a line (SRelD K-46); the
+        buttons above the plots name and switch each kind."""
         parsed = _parse_access_pair(name)
         spacecraft = parsed[1] if parsed is not None else name.split(".", 1)[0]
         events = [e for e in self._events() if e.spacecraft == spacecraft and e.kind not in self._hidden_kinds]
@@ -1362,7 +1410,7 @@ class ResultsWidget(QWidget):
                 self._band_notes.append(f"{_EVENT_LABELS[kind]} of {spacecraft}: {len(of_kind):,}, too many to draw "
                                         f"(see the Timeline)")
                 continue
-            colour = kind_colour(kind)
+            colour = TOKENS["chart.band"]
             starts = self._event_x([e.start_s for e in of_kind])
             ends = self._event_x([e.end_s for e in of_kind])
             for start, end in zip(starts, ends):
@@ -1689,7 +1737,7 @@ class ResultsWidget(QWidget):
         x_values, _label = self._x_axis_values(series.time_s, other.result, other.epoch_utc or None)
         x_values = np.asarray(x_values, dtype=object if isinstance(x_values, list) else None)
         data = series.data * display.factor
-        labels = display.columns or {}
+        labels = self._column_labels(name, display, other.scenario)
         traces = []
         for i, column in enumerate(series.columns):
             if display.wrap_period:  # broken at the 0/360 wraps, as the shown run
@@ -1899,7 +1947,7 @@ class ResultsWidget(QWidget):
             if series is None:
                 continue
             display = _shown(name, series)
-            labels = dict(display.columns or {})
+            labels = self._column_labels(name, display)
             if len(series.columns) == 1 and not labels and display.y_label:
                 labels = {series.columns[0]: display.y_label}
             lines = [(labels.get(column, column), value_at(series, i, time_s, display.factor,
