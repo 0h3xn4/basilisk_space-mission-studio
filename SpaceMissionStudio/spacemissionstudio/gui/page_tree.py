@@ -74,16 +74,21 @@ class _UpKeys(QObject):
 
 
 class _Refit(QObject):
-    """The tree's width again once its font or style is known or changes."""
+    """The tree's width again once its font or style is known or changes.
+
+    It keeps no Python attribute: no Python reference keeps it, so Qt can
+    call it through a new wrapper that has none (the toast follower's
+    lesson, B11; SRelD K-44). Its page tree is its parent."""
 
     def __init__(self, tree: PageTree) -> None:
         super().__init__(tree)
-        self._tree = tree
 
     def eventFilter(self, _watched, event):  # noqa: N802 -- Qt API name
         if event.type() in (QEvent.Type.Show, QEvent.Type.FontChange, QEvent.Type.StyleChange,
                             QEvent.Type.Polish):
-            self._tree.fit_width_later()
+            tree = self.parent()
+            if isinstance(tree, PageTree):
+                tree.fit_width_later()
         return False
 
 

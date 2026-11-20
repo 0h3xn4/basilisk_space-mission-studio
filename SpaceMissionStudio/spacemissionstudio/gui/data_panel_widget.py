@@ -48,6 +48,7 @@ from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMenu, QMessage
 
 from .. import network
 from ..engine import reference_data
+from .background_threads import FIRST_IMPORTS
 from .data_table import DataTable, Row
 
 _logger = logging.getLogger(__name__)
@@ -109,15 +110,18 @@ class _SpaceWeatherWarmUp(QThread):
     """Parses the bundled space-weather file once, in this process (M9):
     checking a scenario's dates needs it, and the first scenario opened
     paid 0.5 s for it once start-up no longer read it here. Plain Python
-    parsing lets the GUI thread run in between."""
+    parsing lets the GUI thread run in between. It holds
+    ``background_threads.FIRST_IMPORTS``, so the two warm-ups and a run's
+    first import of the engine never import at the same time (SRelD K-44)."""
 
     def run(self) -> None:
-        from ..engine import spaceweather
+        with FIRST_IMPORTS:
+            from ..engine import spaceweather
 
-        try:
-            spaceweather.real_data_path("bundled")  # load_celestrak keeps what it parsed
-        except Exception:  # noqa: BLE001 -- a missing file is reported where it is used
-            _logger.debug("space-weather warm-up failed", exc_info=True)
+            try:
+                spaceweather.real_data_path("bundled")  # load_celestrak keeps what it parsed
+            except Exception:  # noqa: BLE001 -- a missing file is reported where it is used
+                _logger.debug("space-weather warm-up failed", exc_info=True)
 
     def stop(self) -> None:
         """It ends by itself in under a second."""
@@ -126,15 +130,17 @@ class _SpaceWeatherWarmUp(QThread):
 class _FigureWarmUp(QThread):
     """Builds one small figure (``results_widget.warm_up_figures``): plotly
     loads its figure classes and validators on first use, which held the
-    first run's end 0.3 s on the GUI thread. Plain Python, as above."""
+    first run's end 0.3 s on the GUI thread. Plain Python, as above, and
+    with ``FIRST_IMPORTS`` held, as above."""
 
     def run(self) -> None:
-        from .results_widget import warm_up_figures
+        with FIRST_IMPORTS:
+            from .results_widget import warm_up_figures
 
-        try:
-            warm_up_figures()
-        except Exception:  # noqa: BLE001 -- the first plot then loads them itself, as before
-            _logger.debug("figure warm-up failed", exc_info=True)
+            try:
+                warm_up_figures()
+            except Exception:  # noqa: BLE001 -- the first plot then loads them itself, as before
+                _logger.debug("figure warm-up failed", exc_info=True)
 
     def stop(self) -> None:
         """It ends by itself in about 0.1 s."""

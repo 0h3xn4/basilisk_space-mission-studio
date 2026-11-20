@@ -109,6 +109,31 @@ def _closed_widgets_deleted_after_the_test():
 
 
 @pytest.fixture(autouse=True)
+def _garbage_collected_on_the_gui_thread(request):
+    """Collects garbage on the GUI thread only while a window test runs, as
+    the app does from its start (``gui.background_threads``, SRelD K-44).
+
+    Python collects in the thread that passes the collector's threshold. A
+    worker that wrote a file or parsed one so destroyed widgets that earlier
+    tests had dropped, while the GUI thread used them: a segmentation fault
+    or an access violation in a worker thread "Garbage-collecting" (CI,
+    Linux and Windows). After the test the automatic collection is back, so
+    the tests without a window run as before.
+    """
+    if request.node.get_closest_marker("requires_gui") is None:
+        yield
+        return
+    try:
+        from spacemissionstudio.gui import background_threads
+    except ImportError:  # no PySide6: these tests are skipped via requires_gui anyway
+        yield
+        return
+    background_threads.install(request.getfixturevalue("qapp"))
+    yield
+    background_threads.uninstall()
+
+
+@pytest.fixture(autouse=True)
 def _no_blocking_dialogs(monkeypatch):
     """Under the offscreen platform a modal dialog nobody answers blocks for
     ever: a GUI test that opened one hung the whole suite instead of

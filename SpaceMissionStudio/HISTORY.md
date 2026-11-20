@@ -19947,3 +19947,101 @@ old texts and now pin the new ones; one docstring changed. Offscreen
 screenshots at 1280 x 720 show the four places after the fixes, and
 Budgets › Power, the sweep, the notes and the heaters before them. `docs/images/load_scenario_tab.png` showed "--"
 in template 22's description and was taken again.
+
+### 2.13.1: background-thread crashes (K-44)
+
+SRelD K-44 listed four faults from CI on 2026-11-19. None was reproduced
+on demand. Two earlier causes were already fixed: stale layout item
+wrappers (2.13.0) and the toast follower's Python state (B11 follow-up).
+
+**The CI logs.** The Windows log of the 3D step (#294, run 44545264418,
+first attempt) shows the crashed thread: `_SpaceWeatherWarmUp`,
+"Garbage-collecting", in `File "<string>", line 2 in __init__` (a
+dataclass `__init__`). At the same time `_FigureWarmUp` imported plotly,
+`RunWorker` imported `engine.service`, and the GUI thread repositioned
+toasts in `test_live_run_3d`. The Windows log of #297 shows the warm-up
+check's child process ended with 0xC0000005, with empty stdout and stderr.
+
+**Cause found (faults 1 and 3).** Python's cyclic garbage collector runs
+in the thread that allocates when a generation passes its threshold. It
+frees every unreachable cycle, whichever thread made it. A widget of the
+GUI thread in a reference cycle (a dropped window, a dialog with a lambda
+that refers to it) was so destroyed in a worker thread. Qt objects are
+not thread safe, so the process crashed.
+- A probe made 50 widgets in cycles on the GUI thread, then a `QThread`
+  made 300 000 dataclass rows. All 50 widgets were destroyed in the
+  worker.
+- A stress script (widgets in cycles, a worker that makes dataclass rows)
+  crashed five runs in five, and four in four before that, on Linux in a
+  few seconds. The stacks match CI: the worker in a dataclass `__init__`
+  ("<invalid frame>"), the GUI thread in Qt's event delivery, Qt's
+  "Timers cannot be stopped from another thread" before the crash.
+- During the start-up warm-ups and a run of `two_body_validation`, 214 of
+  264 collections ran in worker threads.
+- The export test (fault 3) writes CSV files in a worker while the GUI
+  thread waits. Its worker allocates, so the same collection can destroy
+  widgets of earlier tests there.
+
+**The fix.**
+- New module `gui/background_threads.py`. `install()` turns the
+  automatic collection off. A QObject child of the application checks
+  every 20 ms on the GUI thread whether a generation is due (the
+  collector's own thresholds) and collects it. `app.main` calls it right
+  after it makes the application.
+- The tests' fixture (`tests/gui/conftest.py`) installs it for each
+  window test and gives the automatic collection back after it.
+- The start-up warm-ups and `RunWorker`'s first import of the engine hold
+  one lock, `FIRST_IMPORTS`, so they never import at the same time. The
+  backlog asked for it; CPython's import is thread safe, so this is a
+  guard, not a cause found.
+- With the collector, the stress script crashed none of four runs, and no
+  widget was destroyed off the GUI thread.
+- The collector's interval: at 100 ms one collection took up to 189 ms,
+  at 20 ms the largest generation-1 collection took 44-70 ms (machine
+  load 13). Without the collector the largest pause was a full collection
+  of 112-219 ms. `docs/DECISIONS.md` records the trade-off.
+
+**Other QObjects checked.** The B11 rule: a QObject that Qt calls back
+and that only a Python reference keeps must keep no Python attribute.
+- `page_tree._Refit` (an event filter with no Python reference at all)
+  kept the page tree; it now reads its parent.
+- `theme.icons._KeepIcon` (no Python reference) kept its button and icon;
+  it now reads its parent and a Qt property.
+- Kept as they are: `_UpKeys`, `_CloseWatcher`, `_Debounce`,
+  `_EscapeFilter` and the theme's singleton filters. An attribute of their
+  owner keeps each of them, or they keep no state.
+- The export, run and warm-up workers end through queued signals on the
+  GUI thread (a probe showed a lambda on `finished` runs there).
+- Item wrappers kept across a `clear()`: PySide 6.11 makes the wrappers
+  of `QTreeWidget`, `QListWidget` and `QTableWidget` items invalid on
+  `clear()` (a probe), so a kept wrapper raises and is never handed to a
+  new item. `QStandardItemModel.clear()` (the JSON page's completion
+  list) leaves a kept wrapper valid, but the code keeps none, and a probe
+  of 1500 new items got no old wrapper. The only raw `itemAt()` outside
+  the helpers is `QTreeWidget.itemAt` (an item view, not a layout).
+
+**Not found (faults 2 and 4).**
+- Fault 2 (the warm-up check's child process, 0xC0000005): stdout was
+  empty, so the crash came before the script's last line was flushed. A
+  probe showed that stdout is flushed before PySide destroys the widgets
+  at exit, so it is not the known exit-order crash. The child has no
+  Python worker threads, so the collection cause does not apply. It
+  passed eight runs in eight here. The cause stays open.
+- Fault 4 ("Slot 'MainWindow::' not found" in a template wizard test):
+  no log of that run was found; the B11 run's log shows the same message
+  after the toast follower's error. The template wizard tests make no
+  `MainWindow`, so a window of an earlier test on that worker received a
+  signal while it was torn down. A collection in a worker can do that,
+  but a stress script did not reproduce the message. The cause stays
+  open.
+
+**Tests.** New: `tests/gui/test_background_threads.py` (9 tests).
+- A worker that allocates destroys no widget, and the collector frees
+  them on the GUI thread. It fails without the collector.
+- The collection that is due follows the thresholds.
+- `install` and `uninstall`, and `install` refuses a worker thread.
+- `main` installs the collector before the window.
+- The two warm-ups and a run's first import wait for `FIRST_IMPORTS`.
+- The two filters keep no Python attribute and still work.
+No existing test changed. The conftest change is logged in
+`docs/ui/TEST_CHANGES.md`.

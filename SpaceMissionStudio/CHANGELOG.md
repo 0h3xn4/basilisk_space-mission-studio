@@ -46,6 +46,16 @@ fixes bugs.
 - **The heater energy column reads "Wh".** Run › Thermal › Heaters and
   radiators wrote "W·h"; it now writes watt-hours the way the rest of
   the window does.
+- The window could crash now and then while something ran in the
+  background: at start-up, during a run, or while an export was being
+  written. Python's garbage collector ran in whichever thread happened to
+  be allocating, and when it ran in a worker it could tear down parts of
+  the window from that worker. Qt does not allow that, and the process
+  stopped with an access violation or a segmentation fault. Garbage is
+  now collected on the window's own thread only, and the start-up
+  warm-ups no longer import their heavy packages at the same time as each
+  other or as a run (SRelD K-44). Two small event filters also no longer
+  keep their own Python state, so Qt can call them safely at any time.
 
 ## 2.13.0 (2026-11-20)
 

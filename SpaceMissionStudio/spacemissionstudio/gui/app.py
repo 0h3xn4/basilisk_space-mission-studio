@@ -33,6 +33,7 @@ from PySide6.QtWidgets import QApplication
 
 from .. import temp_folders
 from ..logging_setup import configure_logging
+from . import background_threads
 from .icons import app_icon
 from .main_window import MainWindow
 from .theme import apply_theme, ui_scale_setting
@@ -99,6 +100,9 @@ def main(argv: list | None = None) -> int:
     apply_ui_scale()
     set_windows_app_id()
     app = QApplication(argv if argv is not None else sys.argv)
+    # Before any worker starts: a collection in a worker thread destroyed
+    # widgets there (SRelD K-44), so garbage is collected on this thread only.
+    background_threads.install(app)
     app.setApplicationName("SpaceMissionStudio")
     # Needed for QSettings() (the GUI's remembered preferences) to resolve to a stable
     # per-platform location -- QSettings() with no explicit org/app name

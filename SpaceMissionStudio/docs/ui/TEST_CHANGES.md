@@ -2653,3 +2653,21 @@ Added:
 - `test_home.py::test_no_card_shows_a_double_hyphen_as_a_dash`.
 
 Each new test failed before its fix.
+
+## 2.13.1: garbage collected on the GUI thread (SRelD K-44)
+
+No existing test changed. `tests/gui/conftest.py` gained one autouse
+fixture, `_garbage_collected_on_the_gui_thread`. For each test marked
+`requires_gui` it turns Python's automatic garbage collection off and
+collects on the GUI thread (`gui.background_threads.install`, as the app
+does from its start). After the test it gives the automatic collection
+back (`uninstall`), so the tests without a window run as before.
+
+Why: a collection that a worker thread started (a CSV export, the
+start-up warm-ups, a run) destroyed widgets that earlier tests had
+dropped, in that worker, while the GUI thread used them. CI showed a
+segmentation fault in
+`test_results_widget.py::test_an_export_runs_off_the_gui_thread_with_progress_and_cancel`
+(Linux) and an access violation in `_SpaceWeatherWarmUp` (Windows).
+
+Added: `tests/gui/test_background_threads.py` (9 tests).

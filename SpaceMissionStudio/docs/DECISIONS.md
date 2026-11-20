@@ -4686,3 +4686,44 @@ JSON and HTML exports and the golden files are unchanged.
 - **Decision:** a thermal heading writes an energy unit "Wh"
   (`units.shown("W*h")`), as the other energy columns do. **Why:** B4
   (UI-35) chose "Wh"; the thermal headings had their own map.
+
+## Background-thread crashes (SRelD K-44, 2026-11-20)
+
+- **Garbage is collected on the GUI thread only** (`gui/background_threads.py`).
+  The app turns the automatic collection off at start, and a timer on the
+  GUI thread collects the generation that is due by the collector's own
+  thresholds. **Why:** Python collects in the thread that passes the
+  threshold, and the collection frees every unreachable cycle. A worker
+  that parsed a file or wrote one so destroyed widgets of the GUI thread,
+  and the process crashed (CI on Windows: an access violation in
+  `_SpaceWeatherWarmUp`, "Garbage-collecting"). A script with a worker
+  that makes dataclass rows crashed five runs in five on Linux, with the
+  same frames; with the collector, none in four. Without it, 214 of 264
+  collections during the warm-ups and a run of `two_body_validation` ran
+  in worker threads.
+- **The collector checks every 20 ms.** **Why:** between two checks the
+  young generation takes all that the threads allocated, and one
+  collection takes it all. At 100 ms single collections took up to
+  91-189 ms; at 20 ms the largest generation-1 collection took 44-70 ms
+  in three runs (the machine had a load of 13), and the largest pause of
+  all was 50-54 ms (start-up's own `gc.collect()`). Without the collector
+  the largest pause was a full collection of 112-219 ms. The check costs
+  microseconds when nothing is due. **Trade-off:** a generation-1
+  collection can hold the GUI thread up to about 70 ms, above the 50 ms
+  rule. Before, a worker's collection held the interpreter, and so the
+  window's Python code, for as long.
+- **An explicit `gc.collect()` still runs where it is called.** The app
+  calls it only on the GUI thread and in the Monte Carlo child process.
+- **The tests collect on the GUI thread while a window test runs**
+  (`tests/gui/conftest.py`), and give the automatic collection back after
+  each one. **Why:** the tests without a window run with no event loop, so
+  no timer would collect for them.
+- **The start-up warm-ups and a run's first import of the engine hold one
+  lock** (`FIRST_IMPORTS`). **Why:** the backlog asked for the warm-ups to
+  be serialized. CPython's import is thread safe, and the crash was the
+  collection, not the imports. The lock costs a run started in the first
+  second at most the rest of the warm-up (under 1 s); one warm-up thread
+  would have changed a test's expected threads for no gain.
+- **Two more callbacks keep no Python attribute** (the B11 rule): the page
+  tree's refit filter and the tool button icon keeper. No Python reference
+  kept them; each now reads its parent (and the icon from a Qt property).

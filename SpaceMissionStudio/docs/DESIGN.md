@@ -993,6 +993,11 @@ A widget that owns a worker has `wait_for_worker()`:
 - tests call it before a widget is destroyed, because destroying a
   running `QThread` aborts the process.
 
+Garbage is collected on the GUI thread only (`gui/background_threads.py`,
+SRelD K-44): a collection that a worker started destroyed widgets in the
+worker, and the process crashed. A QObject that Qt calls back and that
+only its parent refers to keeps no Python attribute (B11).
+
 ### Empty states
 
 An empty view, list or panel shows `widgets.EmptyState`, the GUI's one
@@ -1062,6 +1067,7 @@ decision "Breakout windows" in `docs/DECISIONS.md`):
 | Validation is never a message box; a message box only confirms | `tests/gui/test_messages.py::test_no_information_warning_or_critical_message_box_is_left` |
 | A command with a shortcut is in the table above | `tests/gui/test_design_rules.py::test_the_shortcut_table_matches_the_registry` |
 | A widget with a worker thread waits for it before it is destroyed | `tests/gui/test_lifetime_widget.py`, `test_budget_widget.py`, `test_data_panel_widget.py` |
+| Garbage is collected on the GUI thread only; the heavy first imports off it take turns | `tests/gui/test_background_threads.py` |
 | Help text is short and plain | `tests/gui/test_label_text.py` |
 | No "--" as a dash and no unit in its ASCII spelling in the GUI's strings or the manual; a suffix from a unit goes through `units.suffix` | `tests/test_gui_strings.py` |
 | A device kind, guidance mode, body and configuration parameter has a label in `gui/field_text.py` | `tests/gui/test_labels.py` |
