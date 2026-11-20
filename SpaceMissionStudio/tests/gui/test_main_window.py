@@ -1638,6 +1638,23 @@ def test_a_run_hands_the_scenarios_featured_series_to_the_results_tab(window, mo
     assert len(window.results_widget._featured) == 5
 
 
+def test_a_run_hands_the_wheels_names_to_the_results_tab(window, monkeypatch):
+    """The Results tab labels a reaction wheel's line with the wheel's
+    name (SRelD K-46): template 12's four wheels, rw-1 to rw-4, name the
+    columns wheel_0 to wheel_3 of sat-1's wheel speeds."""
+    from pathlib import Path
+
+    from spacemissionstudio.gui.run_worker import RunWorker
+
+    path = next((Path(__file__).resolve().parents[2] / "spacemissionstudio" / "scenarios" / "templates")
+                .glob("12_*.json"))
+    assert window.open_path(path)
+    monkeypatch.setattr(RunWorker, "start", lambda self: None)  # don't actually spin up the thread
+    window.on_run()
+    assert window.results_widget._device_labels == {
+        "sat-1.rw_speeds": {"wheel_0": "rw-1", "wheel_1": "rw-2", "wheel_2": "rw-3", "wheel_3": "rw-4"}}
+
+
 def test_finished_runs_are_kept_for_comparison(window):
     """Each finished or cancelled run joins the session's history, and the
     Results tab offers the earlier ones (UX/UI guidelines, run comparison)."""

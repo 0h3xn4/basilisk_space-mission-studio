@@ -51,6 +51,7 @@ from PySide6.QtWidgets import (QHBoxLayout, QLabel, QListWidget, QListWidgetItem
 from .. import temp_folders
 from ..engine import events as event_model
 from ..engine import run_summary, scenario_diff
+from ..engine.series_names import device_column_labels
 from ..plot_categories import shown as _shown_in
 from . import plot_page, units
 from .data_table import DataTable, Row
@@ -399,14 +400,16 @@ class CompareWidget(QWidget):
 
     def _on_series_changed(self, *_args) -> None:
         name = self.series_combo.currentData()
-        series = next((r.result.series[name] for r in self.checked_runs()
-                       if r.result is not None and name in r.result.series), None) if name else None
+        run = next((r for r in self.checked_runs() if r.result is not None and name in r.result.series),
+                   None) if name else None
+        series = run.result.series[name] if run is not None else None
         current = self.column_combo.currentData()
         self.column_combo.blockSignals(True)
         self.column_combo.clear()
         if series is not None:
             display = _shown(name, series)
-            labels = display.columns or {}
+            # a wheel's name, not wheel_0 (SRelD K-46)
+            labels = {**(display.columns or {}), **device_column_labels(run.scenario).get(name, {})}
             for index, column in enumerate(series.columns):
                 self.column_combo.addItem(str(labels.get(column, column)), index)
             found = self.column_combo.findData(current) if current is not None else -1

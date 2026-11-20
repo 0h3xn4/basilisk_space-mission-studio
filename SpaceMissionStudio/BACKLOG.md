@@ -33,12 +33,6 @@
   follow-up). Add a test that fails without the fix where one can be
   made; otherwise record the measurements and move the item to
   `## Needs human`.
-- Make the small plot items clear (UI audit, 2026-11-19; SRelD K-46): the event
-  bands share hues with the plotted lines; some Timeline events use the
-  accent colour, which is only for the primary action, selection and
-  focus; an angle that is nearly constant gets long tick labels; the
-  reaction wheel lines are labelled "wheel_0" instead of the wheel's
-  name. The exported files must not change.
 - Run › Thermal › Notes: "Energy residual [J]" mixes significant
   figures (5.11e+03 and 4.9e+03). Give the column one number of
   significant figures, as the design rules ask for one quantity.

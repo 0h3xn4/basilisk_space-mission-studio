@@ -63,7 +63,7 @@ from PySide6.QtWidgets import (
 
 from .. import history, output_provenance
 from ..engine import monte_carlo_results, run_store
-from ..engine.series_names import featured_series
+from ..engine.series_names import device_column_labels, featured_series
 from ..logging_setup import get_log_file_path
 from ..schema.command import runs_sequence, script_blocks
 from ..schema.scenario import Scenario, ScenarioValidationError, load_scenario
@@ -2772,6 +2772,7 @@ class MainWindow(QMainWindow):
         self._last_run_file = self._unchanged_file_record()
         self.results_widget.scenario_folder = self._current_path.parent if self._current_path is not None else None
         self.results_widget.set_featured_series(featured_series(scenario))
+        self.results_widget.set_device_labels(device_column_labels(scenario))  # a wheel's name, not wheel_0
         self.results_widget.set_layout_key(scenario.name)  # the plot grid is kept per scenario (U-24)
         _join_finished_worker(self._run_worker)
         extra = {"sil": sil} if sil is not None else {}  # a plain run builds its worker exactly as before

@@ -109,6 +109,8 @@ from the table (`tokens.tokens(mode)`).
 | `diff.removed` | `#FFF3F3` | `#371D21` | diff background: critical tint |
 | `diff.changed` | `#FAF6ED` | `#352E1E` | diff background: caution tint |
 | `shadow` | `#16181D` | `#000000` | floating elements' shadow colour |
+| `chart.band` | `#50565F` | `#A1A8B3` | a Results plot's event bands (at 16 %) and mode-change lines: text.secondary, a grey no series, status or the accent uses (SRelD K-46) |
+| `chart.event` | `#50565F` | `#A1A8B3` | a Timeline bar of the model analyses', thermal limits' and plan's events: text.secondary, never the accent (SRelD K-46) |
 
 The table is checked against the theme package by
 `tests/gui/test_design_rules.py::test_the_token_table_matches_the_theme`.
@@ -227,7 +229,19 @@ values and units follow Settings > Appearance > Plot units
 axes in km, °, h; body rates in °/s, wheel speeds in RPM; position in m,
 velocity and delta-V in m/s, the owner's rule) or as recorded (SI); the
 Thermal plots' time axis follows it too, and no exported file changes. The
-time cursor is drawn in the accent: it is a selection.
+time cursor is drawn in the accent: it is a selection. The event bands
+behind a plot's lines and the mode-change lines are `chart.band`, a
+grey, so none shares a hue with a line; the buttons above the plots name
+each kind. A y axis spans at least a millionth of its largest value
+(`results_widget._MIN_Y_SPAN_SHARE`), so a series that hardly moves gets
+ticks such as "97.03001", not "97.03000000000399"; the values are not
+changed. A line of a device's column carries the device's name from the
+scenario (a reaction wheel's "rw-1", not `wheel_0`); the series and the
+exported files keep their columns (SRelD K-46).
+
+**The Timeline** draws the run's six event kinds in the first six
+categorical colours (one per kind) and the model analyses', thermal
+limits' and plan's events in `chart.event`, each on its own named row.
 
 ### Type
 
