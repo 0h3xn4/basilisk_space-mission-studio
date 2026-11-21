@@ -4968,10 +4968,11 @@ provisional: the owner may change it.** It confirms MC-7.
     Carlo case 7 ran again as Run 3"), and Run › History lists the run
     with the mode "Monte Carlo case 7". **Why:** design rule 6 (file I/O
     in workers) and CLAUDE.md (success a toast, a problem in Problems).
-    The cost: as at every run start, the views of the run shown before
-    are cleared before the worker reads the batch's record, so a refused
-    case leaves them empty; the earlier runs stay in Run › History and
-    can be shown again from there or from Results › Compare.
+    The window checks the case first, on the GUI thread, with
+    `engine.monte_carlo_case` (no Basilisk import; it reads two small
+    JSON files and hashes the scenario). A refused case so starts no run
+    and leaves the views of the run shown before as they are. The worker
+    checks again as a backstop.
   - A case run has no live 3D View; Live plot works. **Why:** the live
     view attaches its probe while the service starts up, and the case is
     started as the batch started it.

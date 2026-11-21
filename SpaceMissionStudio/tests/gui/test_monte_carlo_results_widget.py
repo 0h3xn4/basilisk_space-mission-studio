@@ -428,8 +428,9 @@ def test_the_main_window_runs_a_case_again_or_says_why_not(qtbot, tmp_path, monk
     """Monte Carlo plan A3 in the window: Run This Case (the window's
     command, in the palette) runs the picked case in the run worker and
     shows it as a run, with a toast; its provenance names the case. With a
-    batch of another scenario, the case is refused: the Problems panel has
-    the reason and what to do."""
+    batch of another scenario, the case is refused before a run starts: the
+    Problems panel has the reason and what to do, and the run shown before
+    stays in Results."""
     import json
     import shutil
 
@@ -477,7 +478,9 @@ def test_the_main_window_runs_a_case_again_or_says_why_not(qtbot, tmp_path, monk
     assert widget.load_folder(other)
     _pick_rows(widget, 0)
     command.action.trigger()
-    qtbot.waitUntil(lambda: bool(widget.case_problem), timeout=60000)
+    # Refused before any run starts: the case shown before stays in Results.
+    assert widget.case_problem and not window._run_going()
+    assert window.results_widget._result is shown
     assert "the scenario changed since the batch" in widget.case_problem and "0" * 64 in widget.case_problem
     assert any(widget.case_problem == text for _severity, text in window.problems_widget.problems)
     assert not window.problems_dock.isHidden()  # the Problems panel opened

@@ -837,3 +837,16 @@ def test_a_crashed_case_run_again_raises_its_own_error(tmp_path, monkeypatch):
         monte_carlo.replay_case(scenario, tmp_path, 1)
     result, _summary = monte_carlo.replay_case(scenario, tmp_path, 0)
     assert result.provenance.monte_carlo_case["case"] == 0
+
+
+def test_the_case_check_imports_no_basilisk():
+    """The window checks a case on the GUI thread before it clears the shown
+    run (plan A3): ``engine.monte_carlo_case`` must not import Basilisk, a
+    heavy first import (SRelD K-44)."""
+    import subprocess
+    import sys
+
+    code = ("import sys; import spacemissionstudio.engine.monte_carlo_case as m; "
+            "print(sorted(n for n in sys.modules if n.split('.')[0] == 'Basilisk'))")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout
+    assert out.strip() == "[]"

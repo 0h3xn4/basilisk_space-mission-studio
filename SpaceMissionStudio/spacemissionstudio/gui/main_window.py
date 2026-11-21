@@ -2763,17 +2763,33 @@ class MainWindow(QMainWindow):
             self._report_run_problem("The Monte Carlo batch's folder is not known: open it with Open results... "
                                      "first.", level=logging.WARNING)
             return
+        # Checked here first (a light check, no Basilisk import): a refused case leaves the shown run's views
+        # as they are. The worker checks again (a backstop: _on_case_refused).
+        from ..engine.monte_carlo_case import case_refusal
+
+        try:
+            scenario = self.scenario_editor.to_scenario()
+        except ScenarioValidationError:
+            scenario = None  # _launch_run reports the scenario's problem
+        refusal = case_refusal(scenario, folder, int(case)) if scenario is not None else ""
+        if refusal:
+            self._refuse_case(refusal)
+            return
         self.monte_carlo_results_widget.set_case_problem("")
         self._launch_run(case=(folder, int(case)))
 
-    def _on_case_refused(self, message: str) -> None:
-        """A case not run again (the scenario changed since the batch, or the
-        batch has no such case): the Problems panel says why and what to do;
+    def _refuse_case(self, message: str) -> None:
+        """A case not run again: the Problems panel says why and what to do;
         so do the Log, a toast and the status bar."""
-        self._stop_busy("Case not run.", "failed", "Not run")
         self.monte_carlo_results_widget.set_case_problem(message)
         self.problems_dock.show()
         self._report_run_problem(message, level=logging.WARNING)
+
+    def _on_case_refused(self, message: str) -> None:
+        """The worker refused the case (a backstop: :meth:`on_run_monte_carlo_case`
+        checks first). The run's busy state ends; :meth:`_refuse_case`."""
+        self._stop_busy("Case not run.", "failed", "Not run")
+        self._refuse_case(message)
 
     def _launch_run(self, sil=None, case=None) -> None:
         try:

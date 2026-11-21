@@ -203,7 +203,7 @@ from .. import output_provenance
 from ..config import models, registry
 from ..schema.command import runs_sequence, script_blocks
 from ..schema.scenario import DispersionConfig, MonteCarloConfig, Scenario, SimSettings, usable_thread_count
-from . import monte_carlo_results
+from . import monte_carlo_case, monte_carlo_results
 from .solar_arrays import hub_mass_offset_kg
 from .service import SimulationService, _orbit_ic_to_rv
 
@@ -828,26 +828,6 @@ CASE_SEEDS_NOTE = ("a Monte Carlo case run again: every model's RNGSeed is the c
                    "run<N>.json (monte_carlo_case.rng_seeds)")
 
 
-def _batch_scenario_hash(archive_dir: Path) -> tuple[str, str]:
-    """(the batch's ``scenario_sha256``, its ``scenario_file`` or "") from the
-    folder's ``archive.provenance.json``; refused when there is none."""
-    path = archive_dir / "archive.provenance.json"
-    try:
-        record = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        raise MonteCarloCaseRefused(
-            f"{archive_dir} has no archive.provenance.json, so the scenario of its batch is not known and a case "
-            "cannot be checked against it. Choose the folder of a finished batch.") from None
-    except (OSError, ValueError) as exc:
-        raise MonteCarloCaseRefused(f"could not read {path}: {exc}") from exc
-    digest = record.get("scenario_sha256") if isinstance(record, dict) else None
-    if not isinstance(digest, str) or not digest:
-        raise MonteCarloCaseRefused(f"{path} does not record the scenario's SHA-256, so a case cannot be checked "
-                                    "against the scenario.")
-    name = record.get("scenario_file")
-    return digest, name if isinstance(name, str) else ""
-
-
 def case_parameters(scenario: Scenario, archive_dir: str | Path, case: int) -> tuple[dict, dict]:
     """(the entries of ``run<case>.json`` in the file's order, the record of the
     case for the run's provenance, ``monte_carlo_case``): the batch folder,
@@ -858,29 +838,10 @@ def case_parameters(scenario: Scenario, archive_dir: str | Path, case: int) -> t
     answer to Q3), naming both hashes and what to do; when the batch has
     no such case; or when its file is missing or cannot be read."""
     archive_dir = Path(archive_dir)
-    batch_digest, batch_file = _batch_scenario_hash(archive_dir)
-    digest = output_provenance.scenario_sha256(scenario)
-    if digest != batch_digest:
-        named = f" ({batch_file})" if batch_file else ""
-        raise MonteCarloCaseRefused(
-            f"Case {case} was not run: the scenario changed since the batch in {archive_dir} (scenario SHA-256 "
-            f"{digest} now, {batch_digest} at the batch). With a changed scenario the same case would be a "
-            f"different case. Open the batch's own scenario{named} as it was when the batch ran, then run the "
-            "case again.")
-    runs = scenario.monte_carlo.num_runs
-    if isinstance(case, bool) or not isinstance(case, int) or not 0 <= case < runs:
-        raise MonteCarloCaseRefused(f"the batch has no case {case}: its cases are 0 to {runs - 1}")
-    path = archive_dir / f"run{case}.json"
-    try:
-        params = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        raise MonteCarloCaseRefused(
-            f"{archive_dir} has no run{case}.json: case {case} did not start in this batch (a cancelled batch "
-            "keeps only the cases it started)") from None
-    except (OSError, ValueError) as exc:
-        raise MonteCarloCaseRefused(f"could not read {path}: {exc}") from exc
-    if not isinstance(params, dict):
-        raise MonteCarloCaseRefused(f"{path} is not the parameter file of a case")
+    found = monte_carlo_case.read_case(scenario, archive_dir, case)  # the window's check too
+    if isinstance(found, str):
+        raise MonteCarloCaseRefused(found)
+    params, batch_digest = found
     seeds = {}
     for name, value in params.items():
         if name.endswith(".RNGSeed"):

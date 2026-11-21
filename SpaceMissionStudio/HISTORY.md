@@ -20322,8 +20322,11 @@ on exactly one picked run, and is disabled with the reason otherwise.
 The case runs in the normal run worker (`RunWorker(case=...)`): the
 worker checks and reads the case, flies it in chunks for the progress
 and Cancel, and the window shows and keeps it like any run, with the
-toast "Monte Carlo case N ran again as Run M". A refused case is the
-worker's `refused` signal and a warning row in the Problems panel.
+toast "Monte Carlo case N ran again as Run M". The window checks the
+case before it starts the run (`engine.monte_carlo_case.case_refusal`,
+which imports no Basilisk), so a refused case starts no run and does not
+clear the run shown before. It is a warning row in the Problems panel.
+The worker checks again; its `refused` signal is a backstop.
 
 **Is it the batch's case?** Measured here on template 25 (2 runs, 0.05
 days, 145 kept samples): with one process and with two, both cases
@@ -20359,4 +20362,7 @@ New in `tests/test_cli.py` (`--case` writes what `run` writes; exit 1
 with both hashes; the usage errors), `tests/test_api.py` and
 `tests/gui/test_monte_carlo_results_widget.py` (the action, disabled
 without one picked run; the Problems row; the window runs a case and
-refuses one of another batch). No existing test changed.
+refuses one of another batch before a run starts, with the run shown
+before still in Results), and `tests/test_monte_carlo.py`
+(`engine.monte_carlo_case` imports no Basilisk). No existing test
+changed.

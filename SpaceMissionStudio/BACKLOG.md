@@ -2,6 +2,14 @@
 
 ## Next release
 
+- Import pandas off the GUI thread before a Monte Carlo batch or case.
+  `MonteCarloWorker` and, since phase A (#307), `RunWorker` for a case
+  import pandas on the GUI thread before they start, for an earlier
+  import race with plotly on Windows. It takes about 280 ms once per
+  process (measured 2026-11-21), above the 50 ms rule. Since K-44 the
+  heavy first imports hold `background_threads.FIRST_IMPORTS`; import
+  pandas in the worker under that lock instead, and add a test that the
+  first batch or case start keeps the GUI thread under 50 ms.
 - Make the Budgets area quicker to show on a slow Windows machine
   (SRelD K-40). On the Windows CI runner, moving the area into its own
   window or back takes 50 to 81 ms of the GUI thread; on Linux it takes
@@ -84,7 +92,14 @@ owner has answered the plan's open questions.
     ended with 0xC0000005 and empty stdout and stderr. It has no Python
     worker thread; it passed eight runs in eight on Linux.
   - A template wizard test reported "Slot 'MainWindow::' not found". No
-    log of that run was found.
+    log of that run was found. A clue (2026-11-21, Monte Carlo phase A):
+    the same kind of message, "Slot 'EmptyStack::' not found", appears
+    when `widgets.EmptyStack` gets a list model's reset while the list
+    is being destroyed, when that list is the first widget of a test
+    process. It also happens on `develop`. The Monte Carlo editor's
+    Requirements list so switches its empty state itself (DECISIONS
+    MC-16). Look for a slot of a destroyed QObject that a model's reset
+    still reaches.
   Needs a human: watch CI after this fix. If either fault comes back,
   keep the job's log and add it to K-44. The child process prints no
   stack today; a decision to run it with `-X faulthandler` would change
