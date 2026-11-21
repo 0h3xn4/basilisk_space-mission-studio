@@ -28,6 +28,53 @@
   Every number has a source or is a placeholder ("TBD"). Write the
   design and the decisions first; the item needs the owner's choice of
   scope before code, so move it to `## Needs human` with the design.
+- Monte Carlo phase A, part 1: outcomes, crashed runs' draws and
+  requirements (`docs/developer/monte-carlo-plan.md` section 4, items
+  A1, A4 and A2; decisions MC-1 to MC-6, MC-9 and MC-10 in
+  `docs/DECISIONS.md`; about 8.5 hours). Each run keeps its Overview
+  figures as outcomes (through `RetentionPolicy.addRetentionFunction`);
+  the summary keeps the draws of crashed runs; the scenario gets
+  `monte_carlo.requirements` (schema version 6, a migration that only
+  sets the version, as B-01 did); the Monte Carlo view and the CLI show,
+  per requirement, the runs that do not meet it, k/N and the one-sided
+  Clopper-Pearson upper bound at the requirement's own confidence.
+  `monte-carlo` exits with 5 when a requirement with an allowed
+  probability is not shown met. Done when the plan's acceptance criteria
+  for A1, A2 and A4 pass, the golden files are byte-identical, and the
+  time per case of template 25 before and after is in HISTORY. If the
+  owner has answered Q1, Q4 or Q5 of the plan, follow the answer.
+- Monte Carlo phase A, part 2: reproduce one case
+  (`docs/developer/monte-carlo-plan.md` section 4, item A3; decision
+  MC-7; about 3 hours). Any case of a batch runs again from its
+  `run<N>.json` as a normal run and opens in Results: "Run this case" on
+  the Runs table, `monte-carlo --case N [--out-dir D]`, and
+  `api.monte_carlo_case`. Refused when the scenario's hash differs from
+  the batch's. Done when the replayed case agrees with the batch summary
+  at every kept sample to 1e-6 m for a 2-run batch of template 25 with
+  one and with two processes. If the owner has answered Q3, follow the
+  answer.
+
+## Later
+
+Not for an unattended run: these wait until phase A is done and the
+owner has answered the plan's open questions.
+
+- Monte Carlo phase B: insight and trust
+  (`docs/developer/monte-carlo-plan.md` section 5; about 18 hours).
+  The batch seed (SRelD K-24), sensitivity by rank correlation with a
+  scatter plot, outcome percentiles and the empirical distribution,
+  thermal Monte Carlo runs against the node limits, a batch report
+  (JSON and Markdown), checks that a dispersion contains the nominal
+  value and that an opened batch matches the scenario, CLI
+  `--summarize`, `--report`, `--runs` and `--processes`, small label
+  fixes, and a template for the new features.
+- Monte Carlo phase C: more dispersions and outcomes
+  (`docs/developer/monte-carlo-plan.md` section 6; about 30 hours, each
+  item with a spike first). Maneuver execution errors, thruster and
+  reaction-wheel errors, propellant load, centre of mass and
+  atmospheric density; outcomes from any recorded series; convergence
+  and adding cases to a batch; percentile bands over time; other
+  sampling designs.
 
 ## Done
 

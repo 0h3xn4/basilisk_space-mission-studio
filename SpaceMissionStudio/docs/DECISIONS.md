@@ -4727,3 +4727,69 @@ JSON and HTML exports and the golden files are unchanged.
 - **Two more callbacks keep no Python attribute** (the B11 rule): the page
   tree's refit filter and the tool button icon keeper. No Python reference
   kept them; each now reads its parent (and the icon from a Qt property).
+
+## Monte Carlo plan (2026-11-21)
+
+Step 0 of the owner's item "make the Monte Carlo features useful". The
+inventory, the gaps, the phases and the open questions are in
+[`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md). No
+code changed. The decisions below are defaults for phase A; an answer
+of the owner to the plan's questions Q1 to Q5 replaces them.
+
+- **Decision MC-1:** phase A is four items: per-run outcomes (A1),
+  requirements with the probability of not meeting them (A2), reproduce
+  one case (A3), and the draws of crashed runs (A4); about 11.5 hours in
+  two pull requests. **Why:** together they answer the questions an
+  engineer asks of a batch ("does it meet the requirement, how sure am
+  I, which case fails, why") at the lowest cost; more dispersions (phase
+  C) cost more and add nothing until a batch can be judged.
+- **Decision MC-2:** a run's outcomes are its Overview figures
+  (`engine/run_summary.overview_figures`), computed in the worker and
+  returned through Basilisk's `RetentionPolicy.addRetentionFunction`
+  (Basilisk 2.12.0) into the run file the app already reads. **Why:**
+  the figures are tested and have calculation traces; a case then reads
+  the same as a single run; no Basilisk change and no new file.
+- **Decision MC-3:** the batch summary keeps format 1; outcomes,
+  requirements and the draws of crashed runs are optional keys, and
+  `run_table`'s default columns, `final_spread` and `summary_lines` do
+  not change. **Why:** older versions still open a new batch, a new
+  version opens an old one, and the golden files of templates 09 and 25
+  stay byte-identical.
+- **Decision MC-4:** requirements live in the scenario, as
+  `monte_carlo.requirements`, with scenario schema version 6 and a
+  migration that only sets the version, as B-01 did for version 5.
+  **Why:** a requirement is shared with the dispersions it is judged
+  against; the version step marks files that older versions refuse.
+- **Decision MC-5:** the probability of not meeting a requirement is
+  shown as k/N and as the exact one-sided Clopper-Pearson upper bound
+  (Biometrika 26(4), 1934), computed by bisection on the binomial sum,
+  registered as the model `monte_carlo.probability_bound`
+  (`clopper_pearson`). The confidence is a required field of each
+  requirement, with no default in the code. **Why:** the exact bound
+  needs no table and no new dependency; a default confidence would be a
+  number without a source (the plan's rule), so the user states it.
+- **Decision MC-6:** a crashed run counts as not meeting every
+  requirement and is shown apart; a run that did not record the outcome
+  is "not evaluated" and is left out of N. **Why:** the conservative
+  reading; a crash hidden from the count would make the bound too low
+  (Q1).
+- **Decision MC-7:** a case is reproduced from its `run<N>.json` (JSON,
+  never the pickles, S-04), applied with Basilisk's
+  `SimulationExecutor.applyModification`, and refused when the
+  scenario's hash differs from the batch's. **Why:** it is the
+  controller's own data and setter, so the case is the same; a changed
+  scenario would give a different case under the same number (Q3).
+- **Decision MC-8:** the batch seed (SRelD K-24) waits for phase B
+  (B1). **Why:** today's draws are reproducible; a different seed is
+  needed for a second, independent batch, which is less urgent than
+  judging one batch (Q2).
+- **Decision MC-9:** every new parameter and statistical method goes
+  through `config/parameters.py` and `config/models.py`, with its
+  source; a value without a source is "TBD". The brief's `settings.py`
+  and `model_choices.py` are these two files. **Why:** CLAUDE.md and
+  the transparency audit's registry (item 6).
+- **Decision MC-10:** `monte-carlo` exits with 5 (ICD-02, "the check did
+  not pass") when a requirement with an allowed probability is not shown
+  met; 3 (a run failed) comes first. **Why:** a script can tell a batch
+  that ran but does not meet its requirement from one that failed; 5
+  already means this for `reproduce`, `fsw-status` and `sil` (Q5).
