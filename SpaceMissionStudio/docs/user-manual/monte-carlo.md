@@ -35,6 +35,24 @@ What can vary:
 Inertia and body rate need *Full attitude*; the coefficients need drag or
 solar pressure on.
 
+## State a requirement
+
+Under the dispersions, **Requirements** holds limits on one outcome of
+every run.
+
+1. **Add requirement** (or **Add**) adds one and opens its form.
+2. Choose the spacecraft and the **Outcome** (the figures Results ›
+   Overview shows for one run: lowest altitude [km], delta-V [m/s],
+   lowest battery charge [W*h], ...).
+3. Set the **Limit**: **At least** or **At most**, in the outcome's unit.
+4. Set the **Confidence** of the bound, between 0 and 1. It has no
+   default: you choose it.
+5. Optional: tick **Judge against an allowed probability** and set the
+   probability of not meeting the requirement that you accept.
+
+The limit and the confidence start **Not set**; until both are given, the
+Problems panel names the missing field.
+
 ## Read the batch
 
 **Results > Monte Carlo** opens on the batch:
@@ -43,10 +61,18 @@ solar pressure on.
   along track, radially and across track.
 - **Plots:** every run's altitude and its offset from the mean, and the
   spread over time.
-- **Runs:** what each run drew and where it ended. Sort a column to see
-  which drawn value goes with the largest offset. **Export table CSV...**
-  saves it, with the batch's provenance in `<file>.provenance.json`
-  beside it.
+- **Runs:** what each run drew, where it ended and its outcomes (the
+  Overview figures of that run). A crashed run is listed with what it
+  drew and the status "crashed". Sort a column to see which drawn value
+  goes with the largest offset. **Export table CSV...** saves it, with
+  the batch's provenance in `<file>.provenance.json` beside it.
+- **Requirements:** per requirement, the runs evaluated (N), the runs
+  that do not meet it (k; a crashed run counts as not meeting every
+  requirement), the estimate k/N, the exact upper bound at its
+  confidence and, with an allowed probability, the verdict: **met** or
+  **not shown**. Read the bound next to the estimate: 20 runs without a
+  failure show, at a confidence of 0.95, only that the probability is
+  below 0.139.
 
 The spread is the population standard deviation of the runs, unless a
 project file chooses the sample one
@@ -61,6 +87,11 @@ names the statistic, and a batch keeps the one it was run with.
 spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/25_monte_carlo_orbit_and_drag_dispersions.json --archive-dir mc
 python3 examples/monte_carlo_spread.py --runs 20 --archive mc_out
 ```
+
+`monte-carlo` also prints each outcome's lowest and highest value over
+the runs and the requirements table. It exits with status 3 when a run
+failed, else 5 when a requirement with an allowed probability is not
+shown met.
 
 The example prints the spread day by day and ends with a line like
 `day 3.00: 1-sigma 448.0 km along track`. Its 20 runs took 2 to 3

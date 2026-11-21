@@ -387,6 +387,9 @@ class MainWindow(QMainWindow):
         # as a hidden tab: selecting a hidden tab crashed a CI test run.
         self.monte_carlo_results_widget = MonteCarloResultsWidget(self)
         self.monte_carlo_results_widget.hide()
+        # The Requirements tab's empty state opens Scenario › Monte Carlo, where requirements are added
+        # (a bound method: a lambda that holds the window would keep a closed window alive).
+        self.monte_carlo_results_widget.edit_requirements_requested.connect(self._show_monte_carlo_settings)
         # Added after a run whose spacecraft set model analyses, removed otherwise (as Monte Carlo).
         self.model_analyses_widget = ModelAnalysesWidget(self)
         self.model_analyses_widget.hide()
@@ -3020,6 +3023,10 @@ class MainWindow(QMainWindow):
         cleared views, closing)."""
         while self.run_end_pending:
             self._next_run_end_step()
+
+    def _show_monte_carlo_settings(self) -> None:
+        """Scenario › Monte Carlo, where the requirements are added."""
+        self.show_view(self.scenario_editor.monte_carlo_page)
 
     def _enable_monte_carlo(self) -> None:
         """Enable Monte Carlo on the Run page: on, and on to its page to set

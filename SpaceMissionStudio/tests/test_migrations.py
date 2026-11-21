@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 from spacemissionstudio.schema import CURRENT_SCHEMA_VERSION, ScenarioValidationError, load_scenario
-from spacemissionstudio.schema.migrations import migrate
+from spacemissionstudio.schema.migrations import MIGRATIONS, migrate
 
 
 def _v1_scenario(space_weather: dict | None = None) -> dict:
@@ -261,11 +261,36 @@ def test_the_step_from_4_to_5_only_sets_the_version(tmp_path):
     data = json.loads(template.read_text(encoding="utf-8"))
     data["schema_version"] = 4
     changes: list = []
+    assert MIGRATIONS[4](json.loads(json.dumps(data)))["schema_version"] == 5  # the step itself
     migrated = migrate(json.loads(json.dumps(data)), changes)
-    assert changes == [] and migrated["schema_version"] == 5 == CURRENT_SCHEMA_VERSION
+    assert changes == [] and migrated["schema_version"] == CURRENT_SCHEMA_VERSION  # and the steps after it
     assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
         {k: v for k, v in data.items() if k != "schema_version"}
     path = tmp_path / "v4.json"
     path.write_text(json.dumps(data), encoding="utf-8")
     assert load_scenario(path).to_dict() == load_scenario(template).to_dict()
+    assert output_provenance.scenario_file_record(path)["scenario_file_migrations"] == []
+
+
+def test_the_step_from_5_to_6_only_sets_the_version(tmp_path):
+    """Version 6 adds the optional Monte Carlo ``requirements`` (decision
+    MC-4). A version 5 file opens as it was: the step sets the version and
+    changes nothing else, so the file's record lists no change and its
+    scenario is the template's."""
+    from spacemissionstudio import output_provenance
+
+    template = _TESTS.parent / "spacemissionstudio" / "scenarios" / "templates" / \
+        "25_monte_carlo_orbit_and_drag_dispersions.json"
+    data = json.loads(template.read_text(encoding="utf-8"))
+    data["schema_version"] = 5
+    assert MIGRATIONS[5](json.loads(json.dumps(data)))["schema_version"] == 6
+    changes: list = []
+    migrated = migrate(json.loads(json.dumps(data)), changes)
+    assert changes == [] and migrated["schema_version"] == 6 == CURRENT_SCHEMA_VERSION
+    assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
+        {k: v for k, v in data.items() if k != "schema_version"}
+    path = tmp_path / "v5.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    assert load_scenario(path).to_dict() == load_scenario(template).to_dict()
+    assert load_scenario(path).monte_carlo.requirements == []
     assert output_provenance.scenario_file_record(path)["scenario_file_migrations"] == []

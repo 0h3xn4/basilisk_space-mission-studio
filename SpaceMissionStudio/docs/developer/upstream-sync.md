@@ -107,6 +107,14 @@ This is a requalification, described in
    run `python scripts/vendor_basilisk_fsw.py --repo <a Basilisk clone
    with that tag>` from `SpaceMissionStudio/`, and run
    `tests/test_fsw_vendored_sources.py`.
+5. Check the points of Basilisk's Monte Carlo framework that the batch
+   relies on (risk R1 of `docs/developer/monte-carlo-plan.md`):
+   `RetentionPolicy.addRetentionFunction` and the `custom` data it puts
+   in each `run<N>.data` (the outcomes), the data writer's file per
+   custom key (`spacemissionstudio_outcome*.data`, in
+   `monte_carlo_results.BATCH_FILE_PATTERNS`), and the order of the
+   entries in `run<N>.json`. `tests/test_monte_carlo.py` fails if one of
+   them changes.
 
 ---
 

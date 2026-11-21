@@ -177,6 +177,7 @@ PARAMETER_LABELS = {
     "explain.passive_safety_margin_m": "Passive safety margin",
     "explain.camera_axis_tolerance_deg": "Camera axis tolerance",
     "monte_carlo.spread_statistic": "Spread statistic",
+    "monte_carlo.probability_bound": "Probability bound",
     "analyses.observer_sun_depression_deg": "Observer Sun depression",
     "reentry.breakup_altitude_km": "Break-up altitude",
     "reentry.casualty_energy_j": "Casualty energy threshold",

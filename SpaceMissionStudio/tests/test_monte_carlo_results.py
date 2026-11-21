@@ -168,3 +168,44 @@ def test_a_folder_holding_only_system_clutter_counts_as_empty(tmp_path):
     assert folder_state(tmp_path) == "empty"
     (tmp_path / "notes.txt").write_text("mine")
     assert folder_state(tmp_path) == "other"
+
+
+def test_outcomes_round_trip_and_an_older_summary_opens_without_them(tmp_path):
+    """Monte Carlo plan A1 and MC-3: the outcomes are optional keys of
+    format 1. A summary with them loads them back; one without them (as
+    written before) opens, with no outcome, and its run table, asked for
+    outcomes, has no outcome or status column; its default table is as
+    before either way."""
+    batch = _circular_batch([0.0, 1e-4, -1e-4])
+    default = mcr.run_table(batch)
+    batch.outcomes = [{"run_length": 1.0, "sat-1.delta_v": 0.1 * k} for k in range(3)]
+    batch.outcome_units = {"run_length": "h", "sat-1.delta_v": "m/s"}
+    mcr.save(batch, tmp_path / "with")
+    loaded = mcr.load(tmp_path / "with")
+    assert loaded.outcomes == batch.outcomes and loaded.outcome_units == batch.outcome_units
+    assert mcr.run_table(loaded) == default
+    labels, rows = mcr.run_table(loaded, outcomes=True)
+    assert labels == default[0] + ["Run length [h]", "sat-1 delta-V [m/s]"]
+    assert [row[-1] for row in rows] == [0.0, pytest.approx(0.1), pytest.approx(0.2)]
+
+    mcr.save(_circular_batch([0.0, 1e-4, -1e-4]), tmp_path / "without")
+    meta = json.loads((tmp_path / "without" / mcr.SUMMARY_JSON).read_text(encoding="utf-8"))
+    assert not {"outcomes", "outcome_units", "failed_drawn", "requirements", "probability_bound"} & set(meta)
+    older = mcr.load(tmp_path / "without")
+    assert older.outcomes == [] and older.failed_drawn == {} and older.requirements == []
+    assert mcr.run_table(older, outcomes=True) == default
+    meta["outcomes"] = [{"run_length": 1.0}]  # one row for three runs
+    (tmp_path / "without" / mcr.SUMMARY_JSON).write_text(json.dumps(meta), encoding="utf-8")
+    with pytest.raises(mcr.MonteCarloResultsError, match="1 outcome rows for 3 runs"):
+        mcr.load(tmp_path / "without")
+
+
+def test_a_folder_with_the_outcome_files_of_the_data_writer_is_a_batch(tmp_path):
+    """Basilisk's data writer also writes one file per key of the runs'
+    custom data (the outcomes): an earlier batch's folder with them is still
+    "batch", so --overwrite can replace it."""
+    for name in ("MonteCarlo.data", "run0.data", "run0.json", "spacemissionstudio_outcomes.data",
+                 "spacemissionstudio_outcome_units.data"):
+        (tmp_path / name).write_bytes(b"")
+    assert mcr.folder_state(tmp_path) == "batch"
+    assert {path.name for path in mcr.batch_files(tmp_path)} >= {"spacemissionstudio_outcomes.data"}

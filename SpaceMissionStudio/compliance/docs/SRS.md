@@ -346,7 +346,7 @@ Methods: T = test, A = analysis, I = inspection, R = review of design.
 | SRS-F-10 | T | `tests/test_orbit_maintenance*.py`, `tests/test_formation_control.py`, `tests/test_geo_station_keeping.py`, `tests/test_momentum_dumping.py` |
 | SRS-F-11 | T | `tests/test_mission_engine.py`, `tests/test_command.py` |
 | SRS-F-12 | T | `tests/test_results.py`, `tests/test_frames.py`, `tests/test_dependencies.py` |
-| SRS-F-13 | T | `tests/test_lifetime.py`, `tests/test_propellant_budget.py`, `tests/test_monte_carlo.py`, `tests/test_link_budget.py`, `tests/test_data_handling.py`, `tests/test_thermal_simulation.py` |
+| SRS-F-13 | T | `tests/test_lifetime.py`, `tests/test_propellant_budget.py`, `tests/test_monte_carlo.py`, `tests/test_monte_carlo_requirements.py`, `tests/test_link_budget.py`, `tests/test_data_handling.py`, `tests/test_thermal_simulation.py` |
 | SRS-F-14 | T | `tests/test_ccsds_odm.py`, `tests/test_ccsds_files.py`, `tests/gui/test_ccsds_gui.py`, `tests/validation/test_v06_ccsds_oem.py` |
 | SRS-F-15 | T, I | `tests/gui/`, `tests/test_cli.py`, `tests/test_json_positions.py`, `tests/test_json_assist.py`, `tests/test_schema_fields.py`, `tests/test_json_refactor.py` |
 | SRS-F-16 | T | `tests/test_scene3d.py`, `tests/gui/test_mission_view.py`, `tests/test_live_view.py` (the run's results unchanged bit for bit with the live probe), `tests/gui/test_live_run_3d.py` |

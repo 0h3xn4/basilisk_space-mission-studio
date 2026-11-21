@@ -218,7 +218,17 @@
   "thr_min_fire_time": "[s] thruster firing pulse resolution"
  },
  "MonteCarloConfig": {
-  "dispersions": "list[DispersionConfig]"
+  "dispersions": "list[DispersionConfig]",
+  "requirements": "list[MonteCarloRequirementConfig]"
+ },
+ "MonteCarloRequirementConfig": {
+  "at_least": "a run meets it with the outcome at or above this, in the outcome's unit",
+  "at_most": "a run meets it with the outcome at or below this, in the outcome's unit",
+  "confidence": "[-] the bound's confidence, in (0, 1); required, no default (decision MC-5)",
+  "max_probability": "[-] optional: the allowed probability of not meeting it, in [0, 1)",
+  "name": "the requirement's label, unique in the list, e.g. \"R-ALT-01\"",
+  "outcome": "one of MONTE_CARLO_OUTCOMES",
+  "spacecraft": "must match a SpacecraftConfig.name in this scenario"
  },
  "MountConfig": {
   "boresight": "[-] unit vector (normalized when used)",

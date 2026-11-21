@@ -17,6 +17,41 @@ case; and how it was checked.
 
 Newest first.
 
+## 2026-11-21: Scenario schema version 6 (decision MC-4)
+
+**No computed number changes. The scenario hashes of the templates
+change.** The scenario file is now at schema version 6. Version 6 adds
+the optional Monte Carlo `requirements` list (`monte_carlo.requirements`,
+Monte Carlo plan item A2, `docs/developer/monte-carlo-plan.md`). The
+migration from 5 to 6 sets the version and changes nothing else, as the
+step to 5 did.
+
+The 36 templates are saved at version 6. In each template file, only the
+line `"schema_version": 5` changed to `"schema_version": 6`. No template
+has a requirement, and an empty list is not written, so nothing else in
+the saved text changes. The version is part of the saved text and of the
+scenario's canonical JSON, so both hashes of each template in
+`tests/data/scenario_hashes.json` change (72 values). The file was
+recorded again with the computation of `tests/test_scenario_hashes.py`.
+
+| Template | Hash | Before (version 5) | After (version 6) |
+|---|---|---|---|
+| 01 two-body circular orbit | saved text SHA-256 | `3340d296834e...` | `5fe0c12ed95b...` |
+| 01 two-body circular orbit | scenario SHA-256 | `d6ade2eba583...` | `87df88c83426...` |
+| 25 Monte Carlo orbit and drag dispersions | saved text SHA-256 | `b662eb6872c2...` | `ee22d35d892d...` |
+| 25 Monte Carlo orbit and drag dispersions | scenario SHA-256 | `62f3bf244d08...` | `143c05791586...` |
+
+How it was checked: for each template, the saved text at version 6 with
+the version set back to 5 gives the recorded version 5 hash, and so does
+the canonical JSON. So the version is the only difference. The 36 golden
+output files (`tests/golden/`) do not change: they hold no schema
+version, a run records no migration for a template, and the Monte Carlo
+golden outputs (`final_spread`, `run_table`'s default columns,
+`summary_lines` of templates 09 and 25) are byte-identical.
+
+A file saved at version 6 does not open in SpaceMissionStudio 2.13.1 or
+earlier. Every older file still opens.
+
 ## 2026-11-17: Scenario schema version 5 (decision B-01)
 
 **No computed number changes. The scenario hashes of the templates

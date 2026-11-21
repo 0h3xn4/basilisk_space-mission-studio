@@ -143,6 +143,10 @@ _FACTORIES = {
     "model_editor_dialog.ModelEditorDialog": _model_editor,
     "monte_carlo_editor._DispersionEditorDialog": _simple("monte_carlo_editor", "_DispersionEditorDialog",
                                                           ["sat-1"]),
+    "monte_carlo_editor._RequirementEditorDialog": lambda _p: importlib.import_module(
+        "spacemissionstudio.gui.monte_carlo_editor")._RequirementEditorDialog(
+            ["sat-1"], importlib.import_module("spacemissionstudio.schema").MonteCarloRequirementConfig(
+                "R-1", "sat-1", "lowest_altitude")),
     "startup_fetch_dialog.StartupFetchDialog": _simple("startup_fetch_dialog", "StartupFetchDialog"),
     "sensor_actuator_editor._ItemEditorDialog": _sensor_dialog,
     "facet_editor.BoxFacetDialog": _simple("facet_editor", "BoxFacetDialog"),

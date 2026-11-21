@@ -43,6 +43,18 @@ population one by default, or the sample one, as the scenario's project
 configuration chooses (``monte_carlo.spread_statistic``, the models in
 ``config.models``). A batch keeps the statistic it was run with
 (``spread_statistic``), so it reads the same later.
+
+Optional keys of the summary (format 1 still, decision MC-3; a summary
+without them opens as before, and an older version ignores them):
+
+* ``outcomes`` and ``outcome_units``: each successful run's headline
+  figures (``engine.run_summary.overview_figures``), keyed
+  ``"<spacecraft>.<outcome>"`` (``schema.scenario.MONTE_CARLO_OUTCOMES``);
+* ``failed_drawn``: what each crashed run drew, by run (its
+  ``run<N>.json``);
+* ``requirements`` and ``probability_bound``: the requirements the batch
+  was run with and the model of their bound; the verdicts are computed when
+  the batch is read (``engine.monte_carlo_requirements``).
 """
 
 from __future__ import annotations
@@ -68,6 +80,7 @@ MAX_SAMPLES = 2000
 MAX_PLOTTED_RUNS = 100
 OFFSET_COMPONENTS = ("radial", "along_track", "cross_track")
 SPREAD_CHOICE = "monte_carlo.spread_statistic"
+BOUND_CHOICE = "monte_carlo.probability_bound"  # engine.monte_carlo_requirements
 # numpy.std's ddof of each model of SPREAD_CHOICE: the divisor is N - ddof.
 SPREAD_DDOF = {"population": 0, "sample": 1}
 
@@ -105,6 +118,16 @@ class MonteCarloBatch:
     # (a spacecraft's state of charge, its memory) a profile per run, shape (runs, samples), in its unit.
     profiles: dict = field(default_factory=dict)
     profile_units: dict = field(default_factory=dict)
+    # Per-run outcomes (Monte Carlo plan A1): outcomes[k] holds run runs[k]'s headline figures,
+    # {"<spacecraft>.<outcome>": value}, in outcome_units' units; empty for a summary without them.
+    outcomes: list = field(default_factory=list)
+    outcome_units: dict = field(default_factory=dict)
+    # What each crashed run drew (A4): {run: {label: value}}, as ``drawn``.
+    failed_drawn: dict = field(default_factory=dict)
+    # The requirements the batch was run with (A2), as dicts of
+    # schema.scenario.MonteCarloRequirementConfig, and the model of their bound.
+    requirements: list = field(default_factory=list)
+    probability_bound: str = "clopper_pearson"
 
     @property
     def spacecraft(self) -> list[str]:
@@ -147,6 +170,12 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         "drawn": batch.drawn,
         "spread_statistic": batch.spread_statistic,
     }
+    if batch.outcomes:
+        meta.update(outcomes=batch.outcomes, outcome_units=dict(batch.outcome_units))
+    if batch.failed_drawn:
+        meta["failed_drawn"] = {str(int(run)): drawn for run, drawn in sorted(batch.failed_drawn.items())}
+    if batch.requirements:
+        meta.update(requirements=batch.requirements, probability_bound=batch.probability_bound)
     if batch.kind == "thermal":
         meta.update(kind=batch.kind, nodes=list(batch.temperatures_c), case=batch.case)
     elif batch.kind == "operations":
@@ -163,9 +192,12 @@ def has_summary(folder: str | Path) -> bool:
 
 
 # What Basilisk's Controller and this tool write into a batch folder: its
-# archive, the provenance sidecar, the summary, and per-run and per-message files.
+# archive, the provenance sidecar, the summary, and per-run and per-message
+# files; its data writer also writes one file per key of the runs' custom
+# data (engine.monte_carlo's outcomes: spacemissionstudio_outcomes.data and
+# spacemissionstudio_outcome_units.data).
 BATCH_FILE_PATTERNS = ("MonteCarlo.data", "archive.provenance.json", SUMMARY_JSON, SUMMARY_NPZ,
-                       "run*.data", "run*.json", "*.scState.*.data")
+                       "run*.data", "run*.json", "*.scState.*.data", "spacemissionstudio_outcome*.data")
 
 
 def batch_files(folder: str | Path) -> list[Path]:
@@ -259,11 +291,29 @@ def load(folder: str | Path) -> MonteCarloBatch:
     _require(len(drawn) == len(runs), f"{SUMMARY_JSON}: {len(drawn)} drawn-value rows for {len(runs)} runs")
     statistic = meta.get("spread_statistic", "population")  # a summary written before the choice: population
     _require(statistic in SPREAD_DDOF, f"{SUMMARY_JSON}: unknown spread statistic {statistic!r}")
+    outcomes = meta.get("outcomes") or []  # a summary written before the outcomes (A1) has none
+    _require(isinstance(outcomes, list) and (not outcomes or len(outcomes) == len(runs))
+             and all(isinstance(row, dict) for row in outcomes),
+             f"{SUMMARY_JSON}: {len(outcomes)} outcome rows for {len(runs)} runs")
+    failed_drawn = meta.get("failed_drawn") or {}
+    _require(isinstance(failed_drawn, dict) and all(isinstance(row, dict) for row in failed_drawn.values()),
+             f"{SUMMARY_JSON}: failed_drawn is not a table of drawn values by run")
+    requirements = meta.get("requirements") or []
+    _require(isinstance(requirements, list) and all(isinstance(r, dict) and {"name", "spacecraft", "outcome",
+                                                                              "confidence"} <= set(r)
+                                                    for r in requirements),
+             f"{SUMMARY_JSON}: requirements is not a list of requirements")
+    bound = str(meta.get("probability_bound", "clopper_pearson"))
+    _require(bound in models.names(BOUND_CHOICE), f"{SUMMARY_JSON}: unknown probability bound {bound!r}")
     return MonteCarloBatch(str(meta.get("scenario_name", "")), str(meta.get("central_body", "earth")), time_s,
                            runs, [int(run) for run in meta.get("failed", [])], positions, velocities,
                            [{str(k): float(v) for k, v in row.items()} for row in drawn],
                            str(meta.get("epoch_utc", "")), statistic, kind, temperatures, str(meta.get("case", "")),
-                           profiles, {str(k): str(v) for k, v in (meta.get("profile_units") or {}).items()})
+                           profiles, {str(k): str(v) for k, v in (meta.get("profile_units") or {}).items()},
+                           [{str(k): float(v) for k, v in row.items()} for row in outcomes],
+                           {str(k): str(v) for k, v in (meta.get("outcome_units") or {}).items()},
+                           {int(run): {str(k): float(v) for k, v in row.items()} for run, row in failed_drawn.items()},
+                           [dict(r) for r in requirements], bound)
 
 
 def stride_for(samples: int) -> int:
@@ -406,12 +456,49 @@ def final_spread(batch: MonteCarloBatch, spacecraft: str) -> SpreadSummary:
                          float(altitude.min()), float(altitude.max()))
 
 
-def run_table(batch: MonteCarloBatch, spacecraft: str | None = None):
+def outcome_label(key: str, unit: str) -> str:
+    """A run table's column for outcome ``key``: ``"sat-1 lowest altitude
+    [km]"`` for ``"sat-1.lowest_altitude"``."""
+    from ..schema.scenario import MONTE_CARLO_OUTCOME_TITLES
+
+    spacecraft, _, outcome = key.rpartition(".")
+    title = MONTE_CARLO_OUTCOME_TITLES.get(outcome, outcome.replace("_", " "))
+    if not spacecraft:
+        return f"{title} [{unit}]"
+    return f"{spacecraft} {title[0].lower()}{title[1:]} [{unit}]"
+
+
+STATUS_LABEL = "Status"
+MEETS_ALL_LABEL = "Meets all requirements"
+SUCCEEDED, CRASHED = "succeeded", "crashed"
+
+
+def _outcome_keys(batch: MonteCarloBatch, spacecraft: str) -> list[str]:
+    """The outcome keys of the run's and of ``spacecraft``, in the order
+    of schema.scenario.MONTE_CARLO_OUTCOMES."""
+    from ..schema.scenario import MONTE_CARLO_OUTCOMES, monte_carlo_outcome_key
+
+    found = {key for row in batch.outcomes for key in row}
+    return [key for key in (monte_carlo_outcome_key(spacecraft, outcome) for outcome in MONTE_CARLO_OUTCOMES)
+            if key in found]
+
+
+def run_table(batch: MonteCarloBatch, spacecraft: str | None = None, outcomes: bool = False):
     """(column labels, rows): per run its index, every drawn value, and
     where it ended against the batch mean [km] (for ``spacecraft``, by
-    default the first)."""
+    default the first).
+
+    ``outcomes`` (an orbit batch): also each run's outcomes of the run and
+    of ``spacecraft`` (Monte Carlo plan A1), when the summary has them; the
+    crashed runs whose draws the summary keeps (A4), with their draws, no
+    offsets and no outcomes; then a "Status" column (``"succeeded"`` or
+    ``"crashed"``) when it lists any; and with requirements, "Meets all
+    requirements" (``engine.monte_carlo_requirements.run_verdicts``). The
+    status and verdict cells are text, every other cell a float (NaN when
+    there is no value). By default the columns are as before."""
+    drawn_rows = list(batch.drawn) + (list(batch.failed_drawn.values()) if outcomes else [])
     drawn_labels: list[str] = []
-    for row in batch.drawn:
+    for row in drawn_rows:
         drawn_labels += [label for label in row if label not in drawn_labels]
     if batch.kind == "operations":  # ``spacecraft`` names a profile; the outcomes are among the drawn values
         item = spacecraft or batch.items[0]
@@ -437,7 +524,51 @@ def run_table(batch: MonteCarloBatch, spacecraft: str | None = None):
         drawn = batch.drawn[k] if k < len(batch.drawn) else {}
         rows.append([float(run)] + [drawn.get(label, float("nan")) for label in drawn_labels]
                     + [float(value) for value in final[k]])
-    return ["Run"] + drawn_labels + outcome_labels, rows
+    labels = ["Run"] + drawn_labels + outcome_labels
+    if not outcomes:
+        return labels, rows
+    from .monte_carlo_requirements import run_verdicts
+
+    keys = _outcome_keys(batch, spacecraft)
+    labels += [outcome_label(key, batch.outcome_units.get(key, "-")) for key in keys]
+    for k, row in enumerate(rows):
+        values = batch.outcomes[k] if k < len(batch.outcomes) else {}
+        row += [float(values.get(key, float("nan"))) for key in keys]
+    nan = float("nan")
+    crashed = sorted(run for run in batch.failed_drawn if run in set(batch.failed))
+    for run in crashed:
+        drawn = batch.failed_drawn[run]
+        rows.append([float(run)] + [drawn.get(label, nan) for label in drawn_labels] + [nan] * (3 + len(keys)))
+    rows.sort(key=lambda row: row[0])
+    if crashed:
+        labels.append(STATUS_LABEL)
+        for row in rows:
+            row.append(CRASHED if int(row[0]) in crashed else SUCCEEDED)
+    verdicts = run_verdicts(batch)
+    if verdicts:
+        labels.append(MEETS_ALL_LABEL)
+        for row in rows:
+            row.append(verdicts.get(int(row[0]), ""))
+    return labels, rows
+
+
+def outcome_ranges(batch: MonteCarloBatch) -> list[tuple[str, float, float, str]]:
+    """Each outcome's lowest and highest value over the successful runs that
+    recorded it: (label, lowest, highest, unit), in the order of
+    schema.scenario.MONTE_CARLO_OUTCOMES, the run's first, then each
+    spacecraft's (the command line's short table)."""
+    import math
+
+    keys = []
+    for name in batch.spacecraft or [""]:
+        keys += [key for key in _outcome_keys(batch, name) if key not in keys]
+    ranges = []
+    for key in keys:
+        values = [row[key] for row in batch.outcomes if key in row and math.isfinite(row[key])]
+        if values:
+            unit = batch.outcome_units.get(key, "-")
+            ranges.append((outcome_label(key, unit).rsplit(" [", 1)[0], min(values), max(values), unit))
+    return ranges
 
 
 def format_km(value_m: float) -> str:

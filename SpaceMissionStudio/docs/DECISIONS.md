@@ -4793,3 +4793,99 @@ of the owner to the plan's questions Q1 to Q5 replaces them.
   met; 3 (a run failed) comes first. **Why:** a script can tell a batch
   that ran but does not meet its requirement from one that failed; 5
   already means this for `reproduce`, `fsw-status` and `sil` (Q5).
+
+## Monte Carlo phase A, part 1: outcomes, crashed runs, requirements (2026-11-21)
+
+Items A1, A4 and A2 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
+built as the plan says. The owner answered Q1, Q2, Q4, Q5 and Q8 for this
+work. **MC-11 to MC-15 are provisional: the owner may change them.** They
+confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
+
+- **Decision MC-11 (provisional, the owner may change it; Q1):** a
+  crashed run counts as not meeting every requirement and is shown
+  apart: it is in N and in k, and the Requirements table has the column
+  "Of which crashed". **Why:** the owner's answer; it is MC-6, the
+  conservative reading.
+- **Decision MC-12 (provisional, the owner may change it; Q2):** the
+  batch seed goes to phase B. Schema version 6 holds the requirements
+  only. **Why:** the owner's answer; it is MC-8.
+- **Decision MC-13 (provisional, the owner may change it; Q4):** the
+  confidence is required per requirement, with no default in the code
+  or in the editor. The limit has no default either. A new requirement
+  in the editor starts with both "Not set"; the list and the draft
+  scenario hold it as it is, and the scenario's check refuses it and
+  names the field (the Problems panel shows it). For this, the editor
+  checks only the batch's settings and dispersions as they are typed
+  (`MonteCarloConfig.validate_settings`); `validate` checks the
+  requirements too. **Why:** the owner's answer, and a number without a
+  source is not allowed (MC-9). A form that refused every edit until the
+  confidence was set would force one order of typing.
+- **Decision MC-14 (provisional, the owner may change it; Q5):**
+  `monte-carlo` exits with 5 when a requirement with an allowed
+  probability is not shown met; 3 (a run failed) comes first. Checked
+  before use: ICD-02 and `cli.py` give 5 (`EXIT_CHECK_FAILED`) to "the
+  command ran and its check did not pass" (`fsw-status`,
+  `sil --max-error`, `reproduce`), and no command gives 5 another
+  meaning. So 5 is free for this use and fits the scheme. **Why:** the
+  owner's answer; it is MC-10.
+- **Decision MC-15 (provisional, the owner may change it; Q8):** the
+  thermal and operations batches keep their "mean - 3 sigma" and "mean +
+  3 sigma" lines for now. Percentiles are phase B (B3). **Why:** the
+  owner's answer.
+- **Decision MC-16:** how A1, A4 and A2 are built, where the plan leaves
+  the choice open. Each choice has its reason:
+  - The requirements' evaluation and the bound are a new module,
+    `engine/monte_carlo_requirements.py` (Basilisk-free), mapped to
+    SRS-F-13 in the SDD. **Why:** `monte_carlo_results.py` reads and
+    saves the summary; the statistics of a requirement are a separate
+    concern with their own tests.
+  - The summary also keeps `probability_bound`, the bound's model, next
+    to `requirements`. The plan lists only `requirements`. **Why:** as
+    `spread_statistic`, an opened batch then reads with the model it was
+    run with, also after a second model is added.
+  - The binomial sum starts at its largest term (the mode, or k) and
+    goes outward. **Why:** the plan says "bisection on the binomial
+    sum"; summed from i = 0, the first term underflows for a large
+    batch and a small p. From the largest term the sum has about
+    sqrt(N) terms that matter and no term underflows unless the whole
+    sum does.
+  - The second reference check of the bound is an independent
+    computation, not a table: the regularized incomplete beta function
+    I_p(k + 1, N - k), the bound's other form, computed exactly in
+    rational numbers at the bound, must equal C. **Why:** SciPy is not in
+    the `dev` extra, and no table of the bound was read here: a tabulated
+    value from memory would be an invented number.
+  - A run that cannot read its outcomes (an error in a figure) keeps
+    none and is logged; the run is not failed. A requirement then counts
+    it "not evaluated". **Why:** the run itself succeeded; failing it
+    would hide its orbit.
+  - Basilisk's data writer writes one file per key of the custom data
+    (`spacemissionstudio_outcomes.data`, `..._outcome_units.data`). They
+    are batch files (`BATCH_FILE_PATTERNS`), so `--overwrite` replaces
+    them. **Why:** found by `test_an_earlier_batch_is_replaced_only_with_overwrite`.
+  - The Runs table (GUI and CSV) adds the outcome columns, the crashed
+    runs, "Status" and "Meets all requirements" only when the batch has
+    them, after the existing columns. `run_table`'s default is
+    unchanged. **Why:** an older summary shows the table it showed
+    before, the existing columns keep their places, and the golden files
+    read the default. The CSV writes a missing value as `nan`, as before.
+  - The crashed runs are `failed` of the summary: the runs the
+    controller reports failed, and in a finished batch the runs whose
+    file cannot be read. A cancelled batch has none (A4). **Why:** the
+    same list the "Failed" tile counts.
+  - The editor's Requirements list switches between the list and its
+    empty state itself, not through `widgets.EmptyStack`. **Why:**
+    `EmptyStack` follows the list model's `modelReset`, which a
+    `QListWidget` emits while it is destroyed; when the Monte Carlo group
+    was the first widget of a test process, that reached the half
+    destroyed stack ("Slot 'EmptyStack::' not found"). The same happens
+    on `develop` with a bare `EmptyStack` under a `FormGrid` as the
+    first test of a process. `EmptyStack` itself is not changed here: the
+    other lists use it, and the fix belongs to its own change.
+  - The main window connects the Requirements tab's empty-state action
+    to a bound method, not a lambda. **Why:** a lambda that holds the
+    window kept a closed window alive (`test_a_closed_window_is_freed`
+    failed); the B11 rule.
+  - No new keyboard shortcut or palette entry. **Why:** no new frequent
+    action. The Requirements tab is a tab of the Monte Carlo view, and
+    a requirement is edited where the dispersions are.

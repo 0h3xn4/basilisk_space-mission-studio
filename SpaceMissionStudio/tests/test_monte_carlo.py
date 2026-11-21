@@ -20,6 +20,8 @@ see tests/conftest.py for the auto-skip behavior in this development
 sandbox, which does not have one.
 """
 
+import math
+
 import pytest
 
 from spacemissionstudio.schema import GravityConfig, MonteCarloConfig, OrbitIC, Scenario, SpacecraftConfig
@@ -488,3 +490,185 @@ def test_a_batch_uses_and_records_the_statistic_its_configuration_chooses(tmp_pa
     record = json.loads((tmp_path / "archive.provenance.json").read_text(encoding="utf-8"))
     assert record["models"]["monte_carlo.spread_statistic"]["model"] == "sample"
     assert record["models"]["monte_carlo.spread_statistic"]["title"] == "Sample standard deviation"
+
+
+# -- Outcomes per run (Monte Carlo plan A1) and the draws of crashed runs (A4) --
+
+
+_TEMPLATE_25 = "25_monte_carlo_orbit_and_drag_dispersions.json"
+
+
+def _template_25(num_runs=2, duration_days=0.05, **monte_carlo):
+    from pathlib import Path
+
+    from spacemissionstudio.schema import load_scenario
+
+    templates = Path(__file__).resolve().parents[1] / "spacemissionstudio" / "scenarios" / "templates"
+    scenario = load_scenario(templates / _TEMPLATE_25)
+    scenario.sim_settings.duration_days = duration_days  # [day]
+    scenario.monte_carlo.num_runs = num_runs
+    scenario.monte_carlo.thread_count = 1
+    for key, value in monte_carlo.items():
+        setattr(scenario.monte_carlo, key, value)
+    return scenario
+
+
+def _plain_run_of_case(scenario, archive_dir, case):
+    """A plain run of ``case``'s draws, made here for the test: the run the
+    batch's creation function builds, each entry of run<case>.json applied in
+    the file's order with Basilisk's own setter (SimulationExecutor), then
+    the same start-up and run (Monte Carlo plan A3 makes this a feature)."""
+    import json
+
+    from Basilisk.utilities.MonteCarlo.Controller import SimulationExecutor
+
+    from spacemissionstudio.engine import monte_carlo
+
+    sim = monte_carlo._create_sim(scenario)
+    for name, value in json.loads((archive_dir / f"run{case}.json").read_text()).items():
+        SimulationExecutor.applyModification(sim, name, value)
+    service = sim._spacemissionstudio_service
+    service.initialize()
+    return service.run()
+
+
+def test_each_run_keeps_the_overview_figures_of_a_plain_run_of_its_draws(tmp_path):
+    """A1's acceptance: a 2-run batch of template 25 (0.05 days) keeps, per
+    run, the figures run_summary.overview_figures gives a plain run of that
+    case's draws: the same keys, values and units ("altitude" as the lowest
+    and the highest altitude)."""
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.engine import run_summary
+    from spacemissionstudio.engine.monte_carlo import run_monte_carlo
+
+    scenario = _template_25()
+    assert run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    assert batch.runs == [0, 1] and len(batch.outcomes) == 2
+    for k, run in enumerate(batch.runs):
+        figures = run_summary.overview_figures(_plain_run_of_case(scenario, tmp_path, run))
+        expected = {}
+        for figure in figures:
+            owner, _, name = figure.key.rpartition(".")
+            for key in ([f"{owner}.lowest_altitude", f"{owner}.highest_altitude"] if name == "altitude"
+                        else [figure.key]):
+                expected[key] = (figure.value, figure.unit)
+        assert set(batch.outcomes[k]) == set(expected)
+        for key, (value, unit) in expected.items():
+            assert batch.outcomes[k][key] == pytest.approx(value, rel=1e-9), key
+            assert batch.outcome_units[key] == unit
+    assert {"run_length", "sat-1.lowest_altitude", "sat-1.highest_altitude", "sat-1.orbital_period"} \
+        <= set(batch.outcomes[0])
+    assert batch.outcomes[0]["sat-1.lowest_altitude"] != batch.outcomes[1]["sat-1.lowest_altitude"]  # draws differ
+    labels, rows = mcr.run_table(batch, outcomes=True)
+    assert "sat-1 lowest altitude [km]" in labels and len(rows) == 2
+    assert mcr.run_table(batch)[0] == labels[:len(mcr.run_table(batch)[0])]  # the default: as before
+
+
+def test_a_runs_outcomes_reach_the_summary_from_several_processes(tmp_path):
+    """The retention function pickles into the process pool
+    (thread_count > 1) and every run's outcomes come back."""
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.engine.monte_carlo import run_monte_carlo
+
+    scenario = _short(_scenario(), num_runs=2, thread_count=2)
+    assert run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    assert [row["run_length"] for row in batch.outcomes] == [pytest.approx(60.0 / 3600.0)] * 2  # [h]
+    assert batch.outcome_units["sat-1.lowest_altitude"] == "km"
+
+
+def test_a_steady_altitude_is_kept_as_the_lowest_and_the_highest(monkeypatch):
+    """When the altitude does not vary, Overview shows one figure,
+    "altitude"; the run keeps it as both its lowest and its highest
+    altitude, so every run has the same keys. A run without a result keeps
+    none, and one whose figures cannot be read keeps none (logged): the run
+    itself succeeded."""
+    from spacemissionstudio.engine import monte_carlo, run_summary
+    from spacemissionstudio.engine.run_summary import Figure
+
+    figures = [Figure("run_length", "Run length", "h", 2.0, 2), Figure("sat-1.altitude", "Altitude", "km", 500.0, 1)]
+    monkeypatch.setattr(run_summary, "overview_figures", lambda result: figures)
+    values, units = monte_carlo.run_outcomes(object())
+    assert values == {"run_length": 2.0, "sat-1.lowest_altitude": 500.0, "sat-1.highest_altitude": 500.0}
+    assert units == {"run_length": "h", "sat-1.lowest_altitude": "km", "sat-1.highest_altitude": "km"}
+    assert monte_carlo._outcomes_or_none(None) == ({}, {})
+
+    def broken(result):
+        raise ValueError("no figures")
+
+    monkeypatch.setattr(run_summary, "overview_figures", broken)
+    assert monte_carlo._outcomes_or_none(object()) == ({}, {})
+
+
+def _second_run_crashes(monkeypatch):
+    """Makes the batch's second run raise: thread_count 1 runs each case in
+    this process, so the execution function is this module's."""
+    from spacemissionstudio.engine import monte_carlo
+
+    real = monte_carlo._execute_sim
+    calls = []
+
+    def execute(sim, allow_scripts=False):
+        calls.append(1)
+        if len(calls) == 2:
+            raise RuntimeError("forced crash of the second run")
+        return real(sim, allow_scripts=allow_scripts)
+
+    monkeypatch.setattr(monte_carlo, "_execute_sim", execute)
+
+
+def test_a_crashed_run_keeps_what_it_drew(tmp_path, monkeypatch):
+    """A4: a crashed run's draws are read from its run<N>.json (JSON, not
+    the pickles) and kept as failed_drawn; the Runs table lists it with its
+    draws and the status "crashed", no outcomes; run_table's default is as
+    before; and it counts as not meeting a requirement (decision MC-6)."""
+    import json
+
+    from spacemissionstudio.engine import monte_carlo_requirements as req
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.engine.monte_carlo import run_monte_carlo
+    from spacemissionstudio.schema import MonteCarloRequirementConfig
+
+    scenario = _template_25(duration_days=0.01)
+    scenario.monte_carlo.requirements = [MonteCarloRequirementConfig(
+        "R-ALT", "sat-1", "lowest_altitude", at_least=0.0, confidence=0.9, max_probability=0.5)]
+    _second_run_crashes(monkeypatch)
+    assert run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == [1]
+    batch = mcr.load(tmp_path)
+    assert batch.runs == [0] and batch.failed == [1] and list(batch.failed_drawn) == [1]
+    params = json.loads((tmp_path / "run1.json").read_text())
+    cd = float(next(value for key, value in params.items() if key.endswith("dragCoeff")))
+    assert batch.failed_drawn[1]["sat-1 drag coefficient [-]"] == pytest.approx(cd)
+    assert set(batch.failed_drawn[1]) == set(batch.drawn[0])
+
+    default_labels, default_rows = mcr.run_table(batch)
+    assert [row[0] for row in default_rows] == [0.0] and mcr.STATUS_LABEL not in default_labels
+    labels, rows = mcr.run_table(batch, outcomes=True)
+    assert [row[0] for row in rows] == [0.0, 1.0]
+    status = labels.index(mcr.STATUS_LABEL)
+    assert [row[status] for row in rows] == ["succeeded", "crashed"]
+    crashed = rows[1]
+    assert crashed[labels.index("sat-1 drag coefficient [-]")] == pytest.approx(cd)
+    assert all(math.isnan(crashed[labels.index(label)]) for label in labels
+               if label.endswith(("offset [km]", "altitude [km]")))
+
+    (result,) = req.evaluate(batch)
+    assert (result.evaluated, result.not_met, result.crashed) == (2, 1, 1)
+    assert result.verdict == req.NOT_SHOWN  # bound(1 of 2 at 90 %) = 0.95 > 0.5
+
+
+def test_a_cancelled_batch_does_not_show_its_unfinished_cases_as_crashed(tmp_path):
+    """A cancelled batch's unfinished cases did not fail (A4): its summary,
+    written by the GUI's summary child, has no failed runs and no draws of
+    crashed runs."""
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.engine.monte_carlo import run_monte_carlo
+    from spacemissionstudio.gui import monte_carlo_process
+
+    scenario = _short(_scenario(), num_runs=2)
+    assert run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    (tmp_path / "run1.data").unlink()  # as if case 1 had not finished when the batch was cancelled
+    monte_carlo_process._summary_child(scenario, str(tmp_path), 2)
+    batch = mcr.load(tmp_path)
+    assert batch.runs == [0] and batch.failed == [] and batch.failed_drawn == {}

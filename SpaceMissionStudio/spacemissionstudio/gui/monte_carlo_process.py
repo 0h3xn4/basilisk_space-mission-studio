@@ -131,6 +131,7 @@ def _summary_child(scenario, archive_dir: str, num_runs: int) -> None:
 
     batch = monte_carlo.collect_batch(scenario, archive_dir, num_runs, [])
     batch.failed = []  # the cases not finished were stopped, not failed: the controller's own list is gone
+    batch.failed_drawn = {}  # so their draws are not those of crashed runs (Monte Carlo plan A4)
     if batch.runs:
         monte_carlo_results.save(batch, archive_dir)
 

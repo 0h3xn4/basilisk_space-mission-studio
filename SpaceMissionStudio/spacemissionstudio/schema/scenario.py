@@ -80,7 +80,7 @@ from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence
 
-CURRENT_SCHEMA_VERSION = 5
+CURRENT_SCHEMA_VERSION = 6
 
 # Limits on what a scenario may ask for (audit R9): far above any template
 # (at most 6 spacecraft, 27 kB) and the editor's own ranges, so that a shared
@@ -307,6 +307,45 @@ ORBIT_ELEMENT_SPREAD_KEYS = ("semi_major_axis_km", "eccentricity", "inclination_
 # Quantities whose "normal" kind takes a spread only (no mean): the vector
 # and tensor ones, dispersed around their nominal values.
 SPREAD_ONLY_DISPERSION_QUANTITIES = ("orbit_elements", "inertia_kg_m2", "angular_rate_bn_b")
+
+# The outcomes a Monte Carlo run records (decision MC-2): the keys of its
+# Overview figures (engine.run_summary.overview_figures), per spacecraft,
+# with the unit of each. "altitude" (a run whose altitude does not vary)
+# becomes both "lowest_altitude" and "highest_altitude", so every run has the
+# same keys. "run_length" is the run's, not a spacecraft's.
+# tests/test_monte_carlo_requirements.py keeps this in step with run_summary.
+MONTE_CARLO_OUTCOME_UNITS = {
+    "run_length": "h",
+    "orbital_period": "min",
+    "lowest_altitude": "km",
+    "highest_altitude": "km",
+    "delta_v": "m/s",
+    "propellant_used": "kg",
+    "mean_sma_change": "km",
+    "lowest_link_margin": "dB",
+    "lowest_battery_charge": "W*h",
+    "passes": "-",
+    "contact_time": "min",
+    "eclipses": "-",
+    "eclipse_time": "min",
+    "data_downlinked": "Gbit",
+}
+MONTE_CARLO_OUTCOMES = tuple(MONTE_CARLO_OUTCOME_UNITS)
+MONTE_CARLO_OUTCOME_TITLES = {
+    "run_length": "Run length", "orbital_period": "Orbital period", "lowest_altitude": "Lowest altitude",
+    "highest_altitude": "Highest altitude", "delta_v": "Delta-V", "propellant_used": "Propellant used",
+    "mean_sma_change": "Mean semi-major axis change", "lowest_link_margin": "Lowest link margin",
+    "lowest_battery_charge": "Lowest battery charge", "passes": "Passes", "contact_time": "Contact time",
+    "eclipses": "Eclipses", "eclipse_time": "Eclipse time", "data_downlinked": "Data downlinked",
+}
+# The outcomes that are the run's, not a spacecraft's: their key has no spacecraft.
+RUN_OUTCOMES = ("run_length",)
+
+
+def monte_carlo_outcome_key(spacecraft: str, outcome: str) -> str:
+    """The key of ``outcome`` of ``spacecraft`` in a batch's outcomes:
+    ``"<spacecraft>.<outcome>"``, or the outcome alone for one of the run's."""
+    return outcome if outcome in RUN_OUTCOMES else f"{spacecraft}.{outcome}"
 
 
 class ScenarioValidationError(ValueError):
@@ -3025,6 +3064,42 @@ def usable_thread_count(requested: int) -> int:
 
 
 @dataclass
+class MonteCarloRequirementConfig:
+    """A requirement on one outcome of every Monte Carlo run (decision
+    MC-4): the batch counts the runs that do not meet it and bounds the
+    probability of not meeting it (``engine.monte_carlo_requirements``)."""
+
+    name: str  # the requirement's label, unique in the list, e.g. "R-ALT-01"
+    spacecraft: str  # must match a SpacecraftConfig.name in this scenario
+    outcome: str  # one of MONTE_CARLO_OUTCOMES
+    at_least: float | None = None  # a run meets it with the outcome at or above this, in the outcome's unit
+    at_most: float | None = None  # a run meets it with the outcome at or below this, in the outcome's unit
+    confidence: float | None = None  # [-] the bound's confidence, in (0, 1); required, no default (decision MC-5)
+    max_probability: float | None = None  # [-] optional: the allowed probability of not meeting it, in [0, 1)
+
+    def validate(self) -> None:
+        where = f"monte_carlo.requirements {self.name!r}"
+        _require(isinstance(self.name, str) and bool(self.name.strip()),
+                 "monte_carlo.requirements: name must not be empty")
+        _require(isinstance(self.spacecraft, str) and bool(self.spacecraft), f"{where}: spacecraft must not be empty")
+        _require(self.outcome in MONTE_CARLO_OUTCOMES,
+                 f"{where}: outcome {self.outcome!r} must be one of {MONTE_CARLO_OUTCOMES}")
+        limits = [key for key in ("at_least", "at_most") if getattr(self, key) is not None]
+        _require(len(limits) == 1, f"{where}: give exactly one of at_least and at_most, got "
+                                   f"{' and '.join(limits) if limits else 'neither'}")
+        _require(_is_finite_number(getattr(self, limits[0])),
+                 f"{where}: {limits[0]} must be a finite number, got {getattr(self, limits[0])!r}")
+        _require(self.confidence is not None, f"{where}: confidence is required: the confidence of the bound, "
+                                              "a number between 0 and 1 that you choose")
+        _require(_is_finite_number(self.confidence) and 0.0 < self.confidence < 1.0,
+                 f"{where}: confidence must be a number between 0 and 1 (both excluded), got {self.confidence!r}")
+        _require(self.max_probability is None
+                 or (_is_finite_number(self.max_probability) and 0.0 <= self.max_probability < 1.0),
+                 f"{where}: max_probability must be a number from 0 up to (not including) 1, "
+                 f"got {self.max_probability!r}")
+
+
+@dataclass
 class MonteCarloConfig:
     """Batch execution settings -- see ``engine/monte_carlo.py``.
     ``thread_count`` > 1 runs the batch in parallel processes
@@ -3038,8 +3113,21 @@ class MonteCarloConfig:
     thread_count: int = 1
     verbose: bool = False
     dispersions: list = field(default_factory=list)  # list[DispersionConfig]
+    # Requirements on the runs' outcomes, judged after the batch (decision MC-4).
+    requirements: list = field(default_factory=list)  # list[MonteCarloRequirementConfig]
 
     def validate(self) -> None:
+        self.validate_settings()
+        names = [requirement.name for requirement in self.requirements]
+        for requirement in self.requirements:
+            requirement.validate()
+        repeated = sorted({name for name in names if names.count(name) > 1})
+        _require(not repeated, f"monte_carlo.requirements: each name must be unique, {repeated} repeat")
+
+    def validate_settings(self) -> None:
+        """The batch's own settings and its dispersions: what the editor
+        checks as they are typed (a requirement can be incomplete there
+        until the scenario is checked)."""
         # A float or text count reached the batch unchecked (audit L29).
         for key in ("num_runs", "thread_count"):
             value = getattr(self, key)
@@ -3968,6 +4056,10 @@ class Scenario:
             if dispersion.quantity == "srp_coeff":
                 _require(sc.enable_srp and not sc.facets,
                           f"{where}: needs enable_srp and no facets (facets carry their own coefficients)")
+        for requirement in self.monte_carlo.requirements:
+            _require(requirement.spacecraft in names,
+                      f"monte_carlo.requirements {requirement.name!r}: spacecraft {requirement.spacecraft!r} is not "
+                      f"one of this scenario's spacecraft {names}")
 
         # Mission sequence (schema.command.Command) -- structural
         # validation only (each command's own .validate() already
@@ -4042,6 +4134,8 @@ class Scenario:
             del data["config_file"]
         if data["space_weather"]["atmosphere_model"] != "tabular":  # the same: only a tabular run names a table
             del data["space_weather"]["atmosphere_table"]
+        if not data["monte_carlo"]["requirements"]:  # the same (schema 6, decision MC-4)
+            del data["monte_carlo"]["requirements"]
         if not data["value_marks"]:  # the same
             del data["value_marks"]
         if not data["presets"]:  # the same
@@ -4078,6 +4172,8 @@ class Scenario:
 
         mc_data = _fields_of(data.pop("monte_carlo", {}), "monte_carlo")
         mc_data["dispersions"] = _records(DispersionConfig, mc_data.pop("dispersions", []), "monte_carlo.dispersions")
+        mc_data["requirements"] = _records(MonteCarloRequirementConfig, mc_data.pop("requirements", []),
+                                           "monte_carlo.requirements")
         monte_carlo = _record(MonteCarloConfig, mc_data, "monte_carlo")
 
         spacecraft = []

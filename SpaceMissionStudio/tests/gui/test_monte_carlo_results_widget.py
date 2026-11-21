@@ -216,3 +216,118 @@ def test_the_page_names_the_statistic_of_the_spread(qtbot, tmp_path):
     assert "Sample standard deviation: " in tip and "(N - 1)" in tip and "monte_carlo.spread_statistic" in tip
     along_km = np.std((np.arange(5) - 2) * 1e-4, ddof=1) * _R_M / 1e3  # [km]
     assert _tile_texts(widget)[2] == f"{along_km:.3g} km | Along-track spread, end"
+
+
+def _save_batch_with_outcomes(folder, requirements=()):
+    """``_save_batch``'s five runs with outcomes (the lowest altitude 395 +
+    5 k km), run 5 crashed with its draws, and ``requirements``."""
+    from dataclasses import replace
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    batch = _save_batch(folder)
+    batch = replace(batch, outcomes=[{"run_length": 1.0, "sat-1.lowest_altitude": 395.0 + 5.0 * k} for k in range(5)],
+                    outcome_units={"run_length": "h", "sat-1.lowest_altitude": "km"},
+                    failed_drawn={5: {"sat-1 drag coefficient [-]": 3.0}}, requirements=list(requirements))
+    mcr.save(batch, folder)
+    return batch
+
+
+_ALTITUDE = {"name": "R-ALT", "spacecraft": "sat-1", "outcome": "lowest_altitude", "at_least": 400.0,
+             "at_most": None, "confidence": 0.9, "max_probability": 0.5}
+
+
+def test_the_run_table_shows_each_runs_outcomes_and_the_crashed_run_with_its_draws(qtbot, tmp_path):
+    """A1 and A4: the Runs table has a column per outcome, after the drawn
+    values and the offsets, units in the headers; the crashed run is listed
+    with what it drew and the status "crashed", its outcomes empty; with a
+    requirement, whether each run meets them all. The CSV is the table."""
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch_with_outcomes(tmp_path, [_ALTITUDE])
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    assert widget.load_folder(tmp_path)
+    table = widget.table
+    headers = [table.header_text(c) for c in range(table.column_count())]
+    assert headers[:2] == ["Run", "drag coefficient [-]"]
+    assert headers[5:] == ["Run length [h]", "lowest altitude [km]", "Status", "Meets all requirements"]
+    assert table.row_count() == 6
+    crashed = [r for r in range(6) if table.cell(r, 0) == "5"][0]
+    assert table.cell(crashed, 1) == "3" and table.cell(crashed, 6) == "" and table.cell(crashed, 7) == "crashed"
+    assert [table.cell(r, 8) for r in range(6) if table.cell(r, 0) in ("0", "1", "5")] == ["no", "yes", "no"]
+
+    rows = list(csv.reader(widget.export_table_csv(tmp_path / "runs.csv").open(encoding="utf-8")))
+    assert rows[0][6:] == ["sat-1 lowest altitude [km]", "Status", "Meets all requirements"]
+    assert rows[6][0] == "5" and rows[6][1] == "3" and rows[6][6:] == ["nan", "crashed", "no"]
+    assert float(rows[2][6]) == pytest.approx(400.0)
+
+
+def test_the_requirements_tab_judges_each_requirement(qtbot, tmp_path):
+    """A2: the Requirements tab lists each requirement: its limit with the
+    unit, the runs evaluated, not met and of them crashed, the estimate,
+    the upper bound at its confidence, the allowed probability and the
+    verdict (a word behind its icon); a tile counts the requirements met."""
+    from spacemissionstudio.engine import monte_carlo_requirements as req
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    loose = dict(_ALTITUDE, name="R-LOOSE", at_least=0.0, max_probability=0.9)
+    _save_batch_with_outcomes(tmp_path, [_ALTITUDE, loose])
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    assert _tile_texts(widget)[-1] == "1 of 2 | Requirements met"
+    table = widget.requirements_table
+    assert [table.header_text(c) for c in range(table.column_count())] == list(req.TABLE_HEADER)
+    assert table.row_count() == 2
+    row = [table.cell(0, c) for c in range(table.column_count())]
+    bound = req.clopper_pearson_upper(2, 6, 0.9)  # runs 0 (395 km) and 5 (crashed) of 6
+    assert row == ["R-ALT", "Lowest altitude", "at least 400 km", "6", "2", "1", "0", "0.3333", f"{bound:.4g}",
+                   "0.9", "0.5", "not shown"]
+    assert table.cell(1, 11) == "met"
+    assert "Runs not met: 0, 5" in table.cell_tooltip(0, 4)
+    assert "Clopper-Pearson" in widget.requirements_hint.toolTip()
+
+
+def test_without_requirements_the_tab_says_where_to_add_them(qtbot, tmp_path):
+    """A batch without requirements (or an older summary) shows the tab's
+    empty state; its action asks for the scenario's Monte Carlo settings;
+    no tile and no "Meets all requirements" column."""
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch(tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    table = widget.requirements_table
+    assert table.stack.currentWidget() is table.empty and "Scenario › Monte Carlo › Requirements" in \
+        table.empty_label.text()
+    asked = []
+    widget.edit_requirements_requested.connect(lambda: asked.append(True))
+    table.empty_button.click()
+    assert asked == [True]
+    assert "Requirements met" not in " ".join(_tile_texts(widget))
+    headers = [widget.table.header_text(c) for c in range(widget.table.column_count())]
+    assert "Meets all requirements" not in headers and "Status" not in headers
+
+
+def test_a_thermal_batch_after_one_with_requirements_shows_none(qtbot, tmp_path):
+    """The Requirements tab follows the batch shown: a thermal batch opened
+    after an orbit batch with requirements shows the empty state, not the
+    earlier batch's table."""
+    from dataclasses import replace
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    batch = _save_batch_with_outcomes(tmp_path / "orbit", [_ALTITUDE])
+    thermal = replace(batch, kind="thermal", positions={}, velocities={}, outcomes=[], outcome_units={},
+                      failed_drawn={}, requirements=[], case="hot",
+                      temperatures_c={"bus": np.linspace(10.0, 20.0, 5 * batch.time_s.size).reshape(5, -1)})
+    mcr.save(thermal, tmp_path / "thermal")
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path / "orbit")
+    assert widget.requirements_table.row_count() == 1
+    widget.load_folder(tmp_path / "thermal")
+    assert widget.requirements_table.stack.currentWidget() is widget.requirements_table.empty

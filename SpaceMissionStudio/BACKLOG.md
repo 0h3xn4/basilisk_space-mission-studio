@@ -28,21 +28,6 @@
   Every number has a source or is a placeholder ("TBD"). Write the
   design and the decisions first; the item needs the owner's choice of
   scope before code, so move it to `## Needs human` with the design.
-- Monte Carlo phase A, part 1: outcomes, crashed runs' draws and
-  requirements (`docs/developer/monte-carlo-plan.md` section 4, items
-  A1, A4 and A2; decisions MC-1 to MC-6, MC-9 and MC-10 in
-  `docs/DECISIONS.md`; about 8.5 hours). Each run keeps its Overview
-  figures as outcomes (through `RetentionPolicy.addRetentionFunction`);
-  the summary keeps the draws of crashed runs; the scenario gets
-  `monte_carlo.requirements` (schema version 6, a migration that only
-  sets the version, as B-01 did); the Monte Carlo view and the CLI show,
-  per requirement, the runs that do not meet it, k/N and the one-sided
-  Clopper-Pearson upper bound at the requirement's own confidence.
-  `monte-carlo` exits with 5 when a requirement with an allowed
-  probability is not shown met. Done when the plan's acceptance criteria
-  for A1, A2 and A4 pass, the golden files are byte-identical, and the
-  time per case of template 25 before and after is in HISTORY. If the
-  owner has answered Q1, Q4 or Q5 of the plan, follow the answer.
 - Monte Carlo phase A, part 2: reproduce one case
   (`docs/developer/monte-carlo-plan.md` section 4, item A3; decision
   MC-7; about 3 hours). Any case of a batch runs again from its
@@ -77,6 +62,15 @@ owner has answered the plan's open questions.
   sampling designs.
 
 ## Done
+
+- Monte Carlo phase A, part 1: outcomes (A1), crashed runs' draws (A4)
+  and requirements (A2), on branch `feature/monte-carlo-outcomes`
+  (2026-11-21). Each run keeps its Overview figures; the summary keeps
+  the draws of crashed runs; `monte_carlo.requirements` at schema
+  version 6; the Requirements tab, the CLI table and exit status 5. The
+  owner's answers to Q1, Q2, Q4, Q5 and Q8 are applied as provisional
+  decisions (`docs/DECISIONS.md`, MC-11 to MC-16). Time per case of
+  template 25: HISTORY.md, "Monte Carlo phase A, part 1".
 
 ## Needs human
 

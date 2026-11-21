@@ -34,6 +34,7 @@ _TESTS = Path(__file__).resolve().parent
 _MODELS_DOCS = _TESTS.parent / "docs" / "models"
 # The page of docs/models that documents each choice's models.
 _PAGES = {"monte_carlo.spread_statistic": "monte-carlo-statistics.md",
+          "monte_carlo.probability_bound": "monte-carlo-statistics.md",
           "propellant_budget.margin_policy": "propellant-budget.md",
           "dynamics.shadowing_bodies": "dynamics-run-control.md",
           "link.atmospheric_loss": "link-data-and-power.md",
