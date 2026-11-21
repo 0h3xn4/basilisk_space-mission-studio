@@ -21,9 +21,11 @@
 Shows the summary ``engine.monte_carlo_results`` keeps of a batch (never
 Basilisk's pickled archive, security analysis S-04): headline tiles for
 how far the runs spread, the per-run curves and their 1-sigma spread in
-an embedded Results view, and a sortable table of what each run drew
-and where it ended. Filled after a run in Monte Carlo mode, or from a folder an
-earlier batch saved (**Open results...**).
+an embedded Results view, a sortable table of what each run drew, where
+it ended and its outcomes (crashed runs with their draws), and the
+requirements judged on the runs (``engine.monte_carlo_requirements``).
+Filled after a run in Monte Carlo mode, or from a folder an earlier batch
+saved (**Open results...**).
 """
 
 from __future__ import annotations
@@ -33,10 +35,12 @@ import json
 import math
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from . import export_log
+from ..config import models
+from ..engine import monte_carlo_requirements as mcreq
 from ..engine import monte_carlo_results as mcr
 from .data_table import DataTable, Row
 from .results_widget import ResultsWidget
@@ -56,8 +60,22 @@ def _number_text(value: float) -> str:
 
 _km = mcr.format_km
 
+# A requirement's verdict: its words behind a status icon, never the colour alone.
+_VERDICT_MARKS = {
+    mcreq.MET: ("circle-check", "status.normal", "status.normal.text"),
+    mcreq.NOT_SHOWN: ("triangle-alert", "status.caution", "status.caution.text"),
+}
+_REQUIREMENTS_HINT = ("Each requirement judged on the runs: of the N runs evaluated, k do not meet it; the estimate "
+                      "is k/N and the upper bound is exact at the requirement's confidence. A crashed run counts as "
+                      "not meeting every requirement; a run that did not record the outcome is not evaluated.")
+_NO_REQUIREMENTS = ("No requirements in this batch. Add them under Scenario › Monte Carlo › Requirements; the next "
+                    "batch judges them.")
+
 
 class MonteCarloResultsWidget(QWidget):
+    #: The Requirements tab's empty state asks for the scenario's Monte Carlo settings.
+    edit_requirements_requested = Signal()
+
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.batch: mcr.MonteCarloBatch | None = None
@@ -111,6 +129,17 @@ class MonteCarloResultsWidget(QWidget):
         export_row.addWidget(self.export_button)
         runs_layout.addLayout(export_row)
         self.views.addTab(runs_page, "Runs")
+        requirements_page = QWidget()
+        requirements_layout = QVBoxLayout(requirements_page)
+        requirements_layout.setContentsMargins(0, 4, 0, 0)
+        self.requirements_hint = QLabel(_REQUIREMENTS_HINT)
+        self.requirements_hint.setWordWrap(True)
+        set_role(self.requirements_hint, tone="secondary")
+        requirements_layout.addWidget(self.requirements_hint)
+        self.requirements_table = DataTable(_NO_REQUIREMENTS, action="Edit Monte Carlo settings")
+        self.requirements_table.action_requested.connect(self.edit_requirements_requested)
+        requirements_layout.addWidget(self.requirements_table, 1)
+        self.views.addTab(requirements_page, "Requirements")
         layout.addWidget(self.views, 1)
         layout.addStretch(0)  # keeps the empty state's hint at the top
         self._show(None)
@@ -158,6 +187,7 @@ class MonteCarloResultsWidget(QWidget):
             if self.plots is not None:
                 self.plots.set_result(None)
             self.table.clear()
+            self.requirements_table.clear()
             return
         self.title_label.setText(batch.scenario_name)
         days = float(batch.time_s[-1]) / 86400.0 if batch.time_s.size else 0.0
@@ -199,6 +229,8 @@ class MonteCarloResultsWidget(QWidget):
             return
         spacecraft = self.spacecraft_combo.currentText() or batch.items[0]
         requested = len(batch.runs) + len(batch.failed)
+        results = mcreq.evaluate(batch)  # none for a thermal or operations batch: the tab's empty state
+        self._fill_requirements(results)
         if batch.kind == "operations":  # a profile (decision O-18)
             spread = mcr.node_spread(batch, spacecraft)
             unit = batch.profile_units.get(spacecraft, "")
@@ -229,6 +261,8 @@ class MonteCarloResultsWidget(QWidget):
             self._fill_table(spacecraft)
             return
         spread = mcr.final_spread(batch, spacecraft)
+        judged = [result for result in results if result.max_probability is not None]
+        met = sum(1 for result in judged if result.verdict == mcreq.MET)
         self._set_tiles([
             ("Runs", f"{len(batch.runs)} of {requested}"),
             ("Failed", ", ".join(str(run) for run in batch.failed) if batch.failed else "none"),
@@ -236,7 +270,7 @@ class MonteCarloResultsWidget(QWidget):
             ("Radial spread, end", _km(spread.radial_m)),
             ("Cross-track spread, end", _km(spread.cross_track_m)),
             ("Altitude, end", f"{spread.altitude_min_m / 1e3:.0f}-{spread.altitude_max_m / 1e3:.0f} km"),
-        ])
+        ] + ([("Requirements met", f"{met} of {len(judged)}")] if judged else []))
         self.plots.set_featured_series([f"{spacecraft}.monte_carlo.{field}" for field in
                                         ("spread", "along_track_offset", "altitude", "radial_offset")])
         self.plots.show_series(f"{spacecraft}.monte_carlo.spread")
@@ -251,13 +285,36 @@ class MonteCarloResultsWidget(QWidget):
             self.tiles_row.addWidget(_stat_tile(label, value), 1)  # equal widths
 
     def _fill_table(self, spacecraft: str) -> None:
-        labels, rows = mcr.run_table(self.batch, spacecraft)
+        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind == "orbit")
         if len(self.batch.spacecraft) == 1:  # the spacecraft's name on every column says nothing
             labels = [label.removeprefix(f"{spacecraft} ") for label in labels]
-        table_rows = [Row([str(int(row[0]))] + [_number_text(value) for value in row[1:]],
-                          keys=[float(value) for value in row]) for row in rows]
-        self.table.set_table(labels, table_rows, numeric=range(len(labels)), stretch=-1)
+        text = frozenset(k for k, value in enumerate(rows[0] if rows else []) if isinstance(value, str))
+        table_rows = [Row([str(int(row[0]))] + [value if isinstance(value, str) else _number_text(value)
+                                                for value in row[1:]],
+                          keys=[value if isinstance(value, str) else float(value) for value in row], plain=text)
+                      for row in rows]
+        self.table.set_table(labels, table_rows, numeric=[k for k in range(len(labels)) if k not in text],
+                             stretch=-1)
         self.table.set_sortable(0, Qt.SortOrder.AscendingOrder)
+
+    def _fill_requirements(self, results: list) -> None:
+        """The Requirements tab: one row per requirement (the command line's
+        table), the verdict a word behind its icon."""
+        model = models.model(mcr.BOUND_CHOICE, self.batch.probability_bound)
+        self.requirements_hint.setToolTip(f"{model.title}: {model.method}\n{model.references[0]}")
+        rows = []
+        for result, cells in zip(results, mcreq.table_rows(results, len(self.batch.spacecraft) > 1)):
+            mark = _VERDICT_MARKS.get(result.verdict)
+            tips = {8: f"{model.title} at confidence {result.confidence:g}"}
+            if result.not_met_runs:
+                tips[4] = "Runs not met: " + ", ".join(str(run) for run in result.not_met_runs)
+            rows.append(Row(list(cells), tooltips=tips, plain=frozenset({0, 1, 2, 11}),
+                            keys=[cell if k in (0, 1, 2, 11) else (float(cell) if cell else -1.0)
+                                  for k, cell in enumerate(cells)],
+                            marks={11: mark} if mark is not None else {},
+                            muted=frozenset() if mark is not None else frozenset({11})))
+        self.requirements_table.set_table(list(mcreq.TABLE_HEADER), rows, numeric=range(3, 11), stretch=1)
+        self.requirements_table.set_sortable(0, Qt.SortOrder.AscendingOrder)
 
     # -- export ------------------------------------------------------------
 
@@ -269,12 +326,14 @@ class MonteCarloResultsWidget(QWidget):
 
         path = Path(path)
         spacecraft = self.spacecraft_combo.currentText() or None
-        labels, rows = mcr.run_table(self.batch, spacecraft)
+        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind == "orbit")
         with open(path, "w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
             writer.writerow(labels)
             for row in rows:
-                writer.writerow([int(row[0])] + [f"{value:.9g}" for value in row[1:]])
+                # a value a run does not have stays "nan", as before (a crashed run's offsets and outcomes)
+                writer.writerow([int(row[0])] + [value if isinstance(value, str) else f"{value:.9g}"
+                                                 for value in row[1:]])
         archive = None
         if self.folder is not None and (self.folder / "archive.provenance.json").is_file():
             try:

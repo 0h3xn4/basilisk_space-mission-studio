@@ -325,3 +325,100 @@ def test_the_scenario_editor_gives_the_dispersions_each_spacecrafts_own_values(q
     nominals = editor.monte_carlo_group.dispersion_list._nominals
     sc = scenario.spacecraft[0]
     assert nominals[sc.name] == {"dry_mass_kg": sc.dry_mass_kg, "drag_coeff": sc.drag_coeff, "srp_coeff": sc.srp_coeff}
+
+
+# -- Requirements (Monte Carlo plan A2) ----------------------------------------
+
+
+def test_the_requirements_list_shows_its_empty_state_with_add(qtbot):
+    """No requirement: the empty state with its own Add, and the list's Add
+    and Remove hidden (one Add on the page, UI-05); its Add adds one."""
+    from spacemissionstudio.gui.monte_carlo_editor import RequirementListWidget
+
+    widget = RequirementListWidget()
+    qtbot.addWidget(widget)
+    widget.set_spacecraft_names(["sat-1"])
+    assert widget.list_stack.currentWidget() is widget.empty_state
+    assert widget.add_button.isHidden() and widget.remove_button.isHidden()
+    assert widget.empty_state.button.text() == "Add requirement"
+    widget.empty_state.button.click()
+    assert len(widget.to_list()) == 1 and widget.list_stack.currentWidget() is widget.list_widget
+    assert not widget.add_button.isHidden()
+
+
+def test_a_new_requirement_has_no_limit_or_confidence_until_given(qtbot):
+    """Decision MC-5 (owner's answer Q4): the confidence is the user's, with
+    no default; nor has the limit one. A new requirement shows both "Not
+    set", the scenario's check names what is missing, and once given in its
+    form it round-trips."""
+    from spacemissionstudio.gui.monte_carlo_editor import RequirementListWidget
+
+    widget = RequirementListWidget()
+    qtbot.addWidget(widget)
+    widget.set_spacecraft_names(["sat-1", "sat-2"])
+    widget._on_add()
+    item = widget.to_list()[0]
+    assert (item.name, item.spacecraft, item.outcome) == ("R-1", "sat-1", "lowest_altitude")
+    assert item.at_least is None and item.at_most is None and item.confidence is None
+    assert widget.list_widget.item(0).text() == "R-1: sat-1 lowest altitude (limit and confidence not set)"
+    form = widget.inline.form
+    assert form.limit_spin.text() == "Not set" and form.confidence_spin.text() == "Not set"
+    assert form.limit_spin.suffix() == " km"
+
+    form.spacecraft_combo.setCurrentIndex(form.spacecraft_combo.findData("sat-2"))
+    form.outcome_combo.setCurrentIndex(form.outcome_combo.findData("lowest_battery_charge"))
+    form.limit_kind_combo.setCurrentIndex(form.limit_kind_combo.findData("at_least"))
+    form.limit_spin.setValue(20.0)
+    form.confidence_spin.setValue(0.95)
+    form.allowed_check.setChecked(True)
+    form.allowed_spin.setValue(0.01)
+    widget.inline.flush()
+    item = widget.to_list()[0]
+    assert (item.spacecraft, item.outcome, item.at_least, item.at_most) == ("sat-2", "lowest_battery_charge", 20.0,
+                                                                            None)
+    assert (item.confidence, item.max_probability) == (0.95, 0.01)
+    assert widget.list_widget.item(0).text() == "R-1: sat-2 lowest battery charge ≥ 20 W*h, confidence 0.95"
+
+
+def test_an_incomplete_requirement_is_a_problem_of_the_scenario_not_of_the_form(qtbot):
+    """The group's settings read back while a requirement is incomplete
+    (the draft and undo need them); the scenario's check refuses it, naming
+    the field."""
+    from spacemissionstudio.gui.monte_carlo_editor import MonteCarloGroupWidget
+    from spacemissionstudio.schema import GravityConfig, OrbitIC, Scenario, ScenarioValidationError, SpacecraftConfig
+
+    widget = MonteCarloGroupWidget()
+    qtbot.addWidget(widget)
+    widget.set_spacecraft_names(["sat-1"])
+    widget.requirement_list._on_add()
+    config = widget.to_dataclass()
+    assert config.requirements[0].confidence is None
+    scenario = Scenario(name="s", epoch_utc="2030-01-01T00:00:00", gravity=GravityConfig(central_body="earth"),
+                        spacecraft=[SpacecraftConfig(name="sat-1", orbit=OrbitIC(
+                            type="cartesian", position_km=[7000.0, 0.0, 0.0], velocity_km_s=[0.0, 7.5, 0.0]))],
+                        monte_carlo=config)
+    with pytest.raises(ScenarioValidationError, match="monte_carlo.requirements 'R-1': give exactly one of"):
+        scenario.validate()
+
+
+def test_the_group_round_trips_its_requirements(qtbot):
+    """A requirement "at most", with an allowed probability, and one
+    without, come back from the group as they went in."""
+    from spacemissionstudio.gui.monte_carlo_editor import MonteCarloGroupWidget
+    from spacemissionstudio.schema.scenario import MonteCarloConfig, MonteCarloRequirementConfig
+
+    widget = MonteCarloGroupWidget()
+    qtbot.addWidget(widget)
+    widget.set_spacecraft_names(["sat-1"])
+    requirements = [
+        MonteCarloRequirementConfig("R-DV", "sat-1", "delta_v", at_most=2.5, confidence=0.9, max_probability=0.05),
+        MonteCarloRequirementConfig("R-LEN", "sat-1", "run_length", at_least=72.0, confidence=0.99)]
+    widget.from_dataclass(MonteCarloConfig(enabled=True, requirements=requirements))
+    assert widget.to_dataclass().requirements == requirements
+    widget.requirement_list.list_widget.setCurrentRow(0)
+    form = widget.requirement_list.inline.form
+    assert form.limit_kind_combo.currentData() == "at_most" and form.limit_spin.value() == 2.5
+    assert form.allowed_check.isChecked() and not form.allowed_spin.isHidden()
+    assert form.limit_spin.suffix() == " m/s"
+    widget.requirement_list.inline.flush()
+    assert widget.to_dataclass().requirements == requirements  # reading the form changes nothing

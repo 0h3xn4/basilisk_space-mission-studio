@@ -131,6 +131,15 @@ given position/velocity dispersion spread is the headline Monte Carlo
 question for a mission-analysis tool, extendable later without a schema
 break (``MonteCarloConfig`` is a dataclass like everything else here).
 
+Each run also retains its outcomes (Monte Carlo plan A1, decision MC-2):
+the headline figures of Results › Overview for a single run
+(``engine.run_summary.overview_figures``), computed by
+:func:`_execute_sim` from the ``ResultSet`` the run returns and handed to
+the Controller by a retention function (:func:`_retained_outcomes`,
+``RetentionPolicy.addRetentionFunction``), which Basilisk puts in the run's
+retained ``custom`` data, in the same ``run<N>.data`` file. A figure is
+there only when the run recorded its source, as for a single run.
+
 Thread count
 ------------
 ``Controller.setThreadCount(n)`` for ``n > 1`` uses ``multiprocessing.Pool``
@@ -149,6 +158,7 @@ to ``1``.
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import gc
 import gzip
@@ -434,15 +444,64 @@ def _execute_sim(sim, allow_scripts: bool = False) -> None:
     service = sim._spacemissionstudio_service
     service.initialize()
     if runs_sequence(service.scenario.mission_sequence):
-        MissionEngine(service.scenario, service=service, allow_scripts=allow_scripts).run()
+        returned = MissionEngine(service.scenario, service=service, allow_scripts=allow_scripts).run()
     else:
-        service.run()
+        returned = service.run()
+    result = returned[0] if isinstance(returned, tuple) else returned
+    sim._spacemissionstudio_outcomes = _outcomes_or_none(result)
+
+
+# The keys of the outcomes a run retains in its custom data (RetentionPolicy).
+OUTCOMES_KEY = "spacemissionstudio_outcomes"
+OUTCOME_UNITS_KEY = "spacemissionstudio_outcome_units"
+
+
+def run_outcomes(result) -> tuple[dict[str, float], dict[str, str]]:
+    """A run's outcomes and their units (decision MC-2): the figures of
+    ``engine.run_summary.overview_figures`` by key, ``"<spacecraft>.<outcome>"``
+    (``schema.scenario.MONTE_CARLO_OUTCOMES``) or ``"run_length"``. A run
+    whose altitude does not vary has one figure, the altitude; it is kept
+    as both the lowest and the highest altitude, so every run has the same
+    keys."""
+    from . import run_summary
+
+    values: dict[str, float] = {}
+    units: dict[str, str] = {}
+    for figure in run_summary.overview_figures(result):
+        owner, _, name = figure.key.rpartition(".")
+        keys = [f"{owner}.lowest_altitude", f"{owner}.highest_altitude"] if name == "altitude" else [figure.key]
+        for key in keys:
+            values[key] = float(figure.value)
+            units[key] = figure.unit
+    return values, units
+
+
+def _outcomes_or_none(result) -> tuple[dict, dict]:
+    """:func:`run_outcomes` of ``result``; none (logged) when it cannot be
+    read: the run itself succeeded, and a requirement then counts it "not
+    evaluated" rather than losing the run."""
+    if result is None:
+        return {}, {}
+    try:
+        return run_outcomes(result)
+    except Exception:  # noqa: BLE001 -- a figure that cannot be read must not fail a run that succeeded
+        _logger.exception("Monte Carlo run finished, but its outcomes could not be read")
+        return {}, {}
+
+
+def _retained_outcomes(sim) -> dict:
+    """The retention function (``RetentionPolicy.addRetentionFunction``):
+    the outcomes :func:`_execute_sim` stored on ``sim``. Module-level, so it
+    pickles for ``thread_count > 1``."""
+    values, units = getattr(sim, "_spacemissionstudio_outcomes", ({}, {}))
+    return {OUTCOMES_KEY: dict(values), OUTCOME_UNITS_KEY: dict(units)}
 
 
 def _default_retention_policy(scenario: Scenario) -> RetentionPolicy:
     policy = RetentionPolicy()
     for sc in scenario.spacecraft:
         policy.addMessageLog(f"{sc.name}.scState", ["r_BN_N", "v_BN_N"])
+    policy.addRetentionFunction(_retained_outcomes)
     return policy
 
 
@@ -666,37 +725,59 @@ def _drawn_values(params: dict[str, str], scenario: Scenario, mu: float) -> dict
     return drawn
 
 
+def _run_params(archive_dir: Path, run: int) -> dict:
+    """A run's ``run<N>.json`` (JSON, written by the Controller before the
+    run starts: its draws and seeds), or {} when it has none or cannot be read."""
+    path = archive_dir / f"run{run}.json"
+    try:
+        params = json.loads(path.read_text()) if path.is_file() else {}
+    except (OSError, ValueError):
+        return {}
+    return params if isinstance(params, dict) else {}
+
+
 def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
                   failures: list[int]) -> monte_carlo_results.MonteCarloBatch:
     """Every successful run's retained position and velocity, on a shared,
-    strided time grid, and the values it drew -- read back from the files
-    :func:`run_monte_carlo` has just had the Controller write into
-    ``archive_dir``. Only ever called on that call's own output: the run
-    files are pickles (security analysis S-04)."""
+    strided time grid, the values it drew and its outcomes (:func:`run_outcomes`)
+    -- read back from the files :func:`run_monte_carlo` has just had the
+    Controller write into ``archive_dir``. Only ever called on that call's own
+    output: the run files are pickles (security analysis S-04).
+
+    A run that did not finish is failed; what it drew is kept from its
+    ``run<N>.json`` (JSON, never a pickle) as ``failed_drawn`` (Monte Carlo
+    plan A4). The batch keeps the scenario's requirements (A2) and the models
+    of its statistics."""
     archive_dir = Path(archive_dir)
     mu = _central_body_mu(scenario)
     names = [sc.name for sc in scenario.spacecraft]
-    runs, raw, drawn = [], [], []
+    runs, raw, drawn, outcomes, units = [], [], [], [], {}
     for run in range(num_runs):
         data_path = archive_dir / f"run{run}.data"
         if run in failures or not data_path.is_file():
             continue
         try:
             with gzip.open(data_path) as handle:
-                messages = pickle.load(handle)["messages"]  # noqa: S301 -- written by this call (see docstring)
+                retained = pickle.load(handle)  # noqa: S301 -- written by this call (see docstring)
+            messages = retained["messages"]
         except (OSError, EOFError, pickle.UnpicklingError, KeyError):
             continue  # cut short by a cancelled batch (audit G3): counted as not finished
         raw.append({name: (np.asarray(messages[f"{name}.scState.r_BN_N"], dtype=float),
                            np.asarray(messages[f"{name}.scState.v_BN_N"], dtype=float)) for name in names})
-        params_path = archive_dir / f"run{run}.json"
-        params = json.loads(params_path.read_text()) if params_path.is_file() else {}
-        drawn.append(_drawn_values(params, scenario, mu))
+        drawn.append(_drawn_values(_run_params(archive_dir, run), scenario, mu))
+        custom = retained.get("custom") or {}
+        outcomes.append({str(key): float(value) for key, value in (custom.get(OUTCOMES_KEY) or {}).items()})
+        units.update({str(key): str(unit) for key, unit in (custom.get(OUTCOME_UNITS_KEY) or {}).items()})
         runs.append(run)
     failed = sorted(set(failures) | {run for run in range(num_runs) if run not in runs})
+    failed_drawn = {run: _drawn_values(_run_params(archive_dir, run), scenario, mu) for run in failed}
     statistic = registry.value(monte_carlo_results.SPREAD_CHOICE, scenario)
+    extra = {"outcomes": outcomes if any(outcomes) else [], "outcome_units": units, "failed_drawn": failed_drawn,
+             "requirements": [dataclasses.asdict(r) for r in scenario.monte_carlo.requirements],
+             "probability_bound": registry.value(monte_carlo_results.BOUND_CHOICE, scenario)}
     if not runs:
         return monte_carlo_results.MonteCarloBatch(scenario.name, scenario.gravity.central_body, np.zeros(0),
-                                                   [], failed, {}, {}, [], scenario.epoch_utc, statistic)
+                                                   [], failed, {}, {}, [], scenario.epoch_utc, statistic, **extra)
     samples = min(rv[0].shape[0] for run_data in raw for rv in run_data.values())
     stride = monte_carlo_results.stride_for(samples)
     rows = slice(0, samples, stride)
@@ -704,4 +785,5 @@ def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
     positions = {name: np.stack([run_data[name][0][rows, 1:4] for run_data in raw]) for name in names}
     velocities = {name: np.stack([run_data[name][1][rows, 1:4] for run_data in raw]) for name in names}
     return monte_carlo_results.MonteCarloBatch(scenario.name, scenario.gravity.central_body, time_s, runs,
-                                               failed, positions, velocities, drawn, scenario.epoch_utc, statistic)
+                                               failed, positions, velocities, drawn, scenario.epoch_utc, statistic,
+                                               **extra)

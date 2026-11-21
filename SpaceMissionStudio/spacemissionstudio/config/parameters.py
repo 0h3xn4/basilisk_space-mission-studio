@@ -563,6 +563,11 @@ register(
               "deviation of the runs' offsets from their mean.", "SpaceMissionStudio's own choice",
               "The population standard deviation is the one the tool used before the choice existed. No "
               "derivation recorded.", kind="model", choices=models.names("monte_carlo.spread_statistic")),
+    Parameter("monte_carlo.probability_bound", "clopper_pearson", "[-]",
+              "The method of the upper bound on the probability of not meeting a Monte Carlo requirement.",
+              "C. J. Clopper and E. S. Pearson, Biometrika 26(4), 1934, pp. 404-413 (the exact binomial bound)",
+              "The only method declared (decision MC-5): exact, with no table and no new dependency.",
+              kind="model", choices=models.names("monte_carlo.probability_bound")),
 )
 
 # -- analyses built on the 3D model (analyses/) ------------------------------------------------

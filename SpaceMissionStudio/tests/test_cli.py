@@ -1117,6 +1117,62 @@ def test_a_monte_carlo_batch_with_a_failed_run_exits_3(tmp_path, capsys, monkeyp
     assert "FAILED runs: [1]" in capsys.readouterr().err
 
 
+def _write_monte_carlo_scenario(path, requirements):
+    from spacemissionstudio.schema import MonteCarloConfig, MonteCarloRequirementConfig, SimSettings
+
+    return _write_scenario(path, sim_settings=SimSettings(duration_days=60.0 / 86400.0, dynamics_task_rate_s=10.0),
+                           monte_carlo=MonteCarloConfig(enabled=True, num_runs=2, requirements=[
+                               MonteCarloRequirementConfig(**fields) for fields in requirements]))
+
+
+@pytest.mark.requires_basilisk
+@pytest.mark.parametrize("limit_km, expected", [(0.0, 0), (1.0e6, 5)])
+def test_monte_carlo_exits_5_when_a_requirement_is_not_shown_met(tmp_path, capsys, limit_km, expected):
+    """Decision MC-10 (the owner's answer Q5, provisional): a batch that ran
+    but does not show a requirement with an allowed probability met exits
+    5 (ICD-02, "its check did not pass"); one that shows it met exits 0.
+    The command prints each outcome's range and the requirements table."""
+    path = tmp_path / "scenario.json"
+    _write_monte_carlo_scenario(path, [{"name": "R-ALT", "spacecraft": "sat-1", "outcome": "lowest_altitude",
+                                        "at_least": limit_km, "confidence": 0.5, "max_probability": 0.9}])
+    rc = cli.main(["monte-carlo", str(path), "--archive-dir", str(tmp_path / "mc")])
+    out, err = capsys.readouterr()
+    assert rc == expected == cli.EXIT_CHECK_FAILED * (expected == 5)
+    assert "Outcomes over the runs:" in out and "sat-1 lowest altitude" in out
+    assert "Requirements (monte_carlo.probability_bound: clopper_pearson" in out
+    row = next(line for line in out.splitlines() if line.strip().startswith("R-ALT"))
+    if expected == 0:
+        assert row.rstrip().endswith("met") and "NOT SHOWN MET" not in err
+    else:
+        assert row.rstrip().endswith("not shown") and "NOT SHOWN MET: R-ALT" in err
+
+
+@pytest.mark.requires_basilisk
+def test_a_failed_run_exits_3_before_a_requirement_exits_5(tmp_path, capsys, monkeypatch):
+    """A failed run (3) comes first: the requirement, not shown met as the
+    crashed run counts against it, does not change the status (MC-10)."""
+    from spacemissionstudio.engine import monte_carlo
+
+    real = monte_carlo._execute_sim
+    calls = []
+
+    def second_run_crashes(sim, allow_scripts=False):
+        calls.append(1)
+        if len(calls) == 2:
+            raise RuntimeError("forced crash")
+        return real(sim, allow_scripts=allow_scripts)
+
+    monkeypatch.setattr(monte_carlo, "_execute_sim", second_run_crashes)
+    path = tmp_path / "scenario.json"
+    _write_monte_carlo_scenario(path, [{"name": "R-ALT", "spacecraft": "sat-1", "outcome": "lowest_altitude",
+                                        "at_least": 0.0, "confidence": 0.5, "max_probability": 0.1}])
+    assert cli.main(["monte-carlo", str(path), "--archive-dir", str(tmp_path / "mc")]) == 3
+    out, err = capsys.readouterr()
+    assert "FAILED runs: [1]" in err and "NOT SHOWN MET" not in err
+    row = next(line for line in out.splitlines() if line.strip().startswith("R-ALT"))
+    assert row.split("at least 0 km")[1].split()[:3] == ["2", "1", "1"]  # evaluated, not met, of which crashed
+
+
 @pytest.mark.requires_basilisk
 def test_kernels_status_with_a_missing_kernel_exits_2(capsys, monkeypatch):
     """Audit 3.2: a missing support-data file is a missing component (2 in

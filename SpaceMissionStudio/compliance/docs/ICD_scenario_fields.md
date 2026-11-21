@@ -20,7 +20,7 @@ Top-level scenario object (the JSON file's root).
 | `mission_sequence` | list | `[]` | list[Command] |
 | `fsw_exports` | list | `[]` | list[FswExportRecord], at most one per spacecraft |
 | `description` | str | `''` |  |
-| `schema_version` | int | `5` |  |
+| `schema_version` | int | `6` |  |
 | `config_file` | str / None | `None` |  |
 | `configuration` | object | `None` |  |
 | `value_marks` | list | `[]` | list[ValueMark] |
@@ -441,6 +441,21 @@ Batch execution settings -- see ``engine/monte_carlo.py``. ``thread_count`` > 1 
 | `thread_count` | int | `1` |  |
 | `verbose` | bool | `False` |  |
 | `dispersions` | list | `[]` | list[DispersionConfig] |
+| `requirements` | list | `[]` | list[MonteCarloRequirementConfig] |
+
+## MonteCarloRequirementConfig
+
+A requirement on one outcome of every Monte Carlo run (decision MC-4): the batch counts the runs that do not meet it and bounds the probability of not meeting it (``engine.monte_carlo_requirements``).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` | the requirement's label, unique in the list, e.g. "R-ALT-01" |
+| `spacecraft` | str | `required` | must match a SpacecraftConfig.name in this scenario |
+| `outcome` | str | `required` | one of MONTE_CARLO_OUTCOMES |
+| `at_least` | float / None | `None` | a run meets it with the outcome at or above this, in the outcome's unit |
+| `at_most` | float / None | `None` | a run meets it with the outcome at or below this, in the outcome's unit |
+| `confidence` | float / None | `None` | [-] the bound's confidence, in (0, 1); required, no default (decision MC-5) |
+| `max_probability` | float / None | `None` | [-] optional: the allowed probability of not meeting it, in [0, 1) |
 
 ## MountConfig
 

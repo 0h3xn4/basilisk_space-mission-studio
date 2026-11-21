@@ -81,7 +81,8 @@ from .schema.scenario import PHASING_CONTROL_LAWS, ROE_CONTROL_LAWS
 # input (1), a missing component or usage (2) or a failed run (3): ICD-02.
 EXIT_INTERNAL_ERROR = 4
 # The command ran and its check did not pass (a flight-software export no
-# longer current, SIL residuals over --max-error): ICD-02. In 1.3.1 and earlier these
+# longer current, SIL residuals over --max-error, a Monte Carlo requirement
+# not shown met): ICD-02. In 1.3.1 and earlier these
 # returned 2, the status of a missing component or a usage error (audit 3.2).
 EXIT_CHECK_FAILED = 5
 
@@ -595,17 +596,62 @@ def cmd_monte_carlo(args: argparse.Namespace) -> int:
         return 3
 
     print(f"Archived results to {args.archive_dir}")
-    from .engine import monte_carlo_results
+    from .engine import monte_carlo_requirements, monte_carlo_results
 
+    not_shown = []
     if monte_carlo_results.has_summary(args.archive_dir):
         batch = monte_carlo_results.load(args.archive_dir)
         for line in monte_carlo_results.summary_lines(batch) + [monte_carlo_results.statistic_line(batch)]:
             print(f"  {line}")
+        _print_outcome_ranges(batch)
+        results = monte_carlo_requirements.evaluate(batch)
+        _print_requirements(batch, results)
+        not_shown = monte_carlo_requirements.not_shown_met(results)
     if failures:
         print(f"FAILED runs: {failures}", file=sys.stderr)
         return 3  # runs failed (ICD-02); 4 in 1.3.1 and earlier, the status of an internal error (audit 3.2)
     print(f"All {scenario.monte_carlo.num_runs} run(s) succeeded.")
+    if not_shown:  # the batch ran; its check did not pass (decision MC-10)
+        print(f"NOT SHOWN MET: {', '.join(result.name for result in not_shown)} (the upper bound is above the "
+              "allowed probability)", file=sys.stderr)
+        return EXIT_CHECK_FAILED
     return 0
+
+
+def _print_table(header: tuple, rows: list, left: int = 1) -> None:
+    """A text table: the first ``left`` columns left-aligned, the others
+    right-aligned (numbers), two spaces apart."""
+    table = [tuple(header)] + [tuple(row) for row in rows]
+    widths = [max(len(row[k]) for row in table) for k in range(len(header))]
+    for row in table:
+        print("  " + "  ".join(cell.ljust(w) if k < left else cell.rjust(w)
+                               for k, (cell, w) in enumerate(zip(row, widths))).rstrip())
+
+
+def _print_outcome_ranges(batch) -> None:
+    """Each outcome's lowest and highest value over the runs (Monte Carlo
+    plan A1): a short table, not a sentence."""
+    from .engine import monte_carlo_results
+
+    ranges = monte_carlo_results.outcome_ranges(batch)
+    if not ranges:
+        return
+    print("  Outcomes over the runs:")
+    _print_table(("Outcome", "Lowest", "Highest", "Unit"),
+                 [(label, f"{low:.6g}", f"{high:.6g}", unit) for label, low, high, unit in ranges])
+
+
+def _print_requirements(batch, results) -> None:
+    """The requirements table (Monte Carlo plan A2)."""
+    from .engine import monte_carlo_requirements
+
+    if not results:
+        return
+    model = batch.probability_bound
+    print(f"  Requirements ({monte_carlo_requirements.BOUND_CHOICE}: {model}; a crashed run counts as not meeting "
+          "every requirement):")
+    _print_table(monte_carlo_requirements.TABLE_HEADER,
+                 monte_carlo_requirements.table_rows(results, len(batch.spacecraft) > 1), left=3)
 
 
 def _save(scenario, path, command: str) -> None:
@@ -2484,7 +2530,11 @@ def build_parser() -> argparse.ArgumentParser:
                                   "bundles you trust and have read)")
     p_reproduce.set_defaults(func=cmd_reproduce)
 
-    p_mc = subparsers.add_parser("monte-carlo", help="run a Monte Carlo batch and archive retained results")
+    p_mc = subparsers.add_parser(
+        "monte-carlo", help="run a Monte Carlo batch and archive retained results",
+        description="Run a Monte Carlo batch, archive its retained results and print each outcome's range over "
+                    "the runs and the scenario's requirements. Exit status 3 when a run failed; else 5 when a "
+                    "requirement with an allowed probability is not shown met.")
     p_mc.add_argument("scenario", type=Path)
     p_mc.add_argument("--archive-dir", type=Path, default=Path("monte_carlo_results"),
                        help="directory to archive per-run parameters and retained data to (empty, or an earlier "

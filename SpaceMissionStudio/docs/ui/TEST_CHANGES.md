@@ -2671,3 +2671,25 @@ segmentation fault in
 (Linux) and an access violation in `_SpaceWeatherWarmUp` (Windows).
 
 Added: `tests/gui/test_background_threads.py` (9 tests).
+
+## Monte Carlo phase A, part 1: outcomes, crashed runs, requirements (2026-11-21)
+
+One GUI test changed only by how it reaches a widget, and three tests
+outside `tests/gui/` changed; none is weakened. Each change follows the
+new scenario schema version, a new model or a new dialog class, as the
+step to schema version 5 (B-01) did.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/test_migrations.py::test_the_step_from_4_to_5_only_sets_the_version` | `migrate()` of a version 4 file gives version 5, and 5 is `CURRENT_SCHEMA_VERSION` | the step itself (`MIGRATIONS[4]`) gives 5, and `migrate()` gives `CURRENT_SCHEMA_VERSION` (now 6); the other assertions (no change recorded, the file opens as the template) are as before | the current version is 6; the step from 4 to 5 is checked as before, and stricter: on its own |
+| `tests/test_model_registry.py` (its `_PAGES` table) | five choices | six: `monte_carlo.probability_bound`, on `docs/models/monte-carlo-statistics.md` | the table lists every choice; `test_every_model_is_declared_with_what_a_reader_needs` checks the new model with every rule it checks the others with |
+| `tests/gui/test_dialogs_fit_the_screen.py` (its `_FACTORIES` table) | no entry for `monte_carlo_editor._RequirementEditorDialog` | an entry that builds it for one spacecraft and a new requirement | `test_every_dialog_class_is_checked` asks for an entry for every dialog class; the new form is then checked to fit a 1280 x 720 screen like the others |
+| `tests/test_config.py` (its `_MODEL_CASES` table) | no case for `monte_carlo.probability_bound` | `test_monte_carlo_requirements.py::test_a_batch_reads_its_bound_and_refuses_one_it_does_not_know` | every parameter needs a case that sets it (`test_every_parameter_has_a_case_that_sets_it`) |
+
+Added: `tests/test_monte_carlo_requirements.py` (12 tests, 44 with their
+parameters); in `tests/test_monte_carlo.py` 5 tests, in
+`tests/test_monte_carlo_results.py` 2, in `tests/test_scenario_schema.py`
+4 (13 with parameters), in `tests/test_migrations.py` 1, in
+`tests/test_cli.py` 2 (3 with parameters), in
+`tests/gui/test_monte_carlo_editor.py` 4 and in
+`tests/gui/test_monte_carlo_results_widget.py` 4.

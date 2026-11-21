@@ -1848,9 +1848,49 @@ whenever the scenario has Monte Carlo on, or a batch is open):
   time. Offsets are measured along the orbit: "along-track" is how far
   a run leads or trails the others.
 * **Runs:** a table of what each run drew (semi-major axis, drag
-  coefficient, mass, ...) and where it ended. Click a column to sort,
-  e.g. to see which drawn value goes with the largest offset; **Export
-  table CSV...** saves it.
+  coefficient, mass, ...), where it ended, and its outcomes: the figures
+  Results › Overview shows for a single run (run length, orbital period,
+  lowest and highest altitude, delta-V, lowest battery charge, passes,
+  ...), each only when the run recorded what it comes from. A crashed
+  run is listed too, with what it drew, the status "crashed" and no
+  outcomes, so you can see which inputs made it fail (runs stopped by
+  **Cancel** are not crashed). Click a column to sort, e.g. to see which
+  drawn value goes with the largest offset or the lowest altitude;
+  **Export table CSV...** saves it.
+* **Requirements:** each requirement of the scenario judged on the runs
+  (below). With none, the tab says where to add them.
+
+**Requirements.** Under the dispersions on the **Monte Carlo** page,
+**Requirements** lists limits on one outcome of every run, e.g. "the
+lowest altitude of sat-1 at least 400 km". **Add requirement** adds one
+and opens its form: the name, the spacecraft, the outcome, the limit
+(**At least** or **At most**, in the outcome's unit), the **Confidence**
+of the bound and, with **Judge against an allowed probability**, the
+probability of not meeting it that you accept. The limit and the
+confidence start **Not set**: there is no default, you choose them, and
+the scenario is not valid until you do (the Problems panel says which
+field). After the batch, the **Requirements** tab shows per requirement:
+
+* **Evaluated** (N): the runs judged: those that recorded the outcome,
+  and the crashed runs. A run that did not record the outcome is **Not
+  evaluated** and not in N.
+* **Not met** (k), and **Of which crashed**: a crashed run has no
+  outcome and counts as not meeting every requirement.
+* **Estimate**: k/N, and **Upper bound**: the exact (Clopper-Pearson)
+  upper bound on the probability of not meeting the requirement, at its
+  confidence ([Monte Carlo statistics](docs/models/monte-carlo-statistics.md)).
+* **Verdict**, with an allowed probability: **met** when the upper bound
+  is at or below it, else **not shown**. A tile counts the requirements
+  met.
+
+Read the bound, not only the estimate: 20 runs without a failure give
+an estimate of 0, but at a confidence of 0.95 they show only that the
+probability of failure is below 0.139. More runs lower the bound. The
+**Runs** table's **Meets all requirements** says, per run, yes, no or
+not evaluated. On the command line, `spacemissionstudio monte-carlo`
+prints each outcome's lowest and highest value over the runs and the
+requirements table, and exits with status 5 when a requirement with an
+allowed probability is not shown met (3 when a run failed comes first).
 
 **Open Monte Carlo Results...** (the Run area) shows a batch you ran earlier, from
 the folder you saved it in. It reads only the summary the batch wrote

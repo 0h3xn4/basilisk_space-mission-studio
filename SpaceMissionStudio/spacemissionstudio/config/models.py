@@ -172,6 +172,34 @@ register(
           "monte_carlo"),
 )
 
+_BOUND = "monte_carlo.probability_bound"
+
+register(
+    Model(_BOUND, "clopper_pearson", "Clopper-Pearson exact upper bound",
+          "With N runs evaluated and k of them not meeting the requirement, the estimate is k/N and the upper "
+          "bound at confidence C is the probability p at which the binomial probability of k or fewer failures "
+          "in N runs, sum over i = 0..k of C(N, i) p^i (1 - p)^(N - i), equals 1 - C. It is found by bisection on "
+          "that sum (log-gamma for the binomial coefficients). For k = 0 it is 1 - (1 - C)^(1/N); for k = N it is "
+          "1.",
+          ("N, the runs evaluated against the requirement: the successful runs that recorded its outcome and the "
+           "crashed runs [-]", "k, the runs that do not meet it, crashed runs included [-]",
+           "C, the requirement's confidence (monte_carlo.requirements[].confidence) [-]"),
+          ("The Requirements table's estimate and upper bound", "Its verdict against the allowed probability "
+           "(max_probability)", "The command line's requirements table and its exit status 5"),
+          ("The runs are independent and each fails with the same probability p: a binomial count. Basilisk's "
+           "controller draws each run's dispersions and seeds independently.",
+           "One-sided: an upper bound only, as a requirement asks how likely failure can be at most.",
+           "Exact, hence conservative: the true coverage is at least C, more for small N.",
+           "A crashed run counts as not meeting every requirement (decision MC-6); a successful run without the "
+           "outcome is left out of N."),
+          ("C. J. Clopper and E. S. Pearson, The use of confidence or fiducial limits illustrated in the case of "
+           "the binomial, Biometrika 26(4), 1934, pp. 404-413.",),
+          ("tests/test_monte_carlo_requirements.py::test_the_bound_for_no_failure_is_the_closed_form",
+           "tests/test_monte_carlo_requirements.py::test_the_bound_agrees_with_the_beta_integral_computed_exactly",
+           "tests/test_monte_carlo_requirements.py::test_the_bound_grows_with_failures_and_confidence"),
+          "monte_carlo"),
+)
+
 # -- Propellant budget margin policies (engine.propellant_budget) ------------------------------
 
 _MARGINS = "propellant_budget.margin_policy"

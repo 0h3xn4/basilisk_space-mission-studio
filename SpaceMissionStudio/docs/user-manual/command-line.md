@@ -34,7 +34,7 @@ with a non-zero status and prints `ERROR:` or `INVALID:` with the reason.
 
 ```console
 $ spacemissionstudio validate spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json
-OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 5, epoch 2030-01-01T08:30:00
+OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 6, epoch 2030-01-01T08:30:00
 ```
 
 Useful `run` options:
@@ -81,7 +81,7 @@ run records them (`scenario_file_migrations`):
 
 ```console
 $ spacemissionstudio validate old.json
-OK: 'old' -- 1 spacecraft, schema version 5, epoch 2030-01-01T00:00:00
+OK: 'old' -- 1 spacecraft, schema version 6, epoch 2030-01-01T00:00:00
 MIGRATED: schema 1 -> 2: space_weather.source 'celestrak' -> 'synthetic'
 MIGRATED: schema 2 -> 3: space_weather.source 'synthetic' -> 'bundled'
 ```

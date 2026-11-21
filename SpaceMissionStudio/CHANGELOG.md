@@ -8,6 +8,50 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Added
+
+- **Monte Carlo batches can now tell you whether a requirement is met,
+  and how sure you can be.** Under Scenario › Monte Carlo you can list
+  requirements such as "the lowest altitude stays at least 400 km" or
+  "delta-V stays at most 2 m/s", each with the confidence you want and,
+  if you like, the probability of failure you can accept. After the
+  batch, the new Requirements tab of Results › Monte Carlo shows for
+  each one how many runs were judged, how many missed it, the observed
+  rate, and an exact upper bound on the true rate at your confidence
+  (the Clopper-Pearson bound). With an allowed probability you get a
+  plain verdict, "met" or "not shown", and a tile counts the
+  requirements met. The bound sits right next to the estimate on
+  purpose: twenty runs without a single failure still only show a
+  failure rate below about 14 % at 95 % confidence. There is no default
+  confidence: you choose it per requirement. `spacemissionstudio
+  monte-carlo` prints the same table and exits with status 5 when a
+  requirement is not shown met, so a script can tell "it ran but does
+  not meet its requirement" from "a run failed" (still status 3).
+- **Every Monte Carlo run now keeps its headline figures.** Each run
+  records what Results › Overview would show for it on its own: run
+  length, orbital period, lowest and highest altitude, delta-V,
+  propellant used, mean semi-major axis change, lowest link margin,
+  lowest battery charge, passes, contact time, eclipses, eclipse time
+  and data downlinked, whenever the run recorded what the figure comes
+  from. The Runs table and its CSV export gain a column per figure, and
+  the command line prints each figure's lowest and highest value over
+  the runs. Measured on the 3-day template 25, this adds a few
+  milliseconds to a case of about 4.5 seconds.
+- **A crashed run now shows what it drew.** The Runs table lists crashed
+  runs with their drawn values and the status "crashed", so you can see
+  which inputs made a case fail. Cases you stop by cancelling a batch
+  are not listed as crashed.
+
+### Changed
+
+- **The scenario file is at schema version 6**, which adds the optional
+  Monte Carlo requirements. Every older file still opens, unchanged.
+  A file saved by this version, with or without requirements, does not
+  open in 2.13.1 or earlier. No computed result changes, and batches
+  saved by earlier versions open as before.
+
 ## 2.13.1 (2026-11-20)
 
 SpaceMissionStudio 2.13.1 is a small patch on top of 2.13.0, and its

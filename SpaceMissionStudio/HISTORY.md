@@ -20167,3 +20167,115 @@ runs without a failure) is an example for a user who picks 0.95, from
 the closed form 1 - (1 - C)^(1/N).
 
 **Open questions** for the owner are in the plan, section 9 (Q1 to Q8).
+
+## Monte Carlo phase A, part 1: outcomes, crashed runs, requirements (2026-11-21)
+
+Items A1, A4 and A2 of `docs/developer/monte-carlo-plan.md`, on branch
+`feature/monte-carlo-outcomes` (based on the plan's branch, #305). The
+owner answered Q1, Q2, Q4, Q5 and Q8 for this work; `docs/DECISIONS.md`
+records the answers as provisional decisions MC-11 to MC-15, and the
+choices of the build as MC-16. Commits name SRS-F-13.
+
+**A1, outcomes per run.** `_execute_sim` keeps the `ResultSet` that the
+run returns and stores its outcomes on the simulation object:
+`run_outcomes` reads `run_summary.overview_figures`, keyed
+`<spacecraft>.<outcome>` (`run_length` is the run's). A run whose
+altitude does not vary has one figure, "altitude"; the run keeps it as
+both the lowest and the highest altitude. A module-level retention
+function (`RetentionPolicy.addRetentionFunction`, Basilisk 2.12.0) gives
+them to the controller, which writes them into the run's `custom` data
+in `run<N>.data`. `collect_batch` reads them back; the summary keeps
+`outcomes` and `outcome_units` (optional keys; format 1). The Runs table
+and its CSV get a column per outcome, and `monte-carlo` prints each
+outcome's lowest and highest value as a short table. `run_table`'s
+default is unchanged; `outcomes=True` adds the columns.
+
+**A4, draws of crashed runs.** `collect_batch` reads the `run<N>.json` of
+each failed run (JSON, never a pickle) and keeps its draws as
+`failed_drawn`. The Runs table lists those runs with their draws, the
+status "crashed" and no outcomes. The GUI's summary of a cancelled batch
+clears them: an unfinished case did not fail.
+
+**A2, requirements.** The scenario gets `monte_carlo.requirements`
+(`MonteCarloRequirementConfig`: name, spacecraft, outcome, `at_least` or
+`at_most`, `confidence`, optional `max_probability`), at schema version 6
+with a migration that only sets the version. The 36 templates changed
+only in their version line; `tests/data/scenario_hashes.json` was
+recorded again (72 hashes), and each new text with the version set back
+to 5 gives the old hash (`docs/changes.md`). The new module
+`engine/monte_carlo_requirements.py` counts, per requirement, N (the
+runs with the outcome and the crashed runs), k (the runs that do not
+meet it, crashed runs included, and how many of them crashed), the runs
+not evaluated, k/N, and the one-sided Clopper-Pearson upper bound at the
+requirement's confidence, by bisection on the binomial sum (the model
+`monte_carlo.probability_bound`, `clopper_pearson`). With an allowed
+probability, the verdict is "met" or "not shown". Results › Monte Carlo
+has a Requirements tab (a `DataTable`, its empty state with the action
+that opens Scenario › Monte Carlo), a tile "Requirements met", and the
+Runs table's "Meets all requirements". Scenario › Monte Carlo has a
+Requirements list with its own empty state and form; a new requirement
+starts with the limit and the confidence "Not set" (no default), and the
+scenario's check names what is missing. `monte-carlo` prints the table
+and exits with 5 when a requirement with an allowed probability is not
+shown met; 3 (a run failed) comes first. 5 was checked first: ICD-02 and
+`cli.py` give it to "the command ran and its check did not pass" only.
+
+**How the bound was checked.** For k = 0 the bisection gives the closed
+form 1 - (1 - C)^(1/N) to 1e-12, for N from 1 to 1000 and C from 0.5 to
+0.99. As a second, independent check, the regularized incomplete beta
+function I_p(k + 1, N - k), the bound's other form, is computed exactly
+in rational numbers at the bound the code returns (the integral of
+t^k (1 - t)^(N - k - 1), expanded by the binomial theorem) and equals C
+to 1e-10 for seven cases. SciPy is not in the `dev` extra, and no table
+of the bound was read here, so no tabulated value is used. The binomial
+sum is checked against the same sum in rational numbers on both sides of
+its mode.
+
+**Found on the way.**
+- Basilisk's data writer writes one file per key of the custom data
+  (`spacemissionstudio_outcomes.data`, `..._outcome_units.data`). A
+  folder with them was "other", so `--overwrite` refused to replace an
+  earlier batch (`test_an_earlier_batch_is_replaced_only_with_overwrite`
+  failed). They are now batch files.
+- `widgets.EmptyStack` follows its list model's `modelReset`, which a
+  `QListWidget` emits as it is destroyed. As the first widget of a test
+  process (`test_group_default_state` run alone), the reset reached the
+  half destroyed stack: "Slot 'EmptyStack::' not found". The same
+  happens on `develop` with a bare `EmptyStack` under a `FormGrid` as the
+  first test of a process. The Requirements list switches its empty
+  state itself; `EmptyStack` is not changed here (MC-16).
+
+- The first version connected the Requirements tab's action to a
+  lambda that held the main window, so a closed window stayed alive
+  (`test_app_shell.py::test_a_closed_window_is_freed` and
+  `test_menu_bar.py::test_the_window_is_freed_as_soon_as_it_is_dropped`
+  failed in the full suite). It is a bound method now. The new form also
+  needed its entry in `test_dialogs_fit_the_screen.py`.
+- `test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+  fails in this container when its whole module runs (511 px against
+  509 px), on `develop` too, and passes alone. It is not from this work
+  and is left as it is.
+
+**Time per case (template 25, risk R4).** Measured in this container
+(4 CPUs, Python 3.14, Basilisk 2.12.0): batches of 5 cases of the 3-day
+template 25, one process, alternately with `develop`'s code and with
+this branch's, twice each. `develop`: 4.695 and 4.627 s per case. This
+branch: 4.466 and 4.409 s per case. The difference is within the
+spread between batches, so the outcomes add no measurable time to a
+batch. Measured directly, `run_outcomes` of a 3-day run of template 25
+(15 series, 7 outcomes) takes 1.9 to 7.4 ms over five calls, against
+3.2 s for the run itself. No target was set (R4).
+
+**Golden files.** Byte-identical: `tests/test_golden_outputs.py` passes,
+the Monte Carlo goldens of templates 09 and 25 (`final_spread`,
+`run_table`'s default, `summary_lines`) included.
+
+**Tests.** New: `tests/test_monte_carlo_requirements.py` (12 tests, 44
+with parameters). Added to `tests/test_monte_carlo.py` (the outcomes
+equal a plain run of each case's draws for a 2-run batch of template
+25; outcomes from several processes; the steady altitude; a forced crash
+keeps its draws; a cancelled batch has no crashed runs),
+`tests/test_monte_carlo_results.py`, `tests/test_scenario_schema.py`,
+`tests/test_migrations.py` (5 to 6), `tests/test_cli.py` (exit 0, 3 and
+5) and the two GUI test files. Four existing tests changed
+(`docs/ui/TEST_CHANGES.md`).

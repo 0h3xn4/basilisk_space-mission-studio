@@ -2716,3 +2716,70 @@ def test_the_rf_link_docstring_describes_the_model_that_is_run():
     assert "does NOT feed back" not in text and "no atmosphere/rain/pointing-loss" not in text
     for named in ("antenna_beamwidth_deg", "antenna_pattern", "DataHandlingConfig", "data_rate_bps"):
         assert named in text, named
+
+
+# -- Monte Carlo requirements (schema 6, Monte Carlo plan A2) -----------------
+
+def _with_requirement(**fields):
+    from spacemissionstudio.schema import MonteCarloRequirementConfig
+
+    values = {"name": "R-ALT-01", "spacecraft": "sat-1", "outcome": "lowest_altitude", "at_least": 400.0,
+              "confidence": 0.95} | fields
+    sc = _minimal_scenario()
+    sc.monte_carlo = MonteCarloConfig(enabled=True, requirements=[MonteCarloRequirementConfig(**values)])
+    return sc
+
+
+def test_a_requirement_has_its_fields_and_round_trips():
+    """A requirement names a spacecraft, an outcome, one limit, the
+    confidence of its bound and, optionally, an allowed probability; it
+    saves and loads as it was."""
+    from spacemissionstudio.schema.scenario import scenario_text
+
+    sc = _with_requirement(max_probability=0.01)
+    sc.validate()
+    saved = json.loads(scenario_text(sc))
+    assert saved["schema_version"] == CURRENT_SCHEMA_VERSION == 6
+    assert saved["monte_carlo"]["requirements"] == [
+        {"name": "R-ALT-01", "spacecraft": "sat-1", "outcome": "lowest_altitude", "at_least": 400.0,
+         "at_most": None, "confidence": 0.95, "max_probability": 0.01}]
+    assert Scenario.from_dict(saved).monte_carlo.requirements == sc.monte_carlo.requirements
+
+
+def test_a_scenario_without_requirements_saves_as_before():
+    """The list is written only when it has a requirement: a scenario
+    without one saves, and hashes, as before (only the version changes)."""
+    from spacemissionstudio.schema.scenario import scenario_text
+
+    assert "requirements" not in json.loads(scenario_text(_minimal_scenario()))["monte_carlo"]
+
+
+@pytest.mark.parametrize("fields, message", [
+    ({"spacecraft": "sat-9"}, "monte_carlo.requirements 'R-ALT-01': spacecraft 'sat-9' is not one of this "
+                              "scenario's spacecraft"),
+    ({"outcome": "lowest_temperature"}, "monte_carlo.requirements 'R-ALT-01': outcome 'lowest_temperature' must "
+                                        "be one of"),
+    ({"at_most": 500.0}, "give exactly one of at_least and at_most, got at_least and at_most"),
+    ({"at_least": None}, "give exactly one of at_least and at_most, got neither"),
+    ({"at_least": float("nan")}, "at_least must be a finite number"),
+    ({"confidence": None}, "confidence is required"),
+    ({"confidence": 1.0}, "confidence must be a number between 0 and 1 (both excluded), got 1.0"),
+    ({"confidence": 0.0}, "confidence must be a number between 0 and 1 (both excluded), got 0.0"),
+    ({"max_probability": 1.0}, "max_probability must be a number from 0 up to (not including) 1"),
+    ({"name": " "}, "monte_carlo.requirements: name must not be empty"),
+])
+def test_a_requirement_that_is_not_valid_is_refused_naming_the_field(fields, message):
+    """An unknown spacecraft or outcome, both or neither limit, a
+    confidence outside (0, 1) or none, an allowed probability outside
+    [0, 1): refused, with the field named."""
+    with pytest.raises(ScenarioValidationError) as error:
+        _with_requirement(**fields).validate()
+    assert message in str(error.value)
+
+
+def test_two_requirements_of_one_name_are_refused():
+    """A requirement's name is its label in the tables: unique."""
+    sc = _with_requirement()
+    sc.monte_carlo.requirements.append(copy.deepcopy(sc.monte_carlo.requirements[0]))
+    with pytest.raises(ScenarioValidationError, match=r"each name must be unique, \['R-ALT-01'\] repeat"):
+        sc.validate()

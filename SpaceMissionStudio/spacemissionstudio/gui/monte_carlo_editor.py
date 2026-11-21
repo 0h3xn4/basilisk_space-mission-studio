@@ -18,10 +18,16 @@
 
 """Monte Carlo editor: :class:`DispersionListWidget` (one
 :class:`schema.scenario.DispersionConfig` per row, referencing a
-spacecraft by name) and :class:`MonteCarloGroupWidget` (the enable/
-num_runs/thread_count/verbose settings plus that list) -- composed into
-``scenario_editor.py`` the same way the space-weather/ground-station
-groups are.
+spacecraft by name), :class:`RequirementListWidget` (one
+:class:`schema.scenario.MonteCarloRequirementConfig` per row: a limit on
+one outcome of every run, Monte Carlo plan A2) and
+:class:`MonteCarloGroupWidget` (the enable/num_runs/thread_count/verbose
+settings plus those lists) -- composed into ``scenario_editor.py`` the
+same way the space-weather/ground-station groups are.
+
+A requirement's limit and confidence have no default (decision MC-5): a
+new requirement starts with both "Not set", and the scenario is not valid
+until they are given (the Problems panel says which).
 
 The dispersion editor dialog needs to know which spacecraft NAMES exist in
 the scenario being edited right now (a dispersion references one by name),
@@ -45,9 +51,11 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -58,16 +66,20 @@ from ..schema.scenario import (
     DISPERSION_QUANTITIES,
     MAX_MONTE_CARLO_RUNS,
     MAX_MONTE_CARLO_THREADS,
+    MONTE_CARLO_OUTCOME_TITLES,
+    MONTE_CARLO_OUTCOME_UNITS,
+    MONTE_CARLO_OUTCOMES,
     ORBIT_ELEMENT_SPREAD_KEYS,
     DispersionConfig,
     MonteCarloConfig,
+    MonteCarloRequirementConfig,
 )
 from . import units
 from .feedback import report, show_dialog_error, show_toast
 from .field_text import field_title, labelled
 from .theme import set_role
 from .inline_form import InlineForm
-from .widgets import ComboBox, PreciseDoubleSpinBox, SpinBox, finish_form, layout_widgets
+from .widgets import ComboBox, EmptyState, PreciseDoubleSpinBox, SpinBox, finish_form, layout_widgets
 
 
 def _spin(minimum: float, maximum: float, decimals: int = 4, step: float = 1.0, value: float = 0.0) -> QDoubleSpinBox:
@@ -448,6 +460,253 @@ class DispersionListWidget(QWidget):
         self._refresh_list()
 
 
+_NOT_SET = "Not set"
+_LIMIT_RANGE = 1.0e9  # the limit field's range [outcome's unit]; its lowest value shows "Not set"
+_LIMIT_KINDS = (("at_least", "At least"), ("at_most", "At most"))
+
+
+class _RequirementEditorDialog(QDialog):
+    """One requirement's form (shown under the list, :class:`InlineForm`)."""
+
+    def __init__(self, spacecraft_names: list, item: MonteCarloRequirementConfig, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Edit requirement")
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+
+        self.name_edit = QLineEdit(item.name)
+        self.name_edit.setToolTip("The requirement's label, unique in the list, e.g. its identifier in your "
+                                  "requirements document.")
+        form.addRow("Name", self.name_edit)
+
+        self.spacecraft_combo = ComboBox()
+        for name in spacecraft_names:
+            self.spacecraft_combo.addItem(name, userData=name)
+        index = self.spacecraft_combo.findData(item.spacecraft)
+        if index < 0:  # renamed or removed since: kept, and shown so (as a dispersion's)
+            self.spacecraft_combo.addItem(f"{item.spacecraft} (not found in this scenario)", userData=item.spacecraft)
+            index = self.spacecraft_combo.count() - 1
+        self.spacecraft_combo.setCurrentIndex(index)
+        form.addRow("Spacecraft", self.spacecraft_combo)
+
+        self.outcome_combo = ComboBox()
+        for key in MONTE_CARLO_OUTCOMES:
+            unit = MONTE_CARLO_OUTCOME_UNITS[key]
+            self.outcome_combo.addItem(f"{MONTE_CARLO_OUTCOME_TITLES[key]} [{unit}]", userData=key)
+        self.outcome_combo.setToolTip("The run's figure the requirement limits: the same as Results › Overview "
+                                      "shows for one run. A run that does not record it is not evaluated.")
+        self.outcome_combo.setCurrentIndex(max(0, self.outcome_combo.findData(item.outcome)))
+        self.outcome_combo.currentIndexChanged.connect(lambda _index: self._show_unit())
+        form.addRow("Outcome", self.outcome_combo)
+
+        self.limit_kind_combo = ComboBox()
+        for key, text in _LIMIT_KINDS:
+            self.limit_kind_combo.addItem(text, userData=key)
+        self.limit_kind_combo.setCurrentIndex(1 if item.at_most is not None and item.at_least is None else 0)
+        self.limit_spin = PreciseDoubleSpinBox()
+        self.limit_spin.setRange(-_LIMIT_RANGE, _LIMIT_RANGE)
+        self.limit_spin.setDecimals(6)
+        self.limit_spin.setSpecialValueText(_NOT_SET)
+        limit = item.at_least if item.at_least is not None else item.at_most
+        self.limit_spin.setValue(-_LIMIT_RANGE if limit is None else limit)
+        self.limit_spin.setToolTip("A run meets the requirement with its outcome at or above (At least) or at or "
+                                   "below (At most) this value, in the outcome's unit.")
+        limit_row = QHBoxLayout()
+        limit_row.addWidget(self.limit_kind_combo)
+        limit_row.addWidget(self.limit_spin, 1)
+        self._limit_row = limit_row
+        form.addRow("Limit", limit_row)
+
+        self.confidence_spin = PreciseDoubleSpinBox()
+        self.confidence_spin.setRange(0.0, 0.999999)
+        self.confidence_spin.setDecimals(6)
+        self.confidence_spin.setSingleStep(0.01)
+        self.confidence_spin.setSpecialValueText(_NOT_SET)
+        self.confidence_spin.setValue(0.0 if item.confidence is None else item.confidence)
+        self.confidence_spin.setToolTip("The confidence of the upper bound on the probability of not meeting the "
+                                        "requirement, between 0 and 1. You choose it: there is no default.")
+        form.addRow("Confidence [-]", self.confidence_spin)
+
+        self.allowed_check = QCheckBox("Judge against an allowed probability")
+        self.allowed_check.setToolTip("With it, the batch says \"met\" when the upper bound is at or below the "
+                                      "allowed probability of not meeting the requirement, else \"not shown\".")
+        self.allowed_check.setChecked(item.max_probability is not None)
+        form.addRow(self.allowed_check)
+        self.allowed_spin = PreciseDoubleSpinBox()
+        self.allowed_spin.setRange(0.0, 0.999999)
+        self.allowed_spin.setDecimals(6)
+        self.allowed_spin.setSingleStep(0.01)
+        self.allowed_spin.setValue(0.0 if item.max_probability is None else item.max_probability)
+        self.allowed_spin.setToolTip("The allowed probability of not meeting the requirement, from 0 up to 1.")
+        form.addRow("Allowed probability [-]", self.allowed_spin)
+        self.allowed_check.toggled.connect(self._show_allowed)
+        self._form = form
+        layout.addLayout(form)
+        self._show_unit()
+        self._show_allowed(self.allowed_check.isChecked())
+        finish_form(self)
+        self.resize(self.sizeHint())
+
+    def _show_unit(self) -> None:
+        self.limit_spin.setSuffix(units.suffix(MONTE_CARLO_OUTCOME_UNITS.get(self.outcome_combo.currentData(), "-")))
+
+    def _show_allowed(self, on: bool) -> None:
+        self.allowed_spin.setVisible(on)
+        label = self._form.labelForField(self.allowed_spin)
+        if label is not None:
+            label.setVisible(on)
+
+    def to_dataclass(self) -> MonteCarloRequirementConfig:
+        """The requirement in the form. Its limit and confidence may still
+        be "Not set" (None): the scenario's check refuses that, naming the
+        field, so a user can fill the form in any order."""
+        name = self.name_edit.text().strip()
+        if not name:
+            raise ValueError("a requirement needs a name")
+        limit = None if self.limit_spin.value() <= self.limit_spin.minimum() else self.limit_spin.value()
+        kind = self.limit_kind_combo.currentData()
+        confidence = self.confidence_spin.value()
+        return MonteCarloRequirementConfig(
+            name=name, spacecraft=self.spacecraft_combo.currentData(), outcome=self.outcome_combo.currentData(),
+            at_least=limit if kind == "at_least" else None, at_most=limit if kind == "at_most" else None,
+            confidence=None if confidence <= self.confidence_spin.minimum() else confidence,
+            max_probability=self.allowed_spin.value() if self.allowed_check.isChecked() else None)
+
+
+def requirement_text(item: MonteCarloRequirementConfig) -> str:
+    """A requirement's line in the list: what it limits, and what is still missing."""
+    title = MONTE_CARLO_OUTCOME_TITLES.get(item.outcome, item.outcome).lower()
+    unit = MONTE_CARLO_OUTCOME_UNITS.get(item.outcome, "-")
+    limit = item.at_least if item.at_least is not None else item.at_most
+    word = "≥" if item.at_least is not None else "≤"
+    missing = [field for field, value in (("limit", limit), ("confidence", item.confidence)) if value is None]
+    text = f"{item.name}: {item.spacecraft} {title}"
+    if limit is not None:
+        text += f" {word} {limit:g}" + ("" if unit == "-" else f" {unit}")
+    if missing:
+        return text + f" ({' and '.join(missing)} not set)"
+    return text + f", confidence {item.confidence:g}"
+
+
+class RequirementListWidget(QWidget):
+    """A list of :class:`MonteCarloRequirementConfig`, with Add and Remove
+    and the selected requirement's form under it (as the dispersions'), or
+    its empty state with Add while there is none (UI audit UI-05)."""
+
+    changed = Signal()
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self._items: list = []
+        self._spacecraft_names: list = []
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.list_widget = QListWidget()
+        self.empty_state = EmptyState("No requirements", "A requirement limits one outcome of every run (the "
+                                      "lowest altitude, the lowest battery charge, ...); the batch counts the runs "
+                                      "that do not meet it and bounds the probability.", "Add requirement",
+                                      compact=True)
+        self.empty_state.button.clicked.connect(self._on_add)
+        # Switched by _refresh_list, not by the list model's signals: the model resets as the list is
+        # destroyed, and a stack that followed it was then called half destroyed ("Slot not found").
+        self.list_stack = QStackedWidget()
+        self.list_stack.addWidget(self.list_widget)
+        self.list_stack.addWidget(self.empty_state)
+        layout.addWidget(self.list_stack)
+        button_row = QHBoxLayout()
+        self.add_button = QPushButton("Add")
+        self.add_button.setToolTip("Add a requirement on the first spacecraft: its form opens below; set its limit "
+                                   "and confidence.")
+        self.remove_button = QPushButton("Remove")
+        button_row.addWidget(self.add_button)
+        button_row.addWidget(self.remove_button)
+        button_row.addStretch(1)
+        layout.addLayout(button_row)
+        self.inline = InlineForm(self.list_widget, self._form_for, lambda form, _row: form.to_dataclass())
+        self.inline.applied.connect(self._on_applied)
+        layout.addWidget(self.inline)
+        self.add_button.clicked.connect(self._on_add)
+        self.remove_button.clicked.connect(self._on_remove)
+        self._show_empty()
+
+    def _show_empty(self) -> None:
+        """The empty state with its Add while there is no requirement; the
+        list, Add and Remove otherwise (one Add on the page, UI-05)."""
+        empty = not self._items
+        self.list_stack.setCurrentWidget(self.empty_state if empty else self.list_widget)
+        self.list_stack.setMaximumHeight(self.empty_state.sizeHint().height() if empty else 16777215)
+        for button in (self.add_button, self.remove_button):
+            button.setHidden(empty)
+
+    def set_spacecraft_names(self, names: list) -> None:
+        if list(names) == self._spacecraft_names:
+            return
+        self.inline.flush()
+        self._spacecraft_names = list(names)
+        if self.inline.form is not None:
+            self.inline.show_row(self.inline.row)
+
+    def _refresh_list(self) -> None:
+        blocked = self.list_widget.blockSignals(True)
+        try:
+            self.list_widget.clear()
+            for item in self._items:
+                self.list_widget.addItem(QListWidgetItem(requirement_text(item)))
+        finally:
+            self.list_widget.blockSignals(blocked)
+        self._show_empty()
+
+    def _on_add(self) -> None:
+        """A requirement on the first spacecraft's lowest altitude, its limit
+        and confidence not set (no default, decision MC-5); its form opens."""
+        self.inline.flush()
+        if not self._spacecraft_names:
+            report(self, "Not added: this scenario has no spacecraft yet – add one first", kind="warning")
+            return
+        names = {item.name for item in self._items}
+        number = len(self._items) + 1
+        while f"R-{number}" in names:
+            number += 1
+        item = MonteCarloRequirementConfig(name=f"R-{number}", spacecraft=self._spacecraft_names[0],
+                                           outcome="lowest_altitude")
+        self._items.append(item)
+        self._refresh_list()
+        self.list_widget.setCurrentRow(len(self._items) - 1)
+        show_toast(self.window(), f"Added requirement {item.name}: set its limit and confidence")
+        self.changed.emit()
+        if self.inline.form is not None:
+            self.inline.form.limit_spin.setFocus()
+
+    def _form_for(self, row: int) -> _RequirementEditorDialog:
+        return _RequirementEditorDialog(self._spacecraft_names, self._items[row], parent=self)
+
+    def _on_applied(self, row: int, item) -> None:
+        if not 0 <= row < len(self._items) or item == self._items[row]:
+            return
+        self._items[row] = item
+        self.list_widget.item(row).setText(requirement_text(item))
+        self.changed.emit()
+
+    def _on_remove(self) -> None:
+        row = self.list_widget.currentRow()
+        if row < 0:
+            return
+        self.inline.discard()
+        item = self._items.pop(row)
+        self._refresh_list()
+        show_toast(self.window(), f"Removed requirement {item.name}", kind="info")
+        self.changed.emit()
+
+    def to_list(self) -> list:
+        return list(self._items)
+
+    def from_list(self, items: list) -> None:
+        self.inline.discard()
+        self._items = list(items)
+        self._refresh_list()
+
+
 class MonteCarloGroupWidget(QGroupBox):
     """Composed directly into ``scenario_editor.py``, same pattern as its
     other ``_build_*_group()`` sections.
@@ -511,6 +770,10 @@ class MonteCarloGroupWidget(QGroupBox):
         self.dispersion_list = DispersionListWidget()
         self.dispersion_list.changed.connect(self.changed)
         body.addWidget(self.dispersion_list)
+        body.addWidget(QLabel("Requirements"))
+        self.requirement_list = RequirementListWidget()
+        self.requirement_list.changed.connect(self.changed)
+        body.addWidget(self.requirement_list)
         self.enabled_check.toggled.connect(self._show_enabled)
         self._show_enabled(self.enabled_check.isChecked())
         finish_form(self)  # units in the fields, optional groups collapse (M4a)
@@ -535,16 +798,21 @@ class MonteCarloGroupWidget(QGroupBox):
         return labelled(message, self.field_title)
     def set_spacecraft_names(self, names: list, nominals: dict | None = None) -> None:
         self.dispersion_list.set_spacecraft_names(names, nominals)
+        self.requirement_list.set_spacecraft_names(names)
 
     def to_dataclass(self) -> MonteCarloConfig:
+        """The settings as edited. The batch's settings and dispersions are
+        checked here; the requirements with the scenario (one may be
+        incomplete while it is typed, decision MC-5)."""
         config = MonteCarloConfig(
             enabled=self.enabled_check.isChecked(),
             num_runs=self.num_runs_spin.value(),
             thread_count=self.thread_count_spin.value(),
             verbose=self.verbose_check.isChecked(),
             dispersions=self.dispersion_list.to_list(),
+            requirements=self.requirement_list.to_list(),
         )
-        config.validate()
+        config.validate_settings()
         return config
 
     def from_dataclass(self, config: MonteCarloConfig) -> None:
@@ -553,3 +821,4 @@ class MonteCarloGroupWidget(QGroupBox):
         self.thread_count_spin.setValue(config.thread_count)
         self.verbose_check.setChecked(config.verbose)
         self.dispersion_list.from_list(config.dispersions)
+        self.requirement_list.from_list(config.requirements)

@@ -457,7 +457,7 @@ new version opens an old batch without them.
 | Step | State |
 |---|---|
 | 0 Investigation, plan, decisions, backlog | done (this page) |
-| A-1 Outcomes, draws of crashed runs, requirements | backlog |
+| A-1 Outcomes, draws of crashed runs, requirements | done (`feature/monte-carlo-outcomes`, 2026-11-21; DECISIONS MC-11 to MC-16) |
 | A-2 Reproduce one case | backlog |
 | B | later |
 | C | later |

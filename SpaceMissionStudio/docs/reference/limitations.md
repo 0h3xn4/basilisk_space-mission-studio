@@ -121,8 +121,15 @@ Each item was checked against Basilisk's own source.
   Basilisk's Monte Carlo controller seeds each run from its number
   (SRelD K-24).
 * **Monte Carlo retains a fixed set of data per run** (each spacecraft's
-  position/velocity) -- there is no per-run custom retention-policy
-  selection in the schema yet.
+  position/velocity, and the run's Overview figures as its outcomes) --
+  there is no per-run custom retention-policy selection in the schema
+  yet, and no outcome from another series (a pointing error, a wheel
+  speed).
+* **A Monte Carlo requirement limits one outcome** (at least or at most
+  a value). Its bound is one-sided (an upper bound on the probability
+  of not meeting it) and assumes independent runs with one probability
+  of failure each. There is no requirement on a combination of
+  outcomes, and a crashed run counts as not meeting every requirement.
 * **No Jacchia-Roberts atmosphere model, no Earth-albedo/IR radiation
   pressure, no user-supplied density table.** All
   three were real user questions/requests, checked directly against
