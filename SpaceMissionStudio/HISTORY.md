@@ -20113,3 +20113,57 @@ The files' digests were checked after the publication:
 
 SRelD issue 48, the SDP, H05 and `releasing.md` record the tag, the runs
 and the files' digests.
+
+## Monte Carlo plan, Step 0 (2026-11-21)
+
+The owner's backlog item is "make the Monte Carlo features useful",
+with no more detail, and the owner accepted "Monte Carlo phase A" as the
+next item. This step defines phase A. It is a documentation step only:
+no code, test, template or golden file changed. Branch
+`docs/monte-carlo-plan`, from `develop` at `93eb298` (2.13.1).
+
+**What was read.** The scenario schema's `MonteCarloConfig` and
+`DispersionConfig`; `engine/monte_carlo.py`,
+`engine/monte_carlo_results.py`, `engine/seeds.py`,
+`gui/monte_carlo_process.py`, the editor and the results view; the
+`monte-carlo` command and `api.monte_carlo`; the statistic model in
+`config/models.py`; the thermal Monte Carlo and the operations
+robustness batch; templates 09, 25 and 34; the User Manual, the how-to,
+the statistics page and the limitations; the four Monte Carlo test
+files and the golden capture. Basilisk's `Controller` and
+`RetentionPolicy` were read in the installed 2.12.0 wheel, so every
+Basilisk line the plan cites is the version the app runs.
+
+**What was found.** A batch today answers one question: how far apart
+the runs end, as a 1-sigma in three directions. Each run's `ResultSet`
+is built and then dropped, so a batch has no per-run altitude minimum,
+link margin, battery charge or delta-V, and no requirement can be
+judged. A crashed run's draws are dropped from the summary. A case
+cannot be run again, although Basilisk writes its draws and seeds to
+`run<N>.json`. There is no percentile, no confidence bound and no
+sensitivity measure. Two batches of one scenario still draw the same
+samples (K-24). The thermal Monte Carlo has the node limits but does not
+count the runs outside them.
+
+**What was planned.** `docs/developer/monte-carlo-plan.md`: the
+inventory, an engineer's walk-through with file and line references, 16
+gaps ranked by value and cost, and three phases. Phase A (about 11.5
+hours, two pull requests): per-run outcomes from the Overview figures,
+requirements in the scenario (schema 6) with k/N and the exact
+Clopper-Pearson upper bound at the user's own confidence, the draws of
+crashed runs, and "Run this case". Phase B (about 18 hours): the batch
+seed, sensitivity, percentiles, thermal limits, a report, trust checks
+and CLI options. Phase C (about 30 hours): more dispersions, custom
+outcomes, convergence, envelopes, other sampling. `docs/DECISIONS.md`
+has decisions MC-1 to MC-10; `BACKLOG.md` has phase A under "Next
+release" and B and C under a new "Later" section.
+
+**Numbers.** The plan invents no statistics constant. The bound's
+method is cited (Clopper and Pearson, 1934); its confidence is a
+required field of each requirement, with no default in the code. The
+percentiles to show (phase B) are "TBD" until the owner names them. The
+one figure of a confidence in the plan (a bound of about 0.139 for 20
+runs without a failure) is an example for a user who picks 0.95, from
+the closed form 1 - (1 - C)^(1/N).
+
+**Open questions** for the owner are in the plan, section 9 (Q1 to Q8).

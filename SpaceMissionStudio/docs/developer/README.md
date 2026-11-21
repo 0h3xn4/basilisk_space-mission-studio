@@ -215,6 +215,9 @@ SIL link test, many times over, on Windows). Basilisk's own workflows (in
 - [Analyses built on the 3D model](model-analyses-design.md): the design
   of the design checks and model analyses, with its
   [decision log](model-analyses-decisions.md).
+- [Monte Carlo: plan](monte-carlo-plan.md): what a batch does today,
+  its gaps with file and line references, and the phases that make it
+  useful.
 - [Syncing with upstream Basilisk](upstream-sync.md): taking a new
   Basilisk, and refreshing the upstream part of the root README.
 - [`compliance/`](../../compliance/README.md): the ECSS and CCSDS
