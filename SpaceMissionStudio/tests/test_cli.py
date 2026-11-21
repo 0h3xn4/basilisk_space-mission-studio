@@ -1174,6 +1174,79 @@ def test_a_failed_run_exits_3_before_a_requirement_exits_5(tmp_path, capsys, mon
 
 
 @pytest.mark.requires_basilisk
+def test_monte_carlo_case_runs_one_case_again_and_writes_what_run_writes(tmp_path, capsys):
+    """Monte Carlo plan A3: --case N runs case N of the batch in
+    --archive-dir again and writes what run --out-dir writes; its
+    provenance.json names the batch and the case. The batch folder is not
+    changed."""
+    import json
+
+    from spacemissionstudio import output_provenance
+
+    path = tmp_path / "scenario.json"
+    scenario = _write_monte_carlo_scenario(path, [])
+    archive = tmp_path / "mc"
+    assert cli.main(["monte-carlo", str(path), "--archive-dir", str(archive)]) == 0
+    before = sorted(entry.name for entry in archive.iterdir())
+    capsys.readouterr()
+    out_dir = tmp_path / "case1"
+    rc = cli.main(["monte-carlo", str(path), "--archive-dir", str(archive), "--case", "1", "--out-dir", str(out_dir)])
+    out, err = capsys.readouterr()
+    assert rc == 0, err
+    assert "Running case 1 of the Monte Carlo batch" in out and "Case 1 ran again" in out
+    assert {"provenance.json", cli.SCENARIO_AS_RUN, "sat-1.position_N.csv"} <= {p.name for p in out_dir.iterdir()}
+    record = json.loads((out_dir / "provenance.json").read_text())
+    assert record["monte_carlo_case"]["case"] == 1
+    assert record["monte_carlo_case"]["archive_dir"] == str(archive.resolve())
+    assert record["monte_carlo_case"]["scenario_sha256"] == output_provenance.scenario_sha256(scenario)
+    assert record["scenario_file"] == "scenario.json"  # the file as read, as run records it
+    assert sorted(entry.name for entry in archive.iterdir()) == before
+
+
+@pytest.mark.requires_basilisk
+def test_monte_carlo_case_of_a_changed_scenario_exits_1_naming_both_hashes(tmp_path, capsys):
+    """Decision MC-17: the scenario changed since the batch, so the case is
+    refused (exit 1, an input error); the message names both hashes and
+    says to open the batch's own scenario. A case the batch does not have
+    is refused the same way. Nothing is written."""
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.schema import load_scenario
+
+    path = tmp_path / "scenario.json"
+    _write_monte_carlo_scenario(path, [])
+    archive = tmp_path / "mc"
+    assert cli.main(["monte-carlo", str(path), "--archive-dir", str(archive)]) == 0
+    batch_digest = output_provenance.scenario_sha256(load_scenario(path))
+    assert cli.main(["monte-carlo", str(path), "--archive-dir", str(archive), "--case", "2",
+                     "--out-dir", str(tmp_path / "none")]) == 1
+    assert "the batch has no case 2: its cases are 0 to 1" in capsys.readouterr().err
+    changed = _write_monte_carlo_scenario(path, [])
+    changed.spacecraft[0].dry_mass_kg += 1.0  # [kg]
+    changed.save(path)
+    capsys.readouterr()
+    assert cli.main(["monte-carlo", str(path), "--archive-dir", str(archive), "--case", "0",
+                     "--out-dir", str(tmp_path / "case0")]) == 1
+    err = capsys.readouterr().err
+    assert batch_digest in err and output_provenance.scenario_sha256(load_scenario(path)) in err
+    assert "Open the batch's own scenario (scenario.json)" in err
+    assert not (tmp_path / "case0").exists()
+
+
+def test_monte_carlo_out_dir_needs_case_and_case_refuses_overwrite(tmp_path, capsys):
+    """--out-dir belongs to --case, and --case changes nothing in the batch
+    folder, so --overwrite with it is refused: usage errors (2, ICD-02),
+    before anything is read. --case is a whole number of 0 or more."""
+    path = tmp_path / "scenario.json"
+    assert cli.main(["monte-carlo", str(path), "--out-dir", str(tmp_path / "out")]) == 2
+    assert "--out-dir is where --case writes its run" in capsys.readouterr().err
+    assert cli.main(["monte-carlo", str(path), "--case", "0", "--overwrite"]) == 2
+    assert "--overwrite is for a new batch" in capsys.readouterr().err
+    with pytest.raises(SystemExit) as usage:
+        cli.main(["monte-carlo", str(path), "--case", "-1"])
+    assert usage.value.code == 2 and "a whole number of 0 or more" in capsys.readouterr().err
+
+
+@pytest.mark.requires_basilisk
 def test_kernels_status_with_a_missing_kernel_exits_2(capsys, monkeypatch):
     """Audit 3.2: a missing support-data file is a missing component (2 in
     ICD-02), not an input error (1, as in 1.3.1 and earlier)."""

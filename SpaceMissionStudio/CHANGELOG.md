@@ -43,6 +43,22 @@ fixes bugs.
   runs with their drawn values and the status "crashed", so you can see
   which inputs made a case fail. Cases you stop by cancelling a batch
   are not listed as crashed.
+- **Any Monte Carlo case can be run again on its own.** Pick a run in
+  Results › Monte Carlo › Runs and choose **Run This Case** (the button
+  under the table, the right-click menu, Ctrl+Shift+R or the command
+  palette). The case runs again with exactly the draws and random seeds
+  it had in the batch, and opens in Results as a normal run with every
+  plot, the events and the Overview, so you can see in detail why case
+  7 came so close to the limit. A case that crashed in the batch crashes
+  again with its own error, which the Log shows in full. On the command
+  line, `spacemissionstudio monte-carlo SCENARIO --archive-dir DIR
+  --case 7 --out-dir case7` does the same and writes what `run
+  --out-dir` writes; scripts use `api.monte_carlo_case`. The run's
+  provenance names the batch folder, the case and the batch's scenario
+  hash. If the scenario changed since the batch, the case is not run,
+  because the same case number would then be a different case: the
+  Problems panel (or the command line) shows both scenario hashes and
+  tells you to open the batch's own scenario first.
 
 ### Changed
 

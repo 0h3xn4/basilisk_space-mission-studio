@@ -27,6 +27,7 @@ with a non-zero status and prints `ERROR:` or `INVALID:` with the reason.
 | `validate scenario.json` | Checks the file without running it. Does not need Basilisk. |
 | `run scenario.json --out-dir out` | Runs it and writes one CSV per quantity, `events.csv`, `provenance.json` and `scenario_as_run.json` |
 | `monte-carlo scenario.json --archive-dir mc` | Runs the scenario's Monte Carlo batch and writes its provenance, `archive.provenance.json`. `--archive-dir` must be empty or hold an earlier batch, which `--overwrite` replaces; `--allow-scripts` runs the Mission Sequence's `script_block` commands in every run |
+| `monte-carlo scenario.json --archive-dir mc --case 7 --out-dir case7` | Runs case 7 of the batch in `mc` again, with the same draws and seeds, and writes what `run --out-dir` writes; `provenance.json` names the batch and the case (`monte_carlo_case`). Refused (status 1) when the scenario changed since the batch: the message gives both SHA-256 hashes |
 | `run scenario.json --save` | Also keeps the run in the run store, as the app does (`--store DIR` for another folder) |
 | `runs` | Lists the runs kept in the run store: the app's and `run --save`'s (`--store DIR` for another folder) |
 | `compare 3 5 --out comparison.json` | Two kept runs side by side (Results > Compare): the scenario differences, the headline figures with the difference, the events; `--out` writes JSON with both runs' provenance (`--store DIR` for another folder) |

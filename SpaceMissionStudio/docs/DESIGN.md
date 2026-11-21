@@ -891,6 +891,7 @@ Time Cursor commands are under Go > Time Cursor).
 | Edit > Settings... | Ctrl+, | - |
 | Run > Run | Ctrl+R | - |
 | Run > Cancel Run | Esc | - |
+| Run > Run This Case | Ctrl+Shift+R | - |
 | Run > Clear Time Cursor | Alt+Backspace | - |
 | View > Inspector | Ctrl+I | - |
 | View > Problems | Ctrl+J | - |
@@ -922,9 +923,11 @@ Open in Own Window (in View > Own Windows) moves the view shown (Results ›
 placeholder, it reads Bring Back. A view's window carries the global
 commands and those of its area, so their shortcuts work there too.
 
-The Time Cursor commands work while Results has the focus. Remove
-Equipment Item and Copy as CSV act on the Budgets page shown; from
-another area they show the Budgets area first. The table is
+Run This Case acts on the run picked in Results › Monte Carlo › Runs;
+with none picked it is disabled and says so. The Time Cursor commands
+work while Results has the focus. Remove Equipment Item and Copy as CSV
+act on the Budgets page shown; from another area they show the Budgets
+area first. The table is
 checked against the registry by `tests/gui/test_design_rules.py`; a
 standard key is checked against the running platform's binding.
 

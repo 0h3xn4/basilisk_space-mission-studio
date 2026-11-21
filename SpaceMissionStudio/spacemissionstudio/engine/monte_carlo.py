@@ -140,6 +140,20 @@ the Controller by a retention function (:func:`_retained_outcomes`,
 retained ``custom`` data, in the same ``run<N>.data`` file. A figure is
 there only when the run recorded its source, as for a single run.
 
+Running one case again
+----------------------
+:func:`replay_case` (Monte Carlo plan A3, decisions MC-7 and MC-17) runs one
+case of a batch again as a plain run, with every series, the events and
+the Overview: it builds the run as :func:`_create_sim` does, applies each
+entry of the case's ``run<N>.json`` (JSON, written by the Controller
+before the case ran; never the pickles, S-04) in the file's order with the
+Controller's own setter, ``SimulationExecutor.applyModification``, then
+starts and flies it as :func:`_execute_sim` does. The entries hold the
+case's draws and the RNG seeds the Controller gave every model, so the
+run is the batch's case. It is refused when the scenario's hash differs
+from the batch's (``archive.provenance.json``, ``scenario_sha256``): the
+same case number would then be a different case.
+
 Thread count
 ------------
 ``Controller.setThreadCount(n)`` for ``n > 1`` uses ``multiprocessing.Pool``
@@ -173,7 +187,7 @@ import math
 import numpy as np
 
 from Basilisk.utilities import orbitalMotion, simIncludeGravBody
-from Basilisk.utilities.MonteCarlo.Controller import Controller
+from Basilisk.utilities.MonteCarlo.Controller import Controller, SimulationExecutor
 from Basilisk.utilities.MonteCarlo.Dispersions import (
     InertiaTensorDispersion,
     NormalDispersion,
@@ -439,16 +453,22 @@ def _execute_sim(sim, allow_scripts: bool = False) -> None:
     else the set duration. Module-level (with ``allow_scripts`` bound by
     ``functools.partial``) so it pickles for ``thread_count > 1``.
     """
-    from .mission_engine import MissionEngine
-
     service = sim._spacemissionstudio_service
     service.initialize()
+    result, _summary = _fly(service, allow_scripts)
+    sim._spacemissionstudio_outcomes = _outcomes_or_none(result)
+
+
+def _fly(service, allow_scripts: bool = False) -> tuple:
+    """(the ``ResultSet``, the Mission Sequence's ``CommandSummary`` or None)
+    of an initialized service: the scenario's Mission Sequence when it has
+    one, as ``run`` does, else the set duration."""
+    from .mission_engine import MissionEngine
+
     if runs_sequence(service.scenario.mission_sequence):
         returned = MissionEngine(service.scenario, service=service, allow_scripts=allow_scripts).run()
-    else:
-        returned = service.run()
-    result = returned[0] if isinstance(returned, tuple) else returned
-    sim._spacemissionstudio_outcomes = _outcomes_or_none(result)
+        return returned if isinstance(returned, tuple) else (returned, None)
+    return service.run(), None
 
 
 # The keys of the outcomes a run retains in its custom data (RetentionPolicy).
@@ -505,6 +525,16 @@ def _default_retention_policy(scenario: Scenario) -> RetentionPolicy:
     return policy
 
 
+def _check_script_consent(scenario: Scenario, allow_scripts: bool) -> None:
+    """Script blocks run only with the user's consent (SRS-S-03)."""
+    blocks = script_blocks(scenario.mission_sequence)
+    if blocks and not allow_scripts:
+        raise MonteCarloError(
+            f"{', '.join(path for path, _ in blocks)}: script_block runs unrestricted Python from the scenario "
+            "file, so it runs only with your explicit consent -- check the code, then use --allow-scripts (CLI) "
+            "or confirm when asked (GUI)")
+
+
 def run_monte_carlo(scenario: Scenario, mc_config: MonteCarloConfig, archive_dir: str | Path,
                     allow_scripts: bool = False, overwrite: bool = False,
                     scenario_file: dict | None = None) -> list[int]:
@@ -542,12 +572,7 @@ def run_monte_carlo(scenario: Scenario, mc_config: MonteCarloConfig, archive_dir
         raise MonteCarloError(f"Monte Carlo runs at most {SimSettings._MAX_SINGLE_RUN_DAYS:g} days per run "
                               "(sim_settings.duration_days) -- shorten the run")
 
-    blocks = script_blocks(scenario.mission_sequence)
-    if blocks and not allow_scripts:
-        raise MonteCarloError(
-            f"{', '.join(path for path, _ in blocks)}: script_block runs unrestricted Python from the scenario "
-            "file, so it runs only with your explicit consent -- check the code, then use --allow-scripts (CLI) "
-            "or confirm when asked (GUI)")
+    _check_script_consent(scenario, allow_scripts)
 
     archive_dir = Path(archive_dir)
     if archive_dir.exists() and not archive_dir.is_dir():
@@ -787,3 +812,126 @@ def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
     return monte_carlo_results.MonteCarloBatch(scenario.name, scenario.gravity.central_body, time_s, runs,
                                                failed, positions, velocities, drawn, scenario.epoch_utc, statistic,
                                                **extra)
+
+
+# -- One case again (Monte Carlo plan A3) -------------------------------------
+
+
+class MonteCarloCaseRefused(MonteCarloError):
+    """A case is not run again: the scenario changed since the batch, the
+    folder has no record of the batch's scenario, or the batch has no such
+    case. The message says why and what to do."""
+
+
+# The record of the batch a case run comes from (RunProvenance.rng_seed_note).
+CASE_SEEDS_NOTE = ("a Monte Carlo case run again: every model's RNGSeed is the case's own, from the batch's "
+                   "run<N>.json (monte_carlo_case.rng_seeds)")
+
+
+def _batch_scenario_hash(archive_dir: Path) -> tuple[str, str]:
+    """(the batch's ``scenario_sha256``, its ``scenario_file`` or "") from the
+    folder's ``archive.provenance.json``; refused when there is none."""
+    path = archive_dir / "archive.provenance.json"
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise MonteCarloCaseRefused(
+            f"{archive_dir} has no archive.provenance.json, so the scenario of its batch is not known and a case "
+            "cannot be checked against it. Choose the folder of a finished batch.") from None
+    except (OSError, ValueError) as exc:
+        raise MonteCarloCaseRefused(f"could not read {path}: {exc}") from exc
+    digest = record.get("scenario_sha256") if isinstance(record, dict) else None
+    if not isinstance(digest, str) or not digest:
+        raise MonteCarloCaseRefused(f"{path} does not record the scenario's SHA-256, so a case cannot be checked "
+                                    "against the scenario.")
+    name = record.get("scenario_file")
+    return digest, name if isinstance(name, str) else ""
+
+
+def case_parameters(scenario: Scenario, archive_dir: str | Path, case: int) -> tuple[dict, dict]:
+    """(the entries of ``run<case>.json`` in the file's order, the record of the
+    case for the run's provenance, ``monte_carlo_case``): the batch folder,
+    the case number, the batch's scenario hash and the case's RNG seeds.
+
+    Refused (:class:`MonteCarloCaseRefused`) when the scenario's SHA-256
+    differs from the one the batch recorded (decision MC-17, the owner's
+    answer to Q3), naming both hashes and what to do; when the batch has
+    no such case; or when its file is missing or cannot be read."""
+    archive_dir = Path(archive_dir)
+    batch_digest, batch_file = _batch_scenario_hash(archive_dir)
+    digest = output_provenance.scenario_sha256(scenario)
+    if digest != batch_digest:
+        named = f" ({batch_file})" if batch_file else ""
+        raise MonteCarloCaseRefused(
+            f"Case {case} was not run: the scenario changed since the batch in {archive_dir} (scenario SHA-256 "
+            f"{digest} now, {batch_digest} at the batch). With a changed scenario the same case would be a "
+            f"different case. Open the batch's own scenario{named} as it was when the batch ran, then run the "
+            "case again.")
+    runs = scenario.monte_carlo.num_runs
+    if isinstance(case, bool) or not isinstance(case, int) or not 0 <= case < runs:
+        raise MonteCarloCaseRefused(f"the batch has no case {case}: its cases are 0 to {runs - 1}")
+    path = archive_dir / f"run{case}.json"
+    try:
+        params = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise MonteCarloCaseRefused(
+            f"{archive_dir} has no run{case}.json: case {case} did not start in this batch (a cancelled batch "
+            "keeps only the cases it started)") from None
+    except (OSError, ValueError) as exc:
+        raise MonteCarloCaseRefused(f"could not read {path}: {exc}") from exc
+    if not isinstance(params, dict):
+        raise MonteCarloCaseRefused(f"{path} is not the parameter file of a case")
+    seeds = {}
+    for name, value in params.items():
+        if name.endswith(".RNGSeed"):
+            try:
+                seeds[name] = int(value)
+            except (TypeError, ValueError):
+                seeds[name] = str(value)
+    record = {"archive_dir": str(archive_dir.resolve()), "case": case, "scenario_sha256": batch_digest,
+              "rng_seeds": seeds}
+    return params, record
+
+
+def prepare_case(scenario: Scenario, archive_dir: str | Path, case: int):
+    """(an initialized ``SimulationService`` of ``case``, the record of the
+    case): the run the batch's creation function builds (:func:`_create_sim`),
+    each entry of ``run<case>.json`` applied in the file's order with the
+    Controller's own setter (``SimulationExecutor.applyModification``,
+    Basilisk 2.12.0), then the same start-up as the batch's run
+    (``SimulationService.initialize``). The caller flies it
+    (:func:`replay_case`, or the GUI's run worker) and marks the result
+    with :func:`mark_case`. Refused as :func:`case_parameters` says."""
+    params, record = case_parameters(scenario, archive_dir, case)
+    sim = _create_sim(scenario)
+    for name, value in params.items():
+        SimulationExecutor.applyModification(sim, name, value)
+    service = sim._spacemissionstudio_service
+    service.initialize()
+    return service, record
+
+
+def mark_case(result, record: dict):
+    """``result`` with the case's record in its provenance
+    (``monte_carlo_case``) and the note that its seeds are the case's."""
+    if result is not None and getattr(result, "provenance", None) is not None:
+        result.provenance = dataclasses.replace(result.provenance, monte_carlo_case=dict(record),
+                                                rng_seed_note=CASE_SEEDS_NOTE)
+    return result
+
+
+def replay_case(scenario: Scenario, archive_dir: str | Path, case: int, allow_scripts: bool = False) -> tuple:
+    """Run case ``case`` of the batch in ``archive_dir`` again as a plain run
+    (Monte Carlo plan A3): (the ``ResultSet``, the Mission Sequence's
+    ``CommandSummary`` or None). The run is the batch's case: the same
+    draws, seeds, start-up and flight (:func:`prepare_case`, :func:`_fly`),
+    so its outcomes are the batch's. Its provenance names the batch
+    (``monte_carlo_case``).
+
+    A case that crashed in the batch raises its own error here, as it did
+    there. Refused (:class:`MonteCarloCaseRefused`) when the scenario changed
+    since the batch, and when the batch has no such case."""
+    _check_script_consent(scenario, allow_scripts)
+    service, record = prepare_case(scenario, archive_dir, case)
+    result, summary = _fly(service, allow_scripts)
+    return mark_case(result, record), summary

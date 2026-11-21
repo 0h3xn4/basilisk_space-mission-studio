@@ -81,10 +81,30 @@ names the statistic, and a batch keeps the one it was run with.
 
 **Open Monte Carlo Results...** (the Run area) opens a batch you ran earlier.
 
+## Run one case again
+
+To look at one case in detail, for example the run with the lowest
+altitude:
+
+1. Open the batch's own scenario, unchanged, and its batch in **Results >
+   Monte Carlo**.
+2. On **Runs**, sort the column you are after and pick the run.
+3. Choose **Run This Case** (the button under the table, the right-click
+   menu, or `Ctrl+Shift+R`).
+
+The case runs again with the same drawn values and random seeds, so it
+gives the batch's outcomes, and it opens in Results as a normal run:
+every series, the events and the Overview. A case that crashed in the
+batch crashes again with its own error; the Log shows it in full. If the
+scenario changed since the batch, the case is not run: the Problems
+panel gives the scenario's SHA-256 now and at the batch. Open the
+batch's own scenario and try again.
+
 ## From the command line or Python
 
 ```bash
 spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/25_monte_carlo_orbit_and_drag_dispersions.json --archive-dir mc
+spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/25_monte_carlo_orbit_and_drag_dispersions.json --archive-dir mc --case 7 --out-dir case7
 python3 examples/monte_carlo_spread.py --runs 20 --archive mc_out
 ```
 
@@ -92,6 +112,13 @@ python3 examples/monte_carlo_spread.py --runs 20 --archive mc_out
 the runs and the requirements table. It exits with status 3 when a run
 failed, else 5 when a requirement with an allowed probability is not
 shown met.
+
+With `--case N`, `monte-carlo` runs case N of the batch in
+`--archive-dir` again and writes what `run --out-dir` writes (default
+folder `results`); `provenance.json` names the batch and the case
+(`monte_carlo_case`). It exits with status 1 when the scenario changed
+since the batch, and 3 when the case's run fails. From Python,
+`api.monte_carlo_case(scenario, "mc", 7)` returns the run's results.
 
 The example prints the spread day by day and ends with a line like
 `day 3.00: 1-sigma 448.0 km along track`. Its 20 runs took 2 to 3

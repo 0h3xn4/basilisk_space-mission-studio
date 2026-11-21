@@ -112,7 +112,10 @@ Each item was checked against Basilisk's own source.
   replace each component with an absolute random value, not a
   perturbation around the nominal orbit; the orbit varies as orbital
   elements instead. The Monte Carlo view tracks position and velocity
-  only (attitude, wheel speeds and other series are not kept per run).
+  only (attitude, wheel speeds and other series are not kept per run);
+  to see every series of one case, run it again (Run This Case,
+  `monte-carlo --case N`). That works only with the batch's own,
+  unchanged scenario, and without the live 3D View.
 * **`monte_carlo.thread_count > 1`** has been run in this project's Linux
   environment (template 25 and three-run batches with 3 threads, Basilisk
   2.12.0); the schema default stays `1`. A batch uses at most one process

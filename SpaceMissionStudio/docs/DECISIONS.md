@@ -4889,3 +4889,95 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
   - No new keyboard shortcut or palette entry. **Why:** no new frequent
     action. The Requirements tab is a tab of the Monte Carlo view, and
     a requirement is edited where the dispersions are.
+
+## Monte Carlo phase A, part 2: run one case again (2026-11-21)
+
+Item A3 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
+built as the plan says. The owner answered Q3 for this work. **MC-17 is
+provisional: the owner may change it.** It confirms MC-7.
+
+- **Decision MC-17 (provisional, the owner may change it; Q3):** a case
+  is not run again when the scenario changed since the batch. The check
+  compares the SHA-256 of the scenario as it is now
+  (`output_provenance.scenario_sha256`: its canonical JSON, the
+  dispersions and the requirements included) with `scenario_sha256` in
+  the batch's `archive.provenance.json`. The batch already records this
+  hash (transparency audit, Phase 2g), so no new record is needed and no
+  file format changes for it. The message names both hashes, says why
+  (the same case number would be a different case) and says what to do:
+  open the batch's own scenario, unchanged (its file is named when the
+  batch recorded one), then run the case again. A folder without
+  `archive.provenance.json`, or whose record has no hash, is refused
+  too: the case cannot be checked. **Why:** the owner's answer; it is
+  MC-7. A case of a changed scenario run "with a warning" would show
+  numbers that no batch ever had.
+- **Decision MC-18:** how A3 is built, where the plan leaves the choice
+  open. Each choice has its reason:
+  - The case is built by the batch's own creation function
+    (`_create_sim`), each entry of `run<N>.json` is applied in the
+    file's order with `SimulationExecutor.applyModification`, and it is
+    flown by `_fly`, which the batch's execution function now calls too.
+    It uses no `model_base_dir`, as the batch uses none. **Why:** the
+    same code builds and flies the batch's case and the case run again.
+    Measured on template 25 (2 runs, 0.05 days, 145 kept samples, one
+    and two processes): the positions agree to 0.0 m and the outcomes
+    are equal; the acceptance limit is 1e-6 m.
+  - The engine has `prepare_case` (build, apply, start up) apart from
+    `replay_case` (that, then the flight). **Why:** the GUI's run worker
+    flies the case itself, in chunks (`run_live`, for its progress and
+    Cancel) or through `MissionEngine` with its Cancel. Flown in chunks,
+    the positions also agree to 0.0 m.
+  - `replay_case` returns the `ResultSet` and the Mission Sequence's
+    `CommandSummary` (or None), as `MissionEngine.run` does; the plan
+    says "the `ResultSet`". `api.monte_carlo_case` returns the
+    `ResultSet`, as `api.run` does. **Why:** `--case --out-dir` writes
+    what `run --out-dir` writes, the command summary included.
+  - NumPy's and Python's global generators are not seeded with the case
+    number times 10, as Basilisk's worker does before each case
+    (`Controller.py`, `SimulationExecutor.__call__`). **Why:** the app
+    draws nothing from them during a run (it uses seeded generators of
+    its own: optical navigation, thermal sweeps); every model's noise
+    comes from its `RNGSeed`, which `run<N>.json` holds. Seeding them
+    would change the state of the whole GUI process.
+  - The run's provenance gets `monte_carlo_case`: the batch folder
+    (absolute), the case, the batch's scenario hash and the case's RNG
+    seeds from `run<N>.json`; `rng_seed_note` says the seeds are the
+    case's. It is a new optional field of `RunProvenance`, written only
+    when set. **Why:** the plan's record; every other run's record, and
+    the golden files, stay as they are; a saved case run opens in an
+    older version, which ignores the key (`run_store` keeps the fields
+    it knows).
+  - `monte-carlo --case N` exits with 1 when the case is refused (an
+    input error, ICD-02), 3 when its run fails (a crashed case), and 2
+    for `--out-dir` without `--case` or `--case` with `--overwrite`
+    (usage errors). `--out-dir` defaults to `results`, as for `run`. The
+    refusal is checked before `--out-dir` is made. **Why:** the exit
+    codes keep their ICD-02 meanings; a refused case writes nothing.
+  - Run This Case is a command of the window's registry
+    (`run.monte_carlo_case`, category Run, area Results): the Run menu,
+    the command palette, Ctrl+Shift+R, the button under the Runs table
+    and the table's right-click menu. It acts on exactly one picked run;
+    otherwise it is disabled and its tooltip and palette entry say why.
+    **Why:** design rule 5 (keyboard first) and the plan ("shortcut in
+    the tooltip"); Ctrl+Shift+R was free and sits next to Run (Ctrl+R).
+  - The worker checks the hash and reads the case, not the GUI thread.
+    A refusal is the worker's `refused` signal: a warning row in the
+    Problems panel, which opens, until another case runs or another
+    batch is shown; the Log, a toast and the status bar say it too, as
+    for any run that cannot start. Success is the run's toast ("Monte
+    Carlo case 7 ran again as Run 3"), and Run › History lists the run
+    with the mode "Monte Carlo case 7". **Why:** design rule 6 (file I/O
+    in workers) and CLAUDE.md (success a toast, a problem in Problems).
+    The cost: as at every run start, the views of the run shown before
+    are cleared before the worker reads the batch's record, so a refused
+    case leaves them empty; the earlier runs stay in Run › History and
+    can be shown again from there or from Results › Compare.
+  - A case run has no live 3D View; Live plot works. **Why:** the live
+    view attaches its probe while the service starts up, and the case is
+    started as the batch started it.
+  - The worker imports pandas on the GUI thread before the first case,
+    as `MonteCarloWorker` does before a batch, for the same race with
+    plotly (Windows CI). **Measured here: 280 ms, once per process**,
+    the first time a case or a batch starts; the 50 ms target of design
+    rule 6 is not met for that one click. **Why:** the race crashed CI;
+    the cost is paid once, and not again when a batch ran first.

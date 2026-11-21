@@ -44,6 +44,7 @@ Usage::
     spacemissionstudio validate scenario.json
     spacemissionstudio run scenario.json --out-dir results/
     spacemissionstudio monte-carlo scenario.json --archive-dir mc_results/
+    spacemissionstudio monte-carlo scenario.json --archive-dir mc_results/ --case 7 --out-dir case7/
     spacemissionstudio kernels-status
     spacemissionstudio spaceweather-resolve scenario.json
     spacemissionstudio generate-constellation template.json --out constellation.json \
@@ -566,10 +567,19 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
 
 
 def cmd_monte_carlo(args: argparse.Namespace) -> int:
+    if args.case is None and args.out_dir is not None:
+        print("ERROR: --out-dir is where --case writes its run: give --case N with it", file=sys.stderr)
+        return 2
+    if args.case is not None and args.overwrite:
+        print("ERROR: --case runs one case of the batch in --archive-dir and changes nothing there; "
+              "--overwrite is for a new batch", file=sys.stderr)
+        return 2
     loaded = _load_hashed(args.scenario)
     if isinstance(loaded, int):
         return loaded
     scenario, file_record = loaded
+    if args.case is not None:
+        return _monte_carlo_case(args, scenario, file_record)
 
     if not scenario.monte_carlo.enabled:
         print("ERROR: scenario.monte_carlo.enabled is false in this scenario file -- "
@@ -615,6 +625,53 @@ def cmd_monte_carlo(args: argparse.Namespace) -> int:
         print(f"NOT SHOWN MET: {', '.join(result.name for result in not_shown)} (the upper bound is above the "
               "allowed probability)", file=sys.stderr)
         return EXIT_CHECK_FAILED
+    return 0
+
+
+def _monte_carlo_case(args: argparse.Namespace, scenario, file_record) -> int:
+    """``monte-carlo --case N``: case N of the batch in --archive-dir, run
+    again as a plain run (Monte Carlo plan A3), and what ``run --out-dir``
+    writes. 1 when the case is refused (the scenario changed since the
+    batch, or the batch has no such case), 3 when the run fails."""
+    try:
+        from .engine.monte_carlo import MonteCarloCaseRefused, MonteCarloError, case_parameters, replay_case
+    except ImportError as exc:
+        print(f"ERROR: Basilisk is not installed/built ({exc}) -- see SpaceMissionStudio/README.md", file=sys.stderr)
+        return 2
+    version_note = dependencies.basilisk_check()
+    if version_note:
+        print(f"WARNING: {version_note}", file=sys.stderr)
+    try:  # refused before --out-dir is made: nothing is written for a case that does not run
+        case_parameters(scenario, args.archive_dir, args.case)
+    except MonteCarloCaseRefused as exc:
+        print(f"INVALID: {exc}", file=sys.stderr)
+        return 1
+    out_dir = args.out_dir if args.out_dir is not None else Path("results")
+    folder_error = _output_folder_error(out_dir)
+    if folder_error:
+        print(f"ERROR: {folder_error}", file=sys.stderr)
+        return 3
+    print(f"Running case {args.case} of the Monte Carlo batch in {args.archive_dir} again ({scenario.name!r})...")
+    try:
+        result, command_summary = replay_case(scenario, args.archive_dir, args.case, allow_scripts=args.allow_scripts)
+    except MonteCarloCaseRefused as exc:
+        print(f"INVALID: {exc}", file=sys.stderr)
+        return 1
+    except MonteCarloError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001 -- the case's own error, as run reports a run's (a crashed case)
+        print(f"ERROR: run failed: {exc}", file=sys.stderr)
+        return 3
+    if result.provenance is not None:  # the file as read, before migration (transparency audit, Phase 2b)
+        result.provenance = dataclasses.replace(result.provenance, **file_record)
+    outputs = argparse.Namespace(out_dir=out_dir, oem=False, explain=False)
+    try:
+        _write_run_outputs(outputs, scenario, result, command_summary)
+    except (OSError, ValueError) as exc:  # a write that failed, or a path refused by results.output_path
+        print(f"ERROR: could not write the results to {out_dir}: {exc}", file=sys.stderr)
+        return 3
+    print(f"Case {args.case} ran again: the same draws and seeds as in the batch.")
     return 0
 
 
@@ -1510,6 +1567,17 @@ def _positive_int_arg(text: str) -> int:
         raise argparse.ArgumentTypeError(f"{text!r}: a whole number of 1 or more") from None
     if value < 1:
         raise argparse.ArgumentTypeError(f"{text!r}: a whole number of 1 or more")  # 0 and -3 were accepted (L7)
+    return value
+
+
+def _non_negative_int_arg(text: str) -> int:
+    """A whole number of 0 or more (a Monte Carlo case: Basilisk numbers them from 0)."""
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r}: a whole number of 0 or more") from None
+    if value < 0:
+        raise argparse.ArgumentTypeError(f"{text!r}: a whole number of 0 or more")
     return value
 
 
@@ -2534,7 +2602,9 @@ def build_parser() -> argparse.ArgumentParser:
         "monte-carlo", help="run a Monte Carlo batch and archive retained results",
         description="Run a Monte Carlo batch, archive its retained results and print each outcome's range over "
                     "the runs and the scenario's requirements. Exit status 3 when a run failed; else 5 when a "
-                    "requirement with an allowed probability is not shown met.")
+                    "requirement with an allowed probability is not shown met. With --case N, run case N of the "
+                    "batch in --archive-dir again as a plain run and write what 'run --out-dir' writes; exit "
+                    "status 1 when the scenario changed since the batch.")
     p_mc.add_argument("scenario", type=Path)
     p_mc.add_argument("--archive-dir", type=Path, default=Path("monte_carlo_results"),
                        help="directory to archive per-run parameters and retained data to (empty, or an earlier "
@@ -2544,6 +2614,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_mc.add_argument("--allow-scripts", action="store_true",
                       help="run the Mission Sequence's script_block commands in every run (unrestricted Python: "
                            "only for files you trust and have read)")
+    p_mc.add_argument("--case", type=_non_negative_int_arg, default=None, metavar="N",
+                      help="run case N of the batch in --archive-dir again, as a plain run with the same draws and "
+                           "seeds (refused when the scenario changed since the batch)")
+    p_mc.add_argument("--out-dir", type=Path, default=None,
+                      help="with --case: the directory to write the case's results to, as 'run --out-dir' "
+                           "(default: results)")
     p_mc.set_defaults(func=cmd_monte_carlo)
 
     p_life = subparsers.add_parser("lifetime", help="estimate when a spacecraft re-enters (orbit-averaged drag)")

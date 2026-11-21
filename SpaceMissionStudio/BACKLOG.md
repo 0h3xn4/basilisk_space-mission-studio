@@ -28,16 +28,6 @@
   Every number has a source or is a placeholder ("TBD"). Write the
   design and the decisions first; the item needs the owner's choice of
   scope before code, so move it to `## Needs human` with the design.
-- Monte Carlo phase A, part 2: reproduce one case
-  (`docs/developer/monte-carlo-plan.md` section 4, item A3; decision
-  MC-7; about 3 hours). Any case of a batch runs again from its
-  `run<N>.json` as a normal run and opens in Results: "Run this case" on
-  the Runs table, `monte-carlo --case N [--out-dir D]`, and
-  `api.monte_carlo_case`. Refused when the scenario's hash differs from
-  the batch's. Done when the replayed case agrees with the batch summary
-  at every kept sample to 1e-6 m for a 2-run batch of template 25 with
-  one and with two processes. If the owner has answered Q3, follow the
-  answer.
 
 ## Later
 
@@ -63,6 +53,15 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Monte Carlo phase A, part 2: run one case again (A3), on branch
+  `feature/monte-carlo-rerun-case` (2026-11-21, based on
+  `feature/monte-carlo-outcomes`). Run This Case in Results › Monte
+  Carlo › Runs (Ctrl+Shift+R, the palette, the right-click menu),
+  `monte-carlo --case N [--out-dir D]` and `api.monte_carlo_case`. The
+  case agrees with the batch summary to 0.0 m at every kept sample for
+  a 2-run batch of template 25 with one and with two processes. The
+  owner's answer to Q3 is the provisional decision MC-17 (refuse when
+  the scenario changed since the batch); the build choices are MC-18.
 - Monte Carlo phase A, part 1: outcomes (A1), crashed runs' draws (A4)
   and requirements (A2), on branch `feature/monte-carlo-outcomes`
   (2026-11-21). Each run keeps its Overview figures; the summary keeps

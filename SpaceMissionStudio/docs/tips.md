@@ -18,6 +18,7 @@ writes, so you can move data to and from other tools.
 | `Ctrl+K` | Command palette (also the top bar's search): find any command, area, page, spacecraft, setting, template or result series by a few letters ("save as", "events", "sat-1", "05 formation", "velocity") |
 | `Ctrl+R` | Run, in the mode beside it (Single run, Monte Carlo, SIL) |
 | `Esc` | Cancel the run |
+| `Ctrl+Shift+R` | Run the Monte Carlo case picked in Results › Monte Carlo › Runs again, as a plain run |
 | `F1` | User Manual |
 | `Ctrl+Z` / `Ctrl+Shift+Z` (`Ctrl+Y` on Windows) | Undo / redo a scenario edit (the menu names the edit: "Undo dry_mass_kg (sat-1)") |
 | `Ctrl+J`, `Ctrl+I` | Show or hide the Problems panel, the Inspector |

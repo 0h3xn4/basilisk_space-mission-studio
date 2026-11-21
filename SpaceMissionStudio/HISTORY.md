@@ -20279,3 +20279,84 @@ keeps its draws; a cancelled batch has no crashed runs),
 `tests/test_migrations.py` (5 to 6), `tests/test_cli.py` (exit 0, 3 and
 5) and the two GUI test files. Four existing tests changed
 (`docs/ui/TEST_CHANGES.md`).
+
+## Monte Carlo phase A, part 2: run one case again (2026-11-21)
+
+Item A3 of `docs/developer/monte-carlo-plan.md`, on branch
+`feature/monte-carlo-rerun-case`, based on `feature/monte-carlo-outcomes`
+(#306, part 1). The owner answered Q3 for this work: refuse a case when
+the scenario changed since the batch. `docs/DECISIONS.md` records the
+answer as the provisional decision MC-17, and the choices of the build
+as MC-18. Commits name SRS-F-13.
+
+**The engine.** `engine.monte_carlo.case_parameters` reads the batch's
+`archive.provenance.json` and compares its `scenario_sha256` with the
+SHA-256 of the scenario as it is now. The batch has recorded this hash
+since the transparency audit's Phase 2g, so nothing new is written for
+the check. A different hash, a case outside the batch, a missing
+`run<N>.json` (a cancelled batch's unstarted case) and a folder without
+the record each raise `MonteCarloCaseRefused`, with what to do; for a
+changed scenario the message names both hashes and the batch's scenario
+file. `prepare_case` then builds the case with the batch's own creation
+function (`_create_sim`), applies each entry of `run<N>.json` (JSON only,
+S-04) in the file's order with Basilisk's
+`SimulationExecutor.applyModification`, and starts it up as the batch's
+execution function does. `replay_case` flies it with `_fly`, which the
+execution function now calls too, and returns the `ResultSet` and the
+Mission Sequence's summary. The run's provenance gets the new optional
+`monte_carlo_case` (the batch folder, the case, the batch's hash, the
+case's RNG seeds), written only when set, so every other record is as
+before.
+
+**The command line and the API.** `monte-carlo SCENARIO --archive-dir DIR
+--case N [--out-dir D]` runs the case and writes what `run --out-dir`
+writes. It exits with 1 when the case is refused (checked before
+`--out-dir` is made), 3 when its run fails, and 2 for `--out-dir`
+without `--case` or `--case` with `--overwrite`. `api.monte_carlo_case`
+returns the `ResultSet`; `docs/api.md` lists it.
+
+**The window.** Results › Monte Carlo › Runs has **Run This Case**: a
+button under the table, the table's right-click menu, the window's
+command `run.monte_carlo_case` (Run menu, palette, Ctrl+Shift+R). It acts
+on exactly one picked run, and is disabled with the reason otherwise.
+The case runs in the normal run worker (`RunWorker(case=...)`): the
+worker checks and reads the case, flies it in chunks for the progress
+and Cancel, and the window shows and keeps it like any run, with the
+toast "Monte Carlo case N ran again as Run M". A refused case is the
+worker's `refused` signal and a warning row in the Problems panel.
+
+**Is it the batch's case?** Measured here on template 25 (2 runs, 0.05
+days, 145 kept samples): with one process and with two, both cases
+agree with the batch summary's positions to 0.0 m at every kept sample,
+and their outcomes are equal; flown in chunks (`run_live`, as the window
+flies it), case 1 agrees to 0.0 m too. The acceptance limit is 1e-6 m.
+A case run again takes 0.08 to 0.13 s for these 0.05 days.
+
+**Found on the way.**
+- The first GUI test read the shown result as soon as the worker
+  stopped, and found the last live-plot chunk, which has no case record.
+  The finished result arrives a moment later, through the queued signal;
+  the test now waits for the run's toast. Partial results are not
+  marked; the finished one is.
+- Importing Basilisk's Monte Carlo controller imports pandas. As for a
+  batch, the worker imports it on the GUI thread first, for the race
+  with plotly that crashed the Windows CI (`MonteCarloWorker`). Measured
+  here: 280 ms, once per process, the first time a case or a batch
+  starts. That one click does not meet the 50 ms target of design rule
+  6 (MC-18).
+- The tests need the reference data in their home folder; this
+  container's test home got a copy of the one the part 1 work used.
+
+**Golden files.** Byte-identical: `tests/test_golden_outputs.py` passes.
+A record without a case has no `monte_carlo_case` key.
+
+**Tests.** New in `tests/test_monte_carlo.py`: a case run again is the
+batch's case (one and two processes), flown in chunks too, the refusal
+of a changed scenario with both hashes, the refusal of a case the batch
+does not have (and of script blocks without consent), and a crashed case
+that raises its own error (forced by the drag coefficient the case drew).
+New in `tests/test_cli.py` (`--case` writes what `run` writes; exit 1
+with both hashes; the usage errors), `tests/test_api.py` and
+`tests/gui/test_monte_carlo_results_widget.py` (the action, disabled
+without one picked run; the Problems row; the window runs a case and
+refuses one of another batch). No existing test changed.

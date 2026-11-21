@@ -160,3 +160,27 @@ def test_the_launch_delay_sweep_is_written_with_its_provenance(tmp_path, monkeyp
     assert record["results"]["worst_launch_utc"] in [case["launch_utc"] for case in record["results"]["cases"]]
     sweep = api.launch_delays(scenario)
     assert len(api.record(scenario, sweep)["results"]["cases"]) == 6
+
+
+@pytest.mark.requires_basilisk
+def test_a_monte_carlo_case_runs_again_through_the_api(tmp_path):
+    """api.monte_carlo_case (Monte Carlo plan A3): a case of a batch of
+    template 25, run again, has the batch's outcomes and names the batch in
+    its provenance; with out_dir it writes the CSVs and provenance.json; a
+    changed scenario is refused."""
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine.monte_carlo import MonteCarloCaseRefused
+
+    scenario = api.load(api.template("25_monte_carlo_orbit_and_drag_dispersions"))
+    scenario.sim_settings.duration_days = 0.01  # [day]
+    scenario.monte_carlo.num_runs, scenario.monte_carlo.thread_count = 2, 1
+    batch = api.monte_carlo(scenario, tmp_path / "mc")
+    result = api.monte_carlo_case(scenario, tmp_path / "mc", 1, out_dir=tmp_path / "case1")
+    values, _units = monte_carlo.run_outcomes(result)
+    assert values == pytest.approx(batch.outcomes[1], rel=1e-9)
+    assert result.provenance.monte_carlo_case["case"] == 1
+    record = json.loads((tmp_path / "case1" / "provenance.json").read_text())
+    assert record["monte_carlo_case"]["case"] == 1
+    scenario.monte_carlo.num_runs = 3  # the batch had 2
+    with pytest.raises(MonteCarloCaseRefused, match="the scenario changed since the batch"):
+        api.monte_carlo_case(scenario, tmp_path / "mc", 1)

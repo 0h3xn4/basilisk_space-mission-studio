@@ -47,7 +47,7 @@ from pathlib import Path
 API_VERSION = 1
 
 __all__ = ["API_VERSION", "template", "load", "validate", "assumptions", "run", "summary", "lifetime", "budget",
-           "launch_delays", "altitude_trade", "monte_carlo", "compare", "design_checks", "power_budget", "model_analyses",
+           "launch_delays", "altitude_trade", "monte_carlo", "monte_carlo_case", "compare", "design_checks", "power_budget", "model_analyses",
            "reentry",
            "thermal", "thermal_model", "thermal_sweep", "thermal_sensitivity", "thermal_monte_carlo",
            "plan_opportunities", "plan_schedule", "plan_fly", "plan_verify", "plan_export", "plan_load",
@@ -197,6 +197,25 @@ def monte_carlo(scenario, archive_dir, allow_scripts: bool = False, overwrite: b
         raise MonteCarloError("the scenario has no Monte Carlo batch (monte_carlo)")
     run_monte_carlo(scenario, scenario.monte_carlo, archive_dir, allow_scripts=allow_scripts, overwrite=overwrite)
     return monte_carlo_results.load(archive_dir)
+
+
+def monte_carlo_case(scenario, archive_dir, case: int, out_dir=None, allow_scripts: bool = False):
+    """Run case ``case`` of the batch in ``archive_dir`` again, as a plain
+    run with the same draws and seeds, and return its results
+    (``engine.results.ResultSet``, every series, its ``provenance`` naming
+    the batch in ``monte_carlo_case``). With ``out_dir``, also write one CSV
+    per series and ``provenance.json`` there, as :func:`run` does.
+
+    :raises MonteCarloCaseRefused: the scenario changed since the batch
+        (the message names both SHA-256 hashes), or the batch has no such
+        case.
+    """
+    from .engine.monte_carlo import replay_case
+
+    result, _summary = replay_case(scenario, archive_dir, case, allow_scripts=allow_scripts)
+    if out_dir is not None:
+        result.export_csv(out_dir)
+    return result
 
 
 def compare(a_scenario, a_result, b_scenario, b_result):

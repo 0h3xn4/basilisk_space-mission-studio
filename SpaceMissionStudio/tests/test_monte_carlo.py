@@ -672,3 +672,168 @@ def test_a_cancelled_batch_does_not_show_its_unfinished_cases_as_crashed(tmp_pat
     monte_carlo_process._summary_child(scenario, str(tmp_path), 2)
     batch = mcr.load(tmp_path)
     assert batch.runs == [0] and batch.failed == [] and batch.failed_drawn == {}
+
+
+# -- One case again (Monte Carlo plan A3) -------------------------------------
+
+
+def _position_at_kept_samples(result, name, time_s):
+    """The run's position at the batch summary's kept samples (its times)."""
+    import numpy as np
+
+    series = result.series[f"{name}.position_N"]
+    index = np.searchsorted(series.time_s, time_s)
+    assert np.allclose(series.time_s[index], time_s, rtol=0.0, atol=1e-6)  # [s] the same samples
+    return np.asarray(series.data)[index]
+
+
+@pytest.mark.parametrize("thread_count", [1, 2])
+def test_a_case_run_again_is_the_batchs_case(tmp_path, thread_count):
+    """A3's acceptance: each case of a 2-run batch of template 25 (0.05
+    days), run again from its run<N>.json, agrees with the batch summary's
+    position at every kept sample to 1e-6 m and has the batch's outcomes,
+    with one process and with two. Its provenance names the batch, the case
+    and the batch's scenario hash, and its seeds are the case's."""
+    import json
+
+    import numpy as np
+
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25(thread_count=thread_count)
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    assert batch.runs == [0, 1]
+    for k, case in enumerate(batch.runs):
+        result, summary = monte_carlo.replay_case(scenario, tmp_path, case)
+        assert summary is None  # template 25 has no Mission Sequence
+        position = _position_at_kept_samples(result, "sat-1", batch.time_s)
+        assert np.max(np.abs(position - batch.positions["sat-1"][k])) <= 1e-6  # [m]
+        values, units = monte_carlo.run_outcomes(result)
+        assert set(values) == set(batch.outcomes[k])
+        for key, value in values.items():
+            assert value == pytest.approx(batch.outcomes[k][key], rel=1e-9, abs=1e-12), key
+            assert units[key] == batch.outcome_units[key]
+        record = result.provenance.monte_carlo_case
+        params = json.loads((tmp_path / f"run{case}.json").read_text())
+        assert record["case"] == case and record["archive_dir"] == str(tmp_path.resolve())
+        assert record["scenario_sha256"] == output_provenance.scenario_sha256(scenario)
+        assert record["rng_seeds"] == {key: int(value) for key, value in params.items() if key.endswith(".RNGSeed")}
+        assert record["rng_seeds"] and result.provenance.rng_seed_note == monte_carlo.CASE_SEEDS_NOTE
+        assert result.provenance.to_dict()["monte_carlo_case"] == record
+    assert batch.positions["sat-1"][0, -1, 1] != batch.positions["sat-1"][1, -1, 1]  # two different cases
+
+
+def test_a_case_flown_in_chunks_is_the_batchs_case_too(tmp_path):
+    """The GUI's run worker flies a case in chunks (run_live, for its
+    progress and Cancel): the same positions as the batch, to 1e-6 m."""
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25()
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    service, record = monte_carlo.prepare_case(scenario, tmp_path, 1)
+    fractions = []
+    result = monte_carlo.mark_case(service.run_live(lambda partial, fraction: fractions.append(fraction)), record)
+    assert len(fractions) > 2 and fractions[-1] == 1.0
+    position = _position_at_kept_samples(result, "sat-1", batch.time_s)
+    assert np.max(np.abs(position - batch.positions["sat-1"][1])) <= 1e-6  # [m]
+    assert result.provenance.monte_carlo_case["case"] == 1
+
+
+def _batch_folder(tmp_path, scenario, digest=None, cases=(0,)):
+    """A batch folder as run_monte_carlo leaves it, for the checks made
+    before anything is built: archive.provenance.json and run<N>.json."""
+    import json
+
+    from spacemissionstudio import output_provenance
+
+    record = {"scenario_sha256": output_provenance.scenario_sha256(scenario) if digest is None else digest,
+              "scenario_file": "orbit_batch.json"}
+    (tmp_path / "archive.provenance.json").write_text(json.dumps(record))
+    for case in cases:
+        (tmp_path / f"run{case}.json").write_text(json.dumps({"TaskList[0].TaskModels[0].RNGSeed": "7"}))
+    return tmp_path
+
+
+def test_a_case_of_a_changed_scenario_is_refused_with_both_hashes(tmp_path):
+    """Decision MC-17 (the owner's answer to Q3, provisional): a case is not
+    run again when the scenario changed since the batch. The message names
+    the scenario's hash now and the batch's, says why, and says how to make
+    it work: open the batch's own scenario (its file named)."""
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.engine.monte_carlo import MonteCarloCaseRefused, MonteCarloError, replay_case
+
+    scenario = _short(_scenario(), num_runs=2)
+    folder = _batch_folder(tmp_path, scenario)
+    batch_digest = output_provenance.scenario_sha256(scenario)
+    scenario.spacecraft[0].dry_mass_kg = 101.0  # [kg] edited since the batch
+    with pytest.raises(MonteCarloCaseRefused) as refused:
+        replay_case(scenario, folder, 0)
+    message = str(refused.value)
+    assert batch_digest in message and output_provenance.scenario_sha256(scenario) in message
+    assert "the scenario changed since the batch" in message
+    assert "Open the batch's own scenario (orbit_batch.json)" in message
+    assert isinstance(refused.value, MonteCarloError)  # the CLI and the GUI catch it as the batch's errors
+
+
+def test_a_case_the_batch_does_not_have_is_refused(tmp_path):
+    """No run<N>.json (a cancelled batch's unstarted case), a case out of
+    the batch's range, a folder without the batch's record, and script
+    blocks without consent: each refused with what to do."""
+    from spacemissionstudio.engine.monte_carlo import MonteCarloCaseRefused, MonteCarloError, replay_case
+
+    scenario = _short(_scenario(), num_runs=2)
+    folder = _batch_folder(tmp_path, scenario, cases=(0,))
+    with pytest.raises(MonteCarloCaseRefused, match=r"has no run1\.json: case 1 did not start"):
+        replay_case(scenario, folder, 1)
+    with pytest.raises(MonteCarloCaseRefused, match="the batch has no case 2: its cases are 0 to 1"):
+        replay_case(scenario, folder, 2)
+    (folder / "archive.provenance.json").unlink()
+    with pytest.raises(MonteCarloCaseRefused, match="has no archive.provenance.json"):
+        replay_case(scenario, folder, 0)
+    _batch_folder(tmp_path, scenario, digest="")
+    with pytest.raises(MonteCarloCaseRefused, match="does not record the scenario's SHA-256"):
+        replay_case(scenario, folder, 0)
+
+    scripted = _short(_scenario(), num_runs=2)
+    scripted.mission_sequence = [Command(kind="script_block", params={"code": "pass"})]
+    with pytest.raises(MonteCarloError, match="explicit consent"):
+        replay_case(scripted, _batch_folder(tmp_path, scripted), 0)
+
+
+def test_a_crashed_case_run_again_raises_its_own_error(tmp_path, monkeypatch):
+    """A3: a case that crashed in the batch raises its own error when it is
+    run again; the other case runs. The crash is forced by the case's own
+    draw: the drag coefficient case 1 drew (read from its run1.json, which
+    the controller writes before the case runs)."""
+    import json
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    real = monte_carlo._fly
+
+    def crashes_on_case_1s_draw(service, allow_scripts=False):
+        path = tmp_path / "run1.json"
+        if path.is_file():
+            params = json.loads(path.read_text())
+            drawn = float(next(value for key, value in params.items() if key.endswith("dragCoeff")))
+            flown = service.spacecraft_handles["sat-1"].drag_effector.coreParams.dragCoeff
+            if flown == drawn:
+                raise RuntimeError(f"forced crash at drag coefficient {flown!r}")
+        return real(service, allow_scripts)
+
+    monkeypatch.setattr(monte_carlo, "_fly", crashes_on_case_1s_draw)
+    scenario = _template_25(duration_days=0.01)
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == [1]
+    assert mcr.load(tmp_path).failed == [1]
+    with pytest.raises(RuntimeError, match="forced crash at drag coefficient"):
+        monte_carlo.replay_case(scenario, tmp_path, 1)
+    result, _summary = monte_carlo.replay_case(scenario, tmp_path, 0)
+    assert result.provenance.monte_carlo_case["case"] == 0

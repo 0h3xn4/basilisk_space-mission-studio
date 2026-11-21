@@ -331,3 +331,153 @@ def test_a_thermal_batch_after_one_with_requirements_shows_none(qtbot, tmp_path)
     assert widget.requirements_table.row_count() == 1
     widget.load_folder(tmp_path / "thermal")
     assert widget.requirements_table.stack.currentWidget() is widget.requirements_table.empty
+
+
+# -- Run This Case (Monte Carlo plan A3) --------------------------------------
+
+
+def _pick_rows(widget, *rows):
+    """Select the shown rows ``rows`` of the Runs table."""
+    from PySide6.QtCore import QItemSelectionModel
+
+    view = widget.table.view
+    view.clearSelection()
+    for row in rows:
+        view.selectionModel().select(view.model().index(row, 0),
+                                     QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows)
+
+
+def test_run_this_case_is_there_and_disabled_without_a_picked_run(qtbot, tmp_path):
+    """The Runs page has Run This Case (a button, the right-click menu, the
+    shortcut in its tooltip). It is disabled until one run is picked, and
+    then asks for that run's case, also after a sort; two runs picked, or
+    a thermal batch, disable it again."""
+    from dataclasses import replace
+
+    from PySide6.QtCore import Qt
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.gui import monte_carlo_results_widget as view_module
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    action = widget.run_case_action
+    assert widget.run_case_button.defaultAction() is action and not action.isEnabled()
+    assert "Ctrl+Shift+R" in action.toolTip() and action.shortcut().toString() == "Ctrl+Shift+R"
+    assert widget.case_unavailable() == view_module._NO_BATCH
+
+    batch = _save_batch(tmp_path / "orbit")
+    widget.load_folder(tmp_path / "orbit")
+    assert not action.isEnabled() and widget.case_unavailable() == view_module._PICK_ONE_CASE
+    asked = []
+    widget.case_requested.connect(asked.append)
+    widget.table.sort_by(0, Qt.SortOrder.DescendingOrder)  # the case is the run's number, not the row
+    _pick_rows(widget, 1)
+    assert action.isEnabled() and widget.picked_case() == 3
+    action.trigger()
+    assert asked == [3]
+
+    widget._on_runs_menu(widget.table.view.rect().center())
+    assert action in widget.runs_menu.actions()
+    widget.runs_menu.close()
+
+    _pick_rows(widget, 0, 1)
+    assert not action.isEnabled() and widget.picked_case() is None
+
+    thermal = replace(batch, kind="thermal", positions={}, velocities={}, case="hot",
+                      temperatures_c={"bus": np.linspace(10.0, 20.0, 5 * batch.time_s.size).reshape(5, -1)})
+    mcr.save(thermal, tmp_path / "thermal")
+    widget.load_folder(tmp_path / "thermal")
+    _pick_rows(widget, 0)
+    assert not action.isEnabled() and widget.case_unavailable() == view_module._NOT_AN_ORBIT_BATCH
+
+
+def test_a_refused_case_is_a_problem_until_another_batch_is_shown(qtbot, tmp_path):
+    """Why a case was not run is a Problems row (problem_rows); it goes when
+    another batch is shown."""
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch(tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    with qtbot.waitSignal(widget.problems_changed):
+        widget.set_case_problem("Case 1 was not run: the scenario changed since the batch")
+    assert widget.problem_rows() == [("warning", "Case 1 was not run: the scenario changed since the batch",
+                                      "Case 1 was not run: the scenario changed since the batch")]
+    with qtbot.waitSignal(widget.problems_changed):
+        widget.load_folder(tmp_path)
+    assert widget.problem_rows() == []
+
+
+def _short_template_25(path):
+    """Template 25 with 2 runs of 0.01 days, saved to ``path``; and its batch."""
+    from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
+    from spacemissionstudio.schema import load_scenario
+
+    scenario = load_scenario(TEMPLATES_DIR / "25_monte_carlo_orbit_and_drag_dispersions.json")
+    scenario.sim_settings.duration_days = 0.01  # [day]
+    scenario.monte_carlo.num_runs, scenario.monte_carlo.thread_count = 2, 1
+    scenario.save(path)
+    return load_scenario(path)
+
+
+@pytest.mark.requires_basilisk
+def test_the_main_window_runs_a_case_again_or_says_why_not(qtbot, tmp_path, monkeypatch):
+    """Monte Carlo plan A3 in the window: Run This Case (the window's
+    command, in the palette) runs the picked case in the run worker and
+    shows it as a run, with a toast; its provenance names the case. With a
+    batch of another scenario, the case is refused: the Problems panel has
+    the reason and what to do."""
+    import json
+    import shutil
+
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.gui import main_window as main_window_module
+    from spacemissionstudio.gui.main_window import MainWindow
+
+    path = tmp_path / "orbit_batch.json"
+    scenario = _short_template_25(path)
+    folder = tmp_path / "batch"
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, folder) == []
+    toasts = []
+    real_toast = main_window_module.show_toast
+    monkeypatch.setattr(main_window_module, "show_toast",
+                        lambda window, message, kind="success", **k: toasts.append((message, kind))
+                        or real_toast(window, message, kind, **k))
+
+    window = MainWindow(prompt_startup_fetch=False, check_autosave_recovery=False)
+    qtbot.addWidget(window)
+    window.open_path(path)
+    assert output_provenance.scenario_sha256(window.scenario_editor.to_scenario()) == \
+        output_provenance.scenario_sha256(scenario)  # the editor's scenario is the batch's
+    command = window.commands["run.monte_carlo_case"]
+    assert command.category == "Run" and not command.action.isEnabled()
+    assert command.unavailable.startswith("No Monte Carlo batch is shown")  # its palette entry says why
+    widget = window.monte_carlo_results_widget
+    assert widget.load_folder(folder)
+    assert "Pick one run" in command.unavailable
+    _pick_rows(widget, 1)
+    assert command.action.isEnabled() and widget.picked_case() == 1
+    command.action.trigger()
+    qtbot.waitUntil(lambda: any(message.startswith("Monte Carlo case 1 ran again as Run ") and kind == "success"
+                                for message, kind in toasts), timeout=60000)
+    qtbot.waitUntil(lambda: not window.run_end_pending, timeout=30000)
+    shown = window.results_widget._result
+    assert shown is not None and shown.provenance.monte_carlo_case["case"] == 1
+    assert window.current_view() is window.results_widget
+
+    other = tmp_path / "other"
+    shutil.copytree(folder, other)
+    record = json.loads((other / "archive.provenance.json").read_text())
+    record["scenario_sha256"] = "0" * 64
+    (other / "archive.provenance.json").write_text(json.dumps(record))
+    assert widget.load_folder(other)
+    _pick_rows(widget, 0)
+    command.action.trigger()
+    qtbot.waitUntil(lambda: bool(widget.case_problem), timeout=60000)
+    assert "the scenario changed since the batch" in widget.case_problem and "0" * 64 in widget.case_problem
+    assert any(widget.case_problem == text for _severity, text in window.problems_widget.problems)
+    assert not window.problems_dock.isHidden()  # the Problems panel opened

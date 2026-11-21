@@ -25,7 +25,9 @@ an embedded Results view, a sortable table of what each run drew, where
 it ended and its outcomes (crashed runs with their draws), and the
 requirements judged on the runs (``engine.monte_carlo_requirements``).
 Filled after a run in Monte Carlo mode, or from a folder an earlier batch
-saved (**Open results...**).
+saved (**Open results...**). **Run This Case** (the Runs table's button and
+right-click menu) asks for the case picked to run again as a plain run
+(Monte Carlo plan A3); the main window runs it.
 """
 
 from __future__ import annotations
@@ -36,7 +38,9 @@ import math
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMenu, QPushButton, QToolButton, QVBoxLayout,
+                               QWidget)
 
 from . import export_log
 from ..config import models
@@ -46,7 +50,7 @@ from .data_table import DataTable, Row
 from .results_widget import ResultsWidget
 from .scenario_explainer_widget import _stat_tile
 from .feedback import report
-from .theme import set_role
+from .theme import icon, set_role
 from .widgets import ComboBox, TabWidget
 
 _EMPTY_HINT = ("A run in Monte Carlo mode (the run mode beside Run) shows its batch here. Open results... "
@@ -72,14 +76,36 @@ _NO_REQUIREMENTS = ("No requirements in this batch. Add them under Scenario › 
                     "batch judges them.")
 
 
+# Run This Case (plan A3): its keys, what it does, and why it cannot run now.
+RUN_CASE_KEYS = "Ctrl+Shift+R"
+RUN_CASE_TIP = ("Run the case picked in the Runs table again, as a plain run with the same draws and seeds: every "
+                "series, the events and the Overview. The open scenario must be the batch's, unchanged.")
+_NO_BATCH = "No Monte Carlo batch is shown. Run one, or open its folder (Open results...)."
+_NOT_AN_ORBIT_BATCH = "A thermal or operations batch has no Basilisk cases to run again."
+_NO_FOLDER = "The batch's folder is not known: open it with Open results..."
+_PICK_ONE_CASE = "Pick one run in Results › Monte Carlo › Runs."
+
+
 class MonteCarloResultsWidget(QWidget):
     #: The Requirements tab's empty state asks for the scenario's Monte Carlo settings.
     edit_requirements_requested = Signal()
+    #: Run This Case: the case (Basilisk's number) to run again.
+    case_requested = Signal(int)
+    #: Whether Run This Case can act changed (case_unavailable()).
+    case_changed = Signal()
+    #: problem_rows() changed: a case was refused, or that is no longer current.
+    problems_changed = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.batch: mcr.MonteCarloBatch | None = None
         self.folder: Path | None = None
+        self.case_problem = ""  # why the last case asked for was not run (main window: case_refused)
+        # The window's command (Run › Run This Case, gui.actions); its shortcut is the window's.
+        self.run_case_action = QAction(icon("play"), "Run This Case", self)
+        self.run_case_action.setShortcut(QKeySequence(RUN_CASE_KEYS))
+        self.run_case_action.setToolTip(f"Run This Case ({RUN_CASE_KEYS})\n{RUN_CASE_TIP}")
+        self.run_case_action.triggered.connect(self._on_run_case)
 
         layout = QVBoxLayout(self)
         header = QHBoxLayout()
@@ -116,13 +142,22 @@ class MonteCarloResultsWidget(QWidget):
         runs_page = QWidget()
         runs_layout = QVBoxLayout(runs_page)
         runs_layout.setContentsMargins(0, 4, 0, 0)
-        runs_hint = QLabel("What each run drew, and where it ended against the batch mean. Click a column to sort.")
+        runs_hint = QLabel("What each run drew, and where it ended against the batch mean. Click a column to sort; "
+                           "pick a run and Run This Case to open it as a plain run.")
         runs_hint.setWordWrap(True)
         set_role(runs_hint, tone="secondary")
         runs_layout.addWidget(runs_hint)
         self.table = DataTable("No runs in this batch.")  # UI overhaul M6b
+        self.table.view.selectionModel().selectionChanged.connect(self._refresh_case_action)
+        self.table.view.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.view.customContextMenuRequested.connect(self._on_runs_menu)
         runs_layout.addWidget(self.table, 1)
         export_row = QHBoxLayout()
+        self.run_case_button = QToolButton()  # secondary: the top bar's Run is the one accent (UI-03)
+        self.run_case_button.setDefaultAction(self.run_case_action)
+        self.run_case_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.run_case_button.setAccessibleName("Run This Case")
+        export_row.addWidget(self.run_case_button)
         export_row.addStretch(1)
         self.export_button = QPushButton("Export table CSV...")
         self.export_button.clicked.connect(self._on_export)
@@ -167,6 +202,7 @@ class MonteCarloResultsWidget(QWidget):
 
     def _show(self, batch: mcr.MonteCarloBatch | None) -> None:
         self.batch = batch
+        self.set_case_problem("")  # a refusal was about the batch shown before
         has_batch = batch is not None and bool(batch.runs)
         self.views.setVisible(has_batch)
         self.export_button.setEnabled(has_batch)
@@ -188,6 +224,7 @@ class MonteCarloResultsWidget(QWidget):
                 self.plots.set_result(None)
             self.table.clear()
             self.requirements_table.clear()
+            self._refresh_case_action()
             return
         self.title_label.setText(batch.scenario_name)
         days = float(batch.time_s[-1]) / 86400.0 if batch.time_s.size else 0.0
@@ -296,6 +333,7 @@ class MonteCarloResultsWidget(QWidget):
         self.table.set_table(labels, table_rows, numeric=[k for k in range(len(labels)) if k not in text],
                              stretch=-1)
         self.table.set_sortable(0, Qt.SortOrder.AscendingOrder)
+        self._refresh_case_action()
 
     def _fill_requirements(self, results: list) -> None:
         """The Requirements tab: one row per requirement (the command line's
@@ -315,6 +353,57 @@ class MonteCarloResultsWidget(QWidget):
                             muted=frozenset() if mark is not None else frozenset({11})))
         self.requirements_table.set_table(list(mcreq.TABLE_HEADER), rows, numeric=range(3, 11), stretch=1)
         self.requirements_table.set_sortable(0, Qt.SortOrder.AscendingOrder)
+
+    # -- one case again (plan A3) -------------------------------------------
+
+    def picked_case(self) -> int | None:
+        """The case of the one run picked in the Runs table (Basilisk's
+        number, its first column), or None."""
+        rows = self.table.view.selectionModel().selectedRows() if self.table.model.rowCount() else []
+        if len(rows) != 1:
+            return None
+        row = self.table.proxy.mapToSource(rows[0]).row()
+        return int(float(self.table.model.text(row, 0)))
+
+    def case_unavailable(self) -> str:
+        """Why Run This Case cannot act now, or "" when it can."""
+        if self.batch is None or not self.batch.runs:
+            return _NO_BATCH
+        if self.batch.kind != "orbit":
+            return _NOT_AN_ORBIT_BATCH
+        if self.folder is None:
+            return _NO_FOLDER
+        if self.picked_case() is None:
+            return _PICK_ONE_CASE
+        return ""
+
+    def _refresh_case_action(self, *_args) -> None:
+        self.run_case_action.setEnabled(not self.case_unavailable())
+        self.case_changed.emit()
+
+    def _on_run_case(self) -> None:
+        case = self.picked_case()
+        if case is not None and not self.case_unavailable():
+            self.case_requested.emit(case)
+
+    def _on_runs_menu(self, at) -> None:
+        """The Runs table's right-click menu: Run This Case, Copy."""
+        menu = QMenu(self)
+        menu.addAction(self.run_case_action)
+        menu.addAction("Copy", self.table.copy)
+        menu.popup(self.table.view.viewport().mapToGlobal(at))
+        self.runs_menu = menu  # kept while it is open
+
+    def set_case_problem(self, text: str) -> None:
+        """Why the case asked for was not run ("" once that is no longer
+        current): a row of the Problems panel (:meth:`problem_rows`)."""
+        if text != self.case_problem:
+            self.case_problem = text
+            self.problems_changed.emit()
+
+    def problem_rows(self) -> list:
+        """A refused case as a Problems row ``(severity, text, shown text)``."""
+        return [("warning", self.case_problem, self.case_problem)] if self.case_problem else []
 
     # -- export ------------------------------------------------------------
 
