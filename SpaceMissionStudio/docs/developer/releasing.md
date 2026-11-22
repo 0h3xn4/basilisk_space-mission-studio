@@ -597,6 +597,25 @@ check and tagged it at 15:55; the release workflow
 file, attached the eleven and published the release 55 minutes later.
 It was never a public release without files.
 
+2.14.0 was prepared on 2026-11-22 by this checklist: Monte Carlo phase A
+(`monte-carlo-plan.md`), with outcomes per run, requirements with the
+Clopper-Pearson bound and the draws of crashed runs (#306), one case run
+again with the batch's data folders and data files (#307), the plan
+(#305) and the 2.13.1 publication record (#304); a minor release
+because it adds features and the optional scenario field
+`monte_carlo.requirements`. The scenario file moves to schema version
+6, so 2.13.1 and earlier refuse every file 2.14.0 saves, by its version
+(checked with 2.13.1's code, the tag `a9af24e`, on the 36 templates as
+2.14.0 saves them and a file with a requirement: all 37 refused,
+"scenario file is schema_version 6, but this build of SpaceMissionStudio
+only understands up to version 5"); 2.14.0 opens the files 2.13.1 saves
+(the 36 templates, with no message). The golden files are
+byte-identical. The space weather was not refreshed: CelesTrak reset all
+three connections, so 2.14.0 carries 2.13.0's file (observations to
+2026-11-18). By the owner's decision (SRelD K-45), the release pull
+request may be merged with CI's "Windows (MAX Python)" job red, for the
+Basilisk framework test `LambertInputValidation` only.
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

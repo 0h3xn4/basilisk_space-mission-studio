@@ -20,7 +20,7 @@ for the tool's inputs, results and exchanged data.
 
 It was prepared during the ECSS/CCSDS audit (remediation R02 implemented
 the frame and time layer; R14 wrote this document). It applies to versions
-1.1.0 to 2.13.1 of the tool (1.1.1 changes only the packaging, 1.2.0,
+1.1.0 to 2.14.0 of the tool (1.1.1 changes only the packaging, 1.2.0,
 1.3.0 and 1.3.1 only the GUI, 2.1.0 adds analyses in the body frame and
 no frame or time conversion, 2.1.1 only fixes the GUI and the IDM-CIC
 import, 2.2.0 makes the CCSDS files the command line already wrote and
@@ -51,7 +51,9 @@ AEM's quaternions from EME2000 to the body frame, scalar last (O-20),
 time at all, 2.12.0 a 2D map of the ground tracks in geocentric latitude
 and longitude, from the run's positions and the Earth rotation the 3D
 View already used, with no new frame or time conversion, 2.13.0 and
-2.13.1 only the GUI;
+2.13.1 only the GUI, 2.14.0 each Monte Carlo run's outcomes,
+requirements on them and one case run again, with the frames and times
+of a plain run and no new conversion;
 2.0.0 computes the Earth's rotation angle
 of the pass predictions and GEO elements with the leap seconds of the
 date, as the simulation already did, and takes the physical constants

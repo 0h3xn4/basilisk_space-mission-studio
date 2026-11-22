@@ -20412,3 +20412,67 @@ refusal's text for a changed, missing, added and left-out file. In
 older summary without it, and the data writer's new
 `spacemissionstudio_data_files.data` in an earlier batch's folder (added
 to an existing test's list of files). Golden files byte-identical.
+
+## Release 2.14.0 prepared (2026-11-22)
+
+A minor release. It adds features and an optional scenario field, and
+the scenario file moves to schema version 6. Contents since 2.13.1: the
+2.13.1 publication record (#304), the Monte Carlo plan (#305), outcomes
+per run, requirements and the draws of crashed runs (#306), and one case
+run again with the batch's data folders and data files (#307). All four
+are merged into `develop`. The branch `release/2.14.0` starts from
+`develop` at `3921e5d`, the merge of #307.
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4. The version
+is 2.14.0 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+No other file or test names the version. The CHANGELOG's Unreleased
+entries are under 2.14.0, with an introduction, Who should update and
+Known limits. SRelD issue 49 records the release: K-47 (the schema
+version) and K-48 (the limits of phase A) are new, and K-13 and K-45 are
+extended. The SDP, SRS, ICD, CSD, SUM, limitations and both READMEs name
+2.14.0. `BACKLOG.md` is unchanged: #306 and #307 already moved their
+items. The AppStream metadata is made from the CHANGELOG when the `.deb`
+is built, so no file of it changed.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so a download was tried: CelesTrak reset all three
+connections (`curl` error 35, the TLS handshake). 2.14.0 so carries
+2.13.0's file (observations to 2026-11-18, updated 2026-11-19). NASA
+MSFC's page still links the November 2026 prediction, the bundled one.
+
+Compatibility was checked by a run of 2.13.1's code, the tag `a9af24e`,
+in a worktree of its own, against this branch's code:
+- 2.14.0 saved the 36 templates and template 25 with one requirement
+  (lowest altitude at least 400 km, confidence 0.95). 2.13.1 refused all
+  37 files with "scenario file is schema_version 6, but this build of
+  SpaceMissionStudio only understands up to version 5 -- upgrade
+  SpaceMissionStudio to open it, or use the version that wrote it."
+- 2.13.1 saved its 36 templates (version 5). 2.14.0 opened and validated
+  all 36 with no message. Their scenarios equal 2.14.0's templates, and
+  saved again by 2.14.0 they equal 2.14.0's own files byte for byte.
+  2.13.1's text differs from them only in the version line.
+- 2.14.0 wrote a batch summary with every new optional key (`outcomes`,
+  `outcome_units`, `failed_drawn`, `requirements`, `data_files`). 2.13.1
+  opened it (format 1) and ignored those keys.
+The code agrees: `schema/migrations.py` refuses a version above
+`CURRENT_SCHEMA_VERSION`, and the step from 5 to 6 only sets the version
+(`tests/test_migrations.py::test_the_step_from_5_to_6_only_sets_the_version`).
+
+CI's "Windows (MAX Python)" job still fails the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45). By the owner's decision, the release pull request may be merged
+with that check red, for that framework test only.
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4 -p no:cacheprovider -o faulthandler_timeout=600` as CI
+runs it: 5828 passed, 19 skipped and 1 failed of 5848 (3610 outside
+`tests/gui/` and 2238 in it; 5752 passed at 2.13.1). The failure is
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px), which fails only in this container and on
+`develop` too. The release changed no test, so
+`docs/ui/TEST_CHANGES.md` is unchanged. The release check
+(`packaging/release_check.py`) passed; pip-audit was not run, because
+it needs the network. The AppStream metadata for 2.14.0 passed
+`appstreamcli validate --no-net` (`tests/test_metainfo.py`). The four
+compliance generators changed nothing on two runs, and `check_drds.py`
+found 0 problems.

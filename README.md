@@ -5,7 +5,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-[![Version 2.13.1](https://img.shields.io/badge/version-2.13.1-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.13.1)
+[![Version 2.14.0](https://img.shields.io/badge/version-2.14.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.0)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -153,9 +153,15 @@ Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capab
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.13.1 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.13.1),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): fixes for 2.13.0: one cause of rare
-  crashes removed (a garbage collection in a background thread), clearer
+- **Version:** 2.14.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.0),
+  [changelog](SpaceMissionStudio/CHANGELOG.md)): Monte Carlo
+  batches that judge requirements: every run keeps its Overview figures,
+  requirements on them with an exact upper bound on the failure rate at
+  the confidence you choose (Clopper-Pearson), crashed runs listed with
+  what they drew, and any case run again on its own; scenario format
+  version 6, which 2.13.1 and earlier cannot open. 2.13.1 fixed
+  2.13.0: one cause of rare crashes removed (a garbage collection in a
+  background thread), clearer
   plot bands, Timeline events, tick labels and wheel names, and tables
   that fit at 1280 px; results and the scenario format are 2.13.0's.
   2.13.0 made a window that feels finished, from the UI

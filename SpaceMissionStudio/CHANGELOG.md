@@ -8,7 +8,24 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.14.0 (2026-11-22)
+
+SpaceMissionStudio 2.14.0 makes a Monte Carlo batch answer the question
+you usually ran it for: does the design meet its requirement, and how
+sure can you be? Every run of a batch now keeps its headline figures,
+such as the lowest altitude, the delta-V or the lowest battery charge.
+You can state requirements on them in the scenario, each with a
+confidence you choose, and the batch reports how many runs missed each
+one together with an exact upper bound on the true failure rate, so a
+handful of clean runs is never mistaken for proof.
+
+When one case looks odd, you can now run exactly that case again, with
+the draws and random seeds it had in the batch, and study it as a normal
+run with every plot. A crashed run no longer disappears from the table:
+it is listed with the values it drew. Nothing that a single run computes
+has changed. To hold the requirements, the scenario file moves to schema
+version 6: 2.14.0 opens every file that 2.13.1 and earlier saved, but
+files saved by 2.14.0 do not open in 2.13.1 or earlier.
 
 ### Added
 
@@ -71,6 +88,71 @@ fixes bugs.
   A file saved by this version, with or without requirements, does not
   open in 2.13.1 or earlier. No computed result changes, and batches
   saved by earlier versions open as before.
+
+### Who should update
+
+- **Anyone who runs Monte Carlo batches:** this release is for you.
+  Add a requirement under **Scenario › Monte Carlo › Requirements**, run
+  the batch, and read the verdict on **Results › Monte Carlo ›
+  Requirements**; the [Monte Carlo chapter](docs/user-manual/monte-carlo.md)
+  walks through it. In scripts, `spacemissionstudio monte-carlo` now
+  exits with status 5 when a requirement is not shown met.
+- **Everyone else:** nothing that a run computes has changed. The 36
+  templates give 2.13.1's results, and the golden outputs pass
+  unchanged.
+- **Compatibility:** the scenario format moves to version 6, and 2.14.0
+  saves every file at version 6, with or without requirements. 2.13.1
+  and earlier refuse such a file ("scenario file is schema_version 6,
+  but this build of SpaceMissionStudio only understands up to version
+  5"). If you share scenarios with someone on an older version, update
+  together. 2.14.0 opens every file the earlier versions saved, and a
+  2.13.1 file saved again by 2.14.0 changes only in its version line.
+  Batch folders keep their format: 2.14.0 opens batches made by 2.13.1,
+  and 2.13.1 opens a 2.14.0 batch without the new columns.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.14.0_amd64.deb` replaces 2.13.1; on Windows, run
+  the 2.14.0 setup over 2.13.1. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **Two batches of the same scenario still draw the same values.**
+  Basilisk's Monte Carlo controller seeds each run from its number, so a
+  second batch repeats the first (SRelD K-24). A batch seed is planned
+  for the next Monte Carlo phase.
+- **A requirement limits one outcome.** Its bound is one-sided and
+  assumes independent runs with one probability of failure each. There
+  is no requirement on a combination of outcomes, no outcome from other
+  series (a pointing error, a wheel speed), and a crashed run counts as
+  not meeting every requirement.
+- **Run This Case needs the batch's own scenario and data.** If the
+  scenario or a reference data file, such as the space weather, has
+  changed since the batch, the case is refused rather than run with
+  other inputs. Batches made by 2.13.1 or earlier did not record their
+  data files, so their cases are not checked for them. A case runs
+  without the live 3D View.
+- **The first Monte Carlo start of a session holds the window for about
+  0.3 s** while a library loads, above the 50 ms the interface aims at.
+  This was already so for a batch, and is now also so for a case run
+  again.
+- **One CI check of the Basilisk framework is still red on Windows,** as
+  in 2.13.1. The framework test
+  `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+  fails in the "Windows (MAX Python)" job with the MSVC 19.52 compiler.
+  It belongs to the framework, which SpaceMissionStudio never changes,
+  and the installers carry Basilisk 2.12.0 from PyPI.
+- **The bundled space weather is 2.13.0's,** with observations to
+  2026-11-18: CelesTrak reset the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**
+  before a drag study near today's date.
+- **The Budgets area can take 50 ms or more to show on a slow Windows
+  machine,** as in 2.13.1.
+- **The 3D View without a graphics card is slow,** as before: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.13.1 (2026-11-20)
 
