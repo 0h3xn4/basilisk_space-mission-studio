@@ -999,7 +999,11 @@ A widget that owns a worker has `wait_for_worker()`:
 Garbage is collected on the GUI thread only (`gui/background_threads.py`,
 SRelD K-44): a collection that a worker started destroyed widgets in the
 worker, and the process crashed. A QObject that Qt calls back and that
-only its parent refers to keeps no Python attribute (B11).
+only its parent refers to keeps no Python attribute (B11). A signal that
+a child sends as it is deleted (an item widget's model reset, a tab or
+stacked widget's `currentChanged`) reaches its owner through
+`widgets.connect_while_alive`, never a direct `connect`
+(`tests/gui/test_teardown_signals.py` checks it).
 
 ### Empty states
 

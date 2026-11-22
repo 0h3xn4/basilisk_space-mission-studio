@@ -43,6 +43,7 @@ from . import webengine_setup  # sets the Chromium flags, before QtWebEngine is 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from .background_threads import wait_for_pandas
 from .results_widget import _plotlyjs_path
 from .theme import TOKENS, on_change
 from .theme.palettes import AXIS_COLOURS
@@ -139,6 +140,7 @@ def model_figure(derived, selected: str | None = None, items=(), highlight: str 
     (``{part: degC}``, thermal Phase 2) colours each part by its
     temperature on :data:`TEMPERATURE_SCALE`, with a colour bar; a part
     without one is grey."""
+    wait_for_pandas()  # plotly reads pandas; a batch's worker may be importing it (SRelD K-44)
     traces = []
     low = min(temperatures.values()) if temperatures else 0.0
     high = max(temperatures.values()) if temperatures else 0.0

@@ -77,7 +77,7 @@ from pathlib import Path
 from PySide6.QtCore import QThread, Signal
 
 from ..schema.command import runs_sequence
-from .background_threads import FIRST_IMPORTS
+from .background_threads import FIRST_IMPORTS, import_pandas
 from .monte_carlo_process import BatchCancelled, failure_text, run_batch
 from ..schema.scenario import MonteCarloConfig, Scenario
 
@@ -106,13 +106,6 @@ class RunWorker(QThread):
         # (batch folder, case number): run that case of a Monte Carlo batch again, as a plain run with
         # its draws and seeds (engine.monte_carlo.prepare_case, plan A3), built as the batch built it.
         self.case = case
-        if case is not None:
-            # pandas, on the GUI thread, before run() imports Basilisk's Monte Carlo controller (which
-            # imports it) on the worker's: as MonteCarloWorker does, and for the same reason.
-            try:
-                import pandas  # noqa: F401
-            except ImportError:  # no Basilisk, so no pandas: run() reports it
-                pass
         # An engine.live_view.LiveFeed: the 3D View shows the run as it goes
         # (ordinary runs, Mission Sequences, segmented runs; not SIL). Its
         # pacing waits end at once on Cancel.
@@ -149,6 +142,10 @@ class RunWorker(QThread):
         return self._cancel_requested.is_set()
 
     def run(self) -> None:
+        if self.case is not None:
+            # A case needs Basilisk's Monte Carlo controller, which imports pandas: here, not on the GUI
+            # thread, and with FIRST_IMPORTS held (background_threads.import_pandas; the plots wait for it).
+            import_pandas()
         try:
             with FIRST_IMPORTS:  # not with a start-up warm-up's imports (SRelD K-44)
                 from ..engine.service import SimulationCancelled, SimulationService
@@ -277,16 +274,6 @@ class MonteCarloWorker(QThread):
         self.allow_scripts = allow_scripts  # the user agreed to the Mission Sequence's script blocks
         self.overwrite = overwrite  # the user agreed to replace an earlier batch in archive_dir
         self._cancel = False
-        # pandas, on the GUI thread, before run() imports Basilisk's Monte
-        # Carlo controller (which imports it) on the worker's: plotly, drawing
-        # a plot on the GUI thread meanwhile, takes sys.modules["pandas"]
-        # without waiting for that import and failed on the half-made module
-        # ("partially initialized module 'pandas'", Windows CI). Once, about
-        # 0.25 s.
-        try:
-            import pandas  # noqa: F401
-        except ImportError:  # no Basilisk, so no pandas: run() reports it
-            pass
 
     def request_cancel(self) -> None:
         """Stop the batch: its child ends the controller's processes; the
@@ -294,8 +281,13 @@ class MonteCarloWorker(QThread):
         self._cancel = True
 
     def run(self) -> None:
+        # Basilisk's Monte Carlo controller imports pandas: in this thread, with FIRST_IMPORTS held, not on
+        # the GUI thread (about 0.25 s once per process; background_threads.import_pandas). A plot that the
+        # GUI thread builds meanwhile waits for it (background_threads.wait_for_pandas).
+        import_pandas()
         try:
-            from ..engine.monte_carlo import MonteCarloError
+            with FIRST_IMPORTS:  # not with a start-up warm-up's imports (SRelD K-44)
+                from ..engine.monte_carlo import MonteCarloError
         except ImportError as exc:
             self.failed.emit(
                 f"Basilisk is not installed/built ({exc}) – cannot run Monte Carlo until it is. "

@@ -110,7 +110,7 @@ from .results_overview import ResultsOverview
 from ..engine.live_view import LiveFeed
 from .mission_view_widget import LAYOUTS as MAP_LAYOUTS, MissionViewWidget
 from .run_page import RunModeControl, RunPage
-from .widgets import TabWidget, make_window, show_window
+from .widgets import TabWidget, connect_while_alive, make_window, show_window
 from .theme import (CONTENT_MAX_WIDTH_PX, INSPECTOR_MIN_WINDOW_PX, INSPECTOR_WIDTH, apply_theme, current_theme,
                     follow_system, icon, resolve_theme, set_theme_setting, theme_setting)
 from .compare_widget import CompareWidget
@@ -410,7 +410,8 @@ class MainWindow(QMainWindow):
         # a bound method, not a lambda holding the window (test_a_closed_window_is_freed)
         self.results_widget.compare_combo.currentIndexChanged.connect(self._on_results_compare_changed)
         self.results_views.addTab(self.compare_widget, "Compare")
-        self.results_views.currentChanged.connect(self._apply_stale_banner)
+        # Weakly, as every view tab's signal here: a tab's page deleted before its tabs sends it (K-44).
+        connect_while_alive(self.results_views.currentChanged, self._apply_stale_banner)
         self.log_widget = LogViewWidget()
         # Run > History (M5a): every run kept, and this session's failed runs and batches.
         self.history_view = RunHistoryView()
@@ -973,7 +974,7 @@ class MainWindow(QMainWindow):
         self.run_page.live_plot_check.setChecked(self.live_plot_action.isChecked())
         self.run_page.live_plot_check.toggled.connect(self.live_plot_action.setChecked)
         self.live_plot_action.toggled.connect(self.run_page.live_plot_check.setChecked)
-        self.run_views.currentChanged.connect(self._refresh_run_page)
+        connect_while_alive(self.run_views.currentChanged, self._refresh_run_page)
         self.shell.area_changed.connect(self._refresh_run_page)
         for area_id in ("results", "timeline"):
             self.shell.page(area_id).add_command(self.clear_cursor_action)
@@ -985,15 +986,15 @@ class MainWindow(QMainWindow):
         # View > Own Windows > Open in Own Window follows the view shown.
         self.shell.area_changed.connect(self._refresh_breakout_commands)
         for tabs in (self.results_views, self.run_views):
-            tabs.currentChanged.connect(self._refresh_breakout_commands)
+            connect_while_alive(tabs.currentChanged, self._refresh_breakout_commands)
         # Compare, refreshed when shown (M5a): its tab, or the Results area, chosen.
         self.shell.area_changed.connect(self._refresh_compare_if_shown)
-        self.results_views.currentChanged.connect(self._refresh_compare_if_shown)
+        connect_while_alive(self.results_views.currentChanged, self._refresh_compare_if_shown)
         self.shell.rail.collapsed_changed.connect(self.rail_collapse_action.setChecked)
         self.scenario_editor.page_tree.tree.currentItemChanged.connect(self._refresh_breadcrumbs)
         self.scenario_editor.mode_changed.connect(self._refresh_breadcrumbs)
         for tabs in (self.results_views, self.run_views, self.budgets_views, self.reports_views):
-            tabs.currentChanged.connect(self._refresh_breadcrumbs)
+            connect_while_alive(tabs.currentChanged, self._refresh_breadcrumbs)
         # The menu bar: the same commands, by menu (gui.menu_bar).
         self.menus = build_menu_bar(self.menuBar(), self.commands, self._on_recent_menu)
         self.shell.show_area("home")  # a new user's first move is picking a template or a file

@@ -4882,6 +4882,8 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
     on `develop` with a bare `EmptyStack` under a `FormGrid` as the
     first test of a process. `EmptyStack` itself is not changed here: the
     other lists use it, and the fix belongs to its own change.
+    *Superseded in 2.14.1* (below): `EmptyStack` is fixed, and the list
+    uses it again.
   - The main window connects the Requirements tab's empty-state action
     to a bound method, not a lambda. **Why:** a lambda that holds the
     window kept a closed window alive (`test_a_closed_window_is_freed`
@@ -4987,6 +4989,8 @@ provisional: the owner may change it.** It confirms MC-7.
     the first time a case or a batch starts; the 50 ms target of design
     rule 6 is not met for that one click. **Why:** the race crashed CI;
     the cost is paid once, and not again when a batch ran first.
+    *Superseded in 2.14.1* (below): the worker imports pandas, and the
+    plots wait for that import.
 - **Decision MC-19:** a case runs with the batch's reference data, in
   the batch and when it runs again. Found by the Linux CI of PR #307:
   `test_a_case_run_again_is_the_batchs_case[2]` failed, 4.22 m apart
@@ -5038,3 +5042,58 @@ provisional: the owner may change it.** It confirms MC-7.
   - The data-file refusal of `monte-carlo --case` comes after
     `--out-dir` is checked, with status 1 as for a changed scenario.
     **Why:** the files are known only when the case is built.
+
+## 2.14.1: small fixes (2026-11-22)
+
+Three items of `BACKLOG.md` "Next release". Each choice has its reason.
+
+- **A batch's and a case's worker import pandas themselves, with
+  `FIRST_IMPORTS` held** (`background_threads.import_pandas`). This
+  replaces the import on the GUI thread of MC-18 and of the 2026-10-28
+  fix. **Why:** design rule 6. The first start took 258 to 271 ms of the
+  GUI thread; now it takes under 1 ms. `MonteCarloWorker` also imports
+  `engine.monte_carlo` with the lock held, as `RunWorker` imports its
+  engine (K-44: one heavy first import at a time).
+- **The GUI thread's plots wait for an import of pandas in progress**
+  (`background_threads.wait_for_pandas`, called where the GUI thread runs
+  plotly: the Results figures and their JSON, Compare, the 3D model view).
+  **Why:** plotly and narwhals read pandas from `sys.modules` and do not
+  wait, so the lock alone does not cover the race: the GUI thread does
+  not hold it, and it must not wait for it, since the space-weather
+  warm-up holds it too. Python's import waits on the module's own lock,
+  so the plot waits only for the rest of that import. **Trade-off:** a
+  plot built during the import waits up to about 250 ms (measured
+  233 ms); this happens only for a plot drawn in that time.
+- **Signals that a child sends as it is deleted reach their owner
+  through `widgets.connect_while_alive`**: `EmptyStack`'s model signals
+  and every `currentChanged` of a tab or stacked widget connected to a
+  method (SRelD K-44). It connects a plain function that holds the method
+  weakly. **Why:** Python's collector frees a dropped widget tree one
+  wrapper at a time, and shiboken then can delete a child before its
+  parent; the child's signal reached an owner whose wrapper was already
+  cleared ("Slot 'EmptyStack::' not found", "Slot 'MainWindow::' not
+  found"). Python clears weak references before it clears the wrappers.
+  A direct connection cannot be guarded: PySide fails before the method
+  runs. A disconnect on `destroyed` would be one more direct connection
+  of the same kind. A test keeps every such signal on the helper.
+- **The scenario editor's tab slot gets the tabs as an argument**
+  (`sender=` of the helper). **Why:** `QObject.sender()` is None in a
+  call through a plain function.
+- **The Monte Carlo editor's Requirements list uses `EmptyStack` again,
+  with `fit_rows`**; MC-16's own switching is removed. **Why:** the cause
+  is fixed in `EmptyStack`; `fit_rows` as the spacecraft and ground
+  station lists (UI-05: a short list is as tall as its rows). Before, the
+  list kept no height limit while it had rows.
+- **CI runs each reference data download through
+  `scripts/retry_download.py`**: four attempts in all, 60 s apart, any
+  non-zero exit status tried again, the last status kept. **Why:** the
+  ITU server's outage lasted a few minutes; three minutes of pauses
+  cover that, and a real failure still fails the step. A retry option on
+  the fetch commands would change the CLI (ICD-02) for a need of CI
+  only; the script changes no interface and works in bash and
+  PowerShell. A kept copy checked by SHA-256 (the backlog's other
+  option) needs a cache or a stored file and its own update; the retry
+  needs neither.
+- **The release workflows' `kernels-status` is not wrapped.** **Why:** it
+  checks the installed package with an empty cache and must download
+  nothing; a failure there is a fault of the package.

@@ -174,14 +174,17 @@ jobs:
           python compliance/tools/build_sdd_components.py
           python compliance/tools/build_test_specs.py
           git diff --exit-code -- compliance/docs
+      # Each download runs again after a failure, up to four times a minute
+      # apart (scripts/retry_download.py): a source that is away for a few
+      # minutes does not stop CI. After the last attempt the step fails.
       - name: Support data (SPICE kernels, gravity field, magnetic model), fetched once as the installers do
-        run: spacemissionstudio kernels-status
+        run: python scripts/retry_download.py -- spacemissionstudio kernels-status
       - name: IERS-based Earth orientation files for the validation cases (SVS VP-1)
-        run: spacemissionstudio earth-orientation --fetch
+        run: python scripts/retry_download.py -- spacemissionstudio earth-orientation --fetch
       - name: 433 Eros ephemeris (NAIF) and shape model for the small-body runs
-        run: spacemissionstudio small-bodies --fetch
+        run: python scripts/retry_download.py -- spacemissionstudio small-bodies --fetch
       - name: ITU-R P.676-13 data file Part 1 for the gaseous attenuation (link.atmospheric_loss)
-        run: spacemissionstudio gaseous-attenuation --fetch
+        run: python scripts/retry_download.py -- spacemissionstudio gaseous-attenuation --fetch
       # A test worker that crashes in native code shows only "<no Python
       # frame>" in faulthandler's output. Python's faulthandler re-raises the
       # signal, so with core dumps on, the kernel writes a core that
@@ -313,14 +316,17 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Basilisk install failed" }
           python -m pip install -c packaging/constraints.txt -c packaging/constraints-dev.txt -e ".[dev,gui]"
           if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
+      # Each download runs again after a failure, up to four times a minute
+      # apart (scripts/retry_download.py): a source that is away for a few
+      # minutes does not stop CI. After the last attempt the step fails.
       - name: Support data (SPICE kernels, gravity field, magnetic model), fetched once as the installers do
-        run: spacemissionstudio kernels-status
+        run: python scripts/retry_download.py -- spacemissionstudio kernels-status
       - name: IERS-based Earth orientation files for the validation cases (SVS VP-1)
-        run: spacemissionstudio earth-orientation --fetch
+        run: python scripts/retry_download.py -- spacemissionstudio earth-orientation --fetch
       - name: 433 Eros ephemeris (NAIF) and shape model for the small-body runs
-        run: spacemissionstudio small-bodies --fetch
+        run: python scripts/retry_download.py -- spacemissionstudio small-bodies --fetch
       - name: ITU-R P.676-13 data file Part 1 for the gaseous attenuation (link.atmospheric_loss)
-        run: spacemissionstudio gaseous-attenuation --fetch
+        run: python scripts/retry_download.py -- spacemissionstudio gaseous-attenuation --fetch
       - name: Tests
         run: python -m pytest tests -q -n auto -p no:cacheprovider -o faulthandler_timeout=600 --ignore=tests/gui/test_mission_view.py --ignore=tests/gui/test_live_run_3d.py --junitxml=test-report-${{ matrix.os }}.xml
       # The 3D View's tests in a process of their own: on this runner

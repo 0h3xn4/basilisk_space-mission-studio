@@ -20505,3 +20505,173 @@ The files' digests were checked after the publication:
 
 SRelD issue 50, the SDP, H05 and `releasing.md` record the tag, the runs
 and the files' digests.
+
+## 2.14.1: small fixes (2026-11-22)
+
+Three items of `BACKLOG.md` "Next release", on the branch
+`fix/2.14.1-small` from `develop` at `04e81aa`. No computed result, file
+format, CLI command or golden file changed.
+
+### pandas imported in the worker, not on the GUI thread
+
+**Cause.** `MonteCarloWorker.__init__` and, since #307, `RunWorker.__init__`
+for a case imported pandas on the GUI thread. Basilisk's Monte Carlo
+controller imports pandas, and an earlier fix (2026-10-28, "A Monte Carlo
+batch and pandas") moved that import to the GUI thread: plotly and
+narwhals find pandas with `sys.modules.get` and do not wait for an import
+in progress, so a plot built during the worker's import read a half-made
+module ("partially initialized module 'pandas'", Windows CI). The cost was
+the first start of a batch or a case in each process.
+
+**Measured** in a fresh interpreter (the test's script), the GUI thread's
+part of the start (make the worker, start it): 258 to 271 ms in four runs
+before the change; 0.1 to 0.2 ms in six runs after it.
+
+**The lock alone does not cover the race.** `FIRST_IMPORTS` serializes the
+heavy first imports off the GUI thread, the figure warm-up's plotly work
+included. The GUI thread's plots do not take it, and they must not wait
+for it: it is also held by the space-weather warm-up (under 1 s). Checked:
+a thread that imports pandas while the GUI thread builds and serializes a
+Results figure (`ResultsWidget._build_plot`, `_figure_json`) failed with
+"partially initialized module 'pandas' ... has no attribute 'DataFrame'"
+every time.
+
+**Change.**
+- `background_threads.import_pandas()` imports pandas with
+  `FIRST_IMPORTS` held. `MonteCarloWorker.run` calls it, then imports
+  `engine.monte_carlo` with the lock held too. `RunWorker.run` calls it
+  for a case, before its engine import.
+- `background_threads.wait_for_pandas()`: when pandas is in
+  `sys.modules` and still initializing (another thread imports it), it
+  runs `import pandas`, which waits on the module's own import lock until
+  that import is done. Otherwise it costs one dictionary look-up. The
+  places where the GUI thread runs plotly call it first:
+  `ResultsWidget._build_plot` and `_figure_json`, `CompareWidget._draw_plot`
+  and `model_view_widget.model_figure`.
+- **Trade-off, measured:** a plot built during the import waited 233 ms
+  (the same plot after the import: 9 ms). That happens only when a plot
+  is drawn in the first quarter of a second of the first batch or case.
+
+**Tests** (`tests/gui/test_run_worker.py`).
+- `test_the_first_batch_or_case_start_keeps_the_gui_thread_under_50_ms`
+  (batch and case, fresh interpreter): failed before the change (258.2 ms
+  and 271.0 ms against 50 ms), passes now. It also checks that the worker
+  imported pandas.
+- `test_a_plot_built_while_a_worker_imports_pandas_waits_for_the_import`
+  (fresh interpreter): builds the figure while the import runs (it checks
+  that pandas was still initializing) and passes. With the wait removed
+  from `results_widget`, the script fails with the error above.
+- `test_a_worker_imports_pandas_with_the_first_imports_lock_held`.
+- It replaces `test_a_monte_carlo_worker_imports_pandas_on_the_thread_that_makes_it`,
+  which asked for the import on the GUI thread (`docs/ui/TEST_CHANGES.md`).
+
+### "Slot '...::' not found" when the collector frees a widget tree (K-44)
+
+**Cause found.** Reproduced with the Monte Carlo editor's Requirements
+list on `EmptyStack` as the first test of a process: the exception came
+from the GUI thread's garbage collector (`background_threads.collect_due`,
+in pytest-qt's event processing at the end of the test), not from a
+close. A trace of the list's signals during that collection showed the
+order: the `QListWidget` was destroyed first, its model sent
+`modelAboutToBeReset` and `modelReset`, the error followed, and only then
+were the editor and the stack destroyed. A `gdb` backtrace at
+`QListWidget::~QListWidget` showed who deleted it: `gc_collect`, then
+shiboken's clear function of a wrapper, `dict_dealloc`, and shiboken's
+dealloc of the list's wrapper. So the collector frees a dropped widget
+tree one wrapper at a time, and shiboken deletes a child whose last
+reference goes before its parent. The child's last signal then reaches a
+method of an owner whose wrapper the collector already cleared, and
+PySide cannot find it.
+
+Which signals: a probe deleted each kind of child while its parent lived.
+`QListWidget`, `QTreeWidget` and `QTableWidget` send `modelAboutToBeReset`
+and `modelReset` (their models clear as they are deleted). A `QTabWidget`
+sends `currentChanged` when a page goes, and a `QStackedWidget` sends
+`currentChanged` and `widgetRemoved`. A `QComboBox`, a list view on a
+`QStandardItemModel` and a dock widget send nothing.
+
+Minimal scripts (fresh interpreter, one `gc.collect()`):
+- a page with a list in an `EmptyStack`, the list also held by another
+  widget that holds the page: "Slot 'EmptyStack::' not found" every time;
+  a page without that second holder did not show it;
+- a window whose method follows `currentChanged` of a `TabWidget` that
+  holds a page, the page also held by another widget: "Slot 'Window::'
+  not found" every time. This is the main window's pattern (its view
+  tabs), so it is the likely cause of "Slot 'MainWindow::' not found" in
+  CI. No log of that CI run exists, so that run itself is not proven.
+
+Not reproduced: a `MainWindow` made, dropped and collected in a fresh
+interpreter (closed or not, shown or not) printed no such message. The
+collection order depends on the wrappers.
+
+**Change.** `widgets.connect_while_alive(signal, method, sender=None)`
+connects a plain function that holds the method weakly
+(`weakref.WeakMethod`) and calls it only while its object is valid.
+Python clears weak references to garbage before it clears the wrappers,
+so during such a collection nothing is called. The function passes the
+signal's first arguments that the method takes, as a direct connection
+does. `sender` is passed first, also weakly, because `QObject.sender()`
+is None in such a call. Used for:
+- `EmptyStack`'s four model signals;
+- every `currentChanged` of a tab or stacked widget connected to a
+  method: nine in `MainWindow` (its view tabs), one each in the shell, the scenario
+  editor (its slot now gets the tabs as an argument), the spacecraft
+  editor, the Budgets area and the thermal page.
+
+The Monte Carlo editor's Requirements list uses `EmptyStack` again
+(`fit_rows`, as the spacecraft and ground station lists), and its own
+switching (MC-16) is gone. `test_group_default_state` run alone, the
+case that showed the message, passes.
+
+**Tests** (`tests/gui/test_teardown_signals.py`).
+- `test_a_widget_tree_freed_by_the_collector_calls_no_cleared_owner`
+  (the list in an `EmptyStack`, the Requirements list, a window with view
+  tabs; each in a fresh interpreter): with the connection as before (a
+  direct `connect` in place of `connect_while_alive`) all three failed,
+  twice with "Slot 'EmptyStack::' not found" and once with "Slot
+  'Window::' not found"; all three pass now.
+- Two tests of `connect_while_alive`: the arguments a method gets, and no
+  call once its object is gone (a dropped owner is freed: the connection
+  does not keep it).
+- `test_teardown_signals_are_connected_weakly`: no module under `gui/`
+  connects these signals directly.
+
+**Still open (K-44):** the Windows 0xC0000005 of the warm-up check's
+child process (#297). It was not reproduced, and nothing here explains it.
+
+### CI downloads tried again after a failure
+
+**Cause.** On 2026-11-22 the ITU server answered HTTP 404 for the
+ITU-R P.676-13 data file for a few minutes, and CI stopped before any
+test (SRelD issue 50). Each download step ran once.
+
+**Change.** `scripts/retry_download.py` runs a command and, when it fails,
+runs it again: four attempts in all, 60 s apart. The exit status is the
+command's: 0 as soon as one attempt passes, else the last attempt's, so
+the step still fails. Each failed attempt is a GitHub Actions warning in
+the log. The workflows run each download through it: `kernels-status`
+(the first download of the support data), `earth-orientation --fetch`,
+`small-bodies --fetch` and `gaseous-attenuation --fetch`, on Linux and
+Windows in `spacemissionstudio.yml` and in `spacemissionstudio-sil-stress.yml`.
+The release workflows' `kernels-status` checks the installed files with
+an empty cache and downloads nothing, so it is not wrapped; their Qt
+source download already uses `curl --retry 4`.
+
+**Tests** (`tests/test_retry_download.py`, 6 tests): a command that fails
+twice passes on the third attempt with two pauses; one that always fails
+returns its own status after four attempts; one that passes runs once; a
+local HTTP server that answers 404 twice and then the file, fetched
+through the script as the workflows run it; usage errors; and every
+download line of the SpaceMissionStudio workflows goes through the script
+(it failed on the workflows before the change).
+
+**The SIL stress workflow on this pull request.** Changing
+`spacemissionstudio-sil-stress.yml` starts that workflow on the pull
+request; it had last run on 2026-10-28, before the 3D View and the
+ground map. Its whole-suite jobs then failed six WebGL tests
+(`test_breakout`, `test_ground_map`, `test_mission_view`): they ran
+without the software WebGL flags and with the 3D View's tests in the
+shared workers. The suite jobs now have the set-up of
+`spacemissionstudio.yml`'s platforms job: `QTWEBENGINE_CHROMIUM_FLAGS`
+(ANGLE on SwiftShader), the ITU-R P.676-13 download, and the 3D View's
+tests in a process of their own.

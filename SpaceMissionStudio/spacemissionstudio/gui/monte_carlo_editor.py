@@ -55,7 +55,6 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QPushButton,
-    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -79,7 +78,7 @@ from .feedback import report, show_dialog_error, show_toast
 from .field_text import field_title, labelled
 from .theme import set_role
 from .inline_form import InlineForm
-from .widgets import ComboBox, EmptyState, PreciseDoubleSpinBox, SpinBox, finish_form, layout_widgets
+from .widgets import ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, finish_form, layout_widgets
 
 
 def _spin(minimum: float, maximum: float, decimals: int = 4, step: float = 1.0, value: float = 0.0) -> QDoubleSpinBox:
@@ -608,11 +607,7 @@ class RequirementListWidget(QWidget):
                                       "that do not meet it and bounds the probability.", "Add requirement",
                                       compact=True)
         self.empty_state.button.clicked.connect(self._on_add)
-        # Switched by _refresh_list, not by the list model's signals: the model resets as the list is
-        # destroyed, and a stack that followed it was then called half destroyed ("Slot not found").
-        self.list_stack = QStackedWidget()
-        self.list_stack.addWidget(self.list_widget)
-        self.list_stack.addWidget(self.empty_state)
+        self.list_stack = EmptyStack(self.list_widget, self.empty_state, fit_rows=True)
         layout.addWidget(self.list_stack)
         button_row = QHBoxLayout()
         self.add_button = QPushButton("Add")
@@ -628,16 +623,8 @@ class RequirementListWidget(QWidget):
         layout.addWidget(self.inline)
         self.add_button.clicked.connect(self._on_add)
         self.remove_button.clicked.connect(self._on_remove)
-        self._show_empty()
-
-    def _show_empty(self) -> None:
-        """The empty state with its Add while there is no requirement; the
-        list, Add and Remove otherwise (one Add on the page, UI-05)."""
-        empty = not self._items
-        self.list_stack.setCurrentWidget(self.empty_state if empty else self.list_widget)
-        self.list_stack.setMaximumHeight(self.empty_state.sizeHint().height() if empty else 16777215)
-        for button in (self.add_button, self.remove_button):
-            button.setHidden(empty)
+        # The empty state's Add stands in for these while there is no requirement (one Add on the page, UI-05).
+        self.list_stack.hide_while_empty(self.add_button, self.remove_button)
 
     def set_spacecraft_names(self, names: list) -> None:
         if list(names) == self._spacecraft_names:
@@ -655,7 +642,6 @@ class RequirementListWidget(QWidget):
                 self.list_widget.addItem(QListWidgetItem(requirement_text(item)))
         finally:
             self.list_widget.blockSignals(blocked)
-        self._show_empty()
 
     def _on_add(self) -> None:
         """A requirement on the first spacecraft's lowest altitude, its limit
