@@ -20664,3 +20664,14 @@ local HTTP server that answers 404 twice and then the file, fetched
 through the script as the workflows run it; usage errors; and every
 download line of the SpaceMissionStudio workflows goes through the script
 (it failed on the workflows before the change).
+
+**The SIL stress workflow on this pull request.** Changing
+`spacemissionstudio-sil-stress.yml` starts that workflow on the pull
+request; it had last run on 2026-10-28, before the 3D View and the
+ground map. Its whole-suite jobs then failed six WebGL tests
+(`test_breakout`, `test_ground_map`, `test_mission_view`): they ran
+without the software WebGL flags and with the 3D View's tests in the
+shared workers. The suite jobs now have the set-up of
+`spacemissionstudio.yml`'s platforms job: `QTWEBENGINE_CHROMIUM_FLAGS`
+(ANGLE on SwiftShader), the ITU-R P.676-13 download, and the 3D View's
+tests in a process of their own.

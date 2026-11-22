@@ -107,8 +107,17 @@ jobs:
     defaults:
       run:
         working-directory: SpaceMissionStudio
+    # The same set-up as the platforms job of spacemissionstudio.yml, so a
+    # suite here runs the tests as CI does: Chromium's software WebGL
+    # (ANGLE on SwiftShader) for the 3D View and the ground map (the
+    # runner has no GPU), and the 3D View's tests in a process of their own.
     env:
       QT_QPA_PLATFORM: offscreen
+      QTWEBENGINE_CHROMIUM_FLAGS: >-
+        --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist
+        --disable-domain-blocking-for-3d-apis --disable-gpu-process-crash-limit --disable-gpu-compositing
+        --disable-background-networking --disable-component-update --disable-domain-reliability
+        --no-pings --dns-prefetch-disable
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -132,5 +141,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "earth-orientation --fetch failed" }
           python scripts/retry_download.py -- spacemissionstudio small-bodies --fetch
           if ($LASTEXITCODE -ne 0) { throw "small-bodies --fetch failed" }
+          python scripts/retry_download.py -- spacemissionstudio gaseous-attenuation --fetch
+          if ($LASTEXITCODE -ne 0) { throw "gaseous-attenuation --fetch failed" }
       - name: Tests (run ${{ matrix.run }})
-        run: python -m pytest tests -q -n auto -p no:cacheprovider -o faulthandler_timeout=600
+        run: python -m pytest tests -q -n auto -p no:cacheprovider -o faulthandler_timeout=600 --ignore=tests/gui/test_mission_view.py --ignore=tests/gui/test_live_run_3d.py
+      - name: 3D View tests (run ${{ matrix.run }}, software WebGL, own process)
+        if: success() || failure()
+        run: python -m pytest tests/gui/test_mission_view.py tests/gui/test_live_run_3d.py -q -p no:cacheprovider -o faulthandler_timeout=600
