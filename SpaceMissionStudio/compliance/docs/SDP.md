@@ -64,7 +64,7 @@ the user's requests. Releases are made when the user decides, tagged, not
 signed (decision 11). The current release is 2.14.0, Monte Carlo phase A:
 each run's outcomes, requirements with the Clopper-Pearson bound, the
 draws of crashed runs and one case run again, with the scenario file at
-schema version 6, which 2.13.1 and earlier do not open (prepared
+schema version 6, which 2.13.1 and earlier do not open (published
 2026-11-22); before it 2.13.1, a patch release: garbage collected on
 the GUI thread only (one cause of the background-thread crashes), grey
 event bands and Timeline events, short

@@ -20476,3 +20476,32 @@ it needs the network. The AppStream metadata for 2.14.0 passed
 `appstreamcli validate --no-net` (`tests/test_metainfo.py`). The four
 compliance generators changed nothing on two runs, and `check_drds.py`
 found 0 problems.
+
+### Release 2.14.0 published (2026-11-22)
+
+The release pull request #308 was merged at 18:34 UTC. CI
+("SpaceMissionStudio") on `develop`'s head `1b4060c`, the merge of
+#308 (run 45055869064), first failed before any test ran. The step that
+downloads the ITU-R P.676-13 data file got HTTP 404 from the ITU
+server. The same URL answered 200 with the expected 44 100 bytes a few
+minutes later. The one re-run of the failed jobs passed. BACKLOG now
+asks for downloads that survive such an outage.
+
+The tag workflow (run 45061002580) ran the release check on `1b4060c`,
+passed it and tagged `spacemissionstudio-v2.14.0` at 19:30 UTC. The
+release workflow (run 45061087902) built, installed and checked every
+file. It attached the eleven files and published "SpaceMissionStudio
+2.14.0" at 20:07:07 UTC, 37 minutes after the tag. The release was
+never public without its files.
+
+The files' digests were checked after the publication:
+- Each file's GitHub digest equals its line in `SHA256SUMS-linux`,
+  `SHA256SUMS-windows` or `SHA256SUMS-sources`.
+- The `.deb`'s and the setup program's digests are also in the release
+  notes.
+- The wheel, the sdist and both bills of materials, downloaded from the
+  release, give the same digests.
+- The LGPL sources are the same files as 2.13.1's.
+
+SRelD issue 50, the SDP, H05 and `releasing.md` record the tag, the runs
+and the files' digests.
