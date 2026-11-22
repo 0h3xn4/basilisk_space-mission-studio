@@ -2,6 +2,13 @@
 
 ## Next release
 
+- Make CI's reference-data downloads survive a short outage of the
+  source. On 2026-11-22 the ITU server answered HTTP 404 for the
+  ITU-R P.676-13 data file for a few minutes, and CI on `develop`
+  stopped before any test (2.14.0; SRelD issue 50). A re-run passed.
+  Retry each download a few times with a pause, or keep a copy that CI
+  checks against the file's recorded SHA-256 and uses when the source
+  does not answer. Do not skip the step: the tests need the files.
 - Import pandas off the GUI thread before a Monte Carlo batch or case.
   `MonteCarloWorker` and, since phase A (#307), `RunWorker` for a case
   import pandas on the GUI thread before they start, for an earlier

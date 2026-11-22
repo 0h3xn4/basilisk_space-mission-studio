@@ -615,6 +615,16 @@ three connections, so 2.14.0 carries 2.13.0's file (observations to
 2026-11-18). By the owner's decision (SRelD K-45), the release pull
 request may be merged with CI's "Windows (MAX Python)" job red, for the
 Basilisk framework test `LambertInputValidation` only.
+It was published on 2026-11-22 at 20:07 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 50). #308 was merged at
+18:34 UTC. CI on `1b4060c` first failed before any test, because the
+ITU server answered HTTP 404 for the ITU-R P.676-13 data file; the one
+re-run passed ([run 45055869064](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45055869064)). The tag workflow
+([run 45061002580](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45061002580)) passed the release check and tagged
+it at 19:30; the release workflow ([run 45061087902](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45061087902))
+built, installed and checked every file, attached the eleven and
+published the release 37 minutes later. It was never a public release
+without files.
 
 ---
 
