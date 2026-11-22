@@ -42,11 +42,23 @@ the engine each import large packages. CPython's import is thread safe, so
 this is not known to crash. They take :data:`FIRST_IMPORTS` all the same,
 so that they do not import at the same time and the warm-ups do not compete
 with each other for the interpreter.
+
+**pandas, imported in a worker.** A Monte Carlo batch's worker and the
+worker of a case run again need pandas (Basilisk's Monte Carlo controller
+imports it). The first import takes about 0.25 s, so the worker makes it
+(:func:`import_pandas`, with :data:`FIRST_IMPORTS` held), not the GUI
+thread. But plotly and narwhals find pandas with ``sys.modules.get`` and do
+not wait for an import in progress: a plot built meanwhile read the half
+made module ("partially initialized module 'pandas'", Windows CI,
+2026-10-28). The lock keeps the figure warm-up away from that import; the
+GUI thread cannot hold the lock (it would wait for the warm-ups too), so
+the window's plots call :func:`wait_for_pandas` before plotly runs.
 """
 
 from __future__ import annotations
 
 import gc
+import sys
 import threading
 
 from PySide6.QtCore import QCoreApplication, QObject, QThread
@@ -59,10 +71,34 @@ from PySide6.QtCore import QCoreApplication, QObject, QThread
 # nothing due costs microseconds.
 COLLECT_INTERVAL_MS = 20  # [ms]
 
-# Held for a heavy first import made off the GUI thread (the warm-ups, a run's engine).
+# Held for a heavy first import made off the GUI thread (the warm-ups, a run's engine, pandas).
 FIRST_IMPORTS = threading.Lock()
 
 _COLLECTOR_NAME = "guiThreadGarbageCollector"
+
+
+def import_pandas() -> None:
+    """Import pandas, with :data:`FIRST_IMPORTS` held: a worker's first
+    import of it, off the GUI thread (about 0.25 s once per process).
+    Without pandas (no Basilisk) nothing happens; the worker's next import
+    reports Basilisk missing."""
+    with FIRST_IMPORTS:
+        try:
+            import pandas  # noqa: F401
+        except ImportError:
+            pass
+
+
+def wait_for_pandas() -> None:
+    """Before plotly builds or writes a figure: when another thread is
+    importing pandas, wait until that import is done. plotly would read the
+    half-made module from ``sys.modules`` and fail (see the module's
+    docstring). Python's import waits on the module's own lock, so this
+    waits for the rest of that import only, and only when a plot is drawn
+    during it; otherwise it costs one dictionary look-up."""
+    module = sys.modules.get("pandas")
+    if module is not None and getattr(getattr(module, "__spec__", None), "_initializing", False):
+        import pandas  # noqa: F401 -- waits for the other thread's import
 
 # The collector object, kept so that its Python wrapper lives as long as the
 # application (a child of it: Qt deletes it with the application).

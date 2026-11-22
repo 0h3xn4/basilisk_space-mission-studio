@@ -54,6 +54,7 @@ from ..engine import run_summary, scenario_diff
 from ..engine.series_names import device_column_labels
 from ..plot_categories import shown as _shown_in
 from . import plot_page, units
+from .background_threads import wait_for_pandas
 from .data_table import DataTable, Row
 from .theme import SERIES_COLORS, TOKENS, on_change, set_role
 from .theme import plotly_template as pt
@@ -434,6 +435,7 @@ class CompareWidget(QWidget):
         recorded = units.plot_units() == "recorded"  # elapsed seconds, as the plots and the exports
         x_scale = 1.0 if recorded else _S_PER_H
         x_title = "Elapsed time since t0, TDB [s]" if recorded else "Elapsed time since t0, TDB [h]"
+        wait_for_pandas()  # plotly reads pandas; a batch's worker may be importing it (SRelD K-44)
         fig = go.Figure()
         for index, record in enumerate(runs):
             series = record.result.series[name]

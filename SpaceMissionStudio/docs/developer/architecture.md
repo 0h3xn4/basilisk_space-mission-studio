@@ -92,7 +92,15 @@ days (`engine/long_run.py`).
   and checks every 20 ms on the GUI thread whether a collection is due. A
   collection in a worker thread destroyed widgets there, and the process
   crashed. A heavy first import off the GUI thread (the start-up
-  warm-ups, a run's engine) holds `background_threads.FIRST_IMPORTS`.
+  warm-ups, a run's engine, pandas for a Monte Carlo batch or case) holds
+  `background_threads.FIRST_IMPORTS`. plotly reads pandas without
+  waiting for an import in progress, so the GUI thread's plots call
+  `background_threads.wait_for_pandas()` first.
+- A signal that a child sends as it is deleted (an item widget's model
+  reset, a tab or stacked widget's `currentChanged`) is connected with
+  `widgets.connect_while_alive`, which holds the owner's method weakly:
+  Python's collector can delete the child after it cleared the owner's
+  wrapper (SRelD K-44).
 
 ## Where things live
 

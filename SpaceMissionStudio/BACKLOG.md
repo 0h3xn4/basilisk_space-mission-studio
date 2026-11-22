@@ -2,21 +2,6 @@
 
 ## Next release
 
-- Make CI's reference-data downloads survive a short outage of the
-  source. On 2026-11-22 the ITU server answered HTTP 404 for the
-  ITU-R P.676-13 data file for a few minutes, and CI on `develop`
-  stopped before any test (2.14.0; SRelD issue 50). A re-run passed.
-  Retry each download a few times with a pause, or keep a copy that CI
-  checks against the file's recorded SHA-256 and uses when the source
-  does not answer. Do not skip the step: the tests need the files.
-- Import pandas off the GUI thread before a Monte Carlo batch or case.
-  `MonteCarloWorker` and, since phase A (#307), `RunWorker` for a case
-  import pandas on the GUI thread before they start, for an earlier
-  import race with plotly on Windows. It takes about 280 ms once per
-  process (measured 2026-11-21), above the 50 ms rule. Since K-44 the
-  heavy first imports hold `background_threads.FIRST_IMPORTS`; import
-  pandas in the worker under that lock instead, and add a test that the
-  first batch or case start keeps the GUI thread under 50 ms.
 - Make the Budgets area quicker to show on a slow Windows machine
   (SRelD K-40). On the Windows CI runner, moving the area into its own
   window or back takes 50 to 81 ms of the GUI thread; on Linux it takes
@@ -68,6 +53,13 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- 2.14.1 small fixes, on branch `fix/2.14.1-small` (2026-11-22). pandas
+  is imported in the batch's or the case's worker with
+  `FIRST_IMPORTS` held, and the plots wait for that import (the first
+  start: 258-271 ms of the GUI thread before, under 1 ms now). CI runs
+  each reference data download through `scripts/retry_download.py`
+  (four attempts, 60 s apart). "Slot '...::' not found" of K-44 has its
+  cause and fix (below, and HISTORY.md, "2.14.1: small fixes").
 - Monte Carlo phase A, part 2: run one case again (A3), on branch
   `feature/monte-carlo-rerun-case` (2026-11-21, based on
   `feature/monte-carlo-outcomes`). Run This Case in Results › Monte
@@ -92,22 +84,16 @@ owner has answered the plan's open questions.
   access violation in `_SpaceWeatherWarmUp` and the export test's
   segmentation fault had one cause, now fixed: a garbage collection in a
   worker thread destroyed widgets of the GUI thread (HISTORY.md, "2.13.1:
-  background-thread crashes (K-44)"). Two faults were not reproduced and
-  have no cause yet:
+  background-thread crashes (K-44)"). "Slot 'MainWindow::' not found"
+  has a found cause and a fix in 2.14.1: the collector deleted a child
+  before its owner, and the child's last signal reached the half-freed
+  owner (reproduced with "Slot 'EmptyStack::'" and with a window's view
+  tabs; the CI run itself has no log). One fault was not reproduced and
+  has no cause yet:
   - Windows CI on #297: the child process of
     `test_results_widget.py::test_the_figure_warm_up_loads_what_the_first_plot_needs`
     ended with 0xC0000005 and empty stdout and stderr. It has no Python
     worker thread; it passed eight runs in eight on Linux.
-  - A template wizard test reported "Slot 'MainWindow::' not found". No
-    log of that run was found. A clue (2026-11-21, Monte Carlo phase A):
-    the same kind of message, "Slot 'EmptyStack::' not found", appears
-    when `widgets.EmptyStack` gets a list model's reset while the list
-    is being destroyed, when that list is the first widget of a test
-    process. It also happens on `develop`. The Monte Carlo editor's
-    Requirements list so switches its empty state itself (DECISIONS
-    MC-16). Look for a slot of a destroyed QObject that a model's reset
-    still reaches.
-  Needs a human: watch CI after this fix. If either fault comes back,
-  keep the job's log and add it to K-44. The child process prints no
-  stack today; a decision to run it with `-X faulthandler` would change
-  that test.
+  Needs a human: watch CI. If the 0xC0000005 or a "Slot '...::' not
+  found" comes back, keep the job's log and add it to K-44. The child process prints no stack today; a
+  decision to run it with `-X faulthandler` would change that test.

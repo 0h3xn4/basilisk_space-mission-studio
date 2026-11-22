@@ -351,28 +351,123 @@ def _short_batch(num_runs: int = 2):
     return scenario, mc_config
 
 
-def test_a_monte_carlo_worker_imports_pandas_on_the_thread_that_makes_it():
-    """The batch's thread imports pandas through Basilisk's Monte Carlo
-    controller; plotly, drawing a plot on the GUI thread meanwhile, read the
-    half-imported module ("partially initialized module 'pandas'", Windows
-    CI). Making the worker now imports it on the GUI thread first. Checked
-    in a fresh interpreter, since this one has pandas already."""
+# The GUI thread's part of a batch's or a case's first start, in a fresh
+# interpreter (this one has pandas already): make the worker and start it.
+# The batch itself is replaced (run_batch), and the case's folder does not
+# exist (refused): the workers end by themselves.
+_FIRST_START = """
+import sys
+import time
+from pathlib import Path
+from PySide6.QtWidgets import QApplication
+app = QApplication([])
+from spacemissionstudio.gui import run_worker
+assert 'pandas' not in sys.modules, 'pandas was loaded before the worker'
+run_worker.run_batch = lambda *args, **kwargs: []
+start = time.perf_counter()
+if sys.argv[1] == 'batch':
+    worker = run_worker.MonteCarloWorker(None, None, Path('no-batch'))
+else:
+    worker = run_worker.RunWorker(None, case=(Path('no-batch'), 1))
+worker.start()
+took_ms = (time.perf_counter() - start) * 1000.0
+assert worker.wait(600000)
+print(f"{took_ms:.1f}", 'pandas' in sys.modules and hasattr(sys.modules['pandas'], 'Series'))
+"""
+
+
+@pytest.mark.parametrize("kind", ["batch", "case"])
+def test_the_first_batch_or_case_start_keeps_the_gui_thread_under_50_ms(kind):
+    """A Monte Carlo batch's worker and a case's worker import pandas (for
+    Basilisk's Monte Carlo controller) in their own thread, not on the GUI
+    thread: the first start of a process took about 280 ms of the GUI
+    thread (design rule 6: 50 ms). The worker still imports it."""
     import os
     import subprocess
     import sys
     from pathlib import Path
 
     pytest.importorskip("pandas")
-    code = ("import sys\n"
-            "from spacemissionstudio.gui.run_worker import MonteCarloWorker\n"
-            "assert 'pandas' not in sys.modules, 'pandas was loaded before the worker'\n"
-            "MonteCarloWorker(None, None, None)\n"
-            "print('pandas' in sys.modules and hasattr(sys.modules['pandas'], 'Series'))\n")
     root = Path(__file__).resolve().parents[2]
-    done = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True, timeout=120,
-                          env={**os.environ, "QT_QPA_PLATFORM": "offscreen", "PYTHONPATH": str(root)})
-    assert done.returncode == 0, done.stderr
-    assert done.stdout.strip() == "True"
+    done = subprocess.run([sys.executable, "-c", _FIRST_START, kind], cwd=root, capture_output=True, text=True,
+                          timeout=600, env={**os.environ, "QT_QPA_PLATFORM": "offscreen", "PYTHONPATH": str(root)})
+    assert done.returncode == 0, done.stderr[-2000:]
+    took_ms, imported = done.stdout.split()[-2:]
+    assert float(took_ms) < 50.0  # [ms]
+    assert imported == "True"
+
+
+# A plot built on the GUI thread while a worker imports pandas, in a fresh
+# interpreter: plotly reads pandas from sys.modules, so a half-made module
+# failed it ("partially initialized module 'pandas'", Windows CI).
+_PLOT_DURING_IMPORT = """
+import sys
+import threading
+import numpy as np
+from PySide6.QtWidgets import QApplication
+app = QApplication([])
+from spacemissionstudio.engine.results import ResultSet, TimeSeries
+from spacemissionstudio.gui import background_threads
+from spacemissionstudio.gui.results_widget import ResultsWidget, warm_up_figures
+warm_up_figures()
+assert 'pandas' not in sys.modules, 'pandas was loaded before the worker'
+t = np.linspace(0, 3600 * 3, 50)
+rs = ResultSet(scenario_name="demo")
+rs.add(TimeSeries("sat-1.position_N", t, ("x", "y", "z"), np.column_stack([t, t, t]), units="m"))
+widget = ResultsWidget()
+widget._result = rs
+worker = threading.Thread(target=background_threads.import_pandas)  # as a batch's or a case's worker
+worker.start()
+while 'pandas' not in sys.modules:
+    pass
+during = sys.modules['pandas'].__spec__._initializing
+widget._figure_json(widget._build_plot("sat-1.position_N"))
+worker.join()
+print(during, hasattr(sys.modules['pandas'], 'Series'))
+"""
+
+
+def test_a_plot_built_while_a_worker_imports_pandas_waits_for_the_import():
+    """The plots wait for a worker's import of pandas in progress
+    (``background_threads.wait_for_pandas``): built in the middle of it,
+    the Results page's figure and its JSON come out whole. Without the
+    wait, plotly raised "partially initialized module 'pandas'"."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    pytest.importorskip("pandas")
+    root = Path(__file__).resolve().parents[2]
+    done = subprocess.run([sys.executable, "-c", _PLOT_DURING_IMPORT], cwd=root, capture_output=True, text=True,
+                          timeout=300, env={**os.environ, "QT_QPA_PLATFORM": "offscreen", "PYTHONPATH": str(root)})
+    assert done.returncode == 0, done.stderr[-2000:]
+    during, imported = done.stdout.split()[-2:]
+    assert during == "True"  # the plot was built while the import ran
+    assert imported == "True"
+
+
+def test_a_worker_imports_pandas_with_the_first_imports_lock_held(monkeypatch):
+    """``import_pandas`` holds ``FIRST_IMPORTS``: not at the same time as a
+    start-up warm-up's imports (SRelD K-44), the figure warm-up's plotly
+    work included."""
+    import builtins
+    import threading
+
+    from spacemissionstudio.gui import background_threads
+
+    held = []
+    real_import = builtins.__import__
+    this_thread = threading.get_ident()
+
+    def recording_import(name, *args, **kwargs):
+        if name == "pandas" and threading.get_ident() == this_thread:  # not another test's worker
+            held.append(background_threads.FIRST_IMPORTS.locked())
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", recording_import)
+    background_threads.import_pandas()
+    assert held and all(held)  # pandas' own modules import it again when it is not loaded yet
 
 
 @pytest.mark.requires_basilisk

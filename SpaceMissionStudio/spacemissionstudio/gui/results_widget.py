@@ -191,6 +191,7 @@ from ..plot_categories import shown as _shown_in
 from ..plot_categories import parse_access_pair as _parse_access_pair
 from ..plot_categories import plot_group
 from . import plot_page, units
+from .background_threads import wait_for_pandas
 from .flow_layout import FlowLayout
 from .plot_catalog import ACCESS_TIMELINE, PlotCatalog
 from .readout_panel import ReadoutPanel, value_at
@@ -1436,6 +1437,7 @@ class ResultsWidget(QWidget):
         self._redraw()
 
     def _build_plot(self, name: str) -> go.Figure | None:
+        wait_for_pandas()  # plotly reads pandas; a batch's worker may be importing it (SRelD K-44)
         if name == ACCESS_TIMELINE:
             return self._build_access_timeline_figure()
         series = self._result.series.get(name) if self._result is not None else None
@@ -1611,7 +1613,10 @@ class ResultsWidget(QWidget):
 
     def _figure_json(self, fig: go.Figure) -> str:
         known = self._page_json.get(id(fig))
-        return known[1] if known is not None and known[0] is fig else fig.to_json()
+        if known is not None and known[0] is fig:
+            return known[1]
+        wait_for_pandas()  # as in _build_plot
+        return fig.to_json()
 
     def _push_figure_to_webview(self) -> None:
         """Sends :attr:`figures` (already current -- see

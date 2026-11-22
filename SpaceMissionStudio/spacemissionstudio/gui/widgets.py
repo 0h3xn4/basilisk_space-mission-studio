@@ -40,7 +40,9 @@ clamped to the range. Every spin box here now keeps it
 
 from __future__ import annotations
 
+import inspect
 import math
+import weakref
 from decimal import Decimal
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer
@@ -936,6 +938,45 @@ class EmptyState(QWidget):
         return "\n".join(label.text() for label in (self.title_label, self.text_label) if label.text())
 
 
+def connect_while_alive(signal, method, sender: QObject | None = None) -> None:
+    """Connect ``signal`` to ``method``, a bound method of a QObject, through
+    a weak reference: ``method`` runs only while its object and its Python
+    wrapper live (SRelD K-44). Use it for a signal that a child sends when
+    it is deleted: an item widget's model resets (``QListWidget``,
+    ``QTreeWidget``, ``QTableWidget``), and a ``QTabWidget`` or
+    ``QStackedWidget`` changes its current page when a page goes.
+
+    Why: Python's collector frees a dropped widget tree one wrapper at a
+    time, and shiboken can then delete a child before its parent. The child
+    sends its signal to an owner whose wrapper the collector already
+    cleared, and PySide cannot find the method: "Slot 'EmptyStack::' not
+    found" (the first test of a process), "Slot 'MainWindow::' not found"
+    (CI). Python clears weak references before it clears the wrappers, so
+    here nothing is called. Like a direct connection, the method gets the
+    first arguments of the signal that it takes. ``sender``: the method
+    gets it first (``QObject.sender()`` is None in a call made this way),
+    also held weakly."""
+    target = weakref.WeakMethod(method)
+    source = None if sender is None else weakref.ref(sender)
+    parameters = list(inspect.signature(method).parameters.values())[0 if sender is None else 1:]
+    count = None if any(p.kind is p.VAR_POSITIONAL for p in parameters) else sum(
+        p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD) for p in parameters)
+
+    def call(*args) -> None:
+        bound = target()
+        if bound is None or not isValid(bound.__self__):
+            return
+        args = args if count is None else args[:count]
+        if source is None:
+            bound(*args)
+            return
+        emitter = source()
+        if emitter is not None and isValid(emitter):
+            bound(emitter, *args)
+
+    signal.connect(call)
+
+
 class EmptyStack(QStackedWidget):
     """A list, tree or table view, or its :class:`EmptyState` while the
     view has no row (UI audit UI-05): never a blank box over the buttons.
@@ -961,8 +1002,10 @@ class EmptyStack(QStackedWidget):
         self.addWidget(view)
         self.addWidget(empty)
         model = view.model()
+        # Weakly: a QListWidget's model resets while the list is deleted, also when the collector
+        # deleted the list before this stack (K-44, "Slot 'EmptyStack::' not found").
         for signal in (model.rowsInserted, model.rowsRemoved, model.modelReset, model.layoutChanged):
-            signal.connect(self._rows_changed)
+            connect_while_alive(signal, self._rows_changed)
         self.refresh()
 
     def _rows_changed(self, *_args) -> None:

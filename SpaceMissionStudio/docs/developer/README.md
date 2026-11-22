@@ -182,6 +182,19 @@ request that touches `SpaceMissionStudio/`:
 | `test` | Ubuntu, Python 3.14 | Lint; compliance-document checks; reference data download; the full suite with coverage; the offline tests; metrics (statement coverage at least 90 %, branch at least 80 %); `pip-audit` of the pinned packages (`packaging/constraints.txt`, `constraints-dev.txt`); traceability, ICS and compliance matrix |
 | `platforms` | `windows-latest`, Python 3.14 | Reference data download and the full suite |
 
+**Reference data downloads.** Both jobs download the support data
+(`kernels-status`), the Earth orientation files, the 433 Eros files and
+the ITU-R P.676-13 data file, each in its own step, through
+[`scripts/retry_download.py`](../../scripts/retry_download.py): a failed
+download runs again, four attempts in all, 60 s apart, so a source that
+is away for a few minutes does not stop CI. After the last attempt the
+step fails with the command's own exit status; a download is never
+skipped. Each failed attempt is a warning in the step's log. The same
+wrapper runs the downloads of `spacemissionstudio-sil-stress.yml`. To
+run a download the same way here:
+`python scripts/retry_download.py -- spacemissionstudio gaseous-attenuation --fetch`
+(`--attempts N`, `--pause S`).
+
 If a process in the `test` job crashes in native code (Qt, numpy,
 Basilisk), Python's faulthandler shows only `<no Python frame>` for the
 crashed thread. The job therefore keeps core dumps in `/tmp/cores`, and

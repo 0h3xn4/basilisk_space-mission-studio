@@ -2693,3 +2693,26 @@ parameters); in `tests/test_monte_carlo.py` 5 tests, in
 `tests/test_cli.py` 2 (3 with parameters), in
 `tests/gui/test_monte_carlo_editor.py` 4 and in
 `tests/gui/test_monte_carlo_results_widget.py` 4.
+
+## 2.14.1: small fixes (2026-11-22)
+
+One existing GUI test is replaced, because the behaviour it asked for is
+changed on purpose (BACKLOG, "Import pandas off the GUI thread"). The
+hazard it guarded is now tested directly.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/gui/test_run_worker.py::test_a_monte_carlo_worker_imports_pandas_on_the_thread_that_makes_it` | making a `MonteCarloWorker` imports pandas (on the GUI thread) | replaced by `test_a_plot_built_while_a_worker_imports_pandas_waits_for_the_import`: a Results figure built and serialized while another thread imports pandas comes out whole; and by `test_the_first_batch_or_case_start_keeps_the_gui_thread_under_50_ms`: the worker imports pandas itself | the import moved into the worker (design rule 6, 258 to 271 ms before); the race that the old test guarded (plotly on a half-made pandas) is now checked as it happens, not through where the import runs |
+
+Added:
+- `tests/gui/test_run_worker.py`: the two tests above (the first with
+  `batch` and `case`) and `test_a_worker_imports_pandas_with_the_first_imports_lock_held`;
+- `tests/gui/test_teardown_signals.py` (4 tests, 6 with their
+  parameters);
+- `tests/test_retry_download.py` (6 tests).
+
+Each test that checks a fix failed before it: the 50 ms test (258.2
+and 271.0 ms), the plot built during the import (with the wait removed),
+the three teardown cases and the rule against direct connections, and the
+test of the workflows' download lines. The others test the new functions
+(`import_pandas`, `connect_while_alive`, `retry_download.py`).

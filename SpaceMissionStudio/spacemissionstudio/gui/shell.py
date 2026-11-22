@@ -55,7 +55,7 @@ from PySide6.QtWidgets import (
 )
 
 from .theme import AREA_HEADER_HEIGHT, ICON_SIZE, PAGE_INSET, SPACE, icon, set_role
-from .widgets import layout_item_widgets
+from .widgets import connect_while_alive, layout_item_widgets
 
 
 def page_body(page: QWidget) -> QWidget:
@@ -395,7 +395,7 @@ class Shell(QWidget):
         layout.addWidget(self.work, 1)
         self.areas: dict[str, Area] = {}
         self.rail.area_chosen.connect(self.show_area)
-        self.stack.currentChanged.connect(self._on_current_changed)
+        connect_while_alive(self.stack.currentChanged, self._on_current_changed)  # sent when a page is deleted (K-44)
 
     def register(self, area_id: str, icon_name: str, label: str, content: QWidget | None, order: int,
                  bottom: bool = False, action: QAction | None = None, keys: str = "") -> Area:

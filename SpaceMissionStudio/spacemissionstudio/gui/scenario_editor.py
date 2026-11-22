@@ -83,7 +83,7 @@ from .problem_location import (GROUND_STATION, JSON_VIEW, MISSION_SEQUENCE, PROP
 from .spacecraft_editor import SpacecraftEditorDialog, SpacecraftLabels, SpacecraftListWidget, tab_titles
 from .shell import INSET_INSIDE, inset_page, inset_stack
 from .theme import CONTENT_MAX_WIDTH_PX
-from .widgets import ComboBox, finish_form, out_of_range_boxes
+from .widgets import ComboBox, connect_while_alive, finish_form, out_of_range_boxes
 from .workspace_panels import field_label
 
 
@@ -562,10 +562,9 @@ class ScenarioEditorWidget(QWidget):
         if node is not None and node.form is not None and node in self._spacecraft_nodes:
             node.form.show_tab(key)
 
-    def _on_spacecraft_tab_changed(self, _index: int) -> None:
+    def _on_spacecraft_tab_changed(self, tabs, _index: int) -> None:
         """The form moved to another tab itself (to a problem's field): the
         tree follows."""
-        tabs = self.sender()
         node = next((n for n in self._spacecraft_nodes if n.form is not None and n.form.tabs is tabs), None)
         if node is not None and self.page_tree.current_page() is node.holder:
             self.page_tree.show_section(node.item, tabs.tabText(tabs.currentIndex()))
@@ -610,7 +609,7 @@ class ScenarioEditorWidget(QWidget):
             form.tabs.setDocumentMode(True)
             for section in self.page_tree.sections(node.item):
                 self.page_tree.set_section_widget(section, form.tab_page(self.page_tree.section_key(section)))
-            form.tabs.currentChanged.connect(self._on_spacecraft_tab_changed)
+            connect_while_alive(form.tabs.currentChanged, self._on_spacecraft_tab_changed, sender=form.tabs)  # K-44
         node.debounce = _Debounce(form, kind, node)
         node.debounce.settled.connect(self._on_form_settled)
         if kind == "spacecraft":  # its sections are built in turn: watch each one's fields as it comes

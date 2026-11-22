@@ -67,7 +67,7 @@ from .svg_plot import SvgPlotView, render_image, render_size
 from .theme import FIELD_WIDTH, ROW_HEIGHT, SPACE, current_theme, on_change, set_role
 from .theme.svg_plot_style import svg_plot_style
 from .value_sheet import NoteList, ValueSheet, ValueTable
-from .widgets import ComboBox, EmptyState, TabWidget, own_tooltip, set_off_reason
+from .widgets import ComboBox, EmptyState, TabWidget, connect_while_alive, own_tooltip, set_off_reason
 
 _ALL_NODES = "All nodes"
 _MODEL_HEIGHT_PX = 240  # [px] the 3D model's least height (the page fits a 720 px window)
@@ -501,7 +501,7 @@ class ThermalWidget(QWidget):
         self._build_model_view()
         self._build_studies()
         self._build_notes()
-        self.tabs.currentChanged.connect(self._on_tab)
+        connect_while_alive(self.tabs.currentChanged, self._on_tab)  # sent when a page is deleted (K-44)
         on_change(self._on_theme_changed)
         self._clear()
 

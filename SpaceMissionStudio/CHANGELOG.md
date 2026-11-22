@@ -8,6 +8,35 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Fixed
+
+- **Starting the first Monte Carlo batch or case no longer freezes the
+  window for a quarter of a second.** Both need pandas, and the window
+  used to load it on its own thread before the batch or the case
+  started, which held everything for about 280 ms the first time in a
+  session. The batch's or the case's own background thread now loads it,
+  and starting takes well under a millisecond of the window's time. That
+  load was once moved to the window's thread because a plot drawn at the
+  same moment could fail on a half-loaded pandas; the plots now wait for
+  the load to finish instead, which only happens if one is drawn in
+  exactly that quarter of a second.
+- **No more "Slot '...' not found" errors when a window or a list is
+  freed.** When Python's garbage collector freed a closed window or
+  form, it could delete a list or a tab page before the widget that held
+  it, and the list's or the tab's last signal then went to a widget that
+  was already half gone. You saw an error such as "Slot 'EmptyStack::' not
+  found" or "Slot 'MainWindow::' not found". Those signals now reach a
+  widget only while it is alive (SRelD K-44). The Monte Carlo editor's
+  Requirements list uses the shared list-or-empty-state widget again.
+- **CI tries a reference data download again before it gives up.** On
+  2026-11-22 the ITU server answered "not found" for the ITU-R P.676-13
+  data file for a few minutes, and CI stopped before running a single
+  test. Each download step now makes up to four attempts, a minute
+  apart, and still fails if the last one does. The app itself is
+  unchanged.
+
 ## 2.14.0 (2026-11-22)
 
 SpaceMissionStudio 2.14.0 makes a Monte Carlo batch answer the question

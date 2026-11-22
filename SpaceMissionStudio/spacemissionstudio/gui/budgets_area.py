@@ -68,7 +68,7 @@ from .data_table import DataTable, Row, fit_widths, text_elided
 from .feedback import show_toast
 from .theme import SPACE, icon, numeric_font, set_role
 from .value_sheet import NoteList, ValueSheet
-from .widgets import ComboBox, EmptyState, TabWidget, exact_number_text, set_table_look
+from .widgets import ComboBox, EmptyState, TabWidget, connect_while_alive, exact_number_text, set_table_look
 
 PLACEHOLDER_TEXT = "TBD"  # what a placeholder reads in a table cell
 UNKNOWN_TEXT = "unknown"  # a result a placeholder or a missing number leaves unknown
@@ -1453,7 +1453,7 @@ class BudgetsViews(TabWidget):
         for page in (self.equipment_page, self.power_page, self.mass_page):
             page.set_copy_action(self.copy_action)
         self.propellant_widget = None  # BudgetWidget, given by add_propellant
-        self.currentChanged.connect(self._apply_pending)
+        connect_while_alive(self.currentChanged, self._apply_pending)  # sent when a page is deleted (K-44)
         # The tab bar's right corner: the window's Open in Own Window button (gui.breakout) and, while the
         # area is in a window of its own, the spacecraft picker (the area's header stays in the main window).
         self.corner = QWidget()

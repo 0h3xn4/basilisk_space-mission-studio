@@ -118,8 +118,8 @@ from .sensor_actuator_editor import SensorActuatorListWidget
 from .theme import PAGE_INSET, set_role
 from . import units
 from .value_sheet import NoteList, ValueSheet
-from .widgets import (ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, finish_form, flow_row,
-                      set_off_reason)
+from .widgets import (ComboBox, EmptyStack, EmptyState, PreciseDoubleSpinBox, SpinBox, TabWidget, connect_while_alive,
+                      finish_form, flow_row, set_off_reason)
 
 _FSW_MODE_NONE_LABEL = "(none – no attitude control)"
 
@@ -478,7 +478,7 @@ class SpacecraftEditorDialog(QDialog):
         # dialog that tall (see _scrollable()'s own docstring).
         if embedded:  # a page's form takes the page's size: measuring every tab took 90 ms (M9)
             self.build_sections("Orbit / mass")
-            tabs.currentChanged.connect(self._on_section_shown)
+            connect_while_alive(tabs.currentChanged, self._on_section_shown)  # sent when a page is deleted (K-44)
             QTimer.singleShot(0, self, self._build_next_section)
             return
         self.build_sections()
