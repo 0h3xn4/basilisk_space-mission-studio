@@ -2,6 +2,14 @@
 
 ## Next release
 
+- Import pandas off the GUI thread before a Monte Carlo batch or case.
+  `MonteCarloWorker` and, since phase A (#307), `RunWorker` for a case
+  import pandas on the GUI thread before they start, for an earlier
+  import race with plotly on Windows. It takes about 280 ms once per
+  process (measured 2026-11-21), above the 50 ms rule. Since K-44 the
+  heavy first imports hold `background_threads.FIRST_IMPORTS`; import
+  pandas in the worker under that lock instead, and add a test that the
+  first batch or case start keeps the GUI thread under 50 ms.
 - Make the Budgets area quicker to show on a slow Windows machine
   (SRelD K-40). On the Windows CI runner, moving the area into its own
   window or back takes 50 to 81 ms of the GUI thread; on Linux it takes
@@ -28,16 +36,6 @@
   Every number has a source or is a placeholder ("TBD"). Write the
   design and the decisions first; the item needs the owner's choice of
   scope before code, so move it to `## Needs human` with the design.
-- Monte Carlo phase A, part 2: reproduce one case
-  (`docs/developer/monte-carlo-plan.md` section 4, item A3; decision
-  MC-7; about 3 hours). Any case of a batch runs again from its
-  `run<N>.json` as a normal run and opens in Results: "Run this case" on
-  the Runs table, `monte-carlo --case N [--out-dir D]`, and
-  `api.monte_carlo_case`. Refused when the scenario's hash differs from
-  the batch's. Done when the replayed case agrees with the batch summary
-  at every kept sample to 1e-6 m for a 2-run batch of template 25 with
-  one and with two processes. If the owner has answered Q3, follow the
-  answer.
 
 ## Later
 
@@ -63,6 +61,15 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Monte Carlo phase A, part 2: run one case again (A3), on branch
+  `feature/monte-carlo-rerun-case` (2026-11-21, based on
+  `feature/monte-carlo-outcomes`). Run This Case in Results › Monte
+  Carlo › Runs (Ctrl+Shift+R, the palette, the right-click menu),
+  `monte-carlo --case N [--out-dir D]` and `api.monte_carlo_case`. The
+  case agrees with the batch summary to 0.0 m at every kept sample for
+  a 2-run batch of template 25 with one and with two processes. The
+  owner's answer to Q3 is the provisional decision MC-17 (refuse when
+  the scenario changed since the batch); the build choices are MC-18.
 - Monte Carlo phase A, part 1: outcomes (A1), crashed runs' draws (A4)
   and requirements (A2), on branch `feature/monte-carlo-outcomes`
   (2026-11-21). Each run keeps its Overview figures; the summary keeps
@@ -85,7 +92,14 @@ owner has answered the plan's open questions.
     ended with 0xC0000005 and empty stdout and stderr. It has no Python
     worker thread; it passed eight runs in eight on Linux.
   - A template wizard test reported "Slot 'MainWindow::' not found". No
-    log of that run was found.
+    log of that run was found. A clue (2026-11-21, Monte Carlo phase A):
+    the same kind of message, "Slot 'EmptyStack::' not found", appears
+    when `widgets.EmptyStack` gets a list model's reset while the list
+    is being destroyed, when that list is the first widget of a test
+    process. It also happens on `develop`. The Monte Carlo editor's
+    Requirements list so switches its empty state itself (DECISIONS
+    MC-16). Look for a slot of a destroyed QObject that a model's reset
+    still reaches.
   Needs a human: watch CI after this fix. If either fault comes back,
   keep the job's log and add it to K-44. The child process prints no
   stack today; a decision to run it with `-X faulthandler` would change

@@ -68,7 +68,7 @@ MENUS: tuple[tuple[str, tuple[Entry, ...]], ...] = (
               ("Run &Mode", ("run.mode.single", "run.mode.monte_carlo", "run.mode.sil")),
               "run.live_plot", "-",
               "analyses.end_of_life", "analyses.budget", "analyses.design_checks", "analyses.thermal", "analyses.plan", "-",
-              "run.open_monte_carlo")),
+              "run.open_monte_carlo", "run.monte_carlo_case")),
     ("&Tools", ("tools.model_3d", "tools.flight_software", "-",
                 ("&Budgets", ("budgets.add_item", "budgets.remove_item", "-", "budgets.copy_csv")), "-",
                 "tools.ccsds_check", "-",

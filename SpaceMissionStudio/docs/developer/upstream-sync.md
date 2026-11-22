@@ -112,9 +112,12 @@ This is a requalification, described in
    `RetentionPolicy.addRetentionFunction` and the `custom` data it puts
    in each `run<N>.data` (the outcomes), the data writer's file per
    custom key (`spacemissionstudio_outcome*.data`, in
-   `monte_carlo_results.BATCH_FILE_PATTERNS`), and the order of the
-   entries in `run<N>.json`. `tests/test_monte_carlo.py` fails if one of
-   them changes.
+   `monte_carlo_results.BATCH_FILE_PATTERNS`), the order of the entries
+   in `run<N>.json`, and `SimulationExecutor.applyModification`, which
+   applies them when a case runs again (`engine.monte_carlo.prepare_case`;
+   the RNG seeds are entries too). `tests/test_monte_carlo.py` fails if
+   one of them changes; `test_a_case_run_again_is_the_batchs_case`
+   compares a case run again with the batch to 1e-6 m.
 
 ---
 

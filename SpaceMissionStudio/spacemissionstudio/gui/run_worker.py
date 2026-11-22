@@ -34,6 +34,12 @@ always carries both the :class:`engine.results.ResultSet` and (when a
 ``mission_sequence`` ran) its :class:`engine.results.CommandSummary`, or
 ``None`` for the summary otherwise.
 
+A Monte Carlo case run again (Results › Monte Carlo › Runs, **Run This
+Case**; plan A3) goes through ``RunWorker`` too, with ``case``: the run is
+built from the case's ``run<N>.json`` (``engine.monte_carlo.prepare_case``)
+and flown, shown and kept like any run. A refused case (the scenario
+changed since the batch) is the ``refused`` signal, not ``failed``.
+
 **Abort a running simulation** (direct user feedback: "there should be
 an option to abort a running simulation, if needed, without breaking
 the tool"): :meth:`RunWorker.request_cancel` sets a
@@ -84,15 +90,29 @@ class RunWorker(QThread):
     progress = Signal(object, float)  # engine.results.ResultSet (partial), fraction_complete in [0, 1]
     cancelled = Signal(object, object)  # engine.results.ResultSet (partial), Optional[engine.results.CommandSummary]
     sil_report = Signal(object, str)  # sil.report.SilReport, and the failure message ("" when it ran to the end)
+    # A Monte Carlo case not run again (engine.monte_carlo.MonteCarloCaseRefused: the scenario changed since
+    # the batch, or the batch has no such case): why, and what to do. Not a failure of the run.
+    refused = Signal(str)
     # What the run is doing ("Propagating: day 0.4 of 1", "Step 2 of 5: ..."), and how far it is in [0, 1]:
     # sent for every run, with Live plot on or off, for the progress strip (docs/ux-audit.md U-19).
     phase = Signal(str)
     fraction = Signal(float)
 
     def __init__(self, scenario: Scenario, model_base_dir: str | None = None, live: bool = False,
-                 parent=None, allow_scripts: bool = False, sil: tuple | None = None, live_feed=None):
+                 parent=None, allow_scripts: bool = False, sil: tuple | None = None, live_feed=None,
+                 case: tuple | None = None):
         super().__init__(parent)
         self.scenario = scenario
+        # (batch folder, case number): run that case of a Monte Carlo batch again, as a plain run with
+        # its draws and seeds (engine.monte_carlo.prepare_case, plan A3), built as the batch built it.
+        self.case = case
+        if case is not None:
+            # pandas, on the GUI thread, before run() imports Basilisk's Monte Carlo controller (which
+            # imports it) on the worker's: as MonteCarloWorker does, and for the same reason.
+            try:
+                import pandas  # noqa: F401
+            except ImportError:  # no Basilisk, so no pandas: run() reports it
+                pass
         # An engine.live_view.LiveFeed: the 3D View shows the run as it goes
         # (ordinary runs, Mission Sequences, segmented runs; not SIL). Its
         # pacing waits end at once on Cancel.
@@ -138,14 +158,24 @@ class RunWorker(QThread):
                 'See the user manual, section 2, "Installing it".'
             )
             return
+        case_record = None
         try:
             command_summary = None
             self.phase.emit("Building the simulation in Basilisk")
             if self.sil is not None:
                 self._run_sil()
                 return
-            service = SimulationService(self.scenario, model_base_dir=self.model_base_dir)
-            service.live_feed = self.live_feed
+            if self.case is not None:
+                from ..engine.monte_carlo import MonteCarloCaseRefused, prepare_case
+
+                try:
+                    service, case_record = prepare_case(self.scenario, *self.case)
+                except MonteCarloCaseRefused as exc:
+                    self.refused.emit(str(exc))
+                    return
+            else:
+                service = SimulationService(self.scenario, model_base_dir=self.model_base_dir)
+                service.live_feed = self.live_feed
             if runs_sequence(self.scenario.mission_sequence):
                 from ..engine.mission_engine import MissionEngine, MissionEngineCancelled
 
@@ -155,7 +185,7 @@ class RunWorker(QThread):
                         allow_scripts=self.allow_scripts, on_step=self._on_step,
                     ).run()
                 except MissionEngineCancelled as exc:
-                    self.cancelled.emit(exc.partial_result, exc.summary)
+                    self.cancelled.emit(self._marked(exc.partial_result, case_record), exc.summary)
                     return
             else:
                 def on_progress(partial, fraction):
@@ -166,7 +196,7 @@ class RunWorker(QThread):
                 try:
                     result = service.run_live(on_progress, should_cancel=self._should_cancel)
                 except SimulationCancelled as exc:
-                    self.cancelled.emit(exc.partial_result, None)
+                    self.cancelled.emit(self._marked(exc.partial_result, case_record), None)
                     return
         except (Exception, SystemExit) as exc:  # noqa: BLE001 -- surface ANY failure (Basilisk's exit() too) to the GUI, never end the worker silently
             # Full traceback to the log file/terminal -- see
@@ -177,7 +207,16 @@ class RunWorker(QThread):
             _logger.exception("RunWorker failed")
             self.failed.emit(failure_text(exc))
             return
-        self.finished_ok.emit(result, command_summary)
+        self.finished_ok.emit(self._marked(result, case_record), command_summary)
+
+    @staticmethod
+    def _marked(result, case_record):
+        """A case's result names its batch in the provenance (``monte_carlo_case``)."""
+        if case_record is None:
+            return result
+        from ..engine.monte_carlo import mark_case
+
+        return mark_case(result, case_record)
 
     def _report(self, fraction: float, doing: str) -> None:
         """Send the phase ("Propagating: day 0.4 of 1") and the fraction."""

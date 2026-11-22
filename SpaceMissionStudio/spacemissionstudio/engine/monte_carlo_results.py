@@ -54,7 +54,10 @@ without them opens as before, and an older version ignores them):
   ``run<N>.json``);
 * ``requirements`` and ``probability_bound``: the requirements the batch
   was run with and the model of their bound; the verdicts are computed when
-  the batch is read (``engine.monte_carlo_requirements``).
+  the batch is read (``engine.monte_carlo_requirements``);
+* ``data_files``: each successful run's reference data files, by kind, with
+  their path and SHA-256 (``engine.monte_carlo.data_file_hashes``), so a
+  case runs again only with the same data (decision MC-19).
 """
 
 from __future__ import annotations
@@ -128,6 +131,9 @@ class MonteCarloBatch:
     # schema.scenario.MonteCarloRequirementConfig, and the model of their bound.
     requirements: list = field(default_factory=list)
     probability_bound: str = "clopper_pearson"
+    # Each successful run's data files (MC-19): data_files[k] is run runs[k]'s
+    # {kind: {"path": ..., "sha256": ...}}; empty for a summary without them.
+    data_files: list = field(default_factory=list)
 
     @property
     def spacecraft(self) -> list[str]:
@@ -176,6 +182,8 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         meta["failed_drawn"] = {str(int(run)): drawn for run, drawn in sorted(batch.failed_drawn.items())}
     if batch.requirements:
         meta.update(requirements=batch.requirements, probability_bound=batch.probability_bound)
+    if batch.data_files:
+        meta["data_files"] = batch.data_files
     if batch.kind == "thermal":
         meta.update(kind=batch.kind, nodes=list(batch.temperatures_c), case=batch.case)
     elif batch.kind == "operations":
@@ -195,9 +203,11 @@ def has_summary(folder: str | Path) -> bool:
 # archive, the provenance sidecar, the summary, and per-run and per-message
 # files; its data writer also writes one file per key of the runs' custom
 # data (engine.monte_carlo's outcomes: spacemissionstudio_outcomes.data and
-# spacemissionstudio_outcome_units.data).
+# spacemissionstudio_outcome_units.data; its data files:
+# spacemissionstudio_data_files.data).
 BATCH_FILE_PATTERNS = ("MonteCarlo.data", "archive.provenance.json", SUMMARY_JSON, SUMMARY_NPZ,
-                       "run*.data", "run*.json", "*.scState.*.data", "spacemissionstudio_outcome*.data")
+                       "run*.data", "run*.json", "*.scState.*.data", "spacemissionstudio_outcome*.data",
+                       "spacemissionstudio_data_files.data")
 
 
 def batch_files(folder: str | Path) -> list[Path]:
@@ -303,6 +313,9 @@ def load(folder: str | Path) -> MonteCarloBatch:
                                                                               "confidence"} <= set(r)
                                                     for r in requirements),
              f"{SUMMARY_JSON}: requirements is not a list of requirements")
+    data_files = meta.get("data_files") or []  # a summary written before MC-19 has none
+    _require(_is_data_file_table(data_files, len(runs)),
+             f"{SUMMARY_JSON}: data_files is not a table of data files for each of the {len(runs)} runs")
     bound = str(meta.get("probability_bound", "clopper_pearson"))
     _require(bound in models.names(BOUND_CHOICE), f"{SUMMARY_JSON}: unknown probability bound {bound!r}")
     return MonteCarloBatch(str(meta.get("scenario_name", "")), str(meta.get("central_body", "earth")), time_s,
@@ -313,7 +326,36 @@ def load(folder: str | Path) -> MonteCarloBatch:
                            [{str(k): float(v) for k, v in row.items()} for row in outcomes],
                            {str(k): str(v) for k, v in (meta.get("outcome_units") or {}).items()},
                            {int(run): {str(k): float(v) for k, v in row.items()} for run, row in failed_drawn.items()},
-                           [dict(r) for r in requirements], bound)
+                           [dict(r) for r in requirements], bound,
+                           [{str(kind): {str(k): str(v) for k, v in record.items()} for kind, record in row.items()}
+                            for row in data_files])
+
+
+def _is_data_file_table(data_files, runs: int) -> bool:
+    """``data_files`` is empty or one {kind: {"path", "sha256"}} per run."""
+    return isinstance(data_files, list) and (not data_files or len(data_files) == runs) and all(
+        isinstance(row, dict) and all(isinstance(record, dict) for record in row.values()) for row in data_files)
+
+
+def case_data_files(folder: str | Path, case: int) -> dict | None:
+    """The data files ``case`` of the batch in ``folder`` used, by kind (the
+    summary's ``data_files``), or None when the summary does not record
+    them: a batch made before decision MC-19, a case that did not succeed,
+    or no summary that can be read. Reads only the JSON file."""
+    try:
+        meta = json.loads((Path(folder) / SUMMARY_JSON).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(meta, dict):
+        return None
+    runs, data_files = meta.get("runs"), meta.get("data_files")
+    if not isinstance(runs, list) or not data_files or not _is_data_file_table(data_files, len(runs)):
+        return None
+    try:
+        index = [int(run) for run in runs].index(int(case))
+    except (TypeError, ValueError):
+        return None
+    return {str(kind): dict(record) for kind, record in data_files[index].items()}
 
 
 def stride_for(samples: int) -> int:

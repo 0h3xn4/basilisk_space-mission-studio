@@ -163,10 +163,15 @@ class RunProvenance:
     # Empty when every model is its default, and in a record from before.
     models: dict[str, object] = field(default_factory=dict)
     plugins: list = field(default_factory=list)  # the plugins loaded (spacemissionstudio.plugins), when any
+    # A Monte Carlo case run again (engine.monte_carlo.replay_case, plan A3): the batch folder
+    # (archive_dir), the case number, the batch's scenario_sha256 and the case's rng_seeds from its
+    # run<N>.json. Empty for every other run, and in a record from before.
+    monte_carlo_case: dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         record = asdict(self)
-        for key in ("value_marks", "presets", "imports", "models", "plugins"):  # recorded only when there are some: a run's record is as before
+        for key in ("value_marks", "presets", "imports", "models", "plugins",
+                    "monte_carlo_case"):  # recorded only when there are some: a run's record is as before
             if not record[key]:
                 del record[key]
         return record

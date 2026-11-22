@@ -4889,3 +4889,152 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
   - No new keyboard shortcut or palette entry. **Why:** no new frequent
     action. The Requirements tab is a tab of the Monte Carlo view, and
     a requirement is edited where the dispersions are.
+
+## Monte Carlo phase A, part 2: run one case again (2026-11-21)
+
+Item A3 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
+built as the plan says. The owner answered Q3 for this work. **MC-17 is
+provisional: the owner may change it.** It confirms MC-7.
+
+- **Decision MC-17 (provisional, the owner may change it; Q3):** a case
+  is not run again when the scenario changed since the batch. The check
+  compares the SHA-256 of the scenario as it is now
+  (`output_provenance.scenario_sha256`: its canonical JSON, the
+  dispersions and the requirements included) with `scenario_sha256` in
+  the batch's `archive.provenance.json`. The batch already records this
+  hash (transparency audit, Phase 2g), so no new record is needed and no
+  file format changes for it. The message names both hashes, says why
+  (the same case number would be a different case) and says what to do:
+  open the batch's own scenario, unchanged (its file is named when the
+  batch recorded one), then run the case again. A folder without
+  `archive.provenance.json`, or whose record has no hash, is refused
+  too: the case cannot be checked. **Why:** the owner's answer; it is
+  MC-7. A case of a changed scenario run "with a warning" would show
+  numbers that no batch ever had.
+- **Decision MC-18:** how A3 is built, where the plan leaves the choice
+  open. Each choice has its reason:
+  - The case is built by the batch's own creation function
+    (`_create_sim`), each entry of `run<N>.json` is applied in the
+    file's order with `SimulationExecutor.applyModification`, and it is
+    flown by `_fly`, which the batch's execution function now calls too.
+    It uses no `model_base_dir`, as the batch uses none. **Why:** the
+    same code builds and flies the batch's case and the case run again.
+    Measured on template 25 (2 runs, 0.05 days, 145 kept samples, one
+    and two processes): the positions agree to 0.0 m and the outcomes
+    are equal; the acceptance limit is 1e-6 m.
+  - The engine has `prepare_case` (build, apply, start up) apart from
+    `replay_case` (that, then the flight). **Why:** the GUI's run worker
+    flies the case itself, in chunks (`run_live`, for its progress and
+    Cancel) or through `MissionEngine` with its Cancel. Flown in chunks,
+    the positions also agree to 0.0 m.
+  - `replay_case` returns the `ResultSet` and the Mission Sequence's
+    `CommandSummary` (or None), as `MissionEngine.run` does; the plan
+    says "the `ResultSet`". `api.monte_carlo_case` returns the
+    `ResultSet`, as `api.run` does. **Why:** `--case --out-dir` writes
+    what `run --out-dir` writes, the command summary included.
+  - NumPy's and Python's global generators are not seeded with the case
+    number times 10, as Basilisk's worker does before each case
+    (`Controller.py`, `SimulationExecutor.__call__`). **Why:** the app
+    draws nothing from them during a run (it uses seeded generators of
+    its own: optical navigation, thermal sweeps); every model's noise
+    comes from its `RNGSeed`, which `run<N>.json` holds. Seeding them
+    would change the state of the whole GUI process.
+  - The run's provenance gets `monte_carlo_case`: the batch folder
+    (absolute), the case, the batch's scenario hash and the case's RNG
+    seeds from `run<N>.json`; `rng_seed_note` says the seeds are the
+    case's. It is a new optional field of `RunProvenance`, written only
+    when set. **Why:** the plan's record; every other run's record, and
+    the golden files, stay as they are; a saved case run opens in an
+    older version, which ignores the key (`run_store` keeps the fields
+    it knows).
+  - `monte-carlo --case N` exits with 1 when the case is refused (an
+    input error, ICD-02), 3 when its run fails (a crashed case), and 2
+    for `--out-dir` without `--case` or `--case` with `--overwrite`
+    (usage errors). `--out-dir` defaults to `results`, as for `run`. The
+    refusal is checked before `--out-dir` is made. **Why:** the exit
+    codes keep their ICD-02 meanings; a refused case writes nothing.
+  - Run This Case is a command of the window's registry
+    (`run.monte_carlo_case`, category Run, area Results): the Run menu,
+    the command palette, Ctrl+Shift+R, the button under the Runs table
+    and the table's right-click menu. It acts on exactly one picked run;
+    otherwise it is disabled and its tooltip and palette entry say why.
+    **Why:** design rule 5 (keyboard first) and the plan ("shortcut in
+    the tooltip"); Ctrl+Shift+R was free and sits next to Run (Ctrl+R).
+  - The worker checks the hash and reads the case, not the GUI thread.
+    A refusal is the worker's `refused` signal: a warning row in the
+    Problems panel, which opens, until another case runs or another
+    batch is shown; the Log, a toast and the status bar say it too, as
+    for any run that cannot start. Success is the run's toast ("Monte
+    Carlo case 7 ran again as Run 3"), and Run › History lists the run
+    with the mode "Monte Carlo case 7". **Why:** design rule 6 (file I/O
+    in workers) and CLAUDE.md (success a toast, a problem in Problems).
+    The window checks the case first, on the GUI thread, with
+    `engine.monte_carlo_case` (no Basilisk import; it reads two small
+    JSON files and hashes the scenario). A refused case so starts no run
+    and leaves the views of the run shown before as they are. The worker
+    checks again as a backstop. The window's check cannot see the data
+    files a case uses (MC-19): they are known only when the service is
+    built, which needs Basilisk. A changed data file is therefore refused
+    by the worker (its `refused` signal, the same Problems row), after
+    the views of the run shown before were cleared. The user manual's
+    Run This Case and the how-to note say so.
+  - A case run has no live 3D View; Live plot works. **Why:** the live
+    view attaches its probe while the service starts up, and the case is
+    started as the batch started it.
+  - The worker imports pandas on the GUI thread before the first case,
+    as `MonteCarloWorker` does before a batch, for the same race with
+    plotly (Windows CI). **Measured here: 280 ms, once per process**,
+    the first time a case or a batch starts; the 50 ms target of design
+    rule 6 is not met for that one click. **Why:** the race crashed CI;
+    the cost is paid once, and not again when a batch ran first.
+- **Decision MC-19:** a case runs with the batch's reference data, in
+  the batch and when it runs again. Found by the Linux CI of PR #307:
+  `test_a_case_run_again_is_the_batchs_case[2]` failed, 4.22 m apart
+  after 0.05 days (0 at the first sample, 1.3e-4 m at the second). The
+  cause: with `thread_count > 1` Basilisk's Controller runs the cases in
+  worker processes (`multiprocessing.Pool`; Python 3.14 starts them with
+  `forkserver` on Linux). A worker imports the engine again, so its
+  module-level data folders (`spaceweather.DEFAULT_CACHE_DIR`,
+  `earth_orientation.DEFAULT_DIR` and the others, computed from the home
+  folder at import) were its own, not those of the process that started
+  the batch. `tests/conftest.py` sets these folders in the test process
+  only. The CI runner had the Earth orientation files installed in its
+  real home folder (`earth-orientation --fetch`), so the batch flew in
+  ITRF93 and the case run again in the test process in IAU_EARTH.
+  Reproduced here with the NAIF files installed in a home folder of its
+  own: the same 4.22010968 m; without them, 0 m. A newer space-weather
+  download in the worker's home folder has the same effect where the run
+  is in its days. Two parts, each with its reason:
+  - `run_monte_carlo` keeps the data folders of its own process
+    (`monte_carlo.data_folders`: the space-weather cache, the Earth
+    orientation, small-body and ITU-R P.676-13 folders, user and system,
+    the list `tests/conftest.py` sets) and passes them, as plain text,
+    in the creation function's `functools.partial`. `_create_sim` sets
+    them first (`apply_data_folders`), in the worker before it builds.
+    **Why:** every case must read what the process that starts the
+    batch reads. In the app the values are already the same, so no
+    result changes; the golden files are byte-identical. The GUI's
+    batch child (`gui.monte_carlo_process`, spawned) computes them from
+    the same home folder as the window, so it is not changed.
+  - Each successful run keeps its data files (`SimulationService.
+    _data_files`, as built, before the flight: kind, path and SHA-256)
+    in its retained custom data (the same retention function as the
+    outcomes, key `spacemissionstudio_data_files`) and in the summary as
+    the optional key `data_files` (format 1 still, as MC-3). A case run
+    again (`prepare_case`, once the service is built) compares its own
+    with the batch's record of that case, by SHA-256 only (a folder that
+    moved is the same data), and is refused (`MonteCarloCaseRefused`)
+    when a file changed, is missing, or is used only now or only in the
+    batch. The message names each file by its kind, both hashes, the
+    usual cause ("a newer download" for the space weather) and what to
+    do: use the batch's data files, or run the batch again. **Why:** a
+    case flown with other data is not the batch's case; with the first
+    part alone a download between the batch and the case would still
+    give other numbers without a word.
+  - Not checked for the data files: a summary without `data_files` (a
+    batch made by 2.13.1 or earlier) and a case that crashed (it kept
+    no data). **Why:** there is nothing to compare with; refusing every
+    older batch would take away Run This Case for it.
+  - The data-file refusal of `monte-carlo --case` comes after
+    `--out-dir` is checked, with status 1 as for a changed scenario.
+    **Why:** the files are known only when the case is built.

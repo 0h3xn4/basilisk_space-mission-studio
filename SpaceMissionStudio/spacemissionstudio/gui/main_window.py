@@ -84,7 +84,7 @@ from .load_scenario_widget import TEMPLATES_DIR, LoadScenarioWidget
 from .calculation_panel import CalculationPanel
 from .mission_dashboard_widget import MissionDashboardWidget
 from .mission_output_widget import MissionOutputWidget
-from .monte_carlo_results_widget import MonteCarloResultsWidget
+from .monte_carlo_results_widget import RUN_CASE_TIP, MonteCarloResultsWidget
 from .results_widget import ResultsWidget
 from .problem_location import (GROUND_STATION, JSON_VIEW, MISSION_SEQUENCE, PROPAGATION, SCENARIO, SPACECRAFT,
                                locate)
@@ -390,6 +390,10 @@ class MainWindow(QMainWindow):
         # The Requirements tab's empty state opens Scenario › Monte Carlo, where requirements are added
         # (a bound method: a lambda that holds the window would keep a closed window alive).
         self.monte_carlo_results_widget.edit_requirements_requested.connect(self._show_monte_carlo_settings)
+        # Run This Case (plan A3): the case runs in the run worker and opens like any run.
+        self.monte_carlo_results_widget.case_requested.connect(self.on_run_monte_carlo_case)
+        self.monte_carlo_results_widget.case_changed.connect(self._refresh_run_case_command)
+        self.monte_carlo_results_widget.problems_changed.connect(self._on_plan_problems_changed)
         # Added after a run whose spacecraft set model analyses, removed otherwise (as Monte Carlo).
         self.model_analyses_widget = ModelAnalysesWidget(self)
         self.model_analyses_widget.hide()
@@ -753,6 +757,11 @@ class MainWindow(QMainWindow):
             "run.open_monte_carlo", "Open Monte Carlo &Results...", self.on_open_monte_carlo_results,
             category="Run", area="run", qicon=toolbar_icon("open-monte-carlo"),
             tip="Show the batch an earlier Monte Carlo run saved in a folder.")
+        # The Monte Carlo view's own action (its button and right-click menu); its shortcut is the window's.
+        self.run_case_action = add(
+            "run.monte_carlo_case", "Run This Case", None, category="Run", area="results",
+            action=self.monte_carlo_results_widget.run_case_action, tip=RUN_CASE_TIP,
+            keywords=("Monte Carlo case", "replay", "reproduce a case", "rerun"))
         self.clear_cursor_action = add(
             "run.clear_cursor", "Clear &Time Cursor", self.time_cursor.clear, category="Run", area="results",
             shortcut="Alt+Backspace", qicon=toolbar_icon("clear-cursor"), tip="Clears the shared time cursor; the views show the end of the run again.")
@@ -1553,6 +1562,9 @@ class MainWindow(QMainWindow):
             # The shown run's warnings: Problems is where a warning lives (UI audit UI-37).
             results = getattr(self, "results_widget", None)
             rows += results.run_warning_rows() if results is not None else []
+            # A Monte Carlo case that was not run again, and why (plan A3).
+            monte_carlo = getattr(self, "monte_carlo_results_widget", None)
+            rows += monte_carlo.problem_rows() if monte_carlo is not None else []
         editor = self.scenario_editor
         self._refresh_run_command()  # an error in the scenario: Run cannot start (UI-55)
         self.problems_widget.set_scenario_open(self._scenario_open)  # no "valid" without a scenario (UI-24)
@@ -2175,7 +2187,9 @@ class MainWindow(QMainWindow):
                                       result.provenance.to_dict() if result.provenance is not None else None,
                                       record.scenario)
         self._refresh_compare_tab()
-        mode = "SIL" if getattr(self, "_last_run_sil", False) else "Single"
+        case = getattr(self, "_last_run_case", None)
+        mode = ("SIL" if getattr(self, "_last_run_sil", False) else f"Monte Carlo case {case[1]}" if case is not None
+                else "Single")
         self._run_modes[record.number], self._run_seconds[record.number] = mode, self.last_run_seconds
         took = f" in {_duration_text(self.last_run_seconds)}" if self.last_run_seconds is not None else ""
         _run_logger.info("Run %d %s%s: %s, %d series", record.number, "cancelled" if cancelled else "done", took,
@@ -2513,6 +2527,15 @@ class MainWindow(QMainWindow):
         for button in (self.history_view.empty_run_button, self.results_overview.empty_run_button):
             button.setEnabled(not reason)
             button.setToolTip(reason or self.run_action.toolTip())
+        self._refresh_run_case_command()
+
+    def _refresh_run_case_command(self) -> None:
+        """Run This Case: enabled when a case of an orbit batch is picked and
+        a run can start, else disabled with the reason (UI audit UI-55)."""
+        if not hasattr(self, "commands") or "run.monte_carlo_case" not in self.commands:
+            return  # still being built
+        reason = self.monte_carlo_results_widget.case_unavailable() or self._run_blocker()
+        self.commands.set_available("run.monte_carlo_case", reason)
 
     def _start_busy(self, message: str, determinate: bool = False, cancellable: bool = True,
                     cancel_note: str = "") -> None:
@@ -2726,7 +2749,49 @@ class MainWindow(QMainWindow):
         self.set_run_mode("sil")
         self._launch_run(sil=(spacecraft_name, options))
 
-    def _launch_run(self, sil=None) -> None:
+    def on_run_monte_carlo_case(self, case: int) -> None:
+        """Run This Case (Results › Monte Carlo › Runs; plan A3): case
+        ``case`` of the batch shown, run again in the run worker as a plain
+        run with its draws and seeds, and shown like any run. The worker
+        refuses it when the open scenario is not the batch's
+        (:meth:`_on_case_refused`)."""
+        if self._run_going():
+            self._report_run_problem(_RUN_GOING, level=logging.INFO)
+            return
+        folder = self.monte_carlo_results_widget.folder
+        if folder is None:
+            self._report_run_problem("The Monte Carlo batch's folder is not known: open it with Open results... "
+                                     "first.", level=logging.WARNING)
+            return
+        # Checked here first (a light check, no Basilisk import): a refused case leaves the shown run's views
+        # as they are. The worker checks again (a backstop: _on_case_refused).
+        from ..engine.monte_carlo_case import case_refusal
+
+        try:
+            scenario = self.scenario_editor.to_scenario()
+        except ScenarioValidationError:
+            scenario = None  # _launch_run reports the scenario's problem
+        refusal = case_refusal(scenario, folder, int(case)) if scenario is not None else ""
+        if refusal:
+            self._refuse_case(refusal)
+            return
+        self.monte_carlo_results_widget.set_case_problem("")
+        self._launch_run(case=(folder, int(case)))
+
+    def _refuse_case(self, message: str) -> None:
+        """A case not run again: the Problems panel says why and what to do;
+        so do the Log, a toast and the status bar."""
+        self.monte_carlo_results_widget.set_case_problem(message)
+        self.problems_dock.show()
+        self._report_run_problem(message, level=logging.WARNING)
+
+    def _on_case_refused(self, message: str) -> None:
+        """The worker refused the case (a backstop: :meth:`on_run_monte_carlo_case`
+        checks first). The run's busy state ends; :meth:`_refuse_case`."""
+        self._stop_busy("Case not run.", "failed", "Not run")
+        self._refuse_case(message)
+
+    def _launch_run(self, sil=None, case=None) -> None:
         try:
             scenario = self.scenario_editor.to_scenario()
         except ScenarioValidationError as exc:
@@ -2744,11 +2809,13 @@ class MainWindow(QMainWindow):
         # Show in 3D View while running (Run › Run): every Single run --
         # Mission Sequences and segmented long runs too -- not SIL, whose
         # run is built by sil.runner (engine.live_view).
+        # Not for a Monte Carlo case either: it is built as the batch built it (engine.monte_carlo.prepare_case).
         self._live_feed = (LiveFeed(pacing=self.run_page.pacing(),
                                     duration_s=scenario.sim_settings.duration_days * 86400.0)  # [s]
-                           if sil is None and self.run_page.live_view() else None)
-        self._start_busy(f"Running {scenario.name}" + (f" with {sil[0]}'s flight software in the loop..."
-                                                        if sil is not None else "..."), determinate=live)
+                           if sil is None and case is None and self.run_page.live_view() else None)
+        doing = (f" with {sil[0]}'s flight software in the loop..." if sil is not None
+                 else f": Monte Carlo case {case[1]} again..." if case is not None else "...")
+        self._start_busy(f"Running {scenario.name}{doing}", determinate=live)
         # Always clear the PREVIOUS run's results before this one starts --
         # not just when live (a real gap: a non-live run, or a scenario
         # with a mission_sequence, used to leave whatever the last run
@@ -2779,6 +2846,8 @@ class MainWindow(QMainWindow):
         self.results_widget.set_layout_key(scenario.name)  # the plot grid is kept per scenario (U-24)
         _join_finished_worker(self._run_worker)
         extra = {"sil": sil} if sil is not None else {}  # a plain run builds its worker exactly as before
+        if case is not None:
+            extra["case"] = case
         if self._live_feed is not None:
             extra["live_feed"] = self._live_feed
         # A 3D model's relative mesh paths are relative to the scenario file.
@@ -2786,8 +2855,9 @@ class MainWindow(QMainWindow):
         self._run_worker = RunWorker(scenario, model_base_dir=model_base_dir, live=live,
                                      allow_scripts=bool(blocks), **extra)
         self._last_run_sil = sil is not None
+        self._last_run_case = case
         _run_logger.info("Run %d started: %s (%s)", self.run_history.next_number, scenario.name,
-                         "SIL" if sil is not None else "Single")
+                         "SIL" if sil is not None else f"Monte Carlo case {case[1]}" if case is not None else "Single")
         if sil is not None:
             self.flight_software_widget.set_sil_running(sil[0])
             self._run_worker.sil_report.connect(self.flight_software_widget.show_sil_report)
@@ -2797,6 +2867,7 @@ class MainWindow(QMainWindow):
         self._run_worker.finished_ok.connect(self._on_run_finished)
         self._run_worker.failed.connect(self._on_run_failed)
         self._run_worker.cancelled.connect(self._on_run_cancelled)
+        self._run_worker.refused.connect(self._on_case_refused)
         if self._live_feed is not None:
             self.mission_view_widget.start_live(scenario, self._live_feed, self._scenario_dir())
             self.show_view(self.mission_view_widget)
@@ -2891,7 +2962,10 @@ class MainWindow(QMainWindow):
                         run_name=f"Run {number}")
         took = f" in {_duration_text(self.last_run_seconds)}" if self.last_run_seconds is not None else ""
         summary = events_summary(result)
-        show_toast(self, f"Run {number} complete{took}" + (f": {summary}" if summary else ""))
+        case = getattr(self, "_last_run_case", None)
+        done = (f"Monte Carlo case {case[1]} ran again as Run {number}{took}" if case is not None
+                else f"Run {number} complete{took}")
+        show_toast(self, done + (f": {summary}" if summary else ""))
 
         def failed(exc) -> None:  # the run itself DID succeed; never hide that behind a GUI bug
             _logger.exception("Run completed, but displaying its results failed")
@@ -2945,7 +3019,9 @@ class MainWindow(QMainWindow):
         self._ending_live_view()
         self.mission_view_widget.end_live()
         self._report_run_problem(_with_log_file_hint(f"Run failed: {message}"))
-        self._add_history_extra("failed", "SIL" if getattr(self, "_last_run_sil", False) else "Single", message)
+        case = getattr(self, "_last_run_case", None)
+        self._add_history_extra("failed", "SIL" if getattr(self, "_last_run_sil", False)
+                                else f"Monte Carlo case {case[1]}" if case is not None else "Single", message)
         if getattr(self, "_last_run_sil", False):
             self.flight_software_widget.set_sil_running(None)
             self.show_view(self.flight_software_widget)

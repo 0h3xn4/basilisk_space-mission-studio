@@ -672,3 +672,343 @@ def test_a_cancelled_batch_does_not_show_its_unfinished_cases_as_crashed(tmp_pat
     monte_carlo_process._summary_child(scenario, str(tmp_path), 2)
     batch = mcr.load(tmp_path)
     assert batch.runs == [0] and batch.failed == [] and batch.failed_drawn == {}
+
+
+# -- One case again (Monte Carlo plan A3) -------------------------------------
+
+
+def _position_at_kept_samples(result, name, time_s):
+    """The run's position at the batch summary's kept samples (its times)."""
+    import numpy as np
+
+    series = result.series[f"{name}.position_N"]
+    index = np.searchsorted(series.time_s, time_s)
+    assert np.allclose(series.time_s[index], time_s, rtol=0.0, atol=1e-6)  # [s] the same samples
+    return np.asarray(series.data)[index]
+
+
+@pytest.mark.parametrize("thread_count", [1, 2])
+def test_a_case_run_again_is_the_batchs_case(tmp_path, thread_count):
+    """A3's acceptance: each case of a 2-run batch of template 25 (0.05
+    days), run again from its run<N>.json, agrees with the batch summary's
+    position at every kept sample to 1e-6 m and has the batch's outcomes,
+    with one process and with two. Its provenance names the batch, the case
+    and the batch's scenario hash, and its seeds are the case's."""
+    import json
+
+    import numpy as np
+
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25(thread_count=thread_count)
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    assert batch.runs == [0, 1]
+    for k, case in enumerate(batch.runs):
+        result, summary = monte_carlo.replay_case(scenario, tmp_path, case)
+        assert summary is None  # template 25 has no Mission Sequence
+        position = _position_at_kept_samples(result, "sat-1", batch.time_s)
+        assert np.max(np.abs(position - batch.positions["sat-1"][k])) <= 1e-6  # [m]
+        values, units = monte_carlo.run_outcomes(result)
+        assert set(values) == set(batch.outcomes[k])
+        for key, value in values.items():
+            assert value == pytest.approx(batch.outcomes[k][key], rel=1e-9, abs=1e-12), key
+            assert units[key] == batch.outcome_units[key]
+        record = result.provenance.monte_carlo_case
+        params = json.loads((tmp_path / f"run{case}.json").read_text())
+        assert record["case"] == case and record["archive_dir"] == str(tmp_path.resolve())
+        assert record["scenario_sha256"] == output_provenance.scenario_sha256(scenario)
+        assert record["rng_seeds"] == {key: int(value) for key, value in params.items() if key.endswith(".RNGSeed")}
+        assert record["rng_seeds"] and result.provenance.rng_seed_note == monte_carlo.CASE_SEEDS_NOTE
+        assert result.provenance.to_dict()["monte_carlo_case"] == record
+    assert batch.positions["sat-1"][0, -1, 1] != batch.positions["sat-1"][1, -1, 1]  # two different cases
+
+
+def test_a_case_flown_in_chunks_is_the_batchs_case_too(tmp_path):
+    """The GUI's run worker flies a case in chunks (run_live, for its
+    progress and Cancel): the same positions as the batch, to 1e-6 m."""
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25()
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    service, record = monte_carlo.prepare_case(scenario, tmp_path, 1)
+    fractions = []
+    result = monte_carlo.mark_case(service.run_live(lambda partial, fraction: fractions.append(fraction)), record)
+    assert len(fractions) > 2 and fractions[-1] == 1.0
+    position = _position_at_kept_samples(result, "sat-1", batch.time_s)
+    assert np.max(np.abs(position - batch.positions["sat-1"][1])) <= 1e-6  # [m]
+    assert result.provenance.monte_carlo_case["case"] == 1
+
+
+def _batch_folder(tmp_path, scenario, digest=None, cases=(0,)):
+    """A batch folder as run_monte_carlo leaves it, for the checks made
+    before anything is built: archive.provenance.json and run<N>.json."""
+    import json
+
+    from spacemissionstudio import output_provenance
+
+    record = {"scenario_sha256": output_provenance.scenario_sha256(scenario) if digest is None else digest,
+              "scenario_file": "orbit_batch.json"}
+    (tmp_path / "archive.provenance.json").write_text(json.dumps(record))
+    for case in cases:
+        (tmp_path / f"run{case}.json").write_text(json.dumps({"TaskList[0].TaskModels[0].RNGSeed": "7"}))
+    return tmp_path
+
+
+def test_a_case_of_a_changed_scenario_is_refused_with_both_hashes(tmp_path):
+    """Decision MC-17 (the owner's answer to Q3, provisional): a case is not
+    run again when the scenario changed since the batch. The message names
+    the scenario's hash now and the batch's, says why, and says how to make
+    it work: open the batch's own scenario (its file named)."""
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.engine.monte_carlo import MonteCarloCaseRefused, MonteCarloError, replay_case
+
+    scenario = _short(_scenario(), num_runs=2)
+    folder = _batch_folder(tmp_path, scenario)
+    batch_digest = output_provenance.scenario_sha256(scenario)
+    scenario.spacecraft[0].dry_mass_kg = 101.0  # [kg] edited since the batch
+    with pytest.raises(MonteCarloCaseRefused) as refused:
+        replay_case(scenario, folder, 0)
+    message = str(refused.value)
+    assert batch_digest in message and output_provenance.scenario_sha256(scenario) in message
+    assert "the scenario changed since the batch" in message
+    assert "Open the batch's own scenario (orbit_batch.json)" in message
+    assert isinstance(refused.value, MonteCarloError)  # the CLI and the GUI catch it as the batch's errors
+
+
+def test_a_case_the_batch_does_not_have_is_refused(tmp_path):
+    """No run<N>.json (a cancelled batch's unstarted case), a case out of
+    the batch's range, a folder without the batch's record, and script
+    blocks without consent: each refused with what to do."""
+    from spacemissionstudio.engine.monte_carlo import MonteCarloCaseRefused, MonteCarloError, replay_case
+
+    scenario = _short(_scenario(), num_runs=2)
+    folder = _batch_folder(tmp_path, scenario, cases=(0,))
+    with pytest.raises(MonteCarloCaseRefused, match=r"has no run1\.json: case 1 did not start"):
+        replay_case(scenario, folder, 1)
+    with pytest.raises(MonteCarloCaseRefused, match="the batch has no case 2: its cases are 0 to 1"):
+        replay_case(scenario, folder, 2)
+    (folder / "archive.provenance.json").unlink()
+    with pytest.raises(MonteCarloCaseRefused, match="has no archive.provenance.json"):
+        replay_case(scenario, folder, 0)
+    _batch_folder(tmp_path, scenario, digest="")
+    with pytest.raises(MonteCarloCaseRefused, match="does not record the scenario's SHA-256"):
+        replay_case(scenario, folder, 0)
+
+    scripted = _short(_scenario(), num_runs=2)
+    scripted.mission_sequence = [Command(kind="script_block", params={"code": "pass"})]
+    with pytest.raises(MonteCarloError, match="explicit consent"):
+        replay_case(scripted, _batch_folder(tmp_path, scripted), 0)
+
+
+def test_a_crashed_case_run_again_raises_its_own_error(tmp_path, monkeypatch):
+    """A3: a case that crashed in the batch raises its own error when it is
+    run again; the other case runs. The crash is forced by the case's own
+    draw: the drag coefficient case 1 drew (read from its run1.json, which
+    the controller writes before the case runs)."""
+    import json
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    real = monte_carlo._fly
+
+    def crashes_on_case_1s_draw(service, allow_scripts=False):
+        path = tmp_path / "run1.json"
+        if path.is_file():
+            params = json.loads(path.read_text())
+            drawn = float(next(value for key, value in params.items() if key.endswith("dragCoeff")))
+            flown = service.spacecraft_handles["sat-1"].drag_effector.coreParams.dragCoeff
+            if flown == drawn:
+                raise RuntimeError(f"forced crash at drag coefficient {flown!r}")
+        return real(service, allow_scripts)
+
+    monkeypatch.setattr(monte_carlo, "_fly", crashes_on_case_1s_draw)
+    scenario = _template_25(duration_days=0.01)
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == [1]
+    assert mcr.load(tmp_path).failed == [1]
+    with pytest.raises(RuntimeError, match="forced crash at drag coefficient"):
+        monte_carlo.replay_case(scenario, tmp_path, 1)
+    result, _summary = monte_carlo.replay_case(scenario, tmp_path, 0)
+    assert result.provenance.monte_carlo_case["case"] == 0
+
+
+# -- The batch's data files in the workers and in a case run again (MC-19) ------
+
+
+def _template_25_in_observed_days(**monte_carlo):
+    """Template 25 (NRLMSISE-00, bundled space weather) at an epoch in the
+    observed days of the shipped SW-All, so a different SW-All changes the
+    drag of the run."""
+    scenario = _template_25(**monte_carlo)
+    scenario.epoch_utc = "2024-06-01T00:00:00"
+    return scenario
+
+
+def _newer_space_weather(scenario):
+    """A downloaded SW-All.csv in the space-weather cache of this process
+    (tests/conftest.py puts it in the test's tmp_path), as
+    spaceweather.real_data_path("bundled") picks it: the shipped file's
+    days from 2024, each one observed, so its last observed day is later
+    than the shipped file's, with F10.7 30 sfu higher around the run."""
+    import dataclasses
+    from datetime import date, timedelta
+
+    from spacemissionstudio.engine import spaceweather
+
+    start = date.fromisoformat(scenario.epoch_utc[:10])
+    shipped = spaceweather.load_celestrak(spaceweather.BUNDLED_DATA_PATH)
+    days = {}
+    for day, record in shipped.days.items():
+        if day < date(2024, 1, 1) or record.kind == "monthly_forecast":
+            continue
+        if abs(day - start) <= timedelta(days=30):
+            record = dataclasses.replace(record, f107_obs=record.f107_obs + 30.0,
+                                         f107_center81=record.f107_center81 + 30.0)  # [sfu]
+        days[day] = record
+    path = spaceweather._write_basilisk_csv(days, spaceweather.DEFAULT_CACHE_DIR / "SW-All.csv")
+    assert spaceweather.real_data_path("bundled") == path
+    return path
+
+
+def test_the_workers_resolve_reference_data_as_the_process_that_starts_the_batch(tmp_path):
+    """Decision MC-19, the CI failure of PR #307: the worker processes of a
+    batch (thread_count 2) import the engine again, so their data folders
+    were computed from the HOME of the worker, not taken from the process
+    that starts the batch. Here a newer SW-All sits only in the space-weather
+    cache of this process (in the test's tmp_path, so no worker without the
+    fix can see it, whatever the real HOME holds). Each case run again in
+    this process must still agree with the batch to 1e-6 m."""
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25_in_observed_days(thread_count=2, duration_days=0.02)
+    newer = _newer_space_weather(scenario)
+    batch_dir = tmp_path / "batch"
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, batch_dir) == []
+    batch = mcr.load(batch_dir)
+    assert batch.runs == [0, 1]
+    for k, case in enumerate(batch.runs):
+        result, _summary = monte_carlo.replay_case(scenario, batch_dir, case)
+        position = _position_at_kept_samples(result, "sat-1", batch.time_s)
+        assert np.max(np.abs(position - batch.positions["sat-1"][k])) <= 1e-6  # [m]
+        assert batch.data_files[k]["space_weather"]["path"] == str(newer)
+
+
+def test_the_data_folders_are_kept_and_given_back(tmp_path, monkeypatch):
+    """The snapshot of the data folders (monte_carlo.data_folders) names each
+    folder the engine reads reference data from, pickles with the creation
+    function, and apply_data_folders sets them again; None changes nothing."""
+    import functools
+    import pickle
+
+    from spacemissionstudio.engine import (earth_orientation, gaseous_attenuation, monte_carlo, small_bodies,
+                                           spaceweather)
+
+    settings = [(spaceweather, "DEFAULT_CACHE_DIR"), (earth_orientation, "DEFAULT_DIR"),
+                (earth_orientation, "SYSTEM_DIR"), (small_bodies, "DEFAULT_DIR"), (small_bodies, "SYSTEM_DIR"),
+                (gaseous_attenuation, "DEFAULT_DIR"), (gaseous_attenuation, "SYSTEM_DIR")]
+    folders = monte_carlo.data_folders()
+    assert folders == {f"{module.__name__.rpartition('.')[2]}.{name}": str(getattr(module, name))
+                       for module, name in settings}
+    creation = functools.partial(monte_carlo._create_sim, _scenario(), folders)
+    assert pickle.loads(pickle.dumps(creation)).args[1] == folders
+    for module, name in settings:
+        monkeypatch.setattr(module, name, tmp_path / "elsewhere")
+    monte_carlo.apply_data_folders(None)
+    assert all(getattr(module, name) == tmp_path / "elsewhere" for module, name in settings)
+    monte_carlo.apply_data_folders(folders)
+    assert monte_carlo.data_folders() == folders
+    assert all(isinstance(getattr(module, name), type(tmp_path)) for module, name in settings)
+
+
+def test_the_refusal_names_each_data_file_that_is_not_the_batchs():
+    """data_file_refusal (MC-19): "" when every file has the batch's
+    SHA-256 (the paths may differ); else each changed, missing, added or
+    left-out file by its kind, with its hashes, and what to do."""
+    from spacemissionstudio.engine.monte_carlo import data_file_hashes, data_file_refusal
+
+    then = data_file_hashes({"space_weather": {"path": "/a/SW-All.txt", "size_bytes": 3, "sha256": "1" * 64},
+                             "earth_orientation:earth_latest_high_prec.bpc": {"path": "/a/e.bpc", "sha256": "2" * 64},
+                             "gravity_field": {"path": "/a/GGM03S.txt", "sha256": "3" * 64}})
+    assert then["space_weather"] == {"path": "/a/SW-All.txt", "sha256": "1" * 64}
+    moved = {kind: dict(record, path="/b/" + record["path"][3:]) for kind, record in then.items()}
+    assert data_file_refusal(then, moved, "/batch", 4) == ""
+    now = dict(then, space_weather={"path": "/a/SW-All.csv", "sha256": "9" * 64},
+               gravity_field={"path": "/a/GGM03S.txt"}, **{"spice:pck00011.tpc": {"path": "/a/p", "sha256": "4" * 64}})
+    del now["earth_orientation:earth_latest_high_prec.bpc"]
+    message = data_file_refusal(then, now, "/batch", 4)
+    assert message.startswith("Case 4 was not run again: ")
+    assert f"the space weather changed since the batch (a newer download, or another file): SHA-256 {'9' * 64} " \
+           f"now, {'1' * 64} at the batch" in message
+    assert f"the Earth orientation file earth_latest_high_prec.bpc is not used now and was used in the batch " \
+           f"(SHA-256 {'2' * 64}" in message
+    assert f"the gravity field is missing now (/a/GGM03S.txt; SHA-256 {'3' * 64} at the batch)" in message
+    assert f"the SPICE kernel pck00011.tpc is used now (SHA-256 {'4' * 64}) and was not used in the batch" in message
+    assert message.endswith("use the batch's data files (put them back, or roll back the download in Reference "
+                            "data), or run the batch again.")
+
+
+def test_a_case_whose_data_changed_since_the_batch_is_refused_with_both_hashes(tmp_path):
+    """Decision MC-19: a case runs again only with the batch's data files.
+    A newer SW-All downloaded after the batch would fly the case with other
+    space weather: refused, with the kind of file, both SHA-256 and what to
+    do. Without the newer file the case runs. A summary written before the
+    batch kept its data files (no data_files key) is not refused for this."""
+    import json
+
+    from spacemissionstudio import dependencies
+    from spacemissionstudio.engine import monte_carlo, spaceweather
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25_in_observed_days(duration_days=0.01)
+    batch_dir = tmp_path / "batch"
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, batch_dir) == []
+    batch = mcr.load(batch_dir)
+    used = batch.data_files[0]["space_weather"]
+    assert used["path"] == str(spaceweather.BUNDLED_DATA_PATH)
+    assert used["sha256"] == dependencies.file_record(spaceweather.BUNDLED_DATA_PATH)["sha256"]
+    assert mcr.case_data_files(batch_dir, 1) == batch.data_files[1]
+
+    newer = _newer_space_weather(scenario)
+    now = dependencies.file_record(newer)["sha256"]
+    with pytest.raises(monte_carlo.MonteCarloCaseRefused) as refused:
+        monte_carlo.replay_case(scenario, batch_dir, 0)
+    message = str(refused.value)
+    assert used["sha256"] in message and now in message
+    assert "the space weather changed since the batch (a newer download" in message
+    assert "use the batch's data files" in message and "run the batch again" in message
+
+    summary = batch_dir / mcr.SUMMARY_JSON
+    meta = json.loads(summary.read_text(encoding="utf-8"))
+    del meta["data_files"]  # as a batch made before MC-19 wrote it
+    summary.write_text(json.dumps(meta), encoding="utf-8")
+    assert mcr.case_data_files(batch_dir, 0) is None
+    result, _summary = monte_carlo.replay_case(scenario, batch_dir, 0)
+    assert result.provenance.data_files["space_weather"]["path"] == str(newer)
+
+    newer.unlink()
+    summary.write_text(json.dumps(dict(meta, data_files=batch.data_files)), encoding="utf-8")
+    result, _summary = monte_carlo.replay_case(scenario, batch_dir, 0)
+    assert result.provenance.monte_carlo_case["case"] == 0
+
+
+def test_the_case_check_imports_no_basilisk():
+    """The window checks a case on the GUI thread before it clears the shown
+    run (plan A3): ``engine.monte_carlo_case`` must not import Basilisk, a
+    heavy first import (SRelD K-44)."""
+    import subprocess
+    import sys
+
+    code = ("import sys; import spacemissionstudio.engine.monte_carlo_case as m; "
+            "print(sorted(n for n in sys.modules if n.split('.')[0] == 'Basilisk'))")
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout
+    assert out.strip() == "[]"
