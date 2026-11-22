@@ -61,9 +61,13 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.13.1, a patch release:
-garbage collected on the GUI thread only (one cause of the
-background-thread crashes), grey event bands and Timeline events, short
+signed (decision 11). The current release is 2.14.0, Monte Carlo phase A:
+each run's outcomes, requirements with the Clopper-Pearson bound, the
+draws of crashed runs and one case run again, with the scenario file at
+schema version 6, which 2.13.1 and earlier do not open (prepared
+2026-11-22); before it 2.13.1, a patch release: garbage collected on
+the GUI thread only (one cause of the background-thread crashes), grey
+event bands and Timeline events, short
 tick labels, wheel names in the plots, and tables that fit at 1280 px,
 with the scenario format unchanged (published 2026-11-20); before it
 2.13.0, the UI audit's batches B2 to B12: one primary action per view, empty states, labels
@@ -181,7 +185,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.13.1, and the code is at 2.13.1.
+  release is 2.14.0, and the code is at 2.14.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;

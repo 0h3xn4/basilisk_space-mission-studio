@@ -386,11 +386,13 @@ From the [changelog](../../CHANGELOG.md):
   spaceweather-download`. 2.7.0 carries a newer file (observations to
   2026-11-09, forecast to 2026-12-24), 2.8.0 to 2.12.0 a newer one
   again (observations to 2026-11-14, forecast to 2026-12-29), and 2.13.0
-  and 2.13.1 a newer one still (observations to 2026-11-18, forecast to
+  to 2.14.0 a newer one still (observations to 2026-11-18, forecast to
   2027-01-02).
 * **Some actions hold the window for longer than the 50 ms the interface
   aims at:** changing the theme (about 0.4 s), the first visit to a
-  spacecraft page and opening a template (SRelD K-19, K-23).
+  spacecraft page and opening a template (SRelD K-19, K-23), and the
+  start of the first Monte Carlo batch of a session or, from 2.14.0, of
+  the first case run again (about 0.3 s, SRelD K-48).
 * **The installers ship pillow 12.2.0, which has published advisories**,
   all about decoding crafted image files, which SpaceMissionStudio does
   not do (SRelD K-25). The qualified Basilisk (2.12.0) allows no later
