@@ -626,6 +626,22 @@ built, installed and checked every file, attached the eleven and
 published the release 37 minutes later. It was never a public release
 without files.
 
+2.14.1 was prepared on 2026-11-22 by this checklist, a patch release
+with the fixes of #310: pandas imported in the batch's or the case's
+worker, not on the GUI thread (SRelD K-48), the cause of "Slot '...::'
+not found" fixed with weak-reference connections (K-44), CI downloads
+tried again, and the SIL stress workflow given CI's WebGL set-up; with
+the 2.14.0 publication record (#309). No file format changed: the
+scenario file is still at schema version 6, and `schema/`, the
+templates and the golden files are as at the 2.14.0 tag `1b4060c`. The
+space weather was not refreshed: CelesTrak reset all three connections,
+so 2.14.1 carries 2.13.0's file (observations to 2026-11-18). The
+CHANGELOG heading carries 2026-11-23, the UTC day the tag will be made,
+because the release check wants the tag's day. By the owner's decision
+(SRelD K-45), the release pull request may be merged with CI's "Windows
+(MAX Python)" job red, for the Basilisk framework test
+`LambertInputValidation` only.
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·
