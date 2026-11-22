@@ -100,6 +100,17 @@ scenario changed since the batch, the case is not run: the Problems
 panel gives the scenario's SHA-256 now and at the batch. Open the
 batch's own scenario and try again.
 
+The case also runs only with the reference data files it used in the
+batch. If one changed since (a newer space-weather download, Earth
+orientation files installed or updated, another support-data file), the
+case would fly with other data and is not run: the Problems panel names
+the file, with its SHA-256 now and at the batch. Put the batch's files
+back (roll a download back in **Settings > Reference data**), or run the
+batch again. The window can check only the scenario before it starts the
+case; the data files are checked when the case is built, so the run shown
+before is already cleared then. A batch made by 2.13.1 or earlier did not
+keep its data files, and its cases are not checked for them.
+
 ## From the command line or Python
 
 ```bash
@@ -116,8 +127,9 @@ shown met.
 With `--case N`, `monte-carlo` runs case N of the batch in
 `--archive-dir` again and writes what `run --out-dir` writes (default
 folder `results`); `provenance.json` names the batch and the case
-(`monte_carlo_case`). It exits with status 1 when the scenario changed
-since the batch, and 3 when the case's run fails. From Python,
+(`monte_carlo_case`). It exits with status 1 when the scenario or a
+reference data file changed since the batch, and 3 when the case's run
+fails. From Python,
 `api.monte_carlo_case(scenario, "mc", 7)` returns the run's results.
 
 The example prints the spread day by day and ends with a line like

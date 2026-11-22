@@ -205,7 +205,39 @@ def test_a_folder_with_the_outcome_files_of_the_data_writer_is_a_batch(tmp_path)
     custom data (the outcomes): an earlier batch's folder with them is still
     "batch", so --overwrite can replace it."""
     for name in ("MonteCarlo.data", "run0.data", "run0.json", "spacemissionstudio_outcomes.data",
-                 "spacemissionstudio_outcome_units.data"):
+                 "spacemissionstudio_outcome_units.data", "spacemissionstudio_data_files.data"):
         (tmp_path / name).write_bytes(b"")
     assert mcr.folder_state(tmp_path) == "batch"
-    assert {path.name for path in mcr.batch_files(tmp_path)} >= {"spacemissionstudio_outcomes.data"}
+    assert {path.name for path in mcr.batch_files(tmp_path)} >= {"spacemissionstudio_outcomes.data",
+                                                                 "spacemissionstudio_data_files.data"}
+
+
+def test_the_data_files_of_each_run_round_trip_and_an_older_summary_has_none(tmp_path):
+    """Decision MC-19: each successful run's data files (path and SHA-256 by
+    kind) are an optional key of format 1. They load back, and
+    case_data_files gives one case's, reading only the JSON file. A summary
+    without them (written before) opens with none, and its cases have no
+    record (None: not checked). A table that does not fit the runs is
+    refused."""
+    batch = _circular_batch([0.0, 1e-4, -1e-4])
+    batch.runs = [0, 2, 3]
+    batch.data_files = [{"space_weather": {"path": "/data/SW-All.txt", "sha256": f"{k}" * 64},
+                         "spice:de430.bsp": {"path": "/data/de430.bsp", "sha256": "f" * 64}} for k in range(3)]
+    mcr.save(batch, tmp_path / "with")
+    assert mcr.load(tmp_path / "with").data_files == batch.data_files
+    assert mcr.case_data_files(tmp_path / "with", 2) == batch.data_files[1]
+    assert mcr.case_data_files(tmp_path / "with", 1) is None  # not a successful run of the batch
+    (tmp_path / "with" / mcr.SUMMARY_NPZ).unlink()
+    assert mcr.case_data_files(tmp_path / "with", 3) == batch.data_files[2]  # the JSON file is enough
+
+    mcr.save(_circular_batch([0.0, 1e-4, -1e-4]), tmp_path / "without")
+    meta = json.loads((tmp_path / "without" / mcr.SUMMARY_JSON).read_text(encoding="utf-8"))
+    assert "data_files" not in meta
+    assert mcr.load(tmp_path / "without").data_files == []
+    assert mcr.case_data_files(tmp_path / "without", 0) is None
+    assert mcr.case_data_files(tmp_path / "no such folder", 0) is None
+    meta["data_files"] = [{"space_weather": {"path": "x", "sha256": "0" * 64}}]  # one row for three runs
+    (tmp_path / "without" / mcr.SUMMARY_JSON).write_text(json.dumps(meta), encoding="utf-8")
+    with pytest.raises(mcr.MonteCarloResultsError, match="data_files is not a table of data files"):
+        mcr.load(tmp_path / "without")
+    assert mcr.case_data_files(tmp_path / "without", 0) is None

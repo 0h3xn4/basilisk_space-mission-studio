@@ -58,7 +58,11 @@ fixes bugs.
   hash. If the scenario changed since the batch, the case is not run,
   because the same case number would then be a different case: the
   Problems panel (or the command line) shows both scenario hashes and
-  tells you to open the batch's own scenario first.
+  tells you to open the batch's own scenario first. The same goes for
+  the reference data: if a file the case used, such as the space weather,
+  has changed since the batch (say, a newer download), the case is not
+  run, and you are told which file changed and how to get the batch's
+  numbers back.
 
 ### Changed
 

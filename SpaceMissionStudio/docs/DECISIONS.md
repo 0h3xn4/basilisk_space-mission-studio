@@ -4972,7 +4972,12 @@ provisional: the owner may change it.** It confirms MC-7.
     `engine.monte_carlo_case` (no Basilisk import; it reads two small
     JSON files and hashes the scenario). A refused case so starts no run
     and leaves the views of the run shown before as they are. The worker
-    checks again as a backstop.
+    checks again as a backstop. The window's check cannot see the data
+    files a case uses (MC-19): they are known only when the service is
+    built, which needs Basilisk. A changed data file is therefore refused
+    by the worker (its `refused` signal, the same Problems row), after
+    the views of the run shown before were cleared. The user manual's
+    Run This Case and the how-to note say so.
   - A case run has no live 3D View; Live plot works. **Why:** the live
     view attaches its probe while the service starts up, and the case is
     started as the batch started it.
@@ -4982,3 +4987,54 @@ provisional: the owner may change it.** It confirms MC-7.
     the first time a case or a batch starts; the 50 ms target of design
     rule 6 is not met for that one click. **Why:** the race crashed CI;
     the cost is paid once, and not again when a batch ran first.
+- **Decision MC-19:** a case runs with the batch's reference data, in
+  the batch and when it runs again. Found by the Linux CI of PR #307:
+  `test_a_case_run_again_is_the_batchs_case[2]` failed, 4.22 m apart
+  after 0.05 days (0 at the first sample, 1.3e-4 m at the second). The
+  cause: with `thread_count > 1` Basilisk's Controller runs the cases in
+  worker processes (`multiprocessing.Pool`; Python 3.14 starts them with
+  `forkserver` on Linux). A worker imports the engine again, so its
+  module-level data folders (`spaceweather.DEFAULT_CACHE_DIR`,
+  `earth_orientation.DEFAULT_DIR` and the others, computed from the home
+  folder at import) were its own, not those of the process that started
+  the batch. `tests/conftest.py` sets these folders in the test process
+  only. The CI runner had the Earth orientation files installed in its
+  real home folder (`earth-orientation --fetch`), so the batch flew in
+  ITRF93 and the case run again in the test process in IAU_EARTH.
+  Reproduced here with the NAIF files installed in a home folder of its
+  own: the same 4.22010968 m; without them, 0 m. A newer space-weather
+  download in the worker's home folder has the same effect where the run
+  is in its days. Two parts, each with its reason:
+  - `run_monte_carlo` keeps the data folders of its own process
+    (`monte_carlo.data_folders`: the space-weather cache, the Earth
+    orientation, small-body and ITU-R P.676-13 folders, user and system,
+    the list `tests/conftest.py` sets) and passes them, as plain text,
+    in the creation function's `functools.partial`. `_create_sim` sets
+    them first (`apply_data_folders`), in the worker before it builds.
+    **Why:** every case must read what the process that starts the
+    batch reads. In the app the values are already the same, so no
+    result changes; the golden files are byte-identical. The GUI's
+    batch child (`gui.monte_carlo_process`, spawned) computes them from
+    the same home folder as the window, so it is not changed.
+  - Each successful run keeps its data files (`SimulationService.
+    _data_files`, as built, before the flight: kind, path and SHA-256)
+    in its retained custom data (the same retention function as the
+    outcomes, key `spacemissionstudio_data_files`) and in the summary as
+    the optional key `data_files` (format 1 still, as MC-3). A case run
+    again (`prepare_case`, once the service is built) compares its own
+    with the batch's record of that case, by SHA-256 only (a folder that
+    moved is the same data), and is refused (`MonteCarloCaseRefused`)
+    when a file changed, is missing, or is used only now or only in the
+    batch. The message names each file by its kind, both hashes, the
+    usual cause ("a newer download" for the space weather) and what to
+    do: use the batch's data files, or run the batch again. **Why:** a
+    case flown with other data is not the batch's case; with the first
+    part alone a download between the batch and the case would still
+    give other numbers without a word.
+  - Not checked for the data files: a summary without `data_files` (a
+    batch made by 2.13.1 or earlier) and a case that crashed (it kept
+    no data). **Why:** there is nothing to compare with; refusing every
+    older batch would take away Run This Case for it.
+  - The data-file refusal of `monte-carlo --case` comes after
+    `--out-dir` is checked, with status 1 as for a changed scenario.
+    **Why:** the files are known only when the case is built.

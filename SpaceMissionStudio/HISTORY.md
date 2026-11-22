@@ -20366,3 +20366,49 @@ refuses one of another batch before a run starts, with the run shown
 before still in Results), and `tests/test_monte_carlo.py`
 (`engine.monte_carlo_case` imports no Basilisk). No existing test
 changed.
+
+**The CI failure, and the batch's data in every case (MC-19).** The
+Linux CI of PR #307 failed in `test_a_case_run_again_is_the_batchs_case[2]`
+(the full suite, `-n 4`): the case run again was 4.22 m from the batch
+after 0.05 days, 0 at the first sample and 1.3e-4 m at the second. It
+passed here, alone and with its file; with one process it passed in CI
+too. The cause: Basilisk's Controller runs the cases of a batch with
+two processes in worker processes (Python 3.14 starts them with
+`forkserver`), which import the engine again. Their data folders
+(`earth_orientation.DEFAULT_DIR`, `spaceweather.DEFAULT_CACHE_DIR` and
+the others) came from the home folder at that import, not from the
+process that started the batch, where `tests/conftest.py` sets them to
+the test's own folder. The CI runner fetches the NAIF Earth orientation
+files into its real home folder (`earth-orientation --fetch`), so the
+batch's cases flew in ITRF93 and the case run again in the test process
+in IAU_EARTH. Shown here: with those files in a home folder of their own
+the test failed by the same 4.22010968 m, without them it passed, and
+the data files each worker now records named the two Earth orientation
+files that the test process did not use.
+
+The fix has two parts. `run_monte_carlo` keeps its process's data
+folders (`monte_carlo.data_folders`) and passes them in the creation
+function's `functools.partial`; `_create_sim` sets them in the worker
+before it builds (`apply_data_folders`). In the app the folders are
+already the same, so no result changes. And each successful run now
+keeps its data files (kind, path, SHA-256, as built) through the
+retention function of the outcomes, into the summary's new optional
+`data_files` (format 1 still). `prepare_case` compares the case's files
+with the batch's record of it and refuses the case when one changed, is
+missing, or is used only now or only then, with both hashes and what to
+do. A batch made before this, and a crashed case, have no record and are
+not checked. The window's check before a case starts cannot see the
+data files (no Basilisk); the worker refuses such a case (MC-18, MC-19).
+
+**Tests (MC-19).** New in `tests/test_monte_carlo.py`: a two-process
+batch with a newer SW-All only in the space-weather cache of the test
+process (its tmp_path, so no worker without the fix can see it), whose
+cases run again agree to 1e-6 m; it failed before the fix (0.82 m). The
+snapshot of the data folders and setting it again; a case whose space
+weather changed since the batch, refused with both hashes, run when the
+summary has no record, and run again once the newer file is gone; the
+refusal's text for a changed, missing, added and left-out file. In
+`tests/test_monte_carlo_results.py`: the `data_files` round trip, an
+older summary without it, and the data writer's new
+`spacemissionstudio_data_files.data` in an earlier batch's folder (added
+to an existing test's list of files). Golden files byte-identical.

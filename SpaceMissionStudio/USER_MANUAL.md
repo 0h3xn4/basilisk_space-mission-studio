@@ -1906,12 +1906,21 @@ scenario must be the batch's, unchanged: if it changed since the batch
 (a new dispersion, another duration, any edit), the same case number
 would be a different case, so the case is not run and the Problems
 panel says why, with the scenario's SHA-256 now and at the batch. Open
-the batch's own scenario file and try again. The run's provenance
-names the batch folder, the case and the batch's
+the batch's own scenario file and try again. The case also needs the
+reference data files it used in the batch: if one changed since (a newer
+space-weather download, Earth orientation files installed or updated,
+another support-data file), the case would fly with other data, so it is
+not run, and the Problems panel names the file with its SHA-256 now and
+at the batch. Put the batch's files back (for a download, roll it back
+in Settings > Reference data), or run the batch again. This check is
+made when the case is built, after the window has started it, so the
+run shown before is already cleared. A batch made by 2.13.1 or earlier
+did not keep its data files, and its cases are not checked for them.
+The run's provenance names the batch folder, the case and the batch's
 scenario hash. On the command line, `spacemissionstudio monte-carlo
 scenario.json --archive-dir mc_results --case 7 --out-dir case7` does
 the same and writes what `run --out-dir` writes (status 1 when the
-scenario changed since the batch).
+scenario or a data file changed since the batch).
 
 **Open Monte Carlo Results...** (the Run area) shows a batch you ran earlier, from
 the folder you saved it in. It reads only the summary the batch wrote

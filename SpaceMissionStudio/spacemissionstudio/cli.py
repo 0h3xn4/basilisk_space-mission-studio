@@ -631,8 +631,10 @@ def cmd_monte_carlo(args: argparse.Namespace) -> int:
 def _monte_carlo_case(args: argparse.Namespace, scenario, file_record) -> int:
     """``monte-carlo --case N``: case N of the batch in --archive-dir, run
     again as a plain run (Monte Carlo plan A3), and what ``run --out-dir``
-    writes. 1 when the case is refused (the scenario changed since the
-    batch, or the batch has no such case), 3 when the run fails."""
+    writes. 1 when the case is refused (the scenario or a reference data
+    file changed since the batch, or the batch has no such case), 3 when
+    the run fails. The data files are known only once the case is built,
+    so that refusal comes after --out-dir is checked (decision MC-19)."""
     try:
         from .engine.monte_carlo import MonteCarloCaseRefused, MonteCarloError, case_parameters, replay_case
     except ImportError as exc:
@@ -2604,7 +2606,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "the runs and the scenario's requirements. Exit status 3 when a run failed; else 5 when a "
                     "requirement with an allowed probability is not shown met. With --case N, run case N of the "
                     "batch in --archive-dir again as a plain run and write what 'run --out-dir' writes; exit "
-                    "status 1 when the scenario changed since the batch.")
+                    "status 1 when the scenario or a reference data file changed since the batch.")
     p_mc.add_argument("scenario", type=Path)
     p_mc.add_argument("--archive-dir", type=Path, default=Path("monte_carlo_results"),
                        help="directory to archive per-run parameters and retained data to (empty, or an earlier "
@@ -2616,7 +2618,7 @@ def build_parser() -> argparse.ArgumentParser:
                            "only for files you trust and have read)")
     p_mc.add_argument("--case", type=_non_negative_int_arg, default=None, metavar="N",
                       help="run case N of the batch in --archive-dir again, as a plain run with the same draws and "
-                           "seeds (refused when the scenario changed since the batch)")
+                           "seeds (refused when the scenario or a reference data file changed since the batch)")
     p_mc.add_argument("--out-dir", type=Path, default=None,
                       help="with --case: the directory to write the case's results to, as 'run --out-dir' "
                            "(default: results)")
