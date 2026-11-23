@@ -57,7 +57,13 @@ without them opens as before, and an older version ignores them):
   the batch is read (``engine.monte_carlo_requirements``);
 * ``data_files``: each successful run's reference data files, by kind, with
   their path and SHA-256 (``engine.monte_carlo.data_file_hashes``), so a
-  case runs again only with the same data (decision MC-19).
+  case runs again only with the same data (decision MC-19);
+* ``seed``: the batch seed (``monte_carlo.seed``, Monte Carlo plan B1,
+  decision MC-20), written only when the batch had one;
+* ``node_limits`` (a thermal batch): each node's operating and survival
+  range judged on the runs (plan B4, decisions MC-22 and MC-23; rows of
+  ``engine.monte_carlo_requirements.NodeLimitResult.to_dict``), with
+  ``probability_bound``, the model of their bound.
 """
 
 from __future__ import annotations
@@ -134,6 +140,11 @@ class MonteCarloBatch:
     # Each successful run's data files (MC-19): data_files[k] is run runs[k]'s
     # {kind: {"path": ..., "sha256": ...}}; empty for a summary without them.
     data_files: list = field(default_factory=list)
+    # The batch seed (B1): None for Basilisk's own seeding (and for a summary without it).
+    seed: int | None = None
+    # A thermal batch against its nodes' limits (B4): rows of
+    # engine.monte_carlo_requirements.NodeLimitResult.to_dict; empty without them.
+    node_limits: list = field(default_factory=list)
 
     @property
     def spacecraft(self) -> list[str]:
@@ -184,6 +195,10 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         meta.update(requirements=batch.requirements, probability_bound=batch.probability_bound)
     if batch.data_files:
         meta["data_files"] = batch.data_files
+    if batch.seed is not None:
+        meta["seed"] = int(batch.seed)
+    if batch.node_limits:
+        meta.update(node_limits=batch.node_limits, probability_bound=batch.probability_bound)
     if batch.kind == "thermal":
         meta.update(kind=batch.kind, nodes=list(batch.temperatures_c), case=batch.case)
     elif batch.kind == "operations":
@@ -318,6 +333,12 @@ def load(folder: str | Path) -> MonteCarloBatch:
              f"{SUMMARY_JSON}: data_files is not a table of data files for each of the {len(runs)} runs")
     bound = str(meta.get("probability_bound", "clopper_pearson"))
     _require(bound in models.names(BOUND_CHOICE), f"{SUMMARY_JSON}: unknown probability bound {bound!r}")
+    seed = meta.get("seed")  # a summary without a batch seed (B1) has none
+    _require(seed is None or (isinstance(seed, int) and not isinstance(seed, bool)),
+             f"{SUMMARY_JSON}: seed is not a whole number")
+    node_limits = meta.get("node_limits") or []  # a thermal summary written before B4 has none
+    _require(isinstance(node_limits, list) and all(_is_node_limit(row) for row in node_limits),
+             f"{SUMMARY_JSON}: node_limits is not a table of node limits")
     return MonteCarloBatch(str(meta.get("scenario_name", "")), str(meta.get("central_body", "earth")), time_s,
                            runs, [int(run) for run in meta.get("failed", [])], positions, velocities,
                            [{str(k): float(v) for k, v in row.items()} for row in drawn],
@@ -328,7 +349,20 @@ def load(folder: str | Path) -> MonteCarloBatch:
                            {int(run): {str(k): float(v) for k, v in row.items()} for run, row in failed_drawn.items()},
                            [dict(r) for r in requirements], bound,
                            [{str(kind): {str(k): str(v) for k, v in record.items()} for kind, record in row.items()}
-                            for row in data_files])
+                            for row in data_files], seed, [dict(row) for row in node_limits])
+
+
+def _is_node_limit(row) -> bool:
+    """``row`` reads as a node limit's result (``NodeLimitResult.from_dict``)."""
+    from .monte_carlo_requirements import NodeLimitResult
+
+    if not isinstance(row, dict):
+        return False
+    try:
+        NodeLimitResult.from_dict(row)
+    except (KeyError, TypeError, ValueError):
+        return False
+    return True
 
 
 def _is_data_file_table(data_files, runs: int) -> bool:
@@ -513,6 +547,7 @@ def outcome_label(key: str, unit: str) -> str:
 STATUS_LABEL = "Status"
 MEETS_ALL_LABEL = "Meets all requirements"
 SUCCEEDED, CRASHED = "succeeded", "crashed"
+FAILED = "failed"  # a thermal run whose draw the model refused (thermal.sweeps.monte_carlo)
 
 
 def _outcome_keys(batch: MonteCarloBatch, spacecraft: str) -> list[str]:
@@ -529,6 +564,11 @@ def run_table(batch: MonteCarloBatch, spacecraft: str | None = None, outcomes: b
     """(column labels, rows): per run its index, every drawn value, and
     where it ended against the batch mean [km] (for ``spacecraft``, by
     default the first).
+
+    ``outcomes`` (a thermal batch): also the failed runs whose draws the
+    summary keeps (``failed_drawn``), with their draws and no temperatures,
+    and then a "Status" column (``"succeeded"`` or ``"failed"``), so the
+    failed runs are found in the table (Monte Carlo plan B8).
 
     ``outcomes`` (an orbit batch): also each run's outcomes of the run and
     of ``spacecraft`` (Monte Carlo plan A1), when the summary has them; the
@@ -557,7 +597,17 @@ def run_table(batch: MonteCarloBatch, spacecraft: str | None = None, outcomes: b
                                 for label in drawn_labels]
                 + [float(values[k].min()), float(values[k].max()), float(values[k].mean())]
                 for k, run in enumerate(batch.runs)]
-        return ["Run"] + drawn_labels + [f"{node} min [degC]", f"{node} max [degC]", f"{node} mean [degC]"], rows
+        labels = ["Run"] + drawn_labels + [f"{node} min [degC]", f"{node} max [degC]", f"{node} mean [degC]"]
+        failed = sorted(run for run in batch.failed_drawn if run in set(batch.failed)) if outcomes else []
+        if failed:
+            nan = float("nan")
+            rows += [[float(run)] + [batch.failed_drawn[run].get(label, nan) for label in drawn_labels] + [nan] * 3
+                     for run in failed]
+            rows.sort(key=lambda row: row[0])
+            labels.append(STATUS_LABEL)
+            for row in rows:
+                row.append(FAILED if int(row[0]) in failed else SUCCEEDED)
+        return labels, rows
     spacecraft = spacecraft or batch.spacecraft[0]
     final = offsets(batch.positions[spacecraft], batch.velocities[spacecraft])[:, -1, :] / 1e3  # [km]
     outcome_labels = [f"{spacecraft} final {c.replace('_', '-')} offset [km]" for c in OFFSET_COMPONENTS]

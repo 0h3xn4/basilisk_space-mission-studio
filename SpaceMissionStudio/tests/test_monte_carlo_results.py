@@ -241,3 +241,40 @@ def test_the_data_files_of_each_run_round_trip_and_an_older_summary_has_none(tmp
     with pytest.raises(mcr.MonteCarloResultsError, match="data_files is not a table of data files"):
         mcr.load(tmp_path / "without")
     assert mcr.case_data_files(tmp_path / "without", 0) is None
+
+
+def test_the_batch_seed_round_trips_and_a_summary_without_one_has_none(tmp_path):
+    """The batch seed (Monte Carlo plan B1) is an optional key of the
+    summary (format 1 still): written only when the batch had one, read
+    back, and None for a summary without it; a seed that is not a whole
+    number is refused."""
+    batch = _circular_batch(np.array([0.0, 1e-4]))
+    mcr.save(batch, tmp_path / "none")
+    assert "seed" not in json.loads((tmp_path / "none" / mcr.SUMMARY_JSON).read_text())
+    assert mcr.load(tmp_path / "none").seed is None
+    batch.seed = 42
+    mcr.save(batch, tmp_path / "seeded")
+    meta = json.loads((tmp_path / "seeded" / mcr.SUMMARY_JSON).read_text())
+    assert meta["seed"] == 42 and meta["format"] == 1
+    assert mcr.load(tmp_path / "seeded").seed == 42
+    meta["seed"] = "42"
+    (tmp_path / "seeded" / mcr.SUMMARY_JSON).write_text(json.dumps(meta))
+    with pytest.raises(mcr.MonteCarloResultsError, match="seed is not a whole number"):
+        mcr.load(tmp_path / "seeded")
+
+
+def test_a_thermal_run_table_lists_its_failed_runs_with_their_status():
+    """Monte Carlo plan B8: a thermal batch's failed runs (a draw the model
+    refused) are found in its run table, with their draws and a Status
+    column, when the table is asked for them; by default the table is as
+    before."""
+    t = np.linspace(0.0, 10.0, 3)
+    temps = np.array([[10.0, 12.0, 11.0], [20.0, 22.0, 21.0]])
+    batch = mcr.MonteCarloBatch("Thermal", "earth", t, [0, 2], [1], {}, {}, [{"a [-]": 0.1}, {"a [-]": 0.3}],
+                                kind="thermal", temperatures_c={"battery": temps}, failed_drawn={1: {"a [-]": 0.2}})
+    labels, rows = mcr.run_table(batch, "battery")
+    assert labels[-1] == "battery mean [degC]" and [row[0] for row in rows] == [0.0, 2.0]
+    labels, rows = mcr.run_table(batch, "battery", outcomes=True)
+    assert labels[-1] == mcr.STATUS_LABEL and [row[0] for row in rows] == [0.0, 1.0, 2.0]
+    assert rows[1][1] == 0.2 and math.isnan(rows[1][2]) and rows[1][-1] == mcr.FAILED
+    assert rows[0][-1] == rows[2][-1] == mcr.SUCCEEDED

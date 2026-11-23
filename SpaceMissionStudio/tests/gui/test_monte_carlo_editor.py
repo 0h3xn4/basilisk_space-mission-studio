@@ -422,3 +422,59 @@ def test_the_group_round_trips_its_requirements(qtbot):
     assert form.limit_spin.suffix() == " m/s"
     widget.requirement_list.inline.flush()
     assert widget.to_dataclass().requirements == requirements  # reading the form changes nothing
+
+
+# -- Monte Carlo plan B8 and B1: the labels, the batch seed, the attitude in degrees ----
+
+
+def test_the_processes_and_the_batch_seed_fields(qtbot):
+    """"Processes" (it was "Thread count": each run goes in its own
+    process); the batch seed is "Not set" by default (None in the file) and
+    round-trips a number; the field titles name them for the Problems panel."""
+    from spacemissionstudio.gui.monte_carlo_editor import MonteCarloGroupWidget
+    from spacemissionstudio.schema.scenario import MonteCarloConfig
+
+    widget = MonteCarloGroupWidget()
+    qtbot.addWidget(widget)
+    form_labels = [label.text() for label in widget.findChildren(type(widget.off_label))]
+    assert "Processes" in form_labels and "Thread count" not in form_labels and "Batch seed" in form_labels
+    assert widget.field_title("monte_carlo.thread_count").endswith("Processes")
+    assert widget.field_title("monte_carlo.seed").endswith("Batch seed")
+    assert widget.seed_spin.text() == "Not set" and widget.to_dataclass().seed is None
+    widget.from_dataclass(MonteCarloConfig(enabled=True, seed=2026))
+    assert widget.to_dataclass().seed == 2026 and widget.seed_spin.text() == "2026"
+    widget.from_dataclass(MonteCarloConfig(enabled=True))
+    assert widget.to_dataclass().seed is None
+    widget.seed_spin.setValue(0)  # 0 is a seed, not "Not set"
+    assert widget.to_dataclass().seed == 0
+
+
+def test_the_starting_attitude_is_shown_in_degrees_and_saved_in_radians(qtbot):
+    """The form shows the starting attitude's bounds in degrees with a deg
+    suffix (the rest of the app's angles); the file keeps radians. A bound
+    not edited is saved exactly as read; one typed in degrees is converted."""
+    import math
+
+    from spacemissionstudio.gui.monte_carlo_editor import _DispersionEditorDialog
+    from spacemissionstudio.schema.scenario import DispersionConfig
+
+    item = DispersionConfig(spacecraft="sat-1", quantity="attitude_sigma_bn", kind="uniform_euler_mrp",
+                            bounds=[-0.1, 0.3])
+    dialog = _DispersionEditorDialog(["sat-1"], item=item)
+    qtbot.addWidget(dialog)
+    assert dialog.bounds_lo_spin.value() == pytest.approx(math.degrees(-0.1))
+    assert dialog.bounds_hi_spin.value() == pytest.approx(math.degrees(0.3))
+    assert dialog.bounds_lo_spin.suffix() == "°" and dialog.units_label.text().startswith("°")
+    assert dialog.to_dataclass().bounds == [-0.1, 0.3]  # exactly as read
+    dialog.bounds_hi_spin.setValue(10.0)  # [deg]
+    assert dialog.to_dataclass().bounds == [-0.1, pytest.approx(math.radians(10.0), rel=1e-15)]
+    new = _DispersionEditorDialog(["sat-1"])
+    qtbot.addWidget(new)
+    new.quantity_combo.setCurrentText("attitude_sigma_bn")
+    new.bounds_lo_spin.setValue(-5.0)
+    new.bounds_hi_spin.setValue(5.0)
+    assert new.to_dataclass().bounds == [pytest.approx(math.radians(-5.0)), pytest.approx(math.radians(5.0))]
+    mass = DispersionConfig(spacecraft="sat-1", quantity="dry_mass_kg", kind="uniform", bounds=[90.0, 110.0])
+    other = _DispersionEditorDialog(["sat-1"], item=mass)  # any other quantity: as typed
+    qtbot.addWidget(other)
+    assert other.bounds_lo_spin.value() == 90.0 and other.to_dataclass().bounds == [90.0, 110.0]

@@ -121,6 +121,17 @@ def _migrate_5_to_6(data: dict) -> dict:
     return data
 
 
+def _migrate_6_to_7(data: dict) -> dict:
+    """v6 -> v7: the Monte Carlo section can hold a batch ``seed``, and a
+    spacecraft's thermal Monte Carlo a ``confidence`` (Monte Carlo plan B1
+    and B4, decisions MC-20 and MC-22). Both are new and optional, so a
+    version 6 file has neither, and nothing else changes: the step only
+    sets the version, as the step to 6 did. Version 7 marks the files that
+    2.14.1 and earlier cannot read."""
+    data["schema_version"] = 7
+    return data
+
+
 #: Fields this version no longer has, dropped on load whatever the file's
 #: version (step "retired fields"): a spacecraft's and its 3D model's.
 #: Files without them also open in versions that still had them (they had
@@ -161,6 +172,7 @@ MIGRATIONS: dict[int, Callable[[dict], dict]] = {
     3: _migrate_3_to_4,
     4: _migrate_4_to_5,
     5: _migrate_5_to_6,
+    6: _migrate_6_to_7,
 }
 
 

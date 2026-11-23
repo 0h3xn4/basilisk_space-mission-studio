@@ -286,7 +286,7 @@ def test_the_step_from_5_to_6_only_sets_the_version(tmp_path):
     assert MIGRATIONS[5](json.loads(json.dumps(data)))["schema_version"] == 6
     changes: list = []
     migrated = migrate(json.loads(json.dumps(data)), changes)
-    assert changes == [] and migrated["schema_version"] == 6 == CURRENT_SCHEMA_VERSION
+    assert changes == [] and migrated["schema_version"] == CURRENT_SCHEMA_VERSION  # and the steps after it
     assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
         {k: v for k, v in data.items() if k != "schema_version"}
     path = tmp_path / "v5.json"
@@ -294,3 +294,45 @@ def test_the_step_from_5_to_6_only_sets_the_version(tmp_path):
     assert load_scenario(path).to_dict() == load_scenario(template).to_dict()
     assert load_scenario(path).monte_carlo.requirements == []
     assert output_provenance.scenario_file_record(path)["scenario_file_migrations"] == []
+
+
+def test_the_step_from_6_to_7_only_sets_the_version(tmp_path):
+    """Version 7 adds the optional Monte Carlo batch ``seed`` and the
+    thermal Monte Carlo's ``confidence`` (decisions MC-20 and MC-22). A
+    version 6 file opens as it was: the step sets the version and changes
+    nothing else, so the file's record lists no change, its scenario is the
+    template's, and it has no seed and no confidence."""
+    from spacemissionstudio import output_provenance
+
+    templates = _TESTS.parent / "spacemissionstudio" / "scenarios" / "templates"
+    for name in ("25_monte_carlo_orbit_and_drag_dispersions.json", "34_microsat_flexible_thermal.json"):
+        template = templates / name
+        data = json.loads(template.read_text(encoding="utf-8"))
+        data["schema_version"] = 6
+        assert MIGRATIONS[6](json.loads(json.dumps(data)))["schema_version"] == 7
+        changes: list = []
+        migrated = migrate(json.loads(json.dumps(data)), changes)
+        assert changes == [] and migrated["schema_version"] == 7 == CURRENT_SCHEMA_VERSION
+        assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
+            {k: v for k, v in data.items() if k != "schema_version"}
+        path = tmp_path / f"v6_{name}"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        scenario = load_scenario(path)
+        assert scenario.to_dict() == load_scenario(template).to_dict()
+        assert scenario.monte_carlo.seed is None
+        assert all(sc.thermal is None or sc.thermal.monte_carlo is None or sc.thermal.monte_carlo.confidence is None
+                   for sc in scenario.spacecraft)
+        assert output_provenance.scenario_file_record(path)["scenario_file_migrations"] == []
+
+
+def test_a_version_7_file_is_refused_by_a_build_that_reads_version_6(monkeypatch):
+    """A file at version 7 does not open in a build whose newest version is
+    6 (2.14.1 and earlier), as a version 6 file did not open in 2.13.1: the
+    message names both versions."""
+    from spacemissionstudio.schema import migrations
+
+    data = {"schema_version": 7}
+    monkeypatch.setattr(migrations, "CURRENT_SCHEMA_VERSION", 6)
+    with pytest.raises(ScenarioValidationError, match="schema_version 7, but this build of SpaceMissionStudio only "
+                                                      "understands up to version 6"):
+        migrations.migrate(data)

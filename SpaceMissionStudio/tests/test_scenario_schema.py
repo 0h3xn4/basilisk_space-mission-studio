@@ -2739,7 +2739,7 @@ def test_a_requirement_has_its_fields_and_round_trips():
     sc = _with_requirement(max_probability=0.01)
     sc.validate()
     saved = json.loads(scenario_text(sc))
-    assert saved["schema_version"] == CURRENT_SCHEMA_VERSION == 6
+    assert saved["schema_version"] == CURRENT_SCHEMA_VERSION == 7
     assert saved["monte_carlo"]["requirements"] == [
         {"name": "R-ALT-01", "spacecraft": "sat-1", "outcome": "lowest_altitude", "at_least": 400.0,
          "at_most": None, "confidence": 0.95, "max_probability": 0.01}]
@@ -2783,3 +2783,56 @@ def test_two_requirements_of_one_name_are_refused():
     sc.monte_carlo.requirements.append(copy.deepcopy(sc.monte_carlo.requirements[0]))
     with pytest.raises(ScenarioValidationError, match=r"each name must be unique, \['R-ALT-01'\] repeat"):
         sc.validate()
+
+
+# -- Monte Carlo batch seed and thermal confidence (schema 7, plan B1 and B4) ----
+
+def test_the_batch_seed_is_optional_and_saved_only_when_set():
+    """``monte_carlo.seed`` (decision MC-20): empty by default and then not
+    written, so a scenario without one saves, and hashes, as before (only
+    the version changes); a seed saves and loads as it was."""
+    from spacemissionstudio.output_provenance import scenario_sha256
+    from spacemissionstudio.schema.scenario import scenario_text
+
+    sc = _minimal_scenario()
+    assert sc.monte_carlo.seed is None and "seed" not in json.loads(scenario_text(sc))["monte_carlo"]
+    before = scenario_sha256(sc)
+    sc.monte_carlo.seed = 12345
+    sc.validate()
+    saved = json.loads(scenario_text(sc))
+    assert saved["monte_carlo"]["seed"] == 12345 and saved["schema_version"] == 7
+    assert Scenario.from_dict(saved).monte_carlo.seed == 12345
+    assert scenario_sha256(sc) != before  # the seed is part of the scenario: a case is checked against it
+
+
+@pytest.mark.parametrize("seed", [-1, 2 ** 31, 1.5, "7", True])
+def test_a_batch_seed_out_of_range_or_not_whole_is_refused(seed):
+    sc = _minimal_scenario()
+    sc.monte_carlo.seed = seed
+    with pytest.raises(ScenarioValidationError, match="monte_carlo.seed must be empty or a whole number from 0 to "
+                                                      "2147483647"):
+        sc.validate()
+
+
+def test_the_thermal_monte_carlo_confidence_is_optional_and_checked():
+    """A thermal Monte Carlo's ``confidence`` (decision MC-22): empty by
+    default and then not written (template 34 saves as before); a value in
+    (0, 1) saves and loads as it was; 0, 1 and text are refused."""
+    from spacemissionstudio import api
+    from spacemissionstudio.schema.scenario import scenario_text
+
+    sc = api.load(api.template("34_microsat_flexible_thermal"))
+    thermal = next(s.thermal for s in sc.spacecraft if s.thermal is not None and s.thermal.monte_carlo is not None)
+    assert thermal.monte_carlo.confidence is None
+    assert all("confidence" not in (s.get("thermal") or {}).get("monte_carlo", {})
+               for s in json.loads(scenario_text(sc))["spacecraft"])
+    thermal.monte_carlo.confidence = 0.95
+    sc.validate()
+    saved = json.loads(scenario_text(sc))
+    assert [s["thermal"]["monte_carlo"]["confidence"] for s in saved["spacecraft"] if s.get("thermal")] == [0.95]
+    loaded = Scenario.from_dict(saved)
+    assert next(s.thermal for s in loaded.spacecraft if s.thermal is not None).monte_carlo.confidence == 0.95
+    for bad in (0.0, 1.0, "0.9"):
+        thermal.monte_carlo.confidence = bad
+        with pytest.raises(ScenarioValidationError, match="confidence must be empty or a number between 0 and 1"):
+            sc.validate()

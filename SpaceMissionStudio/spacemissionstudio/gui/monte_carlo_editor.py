@@ -21,13 +21,20 @@
 spacecraft by name), :class:`RequirementListWidget` (one
 :class:`schema.scenario.MonteCarloRequirementConfig` per row: a limit on
 one outcome of every run, Monte Carlo plan A2) and
-:class:`MonteCarloGroupWidget` (the enable/num_runs/thread_count/verbose
+:class:`MonteCarloGroupWidget` (the enable/num_runs/thread_count/verbose/seed
 settings plus those lists) -- composed into ``scenario_editor.py`` the
 same way the space-weather/ground-station groups are.
 
 A requirement's limit and confidence have no default (decision MC-5): a
 new requirement starts with both "Not set", and the scenario is not valid
 until they are given (the Problems panel says which).
+
+The starting attitude's bounds are shown in degrees, as every other angle
+of the app, and saved in radians, as the scenario file and Basilisk keep
+them (Monte Carlo plan B8, decision MC-24): the form converts, and a value
+not edited is saved exactly as it was read. The batch seed is optional
+("Not set": each run's draws come from Basilisk's own seeding, decision
+MC-20).
 
 The dispersion editor dialog needs to know which spacecraft NAMES exist in
 the scenario being edited right now (a dispersion references one by name),
@@ -39,6 +46,7 @@ spacecraft list changes, same live-refresh pattern as the third-body
 
 from __future__ import annotations
 
+import math
 import os
 
 from PySide6.QtCore import Signal
@@ -64,6 +72,7 @@ from ..schema.scenario import (
     DISPERSION_KINDS_BY_QUANTITY,
     DISPERSION_QUANTITIES,
     MAX_MONTE_CARLO_RUNS,
+    MAX_MONTE_CARLO_SEED,
     MAX_MONTE_CARLO_THREADS,
     MONTE_CARLO_OUTCOME_TITLES,
     MONTE_CARLO_OUTCOME_UNITS,
@@ -93,7 +102,7 @@ def _spin(minimum: float, maximum: float, decimals: int = 4, step: float = 1.0, 
 # What the numbers below mean for each quantity (DispersionConfig field comments).
 _UNITS = {
     "dry_mass_kg": "kg",
-    "attitude_sigma_bn": "rad, as Euler angles",
+    "attitude_sigma_bn": "°, as Euler angles (saved in rad)",
     "orbit_elements": "a spread on each element of the initial orbit",
     "inertia_kg_m2": "kg·m² on each diagonal element, added to the inertia",
     "angular_rate_bn_b": "°/s on each axis, added to the initial rate",
@@ -103,7 +112,7 @@ _UNITS = {
 # The unit the mean, standard deviation and bounds fields carry for each
 # quantity (orbit_elements has a field per element, with its own unit).
 _FIELD_UNITS = {
-    "dry_mass_kg": "kg", "attitude_sigma_bn": "rad", "inertia_kg_m2": "kg*m^2", "angular_rate_bn_b": "deg/s",
+    "dry_mass_kg": "kg", "attitude_sigma_bn": "deg", "inertia_kg_m2": "kg*m^2", "angular_rate_bn_b": "deg/s",
     "drag_coeff": "-", "srp_coeff": "-",
 }
 _ELEMENT_LABELS = {
@@ -116,6 +125,11 @@ _ELEMENT_LABELS = {
 }
 
 
+# Quantities whose bounds the form shows in degrees and the file keeps in
+# radians (decision MC-24).
+DEGREE_BOUND_QUANTITIES = ("attitude_sigma_bn",)
+
+
 # Quantities whose dispersion is the value itself (written absolutely, as
 # engine.monte_carlo does), so a new one starts at the spacecraft's own.
 SCALAR_DISPERSION_QUANTITIES = ("dry_mass_kg", "drag_coeff", "srp_coeff")
@@ -125,6 +139,9 @@ class _DispersionEditorDialog(QDialog):
     def __init__(self, spacecraft_names: list, item: DispersionConfig | None = None, parent: QWidget | None = None):
         super().__init__(parent)
         self.setWindowTitle("Edit dispersion" if item is not None else "New dispersion")
+        # (the value shown [deg], the value read [rad]) of each bound read in
+        # radians, so a bound not edited is saved exactly as it was read.
+        self._read_radians: dict = {}
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -222,8 +239,12 @@ class _DispersionEditorDialog(QDialog):
             if index >= 0:
                 self.kind_combo.setCurrentIndex(index)
             if item.bounds:
-                self.bounds_lo_spin.setValue(item.bounds[0])
-                self.bounds_hi_spin.setValue(item.bounds[1])
+                for spin, bound in zip((self.bounds_lo_spin, self.bounds_hi_spin), item.bounds):
+                    if item.quantity in DEGREE_BOUND_QUANTITIES:
+                        spin.setValue(math.degrees(bound))
+                        self._read_radians[spin] = (spin.value(), bound)
+                    else:
+                        spin.setValue(bound)
             if item.mean is not None:
                 self.mean_spin.setValue(item.mean)
             if item.std_deviation is not None:
@@ -318,6 +339,15 @@ class _DispersionEditorDialog(QDialog):
             return
         self.accept()
 
+    def _bound(self, spin, quantity: str) -> float:
+        """A bound as the file keeps it: in radians for a quantity the form
+        shows in degrees (:data:`DEGREE_BOUND_QUANTITIES`), the value read
+        when the field still shows it."""
+        if quantity not in DEGREE_BOUND_QUANTITIES:
+            return spin.value()
+        shown, read = self._read_radians.get(spin, (None, None))
+        return read if shown is not None and spin.value() == shown else math.radians(spin.value())
+
     def to_dataclass(self) -> DispersionConfig:
         if not self.spacecraft_combo.count():
             raise ValueError("this scenario has no spacecraft to disperse yet – add one first")
@@ -328,7 +358,7 @@ class _DispersionEditorDialog(QDialog):
             spacecraft=self.spacecraft_combo.currentData(),
             quantity=quantity,
             kind=kind,
-            bounds=[self.bounds_lo_spin.value(), self.bounds_hi_spin.value()]
+            bounds=[self._bound(self.bounds_lo_spin, quantity), self._bound(self.bounds_hi_spin, quantity)]
             if kind in ("uniform", "uniform_euler_mrp") and not orbit else None,
             mean=self.mean_spin.value() if kind == "normal" and quantity not in SPREAD_ONLY_DISPERSION_QUANTITIES else None,
             std_deviation=self.std_spin.value() if kind == "normal" and not orbit else None,
@@ -745,7 +775,18 @@ class MonteCarloGroupWidget(QGroupBox):
             f"process per CPU ({os.cpu_count() or 1} here)."
         )
         self.thread_count_spin.valueChanged.connect(self.changed)
-        form.addRow("Thread count", self.thread_count_spin)
+        form.addRow("Processes", self.thread_count_spin)
+
+        self.seed_spin = SpinBox()
+        self.seed_spin.setRange(-1, MAX_MONTE_CARLO_SEED)  # -1: not set
+        self.seed_spin.setSpecialValueText(_NOT_SET)
+        self.seed_spin.setValue(-1)
+        self.seed_spin.setToolTip(
+            "Not set: each run draws what Basilisk's own seeding gives it, so two batches of this scenario draw "
+            "the same values. A number: every run's draws come from this seed and the run's number, so another "
+            "seed gives an independent batch and the same seed the same batch again.")
+        self.seed_spin.valueChanged.connect(self.changed)
+        form.addRow("Batch seed", self.seed_spin)
 
         self.verbose_check = QCheckBox("Verbose")
         self.verbose_check.toggled.connect(self.changed)
@@ -771,7 +812,8 @@ class MonteCarloGroupWidget(QGroupBox):
 
     # Where a MonteCarloConfig field's widget is (a message's field).
     _FIELD_WIDGETS = {"monte_carlo.enabled": "enabled_check", "monte_carlo.num_runs": "num_runs_spin",
-                      "monte_carlo.thread_count": "thread_count_spin", "monte_carlo.verbose": "verbose_check"}
+                      "monte_carlo.thread_count": "thread_count_spin", "monte_carlo.verbose": "verbose_check",
+                      "monte_carlo.seed": "seed_spin"}
 
     def field_title(self, code: str) -> str:
         """The form's title for the field ``code`` names ("Monte Carlo:
@@ -797,6 +839,7 @@ class MonteCarloGroupWidget(QGroupBox):
             verbose=self.verbose_check.isChecked(),
             dispersions=self.dispersion_list.to_list(),
             requirements=self.requirement_list.to_list(),
+            seed=None if self.seed_spin.value() < 0 else self.seed_spin.value(),
         )
         config.validate_settings()
         return config
@@ -806,5 +849,6 @@ class MonteCarloGroupWidget(QGroupBox):
         self.num_runs_spin.setValue(config.num_runs)
         self.thread_count_spin.setValue(config.thread_count)
         self.verbose_check.setChecked(config.verbose)
+        self.seed_spin.setValue(-1 if config.seed is None else config.seed)
         self.dispersion_list.from_list(config.dispersions)
         self.requirement_list.from_list(config.requirements)

@@ -1012,3 +1012,120 @@ def test_the_case_check_imports_no_basilisk():
             "print(sorted(n for n in sys.modules if n.split('.')[0] == 'Basilisk'))")
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True).stdout
     assert out.strip() == "[]"
+
+
+# -- The batch seed (Monte Carlo plan B1, decision MC-20; SRelD K-24) --------------------------
+
+
+def _draws(archive_dir, runs=2) -> list[dict]:
+    """Each run's run<N>.json: its drawn values and every model's RNG seed."""
+    import json
+
+    return [json.loads((archive_dir / f"run{run}.json").read_text()) for run in range(runs)]
+
+
+def test_without_a_seed_the_creation_function_leaves_basilisks_seeding_alone():
+    """No seed: the creation function draws nothing from NumPy's or Python's
+    global generator and does not reseed them, so the Controller draws from
+    the state its own seeding (the run index times 10) left: today's draws.
+    With a seed, it reads the run index back from that state and reseeds
+    both from the seed and the index (Basilisk 2.12.0's order: seed,
+    create, disperse, Controller.py SimulationExecutor.__call__)."""
+    import random
+
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+
+    scenario = _template_25()
+    np.random.seed(70)
+    random.seed(70)
+    numpy_state, python_state = np.random.get_state(), random.getstate()
+    sim = monte_carlo._create_sim(scenario)
+    after = np.random.get_state()
+    assert after[2] == numpy_state[2] and np.array_equal(after[1], numpy_state[1])
+    assert random.getstate() == python_state
+    del sim
+    np.random.seed(70)
+    random.seed(70)
+    assert monte_carlo.basilisk_run_index() == 7
+    sim = monte_carlo._create_sim(scenario, seed=5)
+    expected = monte_carlo._seed_words(5, 7)
+    assert not np.array_equal(np.random.get_state()[1], numpy_state[1])
+    probe = np.random.get_state()
+    np.random.seed(expected)
+    assert np.array_equal(np.random.get_state()[1], probe[1])
+    del sim
+    np.random.rand()  # a state already drawn from: its run index cannot be named
+    with pytest.raises(monte_carlo.MonteCarloError, match="the run index is not known"):
+        monte_carlo._reseed(5)
+
+
+def test_a_batch_seed_gives_other_draws_and_the_same_draws_again(tmp_path):
+    """B1's acceptance: two seeds give different draws, one seed gives the
+    same draws twice (with one process and with two), and no seed gives the
+    draws Basilisk's own seeding gives (a batch without a seed draws the
+    same twice, and the golden files of templates 09 and 25 are unchanged).
+    The summary keeps the seed (optional key ``seed``) and the batch's
+    provenance records it (``monte_carlo_seed``) and says how the seeds
+    were drawn."""
+    import json
+
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    def batch(folder, seed, thread_count=1):
+        scenario = _template_25(duration_days=0.01, seed=seed, thread_count=thread_count)
+        assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path / folder) == []
+        return _draws(tmp_path / folder)
+
+    plain, plain_again = batch("plain", None), batch("plain_again", None)
+    five, five_again, five_two = batch("five", 5), batch("five_again", 5), batch("five_two", 5, thread_count=2)
+    six = batch("six", 6)
+    assert plain == plain_again
+    assert five == five_again == five_two
+    for run in range(2):
+        assert five[run] != plain[run] and five[run] != six[run]
+        assert {key for key in five[run]} == {key for key in plain[run]}  # the same draws, other values
+    assert five[0] != five[1]  # each run its own stream
+    assert np.array_equal(mcr.load(tmp_path / "five").positions["sat-1"],
+                          mcr.load(tmp_path / "five_two").positions["sat-1"])
+    assert mcr.load(tmp_path / "five").seed == 5 and mcr.load(tmp_path / "plain").seed is None
+    assert "seed" not in json.loads((tmp_path / "plain" / mcr.SUMMARY_JSON).read_text())
+    record = json.loads((tmp_path / "five" / "archive.provenance.json").read_text(encoding="utf-8"))
+    assert record["monte_carlo_seed"] == 5 and record["rng_seeds"] == monte_carlo.ARCHIVE_SEEDED_NOTE
+    record = json.loads((tmp_path / "plain" / "archive.provenance.json").read_text(encoding="utf-8"))
+    assert record["monte_carlo_seed"] is None and record["rng_seeds"] == monte_carlo.ARCHIVE_SEEDS_NOTE
+
+
+def test_a_case_of_a_seeded_batch_runs_again_as_the_batch_ran(tmp_path):
+    """Run This Case (A3) on a seeded batch: each case, run again from its
+    run<N>.json, agrees with the batch summary's position at every kept
+    sample to 1e-6 m and has the batch's outcomes; its provenance names the
+    batch seed. The global generators are not reseeded for it (MC-18)."""
+    import random
+
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    scenario = _template_25(seed=2026)
+    assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    assert batch.runs == [0, 1] and batch.seed == 2026
+    for k, case in enumerate(batch.runs):
+        numpy_state, python_state = np.random.get_state(), random.getstate()
+        result, _summary = monte_carlo.replay_case(scenario, tmp_path, case)
+        assert np.array_equal(np.random.get_state()[1], numpy_state[1]) and random.getstate() == python_state
+        position = _position_at_kept_samples(result, "sat-1", batch.time_s)
+        assert np.max(np.abs(position - batch.positions["sat-1"][k])) <= 1e-6  # [m]
+        values, _units = monte_carlo.run_outcomes(result)
+        for key, value in values.items():
+            assert value == pytest.approx(batch.outcomes[k][key], rel=1e-9, abs=1e-12), key
+        assert result.provenance.monte_carlo_case["batch_seed"] == 2026
+    other = _template_25(seed=2027)  # another seed is another scenario: its cases are not this batch's
+    with pytest.raises(monte_carlo.MonteCarloCaseRefused, match="the scenario changed since the batch"):
+        monte_carlo.replay_case(other, tmp_path, 0)

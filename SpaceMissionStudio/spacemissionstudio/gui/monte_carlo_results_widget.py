@@ -22,8 +22,11 @@ Shows the summary ``engine.monte_carlo_results`` keeps of a batch (never
 Basilisk's pickled archive, security analysis S-04): headline tiles for
 how far the runs spread, the per-run curves and their 1-sigma spread in
 an embedded Results view, a sortable table of what each run drew, where
-it ended and its outcomes (crashed runs with their draws), and the
-requirements judged on the runs (``engine.monte_carlo_requirements``).
+it ended and its outcomes (crashed runs with their draws, and a "Status"
+column that finds them), the requirements judged on the runs
+(``engine.monte_carlo_requirements``) and, for a thermal batch, each
+node's operating and survival range judged on the runs (Monte Carlo plan
+B4: the Node limits tab).
 Filled after a run in Monte Carlo mode, or from a folder an earlier batch
 saved (**Open results...**). **Run This Case** (the Runs table's button and
 right-click menu) asks for the case picked to run again as a plain run
@@ -74,6 +77,13 @@ _REQUIREMENTS_HINT = ("Each requirement judged on the runs: of the N runs evalua
                       "not meeting every requirement; a run that did not record the outcome is not evaluated.")
 _NO_REQUIREMENTS = ("No requirements in this batch. Add them under Scenario › Monte Carlo › Requirements; the next "
                     "batch judges them.")
+_NODE_LIMITS_HINT = ("Each node's operating and survival range judged on the runs: of the N runs evaluated, k "
+                     "leave the range at some time step; the estimate is k/N and, with the thermal Monte Carlo's "
+                     "confidence, the upper bound is exact at it. A failed run (a draw the model refused) counts as "
+                     "leaving every range.")
+_NO_NODE_LIMITS = ("No node limits in this batch: no node of the thermal model has an operating or survival range, "
+                   "or the batch was saved before they were judged. Give the ranges under Spacecraft › 3D model › "
+                   "Thermal model › Nodes, then run the Monte Carlo again.")
 
 
 # Run This Case (plan A3): its keys, what it does, and why it cannot run now.
@@ -175,6 +185,17 @@ class MonteCarloResultsWidget(QWidget):
         self.requirements_table.action_requested.connect(self.edit_requirements_requested)
         requirements_layout.addWidget(self.requirements_table, 1)
         self.views.addTab(requirements_page, "Requirements")
+        limits_page = QWidget()
+        limits_layout = QVBoxLayout(limits_page)
+        limits_layout.setContentsMargins(0, 4, 0, 0)
+        self.node_limits_hint = QLabel(_NODE_LIMITS_HINT)
+        self.node_limits_hint.setWordWrap(True)
+        set_role(self.node_limits_hint, tone="secondary")
+        limits_layout.addWidget(self.node_limits_hint)
+        self.node_limits_table = DataTable(_NO_NODE_LIMITS)
+        limits_layout.addWidget(self.node_limits_table, 1)
+        self._node_limits_index = self.views.addTab(limits_page, "Node limits")
+        self.views.setTabVisible(self._node_limits_index, False)  # a thermal batch's only
         layout.addWidget(self.views, 1)
         layout.addStretch(0)  # keeps the empty state's hint at the top
         self._show(None)
@@ -224,6 +245,8 @@ class MonteCarloResultsWidget(QWidget):
                 self.plots.set_result(None)
             self.table.clear()
             self.requirements_table.clear()
+            self.node_limits_table.clear()
+            self.views.setTabVisible(self._node_limits_index, False)
             self._refresh_case_action()
             return
         self.title_label.setText(batch.scenario_name)
@@ -241,13 +264,16 @@ class MonteCarloResultsWidget(QWidget):
                                     f"{source}: every run's temperatures, and the 1-sigma of each node's minimum and "
                                     f"maximum over the runs ({statistic.title.lower()}).{note}")
         else:
+            seed = "" if batch.seed is None else f" Batch seed {batch.seed}."
             self.hint_label.setText(f"{days:.3g} days per run, {source}. Spreads are 1-sigma offsets from the mean "
                                     f"of all runs ({statistic.title.lower()}): along the orbit, radially and "
-                                    f"across it.{note}")
+                                    f"across it.{seed}{note}")
         self.hint_label.setToolTip("\n".join(([str(self.folder)] if self.folder else []) + [
             f"{statistic.title}: {statistic.method}",
             f"Chosen by {mcr.SPREAD_CHOICE} on the Assumptions page, as the batch was run."]))
         self._ensure_plots().set_result(mcr.to_result_set(batch), batch.epoch_utc or None)
+        self.views.setTabVisible(self._node_limits_index, batch.kind == "thermal")
+        self._fill_node_limits()
         self._refresh_spacecraft_views()
 
     def _ensure_plots(self) -> ResultsWidget:
@@ -286,7 +312,7 @@ class MonteCarloResultsWidget(QWidget):
             spread = mcr.node_spread(batch, spacecraft)
             self._set_tiles([
                 ("Runs", f"{len(batch.runs)} of {requested}"),
-                ("Failed", ", ".join(str(run) for run in batch.failed) if batch.failed else "none"),
+                self._failed_tile(),
                 ("Coldest", f"{spread.coldest_c:.1f} °C"),
                 ("Hottest", f"{spread.hottest_c:.1f} °C"),
                 ("Minimum, 1-sigma", f"{spread.sigma_min_k:.2f} K"),
@@ -302,7 +328,7 @@ class MonteCarloResultsWidget(QWidget):
         met = sum(1 for result in judged if result.verdict == mcreq.MET)
         self._set_tiles([
             ("Runs", f"{len(batch.runs)} of {requested}"),
-            ("Failed", ", ".join(str(run) for run in batch.failed) if batch.failed else "none"),
+            self._failed_tile(),
             ("Along-track spread, end", _km(spread.along_track_m)),
             ("Radial spread, end", _km(spread.radial_m)),
             ("Cross-track spread, end", _km(spread.cross_track_m)),
@@ -313,16 +339,34 @@ class MonteCarloResultsWidget(QWidget):
         self.plots.show_series(f"{spacecraft}.monte_carlo.spread")
         self._fill_table(spacecraft)
 
+    def _failed_tile(self) -> tuple[str, str, str]:
+        """The "Failed" tile: how many runs failed (Monte Carlo plan B8); which
+        ones is in the Runs table (its Status column) and in the tooltip."""
+        batch = self.batch
+        failed = sorted(int(run) for run in batch.failed)
+        if not failed:
+            return "Failed", "0", "No run failed."
+        listed = sorted(run for run in batch.failed_drawn if run in set(failed))
+        where = ("The Runs table lists them with the status in its Status column; sort by it to group them."
+                 if listed == failed else
+                 "The Runs table lists those whose draws the batch kept, with the status in its Status column."
+                 if listed else "This batch's summary keeps no draws of its failed runs, so the Runs table does "
+                 "not list them.")
+        return "Failed", str(len(failed)), f"Failed runs: {', '.join(str(run) for run in failed)}.\n{where}"
+
     def _set_tiles(self, tiles) -> None:
         while self.tiles_row.count():
             item = self.tiles_row.takeAt(0)
             if item.widget() is not None:
                 item.widget().deleteLater()
-        for label, value in tiles:
-            self.tiles_row.addWidget(_stat_tile(label, value), 1)  # equal widths
+        for label, value, *tip in tiles:
+            tile = _stat_tile(label, value)
+            if tip:
+                tile.setToolTip(tip[0])
+            self.tiles_row.addWidget(tile, 1)  # equal widths
 
     def _fill_table(self, spacecraft: str) -> None:
-        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind == "orbit")
+        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind in ("orbit", "thermal"))
         if len(self.batch.spacecraft) == 1:  # the spacecraft's name on every column says nothing
             labels = [label.removeprefix(f"{spacecraft} ") for label in labels]
         text = frozenset(k for k, value in enumerate(rows[0] if rows else []) if isinstance(value, str))
@@ -353,6 +397,28 @@ class MonteCarloResultsWidget(QWidget):
                             muted=frozenset() if mark is not None else frozenset({11})))
         self.requirements_table.set_table(list(mcreq.TABLE_HEADER), rows, numeric=range(3, 11), stretch=1)
         self.requirements_table.set_sortable(0, Qt.SortOrder.AscendingOrder)
+
+    def _fill_node_limits(self) -> None:
+        """The Node limits tab of a thermal batch (Monte Carlo plan B4): one
+        row per node and range, the runs outside it in the tooltip."""
+        batch = self.batch
+        if batch is None or batch.kind != "thermal" or not batch.node_limits:
+            self.node_limits_table.clear()
+            return
+        model = models.model(mcr.BOUND_CHOICE, batch.probability_bound)
+        self.node_limits_hint.setToolTip(f"{model.title}: {model.method}\n{model.references[0]}")
+        results = [mcreq.NodeLimitResult.from_dict(row) for row in batch.node_limits]
+        rows = []
+        for result, cells in zip(results, mcreq.node_limit_rows(results)):
+            tips = {8: f"{model.title} at confidence {result.confidence:g}" if result.confidence is not None else
+                    "No confidence in the thermal Monte Carlo: counts and the estimate only"}
+            if result.outside_runs:
+                tips[5] = "Runs outside: " + ", ".join(str(run) for run in result.outside_runs)
+            rows.append(Row(list(cells), tooltips=tips, plain=frozenset({0, 1}),
+                            keys=[cell if k in (0, 1) else (float(cell) if cell else -1.0)
+                                  for k, cell in enumerate(cells)]))
+        self.node_limits_table.set_table(list(mcreq.NODE_LIMITS_HEADER), rows, numeric=range(2, 10), stretch=0)
+        self.node_limits_table.set_sortable(0, Qt.SortOrder.AscendingOrder)
 
     # -- one case again (plan A3) -------------------------------------------
 
@@ -415,7 +481,7 @@ class MonteCarloResultsWidget(QWidget):
 
         path = Path(path)
         spacecraft = self.spacecraft_combo.currentText() or None
-        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind == "orbit")
+        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind in ("orbit", "thermal"))
         with open(path, "w", newline="", encoding="utf-8") as handle:
             writer = csv.writer(handle)
             writer.writerow(labels)

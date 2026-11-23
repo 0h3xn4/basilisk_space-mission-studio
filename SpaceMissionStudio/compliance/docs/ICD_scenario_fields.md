@@ -20,7 +20,7 @@ Top-level scenario object (the JSON file's root).
 | `mission_sequence` | list | `[]` | list[Command] |
 | `fsw_exports` | list | `[]` | list[FswExportRecord], at most one per spacecraft |
 | `description` | str | `''` |  |
-| `schema_version` | int | `6` |  |
+| `schema_version` | int | `7` |  |
 | `config_file` | str / None | `None` |  |
 | `configuration` | object | `None` |  |
 | `value_marks` | list | `[]` | list[ValueMark] |
@@ -442,6 +442,7 @@ Batch execution settings -- see ``engine/monte_carlo.py``. ``thread_count`` > 1 
 | `verbose` | bool | `False` |  |
 | `dispersions` | list | `[]` | list[DispersionConfig] |
 | `requirements` | list | `[]` | list[MonteCarloRequirementConfig] |
+| `seed` | int / None | `None` |  |
 
 ## MonteCarloRequirementConfig
 
@@ -970,7 +971,7 @@ A thermostatic heater: on below ``on_c``, off above ``off_c`` (hysteresis), ``po
 
 ## ThermalMonteCarloConfig
 
-A thermal Monte Carlo on one run (Phase 2, T-36): ``runs`` draws of the ``dispersions``, from ``seed``, each solved in ``case``.
+A thermal Monte Carlo on one run (Phase 2, T-36): ``runs`` draws of the ``dispersions``, from ``seed``, each solved in ``case``. With ``confidence`` (scenario schema 7, Monte Carlo plan B4, decision MC-22), the runs that leave a node's operating or survival range get an exact upper bound on that probability at this confidence; without it, the counts and the estimate only. It has no default (as a requirement's, MC-13).
 
 | Field | Type | Default | Unit / note |
 |---|---|---|---|
@@ -978,6 +979,7 @@ A thermal Monte Carlo on one run (Phase 2, T-36): ``runs`` draws of the ``disper
 | `seed` | int | `1` |  |
 | `case` | str | `'nominal'` |  |
 | `dispersions` | list | `[]` | list[ThermalDispersionConfig] |
+| `confidence` | float / None | `None` | [-] optional: the node limits' bound confidence, in (0, 1) (MC-22) |
 
 ## ThermalNodeConfig
 

@@ -158,6 +158,21 @@ the space weather, the Earth orientation files, the SPICE kernels, ...)
 is not the one the case used in the batch (decision MC-19): each run keeps
 the SHA-256 of its data files in the batch summary (``data_files``).
 
+Batch seed
+----------
+Before each run Basilisk's worker seeds NumPy's legacy global generator
+and Python's ``random`` with the run index times 10, then calls the
+creation function, then draws every model's ``RNGSeed`` (``random``) and
+every dispersion (NumPy), in that order (Basilisk 2.12.0,
+``Controller.SimulationExecutor.__call__``). Without
+``monte_carlo.seed`` nothing else happens: two batches of one scenario draw
+the same values (SRelD K-24). With a seed, the creation function first
+reseeds both generators (:func:`_reseed`) from the batch seed and the run
+index, which it reads back from the state Basilisk's seeding just left
+(Monte Carlo plan B1, decision MC-20): another seed gives other draws,
+the same seed the same draws. A case run again (:func:`prepare_case`)
+does not reseed: its draws and seeds come from its ``run<N>.json``.
+
 Thread count
 ------------
 ``Controller.setThreadCount(n)`` for ``n > 1`` uses ``multiprocessing.Pool``
@@ -191,6 +206,7 @@ import gzip
 import json
 import logging
 import pickle  # noqa: S403 -- reads back only the archive this same call wrote (security analysis S-04)
+import random
 import re
 from pathlib import Path
 
@@ -476,13 +492,60 @@ def _build_dispersion(dispersion: DispersionConfig, scenario: Scenario):
     )
 
 
-def _create_sim(scenario: Scenario, folders: dict[str, str] | None = None):
+# NumPy's legacy MT19937 state right after ``numpy.random.seed(<int>)``:
+# the integer is the state's first key and every key is unused.
+_MT19937_KEYS = 624
+
+
+def basilisk_run_index() -> int:
+    """The index of the run Basilisk's worker has just seeded the global
+    generators for: it seeds NumPy's legacy generator with the index times
+    10 just before it calls the creation function (Basilisk 2.12.0,
+    ``SimulationExecutor.__call__``). The index is read back from that
+    state, whose first key is the seed while no number has been drawn.
+    Raises :class:`MonteCarloError` when the state is not freshly seeded
+    so (another Basilisk order): a seeded batch must not draw from a state
+    it cannot name."""
+    name, keys, position = np.random.get_state()[:3]
+    if name != "MT19937" or len(keys) != _MT19937_KEYS or position != _MT19937_KEYS or int(keys[0]) % 10:
+        raise MonteCarloError("monte_carlo.seed: the run's generators were not seeded by Basilisk's Controller just "
+                              "before the run was built, so the run index is not known; this Basilisk version "
+                              "seeds its runs in another way (Monte Carlo plan risk R1)")
+    return int(keys[0]) // 10
+
+
+def _seed_words(seed: int, index: int) -> np.ndarray:
+    """Four 32-bit words for run ``index`` of a batch with ``seed``: NumPy's
+    ``SeedSequence`` with the batch seed as its entropy and the run index
+    as its spawn key, so each run's stream is its own and independent of
+    the others (NumPy's way to derive parallel streams)."""
+    return np.random.SeedSequence(entropy=int(seed), spawn_key=(int(index),)).generate_state(4)
+
+
+def _reseed(seed: int) -> int:
+    """Reseed NumPy's legacy global generator and Python's ``random`` for
+    the run Basilisk is building (:func:`basilisk_run_index`) from the
+    batch ``seed`` and that run's index (:func:`_seed_words`), before the
+    Controller draws the run's RNG seeds and dispersions (decision MC-20).
+    Returns the run index."""
+    index = basilisk_run_index()
+    words = _seed_words(seed, index)
+    np.random.seed(words)
+    random.seed(int.from_bytes(words.astype("<u4").tobytes(), "little"))
+    return index
+
+
+def _create_sim(scenario: Scenario, folders: dict[str, str] | None = None, seed: int | None = None):
     """Monte Carlo creation function (see module docstring for why
     ``initialize=False``). Module-level + ``functools.partial``-bound
     (never a closure) so it stays picklable for ``thread_count > 1``.
     ``folders`` (:func:`data_folders` of the process that starts the batch)
     are set first, so a worker process reads the same reference data.
+    With the batch ``seed`` (``monte_carlo.seed``), the global generators
+    are reseeded first (:func:`_reseed`); a case run again passes none.
     """
+    if seed is not None:
+        _reseed(seed)
     apply_data_folders(folders)
     service = SimulationService(scenario)
     service.build(initialize=False)
@@ -686,7 +749,7 @@ def run_monte_carlo(scenario: Scenario, mc_config: MonteCarloConfig, archive_dir
         raise MonteCarloError(f"could not create Monte Carlo archive directory {archive_dir}: {exc}") from exc
 
     controller = Controller()
-    controller.setSimulationFunction(functools.partial(_create_sim, scenario, data_folders()))
+    controller.setSimulationFunction(functools.partial(_create_sim, scenario, data_folders(), mc_config.seed))
     controller.setExecutionFunction(functools.partial(_execute_sim, allow_scripts=allow_scripts))
     controller.setExecutionCount(mc_config.num_runs)
     controller.setShouldDisperseSeeds(True)
@@ -713,13 +776,14 @@ def run_monte_carlo(scenario: Scenario, mc_config: MonteCarloConfig, archive_dir
     except Exception as exc:  # noqa: BLE001 -- report ANY batch-level failure with a specific message
         raise MonteCarloError(f"Monte Carlo batch execution failed: {exc}") from exc
     try:
-        batch = collect_batch(scenario, archive_dir, mc_config.num_runs, failures)
+        batch = collect_batch(scenario, archive_dir, mc_config.num_runs, failures, mc_config.seed)
         if batch.runs:
             monte_carlo_results.save(batch, archive_dir)
     except Exception:  # noqa: BLE001 -- the batch itself ran; a summary problem must not lose that
         _logger.exception("Monte Carlo batch finished, but its summary could not be written")
     try:
-        output_provenance.write_sidecar(archive_dir / "archive", archive_record(scenario, scenario_file))
+        output_provenance.write_sidecar(archive_dir / "archive", archive_record(scenario, scenario_file,
+                                                                             mc_config.seed))
     except OSError as exc:
         raise MonteCarloError(f"could not write the batch's provenance in {archive_dir}: {exc}") from exc
     return failures
@@ -727,6 +791,10 @@ def run_monte_carlo(scenario: Scenario, mc_config: MonteCarloConfig, archive_dir
 
 ARCHIVE_SEEDS_NOTE = ("each run's own: Basilisk's Monte Carlo Controller draws them (setShouldDisperseSeeds) and "
                       "writes them to that run's run<N>.json")
+# ... and with a batch seed (decision MC-20).
+ARCHIVE_SEEDED_NOTE = ("each run's own: Basilisk's Monte Carlo Controller draws them (setShouldDisperseSeeds) and "
+                       "writes them to that run's run<N>.json, after the batch seed (monte_carlo_seed) and the run "
+                       "index reseeded the run's generators")
 
 
 # Keys of the nominal run's record left out of a batch's: the versions and
@@ -738,7 +806,7 @@ _NOT_NOMINAL = {"spacemissionstudio_version", "basilisk_version", "qualified_bas
                 "rng_seeds"}
 
 
-def archive_record(scenario: Scenario, scenario_file: dict | None = None) -> dict:
+def archive_record(scenario: Scenario, scenario_file: dict | None = None, seed: int | None = None) -> dict:
     """The provenance of a batch of ``scenario`` (transparency audit,
     Phase 2g): the tool and Basilisk versions, the scenario's hash (its
     dispersions included), the file it came from (``scenario_file``: its
@@ -747,7 +815,9 @@ def archive_record(scenario: Scenario, scenario_file: dict | None = None) -> dic
     ``nominal_run`` what every run shares, from the record a run of it
     would carry (:meth:`.SimulationService.nominal_provenance`: integrator,
     tolerances, task rates, central body, frames, time system, data files).
-    The seeds are each run's own: see :data:`ARCHIVE_SEEDS_NOTE`. As
+    The seeds are each run's own: see :data:`ARCHIVE_SEEDS_NOTE`; the batch
+    seed is ``monte_carlo_seed`` (None: Basilisk's own seeding, decision
+    MC-20). As
     ``models``, the models in effect for the batch's results
     (``config.models``: the spread's statistic).
 
@@ -764,7 +834,8 @@ def archive_record(scenario: Scenario, scenario_file: dict | None = None) -> dic
         _logger.exception("Monte Carlo batch finished, but its nominal run could not be built for the provenance")
         nominal = {"error": f"{type(exc).__name__}: {exc}"}
     record["nominal_run"] = {key: value for key, value in nominal.items() if key not in _NOT_NOMINAL}
-    record["rng_seeds"] = ARCHIVE_SEEDS_NOTE
+    record["rng_seeds"] = ARCHIVE_SEEDS_NOTE if seed is None else ARCHIVE_SEEDED_NOTE
+    record["monte_carlo_seed"] = seed
     record["models"] = models.records(scenario, "monte_carlo")
     return record
 
@@ -846,7 +917,7 @@ def _run_params(archive_dir: Path, run: int) -> dict:
 
 
 def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
-                  failures: list[int]) -> monte_carlo_results.MonteCarloBatch:
+                  failures: list[int], seed: int | None = None) -> monte_carlo_results.MonteCarloBatch:
     """Every successful run's retained position and velocity, on a shared,
     strided time grid, the values it drew and its outcomes (:func:`run_outcomes`)
     -- read back from the files :func:`run_monte_carlo` has just had the
@@ -856,8 +927,8 @@ def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
 
     A run that did not finish is failed; what it drew is kept from its
     ``run<N>.json`` (JSON, never a pickle) as ``failed_drawn`` (Monte Carlo
-    plan A4). The batch keeps the scenario's requirements (A2) and the models
-    of its statistics."""
+    plan A4). The batch keeps the scenario's requirements (A2), the models
+    of its statistics and its ``seed`` (B1)."""
     archive_dir = Path(archive_dir)
     mu = _central_body_mu(scenario)
     names = [sc.name for sc in scenario.spacecraft]
@@ -886,7 +957,7 @@ def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
     extra = {"outcomes": outcomes if any(outcomes) else [], "outcome_units": units, "failed_drawn": failed_drawn,
              "data_files": data_files if any(data_files) else [],
              "requirements": [dataclasses.asdict(r) for r in scenario.monte_carlo.requirements],
-             "probability_bound": registry.value(monte_carlo_results.BOUND_CHOICE, scenario)}
+             "probability_bound": registry.value(monte_carlo_results.BOUND_CHOICE, scenario), "seed": seed}
     if not runs:
         return monte_carlo_results.MonteCarloBatch(scenario.name, scenario.gravity.central_body, np.zeros(0),
                                                    [], failed, {}, {}, [], scenario.epoch_utc, statistic, **extra)
@@ -919,7 +990,8 @@ CASE_SEEDS_NOTE = ("a Monte Carlo case run again: every model's RNGSeed is the c
 def case_parameters(scenario: Scenario, archive_dir: str | Path, case: int) -> tuple[dict, dict]:
     """(the entries of ``run<case>.json`` in the file's order, the record of the
     case for the run's provenance, ``monte_carlo_case``): the batch folder,
-    the case number, the batch's scenario hash and the case's RNG seeds.
+    the case number, the batch's scenario hash, the case's RNG seeds and,
+    when the batch had one, its seed (``batch_seed``).
 
     Refused (:class:`MonteCarloCaseRefused`) when the scenario's SHA-256
     differs from the one the batch recorded (decision MC-17, the owner's
@@ -939,6 +1011,9 @@ def case_parameters(scenario: Scenario, archive_dir: str | Path, case: int) -> t
                 seeds[name] = str(value)
     record = {"archive_dir": str(archive_dir.resolve()), "case": case, "scenario_sha256": batch_digest,
               "rng_seeds": seeds}
+    seed = monte_carlo_case.batch_seed(archive_dir)
+    if seed is not None:  # written only when the batch had one (decision MC-20)
+        record["batch_seed"] = seed
     return params, record
 
 

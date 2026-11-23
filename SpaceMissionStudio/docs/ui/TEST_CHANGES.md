@@ -2717,6 +2717,34 @@ the three teardown cases and the rule against direct connections, and the
 test of the workflows' download lines. The others test the new functions
 (`import_pandas`, `connect_while_alive`, `retry_download.py`).
 
+## Monte Carlo phase B, part 1: batch seed, thermal node limits, small fixes (2026-11-23)
+
+Two GUI tests and two tests outside `tests/gui/` changed; none is
+weakened (decision MC-25). The two GUI changes follow the plan's item B8
+(a field renamed, a tile that shows a count), the other two the new
+scenario schema version, as phase A's step to 6 did.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/gui/test_display_units.py::test_every_number_field_shows_its_unit` (its `_NO_UNIT` table) | the run-count field "Thread count", "a count" | the same field as "Processes", "a count"; and the new field "Batch seed", "a seed" | the field is renamed (B8); the new seed field has no unit, like "Random seed"; every other field is checked as before |
+| `tests/gui/test_monte_carlo_results_widget.py::test_a_saved_batch_shows_tiles_plots_and_a_sortable_run_table` | the "Failed" tile reads "5" (the number of the one failed run) | it reads "1" (how many failed) | B8: the tile shows a count, the numbers go to its tooltip and the Runs table; `test_the_failed_tile_counts_and_the_table_lists_the_crashed_runs` checks both |
+| `tests/test_migrations.py::test_the_step_from_5_to_6_only_sets_the_version` | `migrate()` of a version 5 file gives 6, and 6 is `CURRENT_SCHEMA_VERSION` | the step itself (`MIGRATIONS[5]`, already checked) gives 6, and `migrate()` gives `CURRENT_SCHEMA_VERSION` (now 7); the other assertions are as before | the current version is 7; as phase A changed the step from 4 to 5 |
+| `tests/test_scenario_schema.py::test_a_requirement_has_its_fields_and_round_trips` | the saved version is `CURRENT_SCHEMA_VERSION` and 6 | the saved version is `CURRENT_SCHEMA_VERSION` and 7 | the current version is 7 |
+
+Strengthened: `tests/test_template_claims.py::test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery`
+also checks that the batch's node limits count the 4 warm runs, and
+`tests/test_thermal_studies.py::test_the_api_and_the_command_line_reach_the_studies`
+that the command line prints the node limits table.
+
+Added: in `tests/test_monte_carlo.py` 3 tests (the seed's state, two
+seeds and one seed twice with one and two processes, a seeded case run
+again), in `tests/test_monte_carlo_requirements.py` 3, in
+`tests/test_monte_carlo_results.py` 2, in `tests/test_scenario_schema.py`
+3 (7 with parameters), in `tests/test_migrations.py` 2, in
+`tests/test_thermal_studies.py` 1, in
+`tests/gui/test_monte_carlo_editor.py` 2 and in
+`tests/gui/test_monte_carlo_results_widget.py` 2.
+
 ## The Budgets area shows quickly (SRelD K-40, 2026-11-23)
 
 One existing GUI test gets its stricter limit back, as the backlog item
@@ -2743,3 +2771,12 @@ A widget in the hidden Timeline page of a bare shell becomes 200 px
 wider; with no other change, the area stack must become as wide as its
 new minimum. It fails before the fix (the stack keeps its old width) and
 passes after.
+
+## The Home details' buttons wrap (2026-11-23)
+
+No existing test changed. New:
+`tests/gui/test_load_scenario_widget.py::test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
+(with the largest font at which each button fits the column alone but
+not both side by side, both stay whole and inside the details column,
+Customize and open... below Open template). It failed before the
+fix and passes after.

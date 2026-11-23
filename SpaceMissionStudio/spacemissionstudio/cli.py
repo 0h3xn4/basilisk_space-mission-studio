@@ -594,6 +594,8 @@ def cmd_monte_carlo(args: argparse.Namespace) -> int:
 
     print(f"Running {scenario.monte_carlo.num_runs} Monte Carlo case(s) of {scenario.name!r} "
           f"({len(scenario.monte_carlo.dispersions)} dispersion(s), {scenario.monte_carlo.thread_count} thread(s))...")
+    if scenario.monte_carlo.seed is not None:  # without one, Basilisk's own seeding, as before (decision MC-20)
+        print(f"Batch seed: {scenario.monte_carlo.seed} (monte_carlo.seed)")
     try:
         failures = run_monte_carlo(scenario, scenario.monte_carlo, args.archive_dir,
                                    allow_scripts=args.allow_scripts, overwrite=args.overwrite,
@@ -711,6 +713,19 @@ def _print_requirements(batch, results) -> None:
           "every requirement):")
     _print_table(monte_carlo_requirements.TABLE_HEADER,
                  monte_carlo_requirements.table_rows(results, len(batch.spacecraft) > 1), left=3)
+
+
+def _print_node_limits(batch) -> None:
+    """A thermal batch's nodes against their limits (Monte Carlo plan B4)."""
+    from .engine import monte_carlo_requirements
+
+    results = [monte_carlo_requirements.NodeLimitResult.from_dict(row) for row in batch.node_limits]
+    if not results:
+        return
+    print(f"  Node limits ({monte_carlo_requirements.BOUND_CHOICE}: {batch.probability_bound}; a failed run counts "
+          "as leaving every range):")
+    _print_table(monte_carlo_requirements.NODE_LIMITS_HEADER, monte_carlo_requirements.node_limit_rows(results),
+                 left=2)
 
 
 def _save(scenario, path, command: str) -> None:
@@ -1395,6 +1410,7 @@ def _thermal_studies(args: argparse.Namespace, done, sc_name: str) -> int:
             monte_carlo_results.save(batch, args.monte_carlo)
             for line in monte_carlo_results.summary_lines(batch):
                 print(f"  {line}")
+            _print_node_limits(batch)
             print(f"wrote the thermal Monte Carlo to {args.monte_carlo}")
     except (sweeps.SweepError, ValueError) as exc:
         print(f"ERROR: {sc_name}: {exc}", file=sys.stderr)

@@ -125,9 +125,20 @@ Each item was checked against Basilisk's own source.
   environment (template 25 and three-run batches with 3 threads, Basilisk
   2.12.0); the schema default stays `1`. A batch uses at most one process
   per CPU, and validation refuses more than 256 processes or 100 000 runs.
-* **Two Monte Carlo batches of the same scenario draw the same samples**:
-  Basilisk's Monte Carlo controller seeds each run from its number
-  (SRelD K-24).
+* **Without a batch seed, two Monte Carlo batches of the same scenario
+  draw the same samples**: Basilisk's Monte Carlo controller seeds each
+  run from its number (SRelD K-24). Set Scenario › Monte Carlo › Batch
+  seed (`monte_carlo.seed`) for an independent batch: each run then
+  draws from the seed and its number, and the same seed gives the same
+  batch again. The seed relies on the order in which Basilisk 2.12.0
+  seeds, builds and draws a run; a Basilisk that does it otherwise fails
+  each run of a seeded batch with a message (SRelD K-49).
+* **A thermal Monte Carlo's node limits** count the runs whose
+  temperature leaves a node's operating or survival range at any time
+  step. The bound is one-sided and assumes independent runs; it is
+  given only with the thermal Monte Carlo's `confidence`. A run whose
+  draw the model refuses counts as leaving every range. A thermal batch
+  saved by 2.14.1 or earlier has no node limits: run it again.
 * **Monte Carlo retains a fixed set of data per run** (each spacecraft's
   position/velocity, and the run's Overview figures as its outcomes) --
   there is no per-run custom retention-policy selection in the schema

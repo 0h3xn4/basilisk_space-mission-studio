@@ -220,15 +220,22 @@ the same run. Nothing runs in Basilisk again, so a study takes seconds.
 - **Monte Carlo...**: it is off while the thermal model has no Monte
   Carlo section, and its tooltip says so. First set the runs, the seed, the case and the
   dispersions under **Monte Carlo** on the thermal model's **Cases** tab (a path, a
-  sigma, normal or uniform, absolute or relative to the value). Press
-  **Monte Carlo...** and pick a folder. The batch opens in the Monte Carlo
+  sigma, normal or uniform, absolute or relative to the value), and, if
+  you want a bound, the **Confidence** (between 0 and 1; no default).
+  Press **Monte Carlo...** and pick a folder. The batch opens in the Monte Carlo
   view by node: the hottest and coldest any run reached, each run's
   curve with the mean and its band, and the run table with the drawn
-  values. The same seed gives the same runs.
+  values (a run whose draw the model refused is listed as "failed").
+  The **Node limits** tab counts, for each node with an operating or
+  survival range, the runs whose temperature leaves it at any step: the
+  runs evaluated (N), the runs outside (k; a failed run counts as
+  outside every range), the rate k/N and, with a confidence, the exact
+  upper bound on the rate at it. The same seed gives the same runs.
 
 Template 34's Monte Carlo varies the radiator's absorptance, the heat
 pipe and the battery's isolators: in 4 of its 20 runs the battery passes
-its 30 degC limit.
+its 30 degC limit, and the Node limits tab shows them as 4 of 20 outside
+the battery's operating range.
 
 From the command line:
 
@@ -237,6 +244,8 @@ spacemissionstudio thermal scenario.json --case hot --sweep "faces[radiator].abs
 spacemissionstudio thermal scenario.json --sensitivity --relative 0.2
 spacemissionstudio thermal scenario.json --monte-carlo mc_folder/
 ```
+
+With `--monte-carlo`, the command also prints the node limits table.
 
 From Python: `api.thermal_sweep`, `api.thermal_sensitivity` and
 `api.thermal_monte_carlo` ([The Python API](../api.md)).

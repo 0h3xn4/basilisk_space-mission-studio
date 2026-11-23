@@ -73,7 +73,7 @@ def test_a_saved_batch_shows_tiles_plots_and_a_sortable_run_table(qtbot, tmp_pat
     assert widget.load_folder(tmp_path)
     assert widget.title_label.text() == "Synthetic batch"
     tiles = _tile_texts(widget)
-    assert tiles[0] == "5 of 6 | Runs" and tiles[1] == "5 | Failed"
+    assert tiles[0] == "5 of 6 | Runs" and tiles[1] == "1 | Failed"
     along_km = np.std((np.arange(5) - 2) * 1e-4) * _R_M / 1e3  # [km]
     assert tiles[2] == f"{along_km:.3g} km | Along-track spread, end"
     assert widget.plots.current_series_name() == "sat-1.monte_carlo.spread"
@@ -484,3 +484,93 @@ def test_the_main_window_runs_a_case_again_or_says_why_not(qtbot, tmp_path, monk
     assert "the scenario changed since the batch" in widget.case_problem and "0" * 64 in widget.case_problem
     assert any(widget.case_problem == text for _severity, text in window.problems_widget.problems)
     assert not window.problems_dock.isHidden()  # the Problems panel opened
+
+
+# -- Monte Carlo plan B8 (the Failed tile) and B4 (a thermal batch's node limits) ----
+
+
+def test_the_failed_tile_counts_and_the_table_lists_the_crashed_runs(qtbot, tmp_path):
+    """The "Failed" tile shows how many runs failed, not their numbers; the
+    numbers are in its tooltip, and the Runs table lists each crashed run
+    whose draws the batch kept, with "crashed" in its Status column."""
+    from dataclasses import replace
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    batch = _save_batch(tmp_path / "older")  # five runs, run 5 failed, no draws of it kept
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path / "older")
+    tile = [t for t in layout_item_widgets(widget.tiles_row) if t is not None][1]
+    assert _tile_texts(widget)[1] == "1 | Failed"
+    assert "Failed runs: 5." in tile.toolTip() and "keeps no draws" in tile.toolTip()
+    kept = replace(batch, runs=[0, 1, 3, 4, 6], failed=[2, 5],
+                   failed_drawn={2: {"sat-1 drag coefficient [-]": 2.4}, 5: {"sat-1 drag coefficient [-]": 3.0}})
+    mcr.save(kept, tmp_path / "kept")
+    widget.load_folder(tmp_path / "kept")
+    tile = [t for t in layout_item_widgets(widget.tiles_row) if t is not None][1]
+    assert _tile_texts(widget)[1] == "2 | Failed" and "Failed runs: 2, 5." in tile.toolTip()
+    table = widget.table
+    headers = [table.header_text(c) for c in range(table.column_count())]
+    status = headers.index("Status")
+    assert {table.cell(r, 0): table.cell(r, status) for r in range(table.row_count())} == {
+        "0": "succeeded", "1": "succeeded", "2": "crashed", "3": "succeeded", "4": "succeeded", "5": "crashed",
+        "6": "succeeded"}
+    clean = replace(batch, failed=[])
+    mcr.save(clean, tmp_path / "clean")
+    widget.load_folder(tmp_path / "clean")
+    assert _tile_texts(widget)[1] == "0 | Failed"
+
+
+def test_a_thermal_batch_shows_its_node_limits_and_its_failed_runs(qtbot, tmp_path):
+    """A thermal batch has a Node limits tab: one row per node and range,
+    with the runs evaluated, the runs outside (failed ones included), the
+    estimate, the bound and the confidence; the runs outside in the
+    tooltip. The Runs table lists its failed run with its status. An orbit
+    batch, or a thermal one saved before B4, has no such rows."""
+    from spacemissionstudio.engine import monte_carlo_requirements as req
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    t = np.linspace(0.0, 100.0, 5)  # [s]
+    peaks = np.array([20.0, 31.0, 25.0, 35.0])  # [degC] runs 0, 2, 3 and 4; run 1 failed
+    temperatures = np.outer(peaks, np.linspace(0.5, 1.0, t.size))
+    limits = {"battery": {"operating": [0.0, 30.0], "survival": [-20.0, 45.0]}}
+    extremes = {"battery": [(float(row.min()), float(row.max())) for row in temperatures]}
+    judged = req.node_limits(limits, extremes, [0, 2, 3, 4], [1], 0.9)
+    batch = mcr.MonteCarloBatch("Thermal", "earth", t, [0, 2, 3, 4], [1], {}, {},
+                                [{"a [-]": 0.1}, {"a [-]": 0.3}, {"a [-]": 0.4}, {"a [-]": 0.5}], kind="thermal",
+                                temperatures_c={"battery": temperatures}, case="hot", failed_drawn={1: {"a [-]": 0.2}},
+                                node_limits=[row.to_dict() for row in judged])
+    mcr.save(batch, tmp_path / "thermal")
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    _save_batch(tmp_path / "orbit")
+    widget.load_folder(tmp_path / "orbit")
+    assert not widget.views.isTabVisible(widget._node_limits_index)
+    widget.load_folder(tmp_path / "thermal")
+    assert widget.views.isTabVisible(widget._node_limits_index)
+    assert widget.views.tabText(widget._node_limits_index) == "Node limits"
+    table = widget.node_limits_table
+    headers = [table.header_text(c) for c in range(table.column_count())]
+    assert headers == list(req.NODE_LIMITS_HEADER)
+    assert table.row_count() == 2
+    rows = {table.cell(r, 1): [table.cell(r, c) for c in range(table.column_count())] for r in range(2)}
+    assert rows["operating"][:7] == ["battery", "operating", "0", "30", "5", "3", "1"]
+    assert rows["operating"][7] == f"{3 / 5:.4g}" and rows["operating"][9] == "0.9"
+    assert rows["operating"][8] == f"{req.clopper_pearson_upper(3, 5, 0.9):.4g}"
+    assert rows["survival"][5] == "1"  # the failed run only
+    operating = next(r for r in range(2) if table.cell(r, 1) == "operating")
+    assert table.hover_text(operating, 5) == "Runs outside: 1, 2, 4"
+    assert _tile_texts(widget)[1] == "1 | Failed"
+    runs = widget.table
+    headers = [runs.header_text(c) for c in range(runs.column_count())]
+    assert headers[-1] == "Status" and runs.row_count() == 5
+    assert {runs.cell(r, 0): runs.cell(r, len(headers) - 1) for r in range(5)}["1"] == "failed"
+    older = mcr.MonteCarloBatch("Thermal", "earth", t, [0, 2, 3, 4], [1], {}, {}, [{} for _ in range(4)],
+                                kind="thermal", temperatures_c={"battery": temperatures}, case="hot")
+    mcr.save(older, tmp_path / "older")
+    widget.load_folder(tmp_path / "older")
+    assert widget.views.isTabVisible(widget._node_limits_index)
+    assert table.stack.currentWidget() is table.empty
