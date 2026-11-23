@@ -568,6 +568,24 @@ register(
               "C. J. Clopper and E. S. Pearson, Biometrika 26(4), 1934, pp. 404-413 (the exact binomial bound)",
               "The only method declared (decision MC-5): exact, with no table and no new dependency.",
               kind="model", choices=models.names("monte_carlo.probability_bound")),
+    Parameter("monte_carlo.sensitivity_measure", "spearman", "[-]",
+              "The correlation a Monte Carlo batch's Sensitivity table gives for each drawn value and outcome: "
+              "Spearman's rank correlation or Pearson's.",
+              "C. Spearman, American Journal of Psychology 15(1), 1904, pp. 72-101 (the rank correlation)",
+              "The rank correlation finds any monotonic relation, and a few extreme runs move it little "
+              "(Monte Carlo plan B2, decision MC-26).",
+              kind="model", choices=models.names("monte_carlo.sensitivity_measure")),
+    Parameter("monte_carlo.percentile_method", "linear", "[-]",
+              "How a Monte Carlo batch's Statistics table computes each outcome's percentiles.",
+              "R. J. Hyndman and Y. Fan, The American Statistician 50(4), 1996, pp. 361-365, definition 7",
+              "NumPy's default (numpy.percentile): a percentile computed with NumPy from the Runs table's CSV "
+              "is the same number (Monte Carlo plan B3, decision MC-28).",
+              kind="model", choices=models.names("monte_carlo.percentile_method")),
+    Parameter("monte_carlo.percentiles", (1.0, 5.0, 50.0, 95.0, 99.0), "[%]",
+              "The percentiles of each outcome a Monte Carlo batch's Statistics table shows, besides the minimum "
+              "and the maximum.", "TBD: the owner has not named them (Monte Carlo plan Q8)",
+              "Provisional (decision MC-27): the median, the 5th and 95th percentiles and, as the tails, the 1st "
+              "and 99th. The owner may change them.", kind="number list", minimum=0.0, maximum=100.0),
 )
 
 # -- analyses built on the 3D model (analyses/) ------------------------------------------------

@@ -231,7 +231,7 @@ from .. import output_provenance
 from ..config import models, registry
 from ..schema.command import runs_sequence, script_blocks
 from ..schema.scenario import DispersionConfig, MonteCarloConfig, Scenario, SimSettings, usable_thread_count
-from . import monte_carlo_case, monte_carlo_results
+from . import monte_carlo_case, monte_carlo_results, monte_carlo_statistics
 from .solar_arrays import hub_mass_offset_kg
 from .service import SimulationService, _orbit_ic_to_rv
 
@@ -957,7 +957,8 @@ def collect_batch(scenario: Scenario, archive_dir: str | Path, num_runs: int,
     extra = {"outcomes": outcomes if any(outcomes) else [], "outcome_units": units, "failed_drawn": failed_drawn,
              "data_files": data_files if any(data_files) else [],
              "requirements": [dataclasses.asdict(r) for r in scenario.monte_carlo.requirements],
-             "probability_bound": registry.value(monte_carlo_results.BOUND_CHOICE, scenario), "seed": seed}
+             "probability_bound": registry.value(monte_carlo_results.BOUND_CHOICE, scenario), "seed": seed,
+             **monte_carlo_statistics.choices(scenario)}
     if not runs:
         return monte_carlo_results.MonteCarloBatch(scenario.name, scenario.gravity.central_body, np.zeros(0),
                                                    [], failed, {}, {}, [], scenario.epoch_utc, statistic, **extra)

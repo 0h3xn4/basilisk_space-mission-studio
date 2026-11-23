@@ -76,6 +76,14 @@ Other checks have no threshold, each with its rule:
   - missing small-body data (`small_body.ephemeris_missing`,
     `small_body.shape_missing`);
   - more Monte Carlo processes than CPUs (`monte_carlo.processes`);
+  - while Monte Carlo is on, a dispersion of the dry mass, the drag or
+    the SRP coefficient whose bounds do not contain the spacecraft's
+    value, or whose mean (a normal one) is not that value
+    (`monte_carlo.nominal_outside`; Monte Carlo plan B6, decision
+    MC-29). The other quantities are spread around the spacecraft's own
+    value, or draw an attitude whose Euler angles are not unique, so
+    they are not checked. It is a check while typing: the Problems panel
+    lists it;
   - values read from a file whose file has changed or is missing
     (`import.source_changed`, `import.source_missing`), an item of a 3D
     model its IDM-CIC file no longer has (`import.source_item_gone`), and

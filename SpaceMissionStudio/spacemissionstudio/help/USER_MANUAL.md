@@ -1876,8 +1876,47 @@ whenever the scenario has Monte Carlo on, or a batch is open):
   drawn value goes with the largest offset or the lowest altitude;
   **Export table CSV...** saves it. **Run This Case** runs the picked
   run again on its own (below).
+* **Statistics:** every outcome of the batch (where each run ended
+  against the mean, and its Overview figures) with N (the runs that
+  recorded it; a crashed run has none), the minimum, the percentiles
+  (P1, P5, P50, P95, P99) and the maximum, each in the unit of its row.
+  Pick a row to plot its empirical distribution: the fraction of runs at
+  or below each value, a step plot that ends at 1. The percentiles are
+  NumPy's default (linear interpolation, Hyndman and Fan's definition 7);
+  which ones are shown is the project parameter `monte_carlo.percentiles`
+  (1, 5, 50, 95 and 99 % until the owner names others).
+* **Sensitivity:** how each drawn value goes with each outcome:
+  Spearman's rank correlation over the runs that recorded both (N, per
+  pair). +1: the outcome always grows with the value; -1: it always
+  falls; near 0: they are unrelated. The strongest come first, whatever
+  the sign; "—" where a value does not vary (template 09's mass changes
+  no outcome of its drag-free orbit). Pick a row for the scatter plot of
+  the runs (the run's number on hover). A correlation is not a cause.
+  A project file can choose Pearson's correlation instead
+  (`monte_carlo.sensitivity_measure`). Both tabs work their numbers out
+  in the background the first time one of them is shown for a batch
+  ([Monte Carlo statistics](docs/models/monte-carlo-statistics.md)).
 * **Requirements:** each requirement of the scenario judged on the runs
   (below). With none, the tab says where to add them.
+
+A thermal or an operations batch plots the mean of the runs with a band
+labelled "mean - 3 standard deviations (not a probability bound)" and
+"mean + 3 standard deviations (not a probability bound)": three standard
+deviations of the runs on each side of the mean, at each step. It
+assumes no distribution, so it says nothing about how likely a value
+is; for that, use the Statistics tab, a requirement or the Node limits
+tab.
+
+**Checks that the batch is the one you mean.** A dispersion of the dry
+mass, the drag coefficient or the SRP coefficient keeps its own numbers:
+if you edit the spacecraft afterwards, the batch still draws around the
+old value. While Monte Carlo is on, the Problems panel warns when such a
+dispersion's bounds do not contain the spacecraft's value, or when its
+mean (a normal one) is not that value; double-click the warning to go to
+the spacecraft's field. And when a batch is opened (or finishes) while
+the scenario open is not the one it was run with, a warning under the
+view's title says so, with the scenario's SHA-256 now and at the batch:
+the batch's numbers are those of its own scenario.
 
 **Requirements.** Under the dispersions on the **Monte Carlo** page,
 **Requirements** lists limits on one outcome of every run, e.g. "the

@@ -24,9 +24,15 @@ how far the runs spread, the per-run curves and their 1-sigma spread in
 an embedded Results view, a sortable table of what each run drew, where
 it ended and its outcomes (crashed runs with their draws, and a "Status"
 column that finds them), the requirements judged on the runs
-(``engine.monte_carlo_requirements``) and, for a thermal batch, each
-node's operating and survival range judged on the runs (Monte Carlo plan
-B4: the Node limits tab).
+(``engine.monte_carlo_requirements``), each outcome's statistics and
+empirical distribution (Monte Carlo plan B3: the Statistics tab), the
+correlation of each drawn value with each outcome (B2: the Sensitivity
+tab) and, for a thermal batch, each node's operating and survival range
+judged on the runs (B4: the Node limits tab). The statistics and the
+correlations are worked out off the GUI thread, when one of their tabs is
+first shown for a batch (``gui.monte_carlo_insight``). A batch whose
+scenario is not the one open says so in a note under the title (B6,
+:meth:`MonteCarloResultsWidget.compare_with_scenario`).
 Filled after a run in Monte Carlo mode, or from a folder an earlier batch
 saved (**Open results...**). **Run This Case** (the Runs table's button and
 right-click menu) asks for the case picked to run again as a plain run
@@ -42,19 +48,23 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QAction, QKeySequence
-from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMenu, QPushButton, QToolButton, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMenu, QPushButton, QSplitter, QToolButton,
+                               QVBoxLayout, QWidget)
 
 from . import export_log
 from ..config import models
 from ..engine import monte_carlo_requirements as mcreq
 from ..engine import monte_carlo_results as mcr
+from ..engine import monte_carlo_statistics as mcs
 from .data_table import DataTable, Row
+from .monte_carlo_insight import (NO_VALUE, InsightComputer, InsightPlot, ecdf_figure, number_text, percentile_title,
+                                  scatter_figure)
 from .results_widget import ResultsWidget
 from .scenario_explainer_widget import _stat_tile
 from .feedback import report
 from .theme import icon, set_role
-from .widgets import ComboBox, TabWidget
+from .value_sheet import NoteList
+from .widgets import ComboBox, TabWidget, connect_while_alive
 
 _EMPTY_HINT = ("A run in Monte Carlo mode (the run mode beside Run) shows its batch here. Open results... "
                "shows one an earlier batch saved (the folder you chose for it).")
@@ -81,6 +91,22 @@ _NODE_LIMITS_HINT = ("Each node's operating and survival range judged on the run
                      "leave the range at some time step; the estimate is k/N and, with the thermal Monte Carlo's "
                      "confidence, the upper bound is exact at it. A failed run (a draw the model refused) counts as "
                      "leaving every range.")
+# What the band of a thermal or operations batch's spread plot is (decision MC-27, plan Q8).
+_BAND = ("The band around the mean is the mean plus and minus 3 standard deviations of the runs at each step, not a "
+         "probability bound; the Statistics tab gives percentiles.")
+_STATISTICS_HINT = ("Each outcome over the runs that recorded it: N, the minimum, the percentiles and the maximum, in "
+                    "the unit of its row. A crashed run has no outcome and is not in N. Pick a row to plot its "
+                    "empirical distribution: the fraction of runs at or below each value.")
+_SENSITIVITY_HINT = ("How each drawn value goes with each outcome: +1, the outcome always grows with it; -1, it always "
+                     "falls; near 0, they are unrelated. N is the runs that recorded both. Sorted by size, whatever "
+                     "the sign; \"—\" where a value does not vary. A correlation is not a cause. Pick a row to plot "
+                     "the pair.")
+_WORKING = "Working out the statistics of the runs..."
+_NO_OUTCOMES = "This batch keeps no outcome of its runs."
+_NO_DRAWS = ("This batch keeps no drawn values, or no outcome, of its runs: there is nothing to correlate. A batch "
+             "made before its draws were kept shows none.")
+_PICK_STATISTIC = "Pick an outcome in the table to plot its distribution."
+_PICK_PAIR = "Pick a drawn value and an outcome in the table to plot them against each other."
 _NO_NODE_LIMITS = ("No node limits in this batch: no node of the thermal model has an operating or survival range, "
                    "or the batch was saved before they were judged. Give the ranges under Spacecraft › 3D model › "
                    "Thermal model › Nodes, then run the Monte Carlo again.")
@@ -137,6 +163,9 @@ class MonteCarloResultsWidget(QWidget):
         self.hint_label.setWordWrap(True)
         set_role(self.hint_label, tone="secondary")
         layout.addWidget(self.hint_label)
+        # A batch of another scenario than the one open (plan B6): a warning under the title.
+        self.scenario_notes = NoteList("warning")
+        layout.addWidget(self.scenario_notes)
 
         self.tiles_row = QHBoxLayout()
         layout.addLayout(self.tiles_row)
@@ -174,6 +203,27 @@ class MonteCarloResultsWidget(QWidget):
         export_row.addWidget(self.export_button)
         runs_layout.addLayout(export_row)
         self.views.addTab(runs_page, "Runs")
+        # Statistics (plan B3) and Sensitivity (B2): worked out when one of the two is first shown.
+        self.insight: mcs.Insight | None = None
+        self._insight_batch = None  # the batch self.insight is of
+        self.insight_error = ""
+        self.insight_computer = InsightComputer(self)
+        self.insight_computer.ready.connect(self._on_insight_ready)
+        self.statistics_hint = QLabel(_STATISTICS_HINT)
+        self.statistics_table = DataTable(_WORKING)
+        self.statistics_plot = InsightPlot(_PICK_STATISTIC)
+        self._statistics_index = self.views.addTab(
+            self._table_and_plot(self.statistics_hint, self.statistics_table, self.statistics_plot), "Statistics")
+        self.sensitivity_hint = QLabel(_SENSITIVITY_HINT)
+        self.sensitivity_table = DataTable(_WORKING)
+        self.sensitivity_plot = InsightPlot(_PICK_PAIR)
+        self._sensitivity_index = self.views.addTab(
+            self._table_and_plot(self.sensitivity_hint, self.sensitivity_table, self.sensitivity_plot), "Sensitivity")
+        for table, chosen in ((self.statistics_table, self._on_statistic_chosen),
+                              (self.sensitivity_table, self._on_pair_chosen)):
+            table.set_single_pick()
+            table.row_chosen.connect(chosen)
+        connect_while_alive(self.views.currentChanged, self._on_view_changed)
         requirements_page = QWidget()
         requirements_layout = QVBoxLayout(requirements_page)
         requirements_layout.setContentsMargins(0, 4, 0, 0)
@@ -200,6 +250,22 @@ class MonteCarloResultsWidget(QWidget):
         layout.addStretch(0)  # keeps the empty state's hint at the top
         self._show(None)
 
+    @staticmethod
+    def _table_and_plot(hint: QLabel, table: DataTable, plot: InsightPlot) -> QWidget:
+        """A tab of a hint, a table and, under it, its plot."""
+        page = QWidget()
+        page_layout = QVBoxLayout(page)
+        page_layout.setContentsMargins(0, 4, 0, 0)
+        hint.setWordWrap(True)
+        set_role(hint, tone="secondary")
+        page_layout.addWidget(hint)
+        splitter = QSplitter(Qt.Orientation.Vertical)
+        splitter.addWidget(table)
+        splitter.addWidget(plot)
+        splitter.setSizes([200, 300])  # [px]
+        page_layout.addWidget(splitter, 1)
+        return page
+
     # -- loading -----------------------------------------------------------
 
     def load_folder(self, folder: str | Path) -> bool:
@@ -224,6 +290,8 @@ class MonteCarloResultsWidget(QWidget):
     def _show(self, batch: mcr.MonteCarloBatch | None) -> None:
         self.batch = batch
         self.set_case_problem("")  # a refusal was about the batch shown before
+        self.scenario_notes.set_notes([])  # compare_with_scenario says it for the batch shown now
+        self._clear_insight()
         has_batch = batch is not None and bool(batch.runs)
         self.views.setVisible(has_batch)
         self.export_button.setEnabled(has_batch)
@@ -258,11 +326,11 @@ class MonteCarloResultsWidget(QWidget):
         if batch.kind == "operations":
             self.hint_label.setText(f"An operations robustness batch on one plan ({days:.3g} days), {source}: every "
                                     f"draw's profile, and the 1-sigma over the draws ({statistic.title.lower()}); "
-                                    f"the drawn values and the outcomes per draw are in the table.{note}")
+                                    f"the drawn values and the outcomes per draw are in the table. {_BAND}{note}")
         elif batch.kind == "thermal":
             self.hint_label.setText(f"A thermal Monte Carlo on one run ({days:.3g} days), case {batch.case}, "
                                     f"{source}: every run's temperatures, and the 1-sigma of each node's minimum and "
-                                    f"maximum over the runs ({statistic.title.lower()}).{note}")
+                                    f"maximum over the runs ({statistic.title.lower()}). {_BAND}{note}")
         else:
             seed = "" if batch.seed is None else f" Batch seed {batch.seed}."
             self.hint_label.setText(f"{days:.3g} days per run, {source}. Spreads are 1-sigma offsets from the mean "
@@ -275,6 +343,7 @@ class MonteCarloResultsWidget(QWidget):
         self.views.setTabVisible(self._node_limits_index, batch.kind == "thermal")
         self._fill_node_limits()
         self._refresh_spacecraft_views()
+        self._on_view_changed(self.views.currentIndex())
 
     def _ensure_plots(self) -> ResultsWidget:
         if self.plots is None:
@@ -419,6 +488,164 @@ class MonteCarloResultsWidget(QWidget):
                                   for k, cell in enumerate(cells)]))
         self.node_limits_table.set_table(list(mcreq.NODE_LIMITS_HEADER), rows, numeric=range(2, 10), stretch=0)
         self.node_limits_table.set_sortable(0, Qt.SortOrder.AscendingOrder)
+
+    # -- statistics and sensitivity (plan B3 and B2) -----------------------
+
+    def _clear_insight(self) -> None:
+        self.insight, self._insight_batch, self.insight_error = None, None, ""
+        for table in (self.statistics_table, self.sensitivity_table):
+            table.clear(_WORKING)
+        self.statistics_plot.clear(_PICK_STATISTIC)
+        self.sensitivity_plot.clear(_PICK_PAIR)
+
+    def _on_view_changed(self, index: int) -> None:
+        """The Statistics or Sensitivity tab shown: its numbers are worked
+        out, once per batch, off the GUI thread."""
+        if index in (self._statistics_index, self._sensitivity_index):
+            self.request_insight()
+
+    def request_insight(self) -> None:
+        """Work out the shown batch's statistics and sensitivity, unless they
+        are known or on their way (:attr:`insight_pending`)."""
+        batch = self.batch
+        if batch is None or not batch.runs or self._insight_batch is batch:
+            return
+        self._insight_batch = batch
+        self.insight_computer.request(batch)
+
+    @property
+    def insight_pending(self) -> bool:
+        """The shown batch's statistics are being worked out."""
+        return self._insight_batch is not None and self.insight is None and not self.insight_error
+
+    def _on_insight_ready(self, batch, insight, error: str) -> None:
+        if batch is not self.batch:  # another batch was shown meanwhile; its own request follows
+            return
+        self.insight, self.insight_error = insight, error
+        if insight is None:
+            text = f"The statistics of this batch could not be worked out: {error}"
+            for table in (self.statistics_table, self.sensitivity_table):
+                table.clear(text)
+            return
+        self._fill_statistics()
+        self._fill_sensitivity()
+
+    def _short(self, label: str) -> str:
+        """A column's label without the spacecraft's name when the batch has one spacecraft."""
+        names = self.batch.spacecraft if self.batch is not None else []
+        return label.removeprefix(f"{names[0]} ") if len(names) == 1 else label
+
+    def _fill_statistics(self) -> None:
+        insight = self.insight
+        model = models.model(mcs.PERCENTILE_CHOICE, insight.method)
+        self.statistics_hint.setToolTip(f"{model.title}: {model.method}\n{model.references[0]}\n"
+                                        f"Chosen by {mcs.PERCENTILE_CHOICE} and {mcs.PERCENTILES} on the "
+                                        "Assumptions page, as the batch was run.")
+        if not insight.statistics:
+            self.statistics_table.clear(_NO_OUTCOMES)
+            self.statistics_plot.clear(_NO_OUTCOMES)
+            return
+        percentiles = list(insight.percentiles)
+        headers = (["Outcome", "Unit", "N", "Minimum"] + [percentile_title(p) for p in percentiles]
+                   + ["Maximum"])
+        rows = []
+        for stat in insight.statistics:
+            values = [stat.minimum, *stat.values, stat.maximum]
+            rows.append(Row([self._short(stat.name), stat.unit, str(stat.n)] + [number_text(v) for v in values],
+                            keys=[self._short(stat.name), stat.unit, float(stat.n)]
+                            + [float(v) if v is not None else -math.inf for v in values]))
+        self.statistics_table.set_table(headers, rows, numeric=range(2, len(headers)), stretch=0)
+        tips = {3 + k: f"The {p:g}th percentile ({model.title.lower()}), in the row's unit"
+                for k, p in enumerate(percentiles, start=1)}
+        tips.update({2: "The runs that recorded the outcome", 3: "The lowest value, in the row's unit",
+                     len(headers) - 1: "The highest value, in the row's unit"})
+        self.statistics_table.set_header_marks(tooltips=tips)
+        # Sortable by a header click, but first in the batch's order (where the runs ended, then the Overview's).
+        self.statistics_table.view.horizontalHeader().setSortIndicator(-1, Qt.SortOrder.AscendingOrder)
+        self.statistics_table.view.setSortingEnabled(True)
+        self.statistics_table.view.selectRow(0)
+
+    def _fill_sensitivity(self) -> None:
+        insight = self.insight
+        model = models.model(mcs.SENSITIVITY_CHOICE, insight.measure)
+        self.sensitivity_hint.setToolTip(f"{model.title}: {model.method}\n{model.references[0]}\n"
+                                         f"Chosen by {mcs.SENSITIVITY_CHOICE} on the Assumptions page, as the "
+                                         "batch was run.")
+        if not insight.sensitivity:
+            self.sensitivity_table.clear(_NO_DRAWS)
+            self.sensitivity_plot.clear(_NO_DRAWS)
+            return
+        headers = ["Drawn value", "Outcome", f"{model.title} [-]", "N"]
+        rows = [Row([self._short(row.input_label), self._short(row.outcome_label), number_text(row.value),
+                     str(row.n)],
+                    keys=[self._short(row.input_label), self._short(row.outcome_label),
+                          abs(row.value) if row.value is not None else -1.0, float(row.n)],
+                    tooltips={} if row.value is not None else {
+                        2: "No correlation: one of the two does not vary over these runs, or fewer than "
+                           f"{mcs.MIN_PAIRS} runs recorded both"},
+                    muted=frozenset() if row.value is not None else frozenset({2}))
+                for row in insight.sensitivity]
+        self.sensitivity_table.set_table(headers, rows, numeric=(2, 3), stretch=1)
+        self.sensitivity_table.set_header_marks(tooltips={2: "Sorted by its size, whatever the sign",
+                                                          3: "The runs that recorded both"})
+        self.sensitivity_table.set_sortable(2, Qt.SortOrder.DescendingOrder)
+        self.sensitivity_table.view.selectRow(0)
+
+    def _on_statistic_chosen(self, row: int) -> None:
+        insight = self.insight
+        if insight is None or not 0 <= row < len(insight.statistics):
+            return
+        stat = insight.statistics[row]
+        column = insight.outcomes[stat.label]
+        title = f"{self._short(stat.name)}: distribution over the runs"
+        subtitle = f"{stat.n} runs; the fraction at or below each value"
+        shown = mcs.Column(self._short(column.label), column.values)
+        self.statistics_plot.show_figure(lambda: ecdf_figure(shown, title, subtitle))
+
+    def _on_pair_chosen(self, row: int) -> None:
+        insight = self.insight
+        if insight is None or not 0 <= row < len(insight.sensitivity):
+            return
+        pair = insight.sensitivity[row]
+        x, y = insight.inputs[pair.input_label], insight.outcomes[pair.outcome_label]
+        model = models.model(mcs.SENSITIVITY_CHOICE, insight.measure)
+        value = NO_VALUE if pair.value is None else f"{pair.value:.3g}"
+        title = f"{self._short(y.name)} against {self._short(x.name)}"
+        subtitle = f"{model.title} {value} over {pair.n} runs"
+        runs = list(self.batch.runs)
+        x_title, y_title = self._short(x.label), self._short(y.label)
+        self.sensitivity_plot.show_figure(lambda: scatter_figure(x, y, runs, title, subtitle, x_title, y_title))
+
+    def wait_for_insight(self) -> None:
+        """Until the statistics in progress are worked out (tests, closing)."""
+        self.insight_computer.wait()
+
+    # -- the batch's scenario (plan B6) --------------------------------------
+
+    def compare_with_scenario(self, scenario) -> None:
+        """Say under the title when the batch shown was run with another
+        scenario than ``scenario`` (the one open; None: nothing is open, so
+        nothing is said). The batch's scenario is its folder's
+        ``archive.provenance.json`` ``scenario_sha256``
+        (``engine.monte_carlo_case.batch_scenario_hash``), the same check
+        as Run This Case's; a batch whose folder does not record it (a
+        thermal or operations batch) is not compared."""
+        from .. import output_provenance
+        from ..engine.monte_carlo_case import batch_scenario_hash
+
+        notes = []
+        if scenario is not None and self.batch is not None and self.folder is not None:
+            found = batch_scenario_hash(self.folder)
+            if not isinstance(found, str):
+                batch_digest, batch_file = found
+                digest = output_provenance.scenario_sha256(scenario)
+                if digest != batch_digest:
+                    named = f" ({batch_file})" if batch_file else ""
+                    notes.append(f"This batch was run with another scenario than the one open: scenario SHA-256 "
+                                 f"{batch_digest} at the batch, {digest} now. Its draws, outcomes and statistics "
+                                 "are the batch's, not the open scenario's; Run This Case refuses its cases until "
+                                 f"the batch's own scenario{named} is open, unchanged.")
+        self.scenario_notes.set_notes(notes)
 
     # -- one case again (plan A3) -------------------------------------------
 

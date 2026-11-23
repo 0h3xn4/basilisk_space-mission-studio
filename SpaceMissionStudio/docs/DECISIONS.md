@@ -5293,3 +5293,172 @@ changed.
 - **PE-9. The recommended scope is option B** (the table, plus the
   scenario's sensor noises as knowledge contributors). **Why:** most of
   the value for a third of option C's effort; C is its own item.
+
+## Monte Carlo phase B, part 2: outcome statistics, sensitivity, trust checks (2026-11-23)
+
+Items B2, B3 and B6 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
+built as the plan says, on part 1 (MC-20 to MC-25). The owner has not
+answered Q8 (which percentiles; the "mean ± 3 sigma" lines). The work
+ran without questions. **MC-27 is provisional: the owner may change
+it.** Each choice below has its reason. No scenario field changed, so
+there is no schema step: model choices and parameters live in the
+project configuration, not in the scenario file. The golden files are
+byte-identical.
+
+- **Decision MC-26: the sensitivity** (B2).
+  - The model choice `monte_carlo.sensitivity_measure` has two models:
+    `spearman` (the default; C. Spearman, American Journal of
+    Psychology 15(1), 1904, pp. 72-101) and `pearson` (K. Pearson,
+    Philosophical Transactions of the Royal Society of London A 187,
+    1896, pp. 253-318). **Why:** the plan's two; the rank correlation
+    finds any monotonic relation and a few extreme runs move it little.
+  - NumPy only (`engine/monte_carlo_statistics.py`, Basilisk-free and
+    Qt-free). Ties get the mean of the ranks they share; Spearman's is
+    Pearson's correlation of those ranks. **Why:** that is Spearman's
+    coefficient with ties; no SciPy in the dependencies.
+  - Pairwise: a run counts for a pair when it recorded both values. A
+    crashed run has no outcome, so it is out of every pair; a run
+    without one outcome is out of that outcome's pairs only. N is shown
+    per pair. **Why:** the task's rule; leaving a run out of every pair
+    for one missing outcome would hide data.
+  - No value ("—", None in the engine, never NaN) for a column that
+    does not vary over the pair's runs, and for a pair of fewer than 3
+    runs. **Why:** a constant column has no correlation; two points
+    always lie on a line, so 2 runs would always give ±1.
+  - The inputs are the drawn values the summary keeps; the outcomes are,
+    per spacecraft, the final radial, along-track and cross-track
+    offsets (the Runs table's, in km) and the Overview figures; a
+    thermal batch's each node's lowest and highest temperature; an
+    operations batch's drawn "outcome: ..." values and each profile's
+    lowest and highest value. **Why:** the values a batch already keeps
+    per run; the final offsets are the classic result of templates 09
+    and 25, which have few Overview figures.
+  - The final offsets are rounded to the millimetre (1e-6 km) for the
+    statistics and the correlations. **Why:** below a millimetre an
+    offset is rounding noise (runs that do not differ at all), as the
+    tiles already read it (`format_km`); a correlation of noise would be
+    a false lead. The Runs table and its CSV keep the full values.
+  - The table is sorted by the size of the correlation, whatever its
+    sign (the column's sort key is the absolute value), the pairs
+    without a value last. One signed column, no second "size" column.
+    **Why:** the plan's "sorted by its size"; a click sorts again.
+- **Decision MC-27 (provisional, the owner may change it; Q8): the
+  percentiles shown and the band of the thermal and operations
+  batches.**
+  - The percentiles shown are the parameter `monte_carlo.percentiles`
+    ([%], a list), default 1, 5, 50, 95 and 99 %. Its source is "TBD:
+    the owner has not named them". **Why:** the plan makes it a project
+    parameter with the owner's value; until then the median, the 5th
+    and 95th and, as the tails, the 1st and 99th.
+  - The "mean - 3 sigma" and "mean + 3 sigma" lines stay (MC-15 left
+    them to this phase). Their legend labels are now "mean - 3 standard
+    deviations (not a probability bound)" and "mean + 3 standard
+    deviations (not a probability bound)", and the line under the view's
+    title says the same of the band. The values are not changed.
+    **Why:** the plan's first option of Q8; the band is useful for the
+    eye, and the label stops it being read as a 99.7 % interval, which
+    it is only for a normal distribution. The percentiles are in the
+    Statistics tab, so no percentile lines are added to the band plot.
+- **Decision MC-28: the outcome statistics** (B3).
+  - The model choice `monte_carlo.percentile_method` has one model,
+    `linear`: `numpy.percentile` with `method="linear"`, NumPy's
+    default, Hyndman and Fan's definition 7 (The American Statistician
+    50(4), 1996, pp. 361-365). **Why:** the plan's first model; a
+    percentile computed with NumPy from the Runs table's CSV is the same
+    number. The choice exists so that another model can be added, as
+    `monte_carlo.probability_bound`.
+  - Per outcome: N (the runs that recorded it), the minimum, the
+    percentiles, the maximum, in a `DataTable` with a "Unit" column
+    (outcomes of several units share the table). The empirical
+    distribution F(x) is drawn as a step plot from 0 to exactly 1.
+    **Why:** design rule 4 (every number with its unit); a step plot is
+    the distribution itself, with no method to choose.
+  - The batch keeps the three choices it was run with in its summary
+    (`sensitivity_measure`, `percentile_method`, `percentiles`; optional
+    keys, written by every new batch, format 1 still, as MC-3), and the
+    provenance records both models under `models` (they apply to
+    `monte_carlo`). A summary written before reads with the defaults; an
+    unknown model or a percentile outside 0 to 100 is refused. **Why:**
+    as `spread_statistic`: an opened batch reads the same later,
+    whatever the project file says by then.
+  - The CLI does not print the new tables in this part. **Why:** the
+    plan's B5 (the batch report) and B7 (the CLI) are the items that
+    add them; `monte-carlo`'s output and the golden files stay as they
+    are.
+- **Decision MC-29: the trust checks** (B6).
+  - A plausibility check (`engine.scenario_checks.plausibility_warnings`,
+    so the Problems panel lists it while typing), rule
+    `monte_carlo.nominal_outside`: while Monte Carlo is on, a dispersion
+    of `dry_mass_kg`, `drag_coeff` or `srp_coeff` whose bounds do not
+    contain the spacecraft's value (a value on a bound is inside), or
+    whose mean (a normal one) differs from it by more than 1e-9 of it.
+    The message starts with the spacecraft and the field, so a
+    double-click opens the field. **Why:** these three draw an absolute
+    value and have a nominal value in the spacecraft. The orbit
+    elements, the inertia and the body rate are spread around the
+    spacecraft's own value, so they always follow it. The starting
+    attitude draws three 3-2-3 Euler angles in one interval; an
+    attitude has more than one such angle set, so a containment check
+    would give false findings. 1e-9: only floating-point noise is
+    allowed; a deliberate offset is the finding's case, and a warning
+    never stops a run.
+  - Only while Monte Carlo is on. **Why:** the same as
+    `monte_carlo.processes`; a scenario that does not run a batch does
+    not need its dispersions checked.
+  - No template gives the finding, with Monte Carlo on as saved and
+    turned on (a test checks the 36). Template 25's drag coefficient 3.0
+    is on its dispersion's upper bound, so inside.
+  - A batch opened (or finished) while the open scenario's SHA-256 is
+    not the one in its `archive.provenance.json` shows a warning under
+    the view's title, a `NoteList`, with both hashes and the batch's
+    scenario file when it is recorded. It reuses
+    `monte_carlo_case.batch_scenario_hash` and the hash Run This Case
+    compares (MC-17). Nothing is said with no scenario open, with a
+    scenario that does not validate, or for a folder that does not
+    record a hash (thermal and operations batches, older batches).
+    **Why:** design rule 4 (a warning is a `NoteList` row); the same
+    check as Run This Case, so the two never disagree. It is not a
+    Problems row: the batch is not a problem of the scenario, and the
+    note goes with the batch shown.
+- **Decision MC-30: how the two tabs are built** (design rules 4 and 6).
+  - Two new tabs of Results › Monte Carlo, "Statistics" and
+    "Sensitivity", after "Runs": each a hint, a `DataTable` (sortable,
+    copyable; Statistics keeps the batch's order until a header is
+    clicked) and, under a splitter, its plot.
+  - The statistics and the correlations are worked out in a worker
+    (`gui.monte_carlo_insight.InsightComputer`, a `QThreadPool` of one
+    thread, as the ground map's renderer), the first time one of the two
+    tabs is shown for a batch. A newer batch replaces a request that
+    waits; a result for a batch no longer shown is dropped; the pool
+    waits for its job when it is deleted, and the window waits for it
+    when it closes. **Why:** design rule 6. Measured here for 100 000
+    runs: 4 drawn values and 6 outcomes (one with a run missing) take
+    about 0.2 s, 10 drawn values and 30 outcomes about 0.5 s; too long
+    for the GUI thread. A column that every run has is ranked and
+    centred once, so a pair is one dot product (3.3 s before that, for
+    10 and 30).
+  - The plots are made on the GUI thread, but as Plotly's JSON form
+    directly (the layout through plotly's `Layout`, the arrays as
+    Plotly's typed arrays, base64), not as `go.Figure`. Measured here
+    for 100 000 runs: the scatter's figure and page in about 12 ms
+    (57 ms with `go.Figure`), the distribution's in about 10 ms (99 ms).
+    A test makes both for 100 000 runs and requires under 50 ms (the
+    best of three). Above 5000 points a plot draws with WebGL
+    (`scattergl`). **Why:** design rule 6 without a second worker per
+    picked row.
+  - Each plot's web view is made the first time it has a figure
+    (`InsightPlot`), with the theme's Plotly template (fonts, colours,
+    the first series colour), axis titles with their units, and is built
+    again on a theme change. **Why:** CLAUDE.md (plots lazily created,
+    the template from the tokens, redrawn on `theme.on_change`).
+  - The tab switch reaches the widget through
+    `widgets.connect_while_alive` (2.14.1's rule for `currentChanged`).
+- **Decision MC-31: tests changed for this work.** Two non-GUI tests
+  list every model choice or parameter and gained the new ones:
+  `test_model_registry.py`'s `_PAGES` (the two choices, on
+  `monte-carlo-statistics.md`) and `test_config.py`'s `_MODEL_CASES`
+  (the three parameters, each set by
+  `test_monte_carlo_statistics.py::test_a_batch_reads_with_the_choices_it_was_run_with`).
+  No GUI test reaches a widget another way, so `docs/ui/TEST_CHANGES.md`
+  has no entry. **Why:** CLAUDE.md: no test weakened; each list only
+  grows.

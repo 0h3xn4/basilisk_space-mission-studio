@@ -1955,8 +1955,22 @@ class MainWindow(QMainWindow):
             self._show_monte_carlo_tab()
 
     def _show_monte_carlo_tab(self) -> None:
+        """A batch was just loaded into the Monte Carlo view: shown, and
+        compared with the open scenario (plan B6: a batch of another
+        scenario says so)."""
         self._set_monte_carlo_tab(True)
+        self.monte_carlo_results_widget.compare_with_scenario(self._scenario_to_compare())
         self.show_view(self.monte_carlo_results_widget)
+
+    def _scenario_to_compare(self):
+        """The scenario open in the editor, or None: none is open, or it does
+        not validate (then it cannot be compared with a batch's)."""
+        if not self._scenario_open:
+            return None
+        try:
+            return self.scenario_editor.to_scenario()
+        except ScenarioValidationError:
+            return None
 
     def on_open_monte_carlo_results(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Open Monte Carlo results")
@@ -3290,6 +3304,7 @@ class MainWindow(QMainWindow):
             self.lifetime_widget.wait_for_worker()  # a few seconds at most; its thread must not be destroyed mid-run
             self.budget_widget.wait_for_worker()
             self.design_checks_widget.wait_for_worker()
+            self.monte_carlo_results_widget.wait_for_insight()  # a batch's statistics, at most a second or so
             self.thermal_widget.wait_for_worker()
             self.plan_widget.wait_for_worker()
             self.flight_software_widget.wait_for_worker()

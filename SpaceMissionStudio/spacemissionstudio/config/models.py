@@ -200,6 +200,66 @@ register(
           "monte_carlo"),
 )
 
+# -- Monte Carlo sensitivity and outcome statistics (engine.monte_carlo_statistics) ----------------
+
+_SENSITIVITY = "monte_carlo.sensitivity_measure"
+_SENSITIVITY_INPUTS = ("Each successful run's drawn value of one dispersion, in its unit",
+                       "The same runs' value of one outcome, in its unit",
+                       "N, the runs that recorded both (pairwise) [-]")
+_SENSITIVITY_OUTPUTS = ("The Sensitivity table of Results > Monte Carlo: one correlation [-] per drawn value and "
+                        "outcome, the largest first", "Its scatter plot of the pair picked")
+_PAIRWISE = ("Pairwise: a run counts for a pair when it recorded both values. A crashed run (no outcome) and a run "
+             "without that outcome are left out of that pair only; the table shows N per pair.",
+             "A column that does not vary, or a pair of fewer than 3 runs, has no correlation: shown as \"—\".",
+             "A correlation is no cause: it says which drawn values go with which outcomes in these runs. "
+             "Basilisk's controller draws each dispersion independently, so two drawn values do not share a "
+             "correlation by their draw.")
+
+register(
+    Model(_SENSITIVITY, "spearman", "Spearman's rank correlation",
+          "Each of the two columns is replaced by its ranks (1 for the smallest; tied values get the mean of the "
+          "ranks they share), then the correlation of the ranks is computed: sum((r_k - mean r)(s_k - mean s)) / "
+          "sqrt(sum((r_k - mean r)^2) sum((s_k - mean s)^2)). +1 when the outcome always grows with the drawn "
+          "value, -1 when it always falls, near 0 when they are unrelated; any monotonic relation counts, not "
+          "only a straight line, and a few extreme runs move it little.",
+          _SENSITIVITY_INPUTS, _SENSITIVITY_OUTPUTS, _PAIRWISE,
+          ("C. Spearman, The proof and measurement of association between two things, American Journal of "
+           "Psychology 15(1), 1904, pp. 72-101.",),
+          ("tests/test_monte_carlo_statistics.py::test_monotonic_and_unrelated_inputs_give_plus_one_minus_one_and_zero",
+           "tests/test_monte_carlo_statistics.py::test_ties_get_their_mean_rank",
+           "tests/test_monte_carlo_statistics.py::test_a_small_case_equals_the_hand_computed_value"),
+          "monte_carlo"),
+    Model(_SENSITIVITY, "pearson", "Pearson's correlation",
+          "The correlation of the values themselves: sum((x_k - mean x)(y_k - mean y)) / sqrt(sum((x_k - mean x)^2) "
+          "sum((y_k - mean y)^2)). +1 or -1 only when the outcome is a straight-line function of the drawn value.",
+          _SENSITIVITY_INPUTS, _SENSITIVITY_OUTPUTS, _PAIRWISE,
+          ("K. Pearson, Mathematical contributions to the theory of evolution. III. Regression, heredity, and "
+           "panmixia, Philosophical Transactions of the Royal Society of London A 187, 1896, pp. 253-318.",),
+          ("tests/test_monte_carlo_statistics.py::test_pearson_measures_a_straight_line_and_spearman_any_monotonic_one",
+           "tests/test_monte_carlo_statistics.py::test_a_small_case_equals_the_hand_computed_value"),
+          "monte_carlo"),
+)
+
+_PERCENTILE = "monte_carlo.percentile_method"
+
+register(
+    Model(_PERCENTILE, "linear", "Linear interpolation (Hyndman and Fan's definition 7)",
+          "For the p-th percentile of the N values sorted, x_1 <= ... <= x_N: h = (N - 1) p / 100 + 1, and the "
+          "percentile is x_j + (h - j)(x_(j+1) - x_j) with j = floor(h). The 0th percentile is the minimum, the "
+          "100th the maximum. It is numpy.percentile with method='linear', NumPy's default.",
+          ("Each successful run's value of one outcome, in its unit (a run without it is left out)",
+           "The percentiles to show, monte_carlo.percentiles [%]"),
+          ("The Statistics table of Results > Monte Carlo: each outcome's percentiles, in its unit",),
+          ("The runs are all that is described: a percentile of these N runs, not a bound on the distribution "
+           "they were drawn from. With few runs a 1st or 99th percentile is the minimum or maximum, or "
+           "between the two most extreme runs.",),
+          ("R. J. Hyndman and Y. Fan, Sample quantiles in statistical packages, The American Statistician 50(4), "
+           "1996, pp. 361-365, definition 7.", "NumPy reference, numpy.percentile: the method argument."),
+          ("tests/test_monte_carlo_statistics.py::test_the_percentiles_are_numpys_by_the_method",
+           "tests/test_monte_carlo_statistics.py::test_a_batch_reads_with_the_choices_it_was_run_with"),
+          "monte_carlo"),
+)
+
 # -- Propellant budget margin policies (engine.propellant_budget) ------------------------------
 
 _MARGINS = "propellant_budget.margin_policy"
