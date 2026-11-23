@@ -5355,6 +5355,10 @@ the details column 320 px wide, its two buttons 169 and 266 px wide and
   fixes the layout for every font and column width, not only for the
   runner, and it needs no new code.
 - **Test:** `test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
-  gives both buttons a 26 px font. It failed before the fix (the buttons
-  stayed side by side and were squeezed) and passes after. No existing
-  test changed.
+  gives both buttons the largest font with which each fits the column
+  alone but the two do not fit side by side (chosen from the measured
+  widths, so it holds in the theme and in the native style). It failed
+  before the fix (the buttons stayed side by side and were squeezed) and
+  passes after. A first version used a fixed 26 px font: on the Windows
+  runner's native style one button alone was then wider than the column.
+  No existing test changed.

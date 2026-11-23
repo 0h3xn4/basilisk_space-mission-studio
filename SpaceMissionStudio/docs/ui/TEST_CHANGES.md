@@ -2776,6 +2776,7 @@ passes after.
 
 No existing test changed. New:
 `tests/gui/test_load_scenario_widget.py::test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
-(both buttons with a 26 px font stay whole and inside the details
-column, Customize and open... below Open template). It failed before the
+(with the largest font at which each button fits the column alone but
+not both side by side, both stay whole and inside the details column,
+Customize and open... below Open template). It failed before the
 fix and passes after.

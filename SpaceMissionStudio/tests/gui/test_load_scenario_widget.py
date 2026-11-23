@@ -449,6 +449,7 @@ def test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit(qtbot):
     from PySide6.QtGui import QFont
 
     from spacemissionstudio.gui.load_scenario_widget import LoadScenarioWidget
+    from spacemissionstudio.gui.theme import PAGE_INSET
 
     widget = LoadScenarioWidget()
     qtbot.addWidget(widget)
@@ -459,12 +460,20 @@ def test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit(qtbot):
     first, second = widget.open_template_button, widget.customize_template_button
     details = widget.description_scroll.viewport()
     qtbot.waitUntil(second.isVisible)
-    big = QFont(first.font())
-    big.setPixelSize(26)  # [px]
-    for button in (first, second):
-        button.setFont(big)
-    width = first.sizeHint().width() + second.sizeHint().width()
-    assert width > details.width()  # they cannot sit side by side
+    # The largest font with which each button fits the column alone but
+    # the two do not fit side by side (the native style's buttons, as on
+    # the Windows runner, are wider than the theme's at the same size).
+    room = details.width() - 2 * PAGE_INSET  # [px] the column's margins at most
+    for size in range(40, 9, -1):  # [px]
+        big = QFont(first.font())
+        big.setPixelSize(size)
+        for button in (first, second):
+            button.setFont(big)
+        hints = (first.sizeHint().width(), second.sizeHint().width())
+        if max(hints) <= room < sum(hints):
+            break
+    else:
+        pytest.fail(f"no font size makes the buttons too wide for one row of {details.width()} px")
 
     def inside(button):
         corner = button.mapTo(details, button.rect().topRight())
