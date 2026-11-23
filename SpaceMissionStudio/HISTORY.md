@@ -21339,3 +21339,51 @@ tests only on `7a9a25f`, before phase B. Repeat runs passed in about
 20 min, and the test is not known. The item asks to run with
 `-o faulthandler_timeout=300`, keep the whole output, find the cause
 and fix it, never by skipping or loosening a test.
+
+## A cancelled Monte Carlo batch leaves no process (2026-11-23)
+
+The backlog item of 2.15.0: twice, a local run of the suite with 4
+workers did not end within 60 min, with a Monte Carlo `spawn_main`
+process and a `resource_tracker` alive and idle. Worked on branch
+`fix/suite-hang` from `develop` at `5ebbd3b`.
+
+**Reproduced.** Each run kept its whole output with
+`-o faulthandler_timeout=300`. A script checked after each run for a
+`spawn_main`, `resource_tracker` or `forkserver` process with the run's
+environment and dumped it with `py-spy` (from a separate tool venv).
+- `pytest tests/gui -n 4`: 3 runs of 7 left a pool worker (parent PID 1)
+  and a resource tracker. No test hung, so faulthandler wrote nothing.
+- The cancel test alone,
+  `test_a_monte_carlo_batch_can_be_cancelled_keeping_the_runs_finished`:
+  4 of 8 runs left them while the GUI suite ran beside it; none of 12 on
+  an idle machine.
+- That test with `-s`, piped to `tail -1` as the hanging runs were
+  filtered: 2 of 10 pipelines were still open 150 s after pytest had
+  ended. Both ended when the worker and the tracker were killed.
+
+**Cause.** Cancel's thread in the batch's child took one list of the
+child's processes, ended them and called `os._exit`. Basilisk's
+`multiprocessing.Pool` replaced a worker that had ended: a scratch trace
+of every process start showed `SpawnPoolWorker-1:5`, started by the
+pool's thread `_handle_workers` 15 ms after the list was taken, and the
+child's `os._exit(3)` 16 ms after that. Worker 5 waited for ever on the
+pool's task queue (`SemLock.__enter__` in `SimpleQueue.get`, `py-spy`),
+and it held the pytest worker's resource tracker open. When either of
+them had the run's own stderr, a filter on the output did not end.
+Before phase B the same test existed (`7a9a25f`), which agrees with the
+GUI-only hang there.
+
+**Fix.** The batch's child makes a group of its own before it starts any
+process: a process group on POSIX, which `run_batch` kills when the child
+ended after Cancel or without a result, and a kill-on-close job on
+Windows (`gui/monte_carlo_process.py`; `docs/DECISIONS.md`, "A cancelled
+Monte Carlo batch leaves no process"). New test:
+`test_a_cancelled_batch_leaves_no_process_that_its_pool_started_late`.
+It fails without the fix (2 of 2: the late process still ran 10 s later)
+and passes with it.
+
+**After the fix.** No process was left in 4 runs of `pytest tests/gui
+-n 4` and 20 runs of the cancel test beside them. 10 piped runs with
+`-s` all ended in 10 s. In 12 traced runs of the cancel test, the pool
+started a worker after Cancel's list in 2, and the group ended it both
+times.

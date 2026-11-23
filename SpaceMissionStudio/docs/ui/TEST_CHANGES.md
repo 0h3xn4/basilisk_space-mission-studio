@@ -2786,3 +2786,9 @@ fix and passes after.
 | Test | Before | After | Why |
 |---|---|---|---|
 | `test_monte_carlo_results_widget.py::test_the_plots_of_a_batch_of_100000_runs_are_made_within_50_ms`, now `..._take_under_50_ms_of_the_gui_thread` | timed figure, JSON and page on the calling thread, best of three under 50 ms | times `InsightPlot.show_figure` (the figure on the GUI thread, the page started in the worker), best of three under 50 ms; checks the page written (over 1 MB), shown, and the older pages removed | the JSON, the page and its file moved to a worker (`docs/DECISIONS.md`, "Monte Carlo plot pages written off the GUI thread"); the limit is unchanged and the test checks more |
+
+## A cancelled Monte Carlo batch leaves no process (2026-11-23)
+
+No existing test or fixture changed. One test is new:
+`tests/gui/test_run_worker.py::test_a_cancelled_batch_leaves_no_process_that_its_pool_started_late`
+(`docs/DECISIONS.md`, "A cancelled Monte Carlo batch leaves no process").

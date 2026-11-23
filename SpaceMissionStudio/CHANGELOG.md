@@ -8,6 +8,22 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Fixed
+
+- **Cancelling a Monte Carlo batch that uses several processes no longer
+  leaves a process behind.** When you cancelled such a batch, one of its
+  worker processes could stay running after the batch had stopped,
+  waiting for work that never came. It used no CPU, but it stayed until
+  you ended it yourself, and it kept SpaceMissionStudio's output open:
+  when that output went to another program (a log filter, say), the
+  program never finished. This is also what sometimes made our own test
+  suite run without end. The process pool replaced the workers that
+  Cancel ended, and Cancel did not see the replacements. A batch's
+  processes now form one group (a job on Windows) that ends with the
+  batch, so nothing is left running.
+
 ## 2.15.0 (2026-11-24)
 
 SpaceMissionStudio 2.15.0 helps you trust a Monte Carlo batch and

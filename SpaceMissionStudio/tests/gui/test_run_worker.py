@@ -606,3 +606,101 @@ def test_cancel_ends_the_processes_the_batch_started_too():
     while alive(sleeper_pid) and time.monotonic() < deadline:
         time.sleep(0.1)
     assert not alive(sleeper_pid)
+
+
+def _a_batch_whose_pool_replaces_a_worker_after_cancel(scenario, mc_config, archive_dir, allow_scripts, overwrite,
+                                                       log_queue, result_queue, cancel_event=None,
+                                                       scenario_file=None):
+    """Stands in for the batch's child (``monte_carlo_process._child``) in a
+    spawned process: one pool worker runs, and when Cancel's thread has
+    taken its list of processes, the pool starts a replacement that is not
+    in that list, as ``multiprocessing.Pool`` replaced the worker that the
+    thread ended (the hang of 2026-11-23)."""
+    import multiprocessing
+    import threading
+    import time
+    from pathlib import Path
+
+    from spacemissionstudio.gui import monte_carlo_process
+
+    context = multiprocessing.get_context("spawn")
+    worker = context.Process(target=time.sleep, args=(60.0,))
+    worker.start()
+    take_list = multiprocessing.active_children
+
+    def list_then_a_replacement():
+        listed = take_list()
+        replacement = context.Process(target=time.sleep, args=(60.0,))
+        replacement.start()
+        Path(archive_dir, "replacement.pid").write_text(str(replacement.pid), encoding="utf-8")
+        return listed
+
+    multiprocessing.active_children = list_then_a_replacement  # in this stand-in process only
+    threading.Thread(target=monte_carlo_process._stop_on, args=(cancel_event,), name="cancel", daemon=True).start()
+    Path(archive_dir, "running").write_text("", encoding="utf-8")
+    time.sleep(60.0)
+
+
+def _no_summary(*_args):
+    """Stands in for the cancelled batch's summary child: nothing to summarize."""
+
+
+def _running(pid: int) -> bool:
+    """Whether process ``pid`` still runs (a zombie does not)."""
+    import os
+
+    if os.name == "nt":
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        code = ctypes.c_ulong()
+        kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+        kernel32.CloseHandle(handle)
+        return code.value == 259  # STILL_ACTIVE
+    try:
+        with open(f"/proc/{pid}/stat", encoding="ascii") as stat:
+            return stat.read().rsplit(")", 1)[1].split()[0] != "Z"
+    except FileNotFoundError:
+        return False
+    except OSError:  # no /proc (macOS)
+        pass
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def test_a_cancelled_batch_leaves_no_process_that_its_pool_started_late(tmp_path, monkeypatch):
+    """The hang of 2026-11-23 (``docs/DECISIONS.md``): Cancel's thread in
+    the batch's child ended the processes in its list, but the controller's
+    process pool started a replacement worker meanwhile. That worker
+    outlived the child, waited for work for ever and kept the resource
+    tracker and the test run's output open, so a run piped to a filter did
+    not end. The batch's child has a process group of its own (Windows: a
+    job), which ends with the batch."""
+    import os
+    import signal
+    import time
+    from types import SimpleNamespace
+
+    from spacemissionstudio.gui import monte_carlo_process
+    from spacemissionstudio.gui.monte_carlo_process import BatchCancelled, run_batch
+
+    monkeypatch.setattr(monte_carlo_process, "_child", _a_batch_whose_pool_replaces_a_worker_after_cancel)
+    monkeypatch.setattr(monte_carlo_process, "_summary_child", _no_summary)
+    with pytest.raises(BatchCancelled):
+        run_batch(None, SimpleNamespace(num_runs=1), tmp_path,
+                  should_cancel=lambda: (tmp_path / "running").exists())
+    replacement = int((tmp_path / "replacement.pid").read_text(encoding="utf-8"))
+    try:
+        deadline = time.monotonic() + 10.0
+        while _running(replacement) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        assert not _running(replacement)
+    finally:
+        if _running(replacement):  # the test failed: do not leave it waiting
+            os.kill(replacement, signal.SIGTERM)
