@@ -61,7 +61,13 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.14.2, a patch release:
+signed (decision 11). The current release is 2.15.0, Monte Carlo phase
+B: the batch seed, the thermal node limits, outcome statistics,
+sensitivity, trust checks, the batch report, the `monte-carlo` options
+`--summarize`, `--report`, `--csv`, `--runs` and `--processes`, and
+template 37, with the scenario file at schema version 7, which 2.14.2
+and earlier do not open (prepared 2026-11-23); before it 2.14.2, a
+patch release:
 the Budgets area shows quickly (SRelD K-40), with the scenario format
 unchanged (published 2026-11-23); before it 2.14.1, a patch release:
 pandas imported off the GUI thread at the first Monte Carlo start, the
@@ -191,7 +197,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.14.2, and the code is at 2.14.2.
+  release is 2.15.0, and the code is at 2.15.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;

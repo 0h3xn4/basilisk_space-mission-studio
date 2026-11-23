@@ -127,7 +127,7 @@ def _migrate_6_to_7(data: dict) -> dict:
     and B4, decisions MC-20 and MC-22). Both are new and optional, so a
     version 6 file has neither, and nothing else changes: the step only
     sets the version, as the step to 6 did. Version 7 marks the files that
-    2.14.1 and earlier cannot read."""
+    2.14.2 and earlier cannot read."""
     data["schema_version"] = 7
     return data
 

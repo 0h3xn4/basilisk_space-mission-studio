@@ -138,7 +138,7 @@ Each item was checked against Basilisk's own source.
   step. The bound is one-sided and assumes independent runs; it is
   given only with the thermal Monte Carlo's `confidence`. A run whose
   draw the model refuses counts as leaving every range. A thermal batch
-  saved by 2.14.1 or earlier has no node limits: run it again.
+  saved by 2.14.2 or earlier has no node limits: run it again.
 * **A Monte Carlo batch's sensitivity is one drawn value against one
   outcome at a time** (Spearman's rank correlation, or Pearson's): no
   partial correlation and no variance-based index, so it does not
@@ -155,7 +155,7 @@ Each item was checked against Basilisk's own source.
   bound".
 * **The batch report** (Export report..., `monte-carlo --report`) takes
   the processes and the dispersions from the batch's
-  `archive.provenance.json`: a batch made by 2.14.1 or earlier did not
+  `archive.provenance.json`: a batch made by 2.14.2 or earlier did not
   record them, and its report says so. The command line's Runs table
   (`--csv`, `--summarize`) is the first spacecraft's; the window's
   **Export table CSV...** exports the one shown. `--summarize` reads the
@@ -424,7 +424,7 @@ From the [changelog](../../CHANGELOG.md):
   spaceweather-download`. 2.7.0 carries a newer file (observations to
   2026-11-09, forecast to 2026-12-24), 2.8.0 to 2.12.0 a newer one
   again (observations to 2026-11-14, forecast to 2026-12-29), and 2.13.0
-  to 2.14.2 a newer one still (observations to 2026-11-18, forecast to
+  to 2.15.0 a newer one still (observations to 2026-11-18, forecast to
   2027-01-02).
 * **Some actions hold the window for longer than the 50 ms the interface
   aims at:** changing the theme (about 0.4 s), the first visit to a

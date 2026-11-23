@@ -5,7 +5,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-[![Version 2.14.2](https://img.shields.io/badge/version-2.14.2-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.2)
+[![Version 2.15.0](https://img.shields.io/badge/version-2.15.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.15.0)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -153,8 +153,16 @@ Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capab
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.14.2 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.2),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): a fix for 2.14.1: the
+- **Version:** 2.15.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.15.0),
+  [changelog](SpaceMissionStudio/CHANGELOG.md)): Monte Carlo phase B:
+  a batch seed for independent batches, thermal batches
+  that count the runs outside each node's limits with an upper bound,
+  outcome statistics with percentiles and the distribution plot,
+  sensitivity (which drawn value drives which outcome), trust checks, a
+  batch report in JSON or Markdown, `monte-carlo --summarize`,
+  `--report`, `--runs` and `--processes`, and template 37; scenario
+  format version 7, which 2.14.2 and earlier cannot open. 2.14.2 fixed
+  2.14.1: the
   Budgets area shows at once, also on a slow Windows machine; results
   and the scenario format are 2.14.1's. 2.14.1 fixed 2.14.0: the first
   Monte Carlo batch or case of a session starts without a pause, and no

@@ -52,7 +52,7 @@ a seed draws what it drew before (the Monte Carlo golden outputs of
 templates 09 and 25, `final_spread`, `run_table`'s default columns and
 `summary_lines`, are byte-identical).
 
-A file saved at version 7 does not open in SpaceMissionStudio 2.14.1 or
+A file saved at version 7 does not open in SpaceMissionStudio 2.14.2 or
 earlier. Every older file still opens.
 
 ## 2026-11-21: Scenario schema version 6 (decision MC-4)

@@ -21233,3 +21233,109 @@ orbit, made by `rv2elem` from the dispersed state, differed by 2^-26 rad.
 That is the arccos case that the golden comparison already allows for.
 Drawn angles in degrees now get the golden angle floor, and the other
 draws still have to match to 1e-12 (`docs/DECISIONS.md`).
+
+## Release 2.15.0 prepared (2026-11-23)
+
+A minor release: it adds features and a scenario schema step. Contents
+since 2.14.2: Monte Carlo phase B (`docs/developer/monte-carlo-plan.md`,
+decisions MC-20 to MC-35), merged into `develop` as #313 (the batch
+seed, the thermal node limits, the small fixes and the Home details'
+buttons), #314 (the outcome statistics, the sensitivity, the trust
+checks and the plot pages written off the GUI thread) and #316 (the
+batch report, the command line and template 37), and the 2.14.2
+publication record (#317). #317 is not merged yet. Its branch
+`records/2.14.2-published` at `79e0331` holds `develop` at `0dc0810`
+(the merge of #316) and the record, so `release/2.15.0` starts there,
+and the release pull request must merge after #317.
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4. The version
+is 2.15.0 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+The CHANGELOG's Unreleased entries are under 2.15.0, with an
+introduction, Who should update and Known limits. The Changed entry on
+schema version 7 now names 2.14.2, not 2.14.1, as the newest version
+that does not open the file. SRelD issue 55 records the release: K-24
+is fixed when a seed is set, K-49 to K-51 are of 2.15.0, and K-13 and
+K-45 are extended. The SDP, SRS, ICD, CSD, SUM, limitations,
+`releasing.md` and both READMEs name 2.15.0, and the plan's section 10
+says that phase B is released in 2.15.0. The ICD's batch summary row
+now also names `sensitivity_measure`, `percentile_method` and
+`percentiles`, which #314 added. `BACKLOG.md` has a new item under
+"Next release": a local suite run that did not end (below).
+
+Where a text said that a batch or a file of "2.14.1 or earlier" lacks
+something of phase B, it now says "2.14.2 or earlier", because 2.14.2
+was published without phase B: `USER_MANUAL.md` (and its copy in the
+package), `limitations.md`, `docs/changes.md`, the ICD, SRelD K-49 and
+K-51, the report's note for a batch without settings
+(`monte_carlo_report.NOT_RECORDED`, which the test reads from the
+module) and two docstrings. No other code changed.
+
+The CHANGELOG heading is dated 2026-11-24. The tag will be made after
+midnight UTC, and the release check wants the heading's date to equal
+the tag's UTC day.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so a download was tried on 2026-11-23 at 18:45 UTC:
+CelesTrak reset all three connections (`curl` error 35). 2.15.0 so
+carries 2.13.0's file (observations to 2026-11-18, updated 2026-11-19).
+NASA MSFC's page, read at the same time, still links the November 2026
+prediction, the bundled one.
+
+The file format was checked on the code with `git diff 452e164` (the
+2.14.2 tag):
+- `schema/` has the step to version 7 (`migrations.py`, `scenario.py`,
+  `thermal.py`, `field_help.json`), and
+  `tests/data/scenario_hashes.json` was recorded again: the 72 hashes
+  of the 36 templates changed, and template 37's 2 were added.
+- Template 37 and its golden file are new.
+- The 36 earlier templates change only on their `schema_version` line.
+  With that line set back to 6, each of the 36 files is byte for byte
+  the file at `452e164`. Loaded and set back to version 6, each gives
+  the saved-text and scenario hashes recorded at `452e164`.
+- The 36 earlier golden files are byte-identical to those at `452e164`.
+- `packaging/` changed only in the Inno Setup script's version line, and
+  no file outside `SpaceMissionStudio/` changed but the root README.
+
+Compatibility was checked with 2.14.2's code (`git archive 452e164`):
+it refuses all 37 templates as 2.15.0 saves them ("scenario file is
+schema_version 7, but this build of SpaceMissionStudio only understands
+up to version 6"). 2.15.0 opens 2.14.2's 36 templates with no warning
+and saves each again byte for byte as its own template. 2.14.2 opens
+the batch summary of a 4-run batch of template 37 made by 2.15.0
+(`monte-carlo --runs 4 --processes 1`, with the seed, the requirements
+and the new optional keys).
+
+CI's "Windows (MAX Python)" job still fails the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45). By the owner's decision, the release pull request may be merged
+with that check red, for that framework test only.
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4 -p no:cacheprovider -o faulthandler_timeout=300`, its
+whole output kept: 5947 passed, 19 skipped and 1 failed of 5967 (3692
+outside `tests/gui/` and 2275 in it; 5863 passed at 2.14.2). The run
+ended in 20 min 24 s, and the faulthandler printed no stack. The tests
+imported the release's worktree (`spacemissionstudio.__file__` and the
+version 2.15.0 checked). The failure is
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px), which fails only in this container and on
+`develop` too. The text changes of the release came after the start of
+that run, so the release check, release notes, metainfo, report,
+migration, string, configuration, space weather and help tests were run
+again on the final files: 225 passed. The release changed no test, so
+`docs/ui/TEST_CHANGES.md` is unchanged. The release check
+(`packaging/release_check.py --today 2026-11-24`, also with the
+commit and `git ls-remote --tags origin`) passed; pip-audit and CI's
+result for the commit are checked only by the tag workflow, because
+they need the network and CI. The four compliance generators changed
+nothing on two runs, and `check_drds.py` found 0 problems. ruff and
+pre-commit passed on the changed files.
+
+A new item in `BACKLOG.md` "Next release" records what was seen today
+in this container: twice a local run of the suite with 4 workers did
+not end within 60 min, with a Monte Carlo worker process still alive,
+once on the branch of phase B, part 2, and once in a run of the GUI
+tests only on `7a9a25f`, before phase B. Repeat runs passed in about
+20 min, and the test is not known. The item asks to run with
+`-o faulthandler_timeout=300`, keep the whole output, find the cause
+and fix it, never by skipping or loosening a test.

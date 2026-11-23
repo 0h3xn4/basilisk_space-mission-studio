@@ -1911,7 +1911,7 @@ crashed runs with what they drew, and the provenance: the scenario's
 SHA-256, each data file's SHA-256 and the versions. Its numbers are the
 ones the view shows, from the same code. The report is written in the
 background and a message says where it is; Reports › Exports lists it.
-A batch made by 2.14.1 or earlier did not keep its processes and
+A batch made by 2.14.2 or earlier did not keep its processes and
 dispersions, and its report says so.
 
 A thermal or an operations batch plots the mean of the runs with a band
