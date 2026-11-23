@@ -140,6 +140,45 @@ def test_a_later_area_slots_into_its_place_on_the_rail(qtbot):
         shell.register("home", "house", "Home", QLabel("again"), 9)
 
 
+def test_a_hidden_area_that_becomes_wider_widens_the_area_stack_at_once(qtbot):
+    """The area stack is as wide as its widest page, hidden pages too, but
+    Qt ignores a size change of a hidden widget. A hidden page that became
+    wider left the window laid out for the old width until some other
+    change: the stack narrower than its own minimum, and the panel beside
+    it (the Inspector) narrowed later at a random moment. The sweep table
+    of Run > Thermal then did not fit at 1280 px in CI (2.14.2). Now the
+    window lays out again at once."""
+    from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QWidget
+
+    from spacemissionstudio.gui.shell import Shell
+
+    window = QWidget()
+    qtbot.addWidget(window)
+    row = QHBoxLayout(window)
+    shell = Shell()
+    row.addWidget(shell, 1)
+    beside = QLabel("Inspector")  # takes the width the areas leave
+    beside.setMinimumWidth(40)  # [px]
+    row.addWidget(beside, 1)
+    for order, area_id in ((0, "home"), (1, "timeline")):
+        shell.register(area_id, "house", area_id.title(), QLabel(area_id), order)
+    wide = QWidget()
+    shell.page("timeline").layout().addWidget(wide)
+    window.resize(900, 400)  # [px]
+    window.show()
+    qtbot.waitExposed(window)
+    shell.show_area("timeline")
+    QApplication.processEvents()
+    shell.show_area("home")
+    QApplication.processEvents()
+    before = shell.stack.width()
+    wide.setMinimumWidth(before + 200)  # [px] the hidden Timeline page becomes wider
+    for _round in range(5):  # no other change follows to lay the window out again
+        QApplication.processEvents()
+    assert shell.stack.minimumSizeHint().width() >= before + 200
+    assert shell.stack.width() >= shell.stack.minimumSizeHint().width()
+
+
 def test_the_rail_follows_the_area_shown_and_keys_switch_areas(window):
     """Showing a view checks its area's rail button; Ctrl+1 to Ctrl+7 are
     the Go commands of the seven top areas, named in the buttons' tooltips."""

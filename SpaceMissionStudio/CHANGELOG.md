@@ -54,6 +54,15 @@ fixes bugs.
   "crashed" for an orbit batch and, new, "failed" for a thermal batch,
   with the values each one drew.
 
+## 2.14.2 (2026-11-23)
+
+SpaceMissionStudio 2.14.2 is a small patch on top of 2.14.1. The
+Budgets area now appears at once when you open it or move it into its
+own window and back, also on a slow Windows machine, where it could
+make the window pause for up to about 80 ms. It looks exactly as
+before. Nothing the tool computes has changed, and 2.14.1 and 2.14.2
+open each other's files.
+
 ### Fixed
 
 - **The Budgets area shows quickly again on a slow Windows machine.**
@@ -63,6 +72,27 @@ fixes bugs.
   The areas' pages now tell Qt that their height does not depend on
   their width, and the area shows in about 1 ms on Linux (8 to 11 ms
   before). It looks exactly as before (SRelD K-40).
+- **The Inspector no longer changes width at a random moment.** When a
+  hidden area became wider (Timeline's row of filters, once a scenario
+  is open), the window kept its old layout until some other change: the
+  Inspector beside the area stayed wider than the areas allow, then
+  narrowed later. Run > Thermal's sweep table could then scroll sideways
+  at 1280 px. The window now lays out again as soon as a hidden area
+  changes its size.
+
+### Who should update
+
+- **Anyone who uses the Budgets area on Windows:** it no longer makes
+  the window pause when it opens or moves.
+- **Everyone on 2.14.1:** the update is small and safe. Nothing that a
+  run computes has changed, and the scenario format is still version 6.
+
+### Known limits
+
+- The bundled space weather is still 2.13.0's (observations to
+  2026-11-18): CelesTrak refused the connection when this release was
+  prepared. Fetch the current file before a drag study (Home, or
+  **Settings > Reference data**).
 
 ## 2.14.1 (2026-11-23)
 

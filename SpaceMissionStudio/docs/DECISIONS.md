@@ -5293,3 +5293,37 @@ changed.
 - **PE-9. The recommended scope is option B** (the table, plus the
   scenario's sensor noises as knowledge contributors). **Why:** most of
   the value for a third of option C's effort; C is its own item.
+
+## A hidden area that becomes wider lays the window out again (2.14.2, 2026-11-23)
+
+CI on `develop` (`ce6123e`, run 45114509231) failed
+`test_the_sweep_table_fits_the_page_at_1280[inspector]`.
+
+- **An area's page passes its layout request to the area stack while it
+  is hidden** (`AreaPage.event`). **Why:** `QStackedLayout` makes the
+  stack as wide as its widest page, hidden pages too, but Qt ignores
+  `updateGeometry()` from a hidden widget. When the hidden Timeline page
+  became wider (its filters, with the theme's fonts: 923 to 1039 px),
+  the window kept its old layout: the stack 923 px wide with a minimum
+  of 1039 px, the Inspector 277 px, the sweep table 889 px for 947 px of
+  headings. It changed only when some other change laid the window out
+  again, so the test passed or failed by timing. Measured: the module
+  with the theme applied failed 2 of 4 times on `7a9a25f` (before K-40)
+  and 6 of 12 times on `develop`; with the fix 11 of 11 passed.
+- **K-40 is not the cause and stays.** **Why:** the same failure, with
+  the same widths, came on `7a9a25f`. The fix does not ask a hidden page
+  its height for a width, so the Budgets area still shows in about 1 ms
+  and K-40's probe test passes.
+- **Only the request is passed; the hidden page is not laid out.**
+  **Why:** laying it out (`QLayout.activate()`) would arm it for its next
+  change too, but it asks its wrapped labels their height (K-40's probe
+  was asked once). Qt sends a hidden page's request only while its
+  layout is armed (laid out since its last change); a later change then
+  waits for the next layout of the window, as before.
+- **The Windows failure of `test_every_customize_button_is_inside_the_list`
+  (PR #313, job 137490865645) is not changed.** **Why:** its numbers
+  (the details 320 px wide, its buttons 169 and 266 px wide, 20 px high)
+  show a button row wider than the details column, on the shown Home
+  page. That is not the hidden-page fault and not K-40, which only
+  changes what the stack asks its pages. It did not come in 25 local
+  runs, with or without the theme, so no fix is guessed.
