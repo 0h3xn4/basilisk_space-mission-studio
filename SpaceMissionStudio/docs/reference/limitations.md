@@ -148,10 +148,18 @@ Each item was checked against Basilisk's own source.
   from, and carry no confidence; which ones are shown (1, 5, 50, 95 and
   99 %) is a provisional default the owner may change
   (`monte_carlo.percentiles`). The final offsets are read to the
-  millimetre for these. The command line does not print them yet. The
+  millimetre for these. The command line prints the statistics and the
+  ten strongest correlations; the batch report has every pair. The
   band around the mean of a thermal or operations batch is the mean
   plus and minus 3 standard deviations, labelled "not a probability
   bound".
+* **The batch report** (Export report..., `monte-carlo --report`) takes
+  the processes and the dispersions from the batch's
+  `archive.provenance.json`: a batch made by 2.14.1 or earlier did not
+  record them, and its report says so. The command line's Runs table
+  (`--csv`, `--summarize`) is the first spacecraft's; the window's
+  **Export table CSV...** exports the one shown. `--summarize` reads the
+  batch folder only and does not compare it with a scenario.
 * **The check that a dispersion contains its spacecraft's value** covers
   the dry mass and the drag and SRP coefficients only, while Monte Carlo
   is on; the starting attitude is not checked. The warning that a batch

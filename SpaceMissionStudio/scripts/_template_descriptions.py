@@ -624,4 +624,27 @@ with contacts.
 Try changing:
 - One spacecraft's contact priority to 1 and the others' to 2: it takes the contested passes.
 - The stations' capacity to 2: two spacecraft at a time.""",
+    "37": """\
+A 30-run Monte Carlo batch with requirements, a batch seed, outcome statistics and sensitivity. \
+Template 25's satellite, half a day at 400 km: each run draws its orbit, drag coefficient (2.2 to 3.0) \
+and dry mass (150 kg +/- 7.5 kg).
+
+What to look at:
+- Run it in Monte Carlo mode (the mode beside Run): about a minute in one process.
+- Requirements tab: R-ALT-01 (lowest altitude at least 389 km, 90 % confidence) is met: no run is \
+below, and the bound, 0.074, is under the allowed 0.1.
+- R-DECAY-01 (at most 19 m of semi-major axis lost) has no allowed probability: 2 of 30 runs lose \
+more, an estimate of 0.067 with a bound of 0.17.
+- Statistics: each outcome's percentiles and its distribution over the runs.
+- Sensitivity: the drag coefficient drives the decay (rank correlation about -0.9); the dry mass, \
+5 % 1-sigma, much less (about +0.3, which 30 runs can give by chance).
+- Export report... writes all of it, with the batch's provenance, as Markdown or JSON.
+
+Try changing:
+- The batch seed: other draws, so other counts.
+- Number of runs: with more runs the bound comes closer to the estimate.
+- Processes, for a shorter batch on a computer with several CPUs.
+
+Note:
+- The batch seed (37) gives the same draws every time, with one process or many.""",
 }

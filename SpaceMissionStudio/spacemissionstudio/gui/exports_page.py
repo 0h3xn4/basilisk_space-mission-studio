@@ -70,6 +70,9 @@ EXPORTS = (
     Export("monte_carlo_csv", "Monte Carlo runs", "CSV", "Results › Monte Carlo › Export table CSV...",
            "monte_carlo_runs.csv", "<file>.provenance.json",
            "<file>.provenance.json beside it, with the batch's own (archive.provenance.json)"),
+    Export("monte_carlo_report", "Monte Carlo report", "Markdown or JSON", "Results › Monte Carlo › Export report...",
+           "monte_carlo_report.md", "In the file", "In the file: the batch's scenario SHA-256, data files' SHA-256 "
+           "and versions, from its archive.provenance.json"),
     Export("lifetime_json", "Lifetime estimate", "JSON", "Run › End of Life › Export JSON...", "lifetime.json",
            "In the file", "In the file: the inputs, rules, traces, decay curve, data files and the scenario's SHA-256"),
     Export("budget_csv", "Budget", "CSV text", "Budgets › Propellant › Copy as CSV", "Clipboard", "Its last lines",

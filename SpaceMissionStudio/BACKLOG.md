@@ -34,14 +34,6 @@
 Not for an unattended run: these wait until phase A is done and the
 owner has answered the plan's open questions.
 
-- Monte Carlo phase B, the rest: insight and trust
-  (`docs/developer/monte-carlo-plan.md` section 5; part 1, B1, B4 and
-  B8, is done, below). Sensitivity by rank correlation with a scatter
-  plot, outcome percentiles and the empirical distribution, a batch
-  report (JSON and Markdown), checks that a dispersion contains the
-  nominal value and that an opened batch matches the scenario, CLI
-  `--summarize`, `--report`, `--runs` and `--processes`, and a template
-  for the new features.
 - Monte Carlo phase C: more dispersions and outcomes
   (`docs/developer/monte-carlo-plan.md` section 6; about 30 hours, each
   item with a spike first). Maneuver execution errors, thruster and
@@ -52,6 +44,13 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Monte Carlo phase B, parts 2 and 3: the outcome statistics, the
+  sensitivity and the trust checks (B2, B3, B6) on branch
+  `feature/monte-carlo-insight`, decisions MC-26 to MC-31; the batch
+  report (B5), `monte-carlo --summarize`, `--report`, `--csv`, `--runs`
+  and `--processes` (B7) and template 37 (B9) on branch
+  `feature/monte-carlo-report`, decisions MC-32 to MC-35 (2026-11-23).
+  Phase B is done when the three parts are merged.
 - Monte Carlo phase B, part 1: the batch seed (B1, SRelD K-24), the
   thermal Monte Carlo against the node limits (B4) and the small fixes
   (B8), on branch `feature/monte-carlo-seed` (2026-11-23). Optional

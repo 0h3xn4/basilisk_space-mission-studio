@@ -185,7 +185,8 @@ register(
            "crashed runs [-]", "k, the runs that do not meet it, crashed runs included [-]",
            "C, the requirement's confidence (monte_carlo.requirements[].confidence) [-]"),
           ("The Requirements table's estimate and upper bound", "Its verdict against the allowed probability "
-           "(max_probability)", "The command line's requirements table and its exit status 5"),
+           "(max_probability)", "The command line's requirements table and its exit status 5",
+           "The batch report's requirements"),
           ("The runs are independent and each fails with the same probability p: a binomial count. Basilisk's "
            "controller draws each run's dispersions and seeds independently.",
            "One-sided: an upper bound only, as a requirement asks how likely failure can be at most.",
@@ -207,7 +208,8 @@ _SENSITIVITY_INPUTS = ("Each successful run's drawn value of one dispersion, in 
                        "The same runs' value of one outcome, in its unit",
                        "N, the runs that recorded both (pairwise) [-]")
 _SENSITIVITY_OUTPUTS = ("The Sensitivity table of Results > Monte Carlo: one correlation [-] per drawn value and "
-                        "outcome, the largest first", "Its scatter plot of the pair picked")
+                        "outcome, the largest first", "Its scatter plot of the pair picked",
+                        "The batch report's sensitivity and the command line's strongest correlations")
 _PAIRWISE = ("Pairwise: a run counts for a pair when it recorded both values. A crashed run (no outcome) and a run "
              "without that outcome are left out of that pair only; the table shows N per pair.",
              "A column that does not vary, or a pair of fewer than 3 runs, has no correlation: shown as \"—\".",
@@ -249,7 +251,8 @@ register(
           "100th the maximum. It is numpy.percentile with method='linear', NumPy's default.",
           ("Each successful run's value of one outcome, in its unit (a run without it is left out)",
            "The percentiles to show, monte_carlo.percentiles [%]"),
-          ("The Statistics table of Results > Monte Carlo: each outcome's percentiles, in its unit",),
+          ("The Statistics table of Results > Monte Carlo: each outcome's percentiles, in its unit",
+           "The batch report's outcome statistics and the command line's table"),
           ("The runs are all that is described: a percentile of these N runs, not a bound on the distribution "
            "they were drawn from. With few runs a 1st or 99th percentile is the minimum or maximum, or "
            "between the two most extreme runs.",),

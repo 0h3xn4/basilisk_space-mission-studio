@@ -60,6 +60,7 @@ PERCENTILE_CHOICE = "monte_carlo.percentile_method"
 PERCENTILES = "monte_carlo.percentiles"
 # A pair needs this many runs for a correlation: two points always lie on a line.
 MIN_PAIRS = 3
+NO_VALUE = "—"  # a cell without a value: a correlation of a column that does not vary, or of too few runs
 # The prefix of an operations batch's outcomes among its drawn values (operations.robustness).
 _OPERATIONS_OUTCOME = "outcome: "
 
@@ -84,6 +85,17 @@ class Column:
         """The label without its unit."""
         head, bracket, tail = self.label.rpartition(" [")
         return head if bracket and tail.endswith("]") else self.label
+
+
+def number_text(value: float | None) -> str:
+    """A table cell (the Monte Carlo view, the command line, the batch
+    report): 6 significant figures; :data:`NO_VALUE` for no value."""
+    return NO_VALUE if value is None or not np.isfinite(value) else f"{value:.6g}"
+
+
+def percentile_title(percentile: float) -> str:
+    """A percentile's column heading: "P5" for the 5th."""
+    return f"P{percentile:g}"
 
 
 def choices(scenario=None) -> dict:
@@ -341,3 +353,27 @@ def insight(batch) -> Insight:
                    sensitivities(inputs, outcomes, batch.sensitivity_measure),
                    {column.label: column for column in inputs}, {column.label: column for column in outcomes},
                    batch.sensitivity_measure, batch.percentile_method, shown)
+
+
+# -- the tables as text (the command line and the batch report, plan B5 and B7) ----------------------
+
+
+def statistics_table(insight: Insight) -> tuple[list[str], list[tuple[str, ...]]]:
+    """(headings, rows) of the outcome statistics, the Statistics tab's
+    columns and cell text, each outcome's full label."""
+    headers = (["Outcome", "Unit", "N", "Minimum"] + [percentile_title(p) for p in insight.percentiles]
+               + ["Maximum"])
+    rows = [(stat.name, stat.unit, str(stat.n), *(number_text(v) for v in (stat.minimum, *stat.values, stat.maximum)))
+            for stat in insight.statistics]
+    return headers, rows
+
+
+def sensitivity_table(insight: Insight, limit: int | None = None) -> tuple[list[str], list[tuple[str, ...]]]:
+    """(headings, rows) of the sensitivity, the Sensitivity tab's columns
+    and cell text, largest first; at most ``limit`` rows when given."""
+    from ..config import models
+
+    title = models.model(SENSITIVITY_CHOICE, insight.measure).title
+    pairs = insight.sensitivity if limit is None else insight.sensitivity[:limit]
+    return (["Drawn value", "Outcome", f"{title} [-]", "N"],
+            [(pair.input_label, pair.outcome_label, number_text(pair.value), str(pair.n)) for pair in pairs])

@@ -783,7 +783,7 @@ def run_monte_carlo(scenario: Scenario, mc_config: MonteCarloConfig, archive_dir
         _logger.exception("Monte Carlo batch finished, but its summary could not be written")
     try:
         output_provenance.write_sidecar(archive_dir / "archive", archive_record(scenario, scenario_file,
-                                                                             mc_config.seed))
+                                                                             mc_config.seed, mc_config))
     except OSError as exc:
         raise MonteCarloError(f"could not write the batch's provenance in {archive_dir}: {exc}") from exc
     return failures
@@ -806,7 +806,28 @@ _NOT_NOMINAL = {"spacemissionstudio_version", "basilisk_version", "qualified_bas
                 "rng_seeds"}
 
 
-def archive_record(scenario: Scenario, scenario_file: dict | None = None, seed: int | None = None) -> dict:
+# The settings a batch can take from somewhere other than its scenario (the command line's --runs and
+# --processes, Monte Carlo plan B7): each is recorded with both values when it differs.
+OVERRIDABLE_SETTINGS = ("num_runs", "thread_count")
+
+
+def batch_settings(scenario: Scenario, mc_config: MonteCarloConfig) -> dict:
+    """What a batch ran with (``archive.provenance.json``
+    ``monte_carlo_settings``, decision MC-33): the runs and processes asked
+    for, the processes used (one per CPU at most), the batch seed, the
+    dispersions as the scenario file writes them, and ``overrides``: each
+    of :data:`OVERRIDABLE_SETTINGS` whose value is not the scenario's, as
+    ``{"scenario": ..., "batch": ...}`` (empty when none is)."""
+    return {"num_runs": mc_config.num_runs, "thread_count": mc_config.thread_count,
+            "processes_used": usable_thread_count(mc_config.thread_count), "seed": mc_config.seed,
+            "dispersions": [dataclasses.asdict(dispersion) for dispersion in mc_config.dispersions],
+            "overrides": {key: {"scenario": getattr(scenario.monte_carlo, key), "batch": getattr(mc_config, key)}
+                          for key in OVERRIDABLE_SETTINGS
+                          if getattr(scenario.monte_carlo, key) != getattr(mc_config, key)}}
+
+
+def archive_record(scenario: Scenario, scenario_file: dict | None = None, seed: int | None = None,
+                   mc_config: MonteCarloConfig | None = None) -> dict:
     """The provenance of a batch of ``scenario`` (transparency audit,
     Phase 2g): the tool and Basilisk versions, the scenario's hash (its
     dispersions included), the file it came from (``scenario_file``: its
@@ -817,7 +838,9 @@ def archive_record(scenario: Scenario, scenario_file: dict | None = None, seed: 
     tolerances, task rates, central body, frames, time system, data files).
     The seeds are each run's own: see :data:`ARCHIVE_SEEDS_NOTE`; the batch
     seed is ``monte_carlo_seed`` (None: Basilisk's own seeding, decision
-    MC-20). As
+    MC-20). As ``monte_carlo_settings``, what the batch ran with
+    (:func:`batch_settings` of ``mc_config``, by default the scenario's own
+    settings). As
     ``models``, the models in effect for the batch's results
     (``config.models``: the spread's statistic).
 
@@ -836,6 +859,7 @@ def archive_record(scenario: Scenario, scenario_file: dict | None = None, seed: 
     record["nominal_run"] = {key: value for key, value in nominal.items() if key not in _NOT_NOMINAL}
     record["rng_seeds"] = ARCHIVE_SEEDS_NOTE if seed is None else ARCHIVE_SEEDED_NOTE
     record["monte_carlo_seed"] = seed
+    record["monte_carlo_settings"] = batch_settings(scenario, scenario.monte_carlo if mc_config is None else mc_config)
     record["models"] = models.records(scenario, "monte_carlo")
     return record
 

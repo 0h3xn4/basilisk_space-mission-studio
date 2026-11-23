@@ -30,7 +30,9 @@ correlation of each drawn value with each outcome (B2: the Sensitivity
 tab) and, for a thermal batch, each node's operating and survival range
 judged on the runs (B4: the Node limits tab). The statistics and the
 correlations are worked out off the GUI thread, when one of their tabs is
-first shown for a batch (``gui.monte_carlo_insight``). A batch whose
+first shown for a batch (``gui.monte_carlo_insight``). **Export report...**
+writes the batch report (B5, ``engine.monte_carlo_report``), Markdown or
+JSON, in a worker thread. A batch whose
 scenario is not the one open says so in a note under the title (B6,
 :meth:`MonteCarloResultsWidget.compare_with_scenario`).
 Filled after a run in Monte Carlo mode, or from a folder an earlier batch
@@ -41,8 +43,6 @@ right-click menu) asks for the case picked to run again as a plain run
 
 from __future__ import annotations
 
-import csv
-import json
 import math
 from pathlib import Path
 
@@ -57,8 +57,9 @@ from ..engine import monte_carlo_requirements as mcreq
 from ..engine import monte_carlo_results as mcr
 from ..engine import monte_carlo_statistics as mcs
 from .data_table import DataTable, Row
-from .monte_carlo_insight import (NO_VALUE, InsightComputer, InsightPlot, ecdf_figure, number_text, percentile_title,
-                                  scatter_figure)
+from ..engine import monte_carlo_report
+from .monte_carlo_insight import (NO_VALUE, InsightComputer, InsightPlot, ReportWriter, ecdf_figure, number_text,
+                                  percentile_title, scatter_figure)
 from .results_widget import ResultsWidget
 from .scenario_explainer_widget import _stat_tile
 from .feedback import report
@@ -112,6 +113,10 @@ _NO_NODE_LIMITS = ("No node limits in this batch: no node of the thermal model h
                    "Thermal model › Nodes, then run the Monte Carlo again.")
 
 
+REPORT_TIP = ("Write the batch report, Markdown (.md) or JSON (.json): the settings, dispersions, requirements and "
+              "their verdicts, outcome statistics, sensitivity, crashed runs and provenance, the numbers this view "
+              "shows.")
+
 # Run This Case (plan A3): its keys, what it does, and why it cannot run now.
 RUN_CASE_KEYS = "Ctrl+Shift+R"
 RUN_CASE_TIP = ("Run the case picked in the Runs table again, as a plain run with the same draws and seeds: every "
@@ -157,6 +162,13 @@ class MonteCarloResultsWidget(QWidget):
         self.open_button.setToolTip("Show the batch an earlier Monte Carlo run saved in a folder.")
         self.open_button.clicked.connect(self._on_open)
         header.addWidget(self.open_button)
+        # The batch report (plan B5): written in a worker, a toast when it is there.
+        self.report_button = QPushButton("Export report...")
+        self.report_button.setToolTip(REPORT_TIP)
+        self.report_button.clicked.connect(self._on_export_report)
+        header.addWidget(self.report_button)
+        self.report_writer = ReportWriter(self)
+        self.report_writer.written.connect(self._on_report_written)
         layout.addLayout(header)
 
         self.hint_label = QLabel(_EMPTY_HINT)
@@ -295,6 +307,7 @@ class MonteCarloResultsWidget(QWidget):
         has_batch = batch is not None and bool(batch.runs)
         self.views.setVisible(has_batch)
         self.export_button.setEnabled(has_batch)
+        self.report_button.setEnabled(has_batch)
         self.spacecraft_combo.blockSignals(True)
         self.spacecraft_combo.clear()
         if has_batch:
@@ -617,8 +630,10 @@ class MonteCarloResultsWidget(QWidget):
         self.sensitivity_plot.show_figure(lambda: scatter_figure(x, y, runs, title, subtitle, x_title, y_title))
 
     def wait_for_insight(self) -> None:
-        """Until the statistics in progress are worked out (tests, closing)."""
+        """Until the statistics in progress are worked out and the reports
+        asked for are written (tests, closing)."""
         self.insight_computer.wait()
+        self.report_writer.wait()
 
     # -- the batch's scenario (plan B6) --------------------------------------
 
@@ -703,31 +718,38 @@ class MonteCarloResultsWidget(QWidget):
     def export_table_csv(self, path: str | Path) -> Path:
         """The Runs table, for the shown spacecraft, as CSV, with
         ``<file>.provenance.json`` beside it (Phase 9a): the batch's own
-        provenance (``archive.provenance.json``) when its folder has one."""
-        from .. import output_provenance
+        provenance (``archive.provenance.json``) when its folder has one.
+        The command line's ``monte-carlo --csv`` writes the same
+        (``engine.monte_carlo_report.write_runs_csv``)."""
+        return monte_carlo_report.write_runs_csv(self.batch, path, self.spacecraft_combo.currentText() or None,
+                                                 self.folder)
 
-        path = Path(path)
-        spacecraft = self.spacecraft_combo.currentText() or None
-        labels, rows = mcr.run_table(self.batch, spacecraft, outcomes=self.batch.kind in ("orbit", "thermal"))
-        with open(path, "w", newline="", encoding="utf-8") as handle:
-            writer = csv.writer(handle)
-            writer.writerow(labels)
-            for row in rows:
-                # a value a run does not have stays "nan", as before (a crashed run's offsets and outcomes)
-                writer.writerow([int(row[0])] + [value if isinstance(value, str) else f"{value:.9g}"
-                                                 for value in row[1:]])
-        archive = None
-        if self.folder is not None and (self.folder / "archive.provenance.json").is_file():
-            try:
-                archive = json.loads((self.folder / "archive.provenance.json").read_text(encoding="utf-8"))
-            except (OSError, ValueError):
-                archive = None
-        output_provenance.write_sidecar(path, {
-            "export": "Monte Carlo runs table", "spacecraft": spacecraft, "runs": len(rows),
-            "batch_folder": str(self.folder) if self.folder is not None else "",
-            "batch_provenance": archive if archive is not None else
-            "not found: the batch folder's archive.provenance.json"})
-        return path
+    def export_report(self, path: str | Path) -> None:
+        """Write the shown batch's report to ``path`` (``.md`` or ``.json``)
+        in a worker (design rule 6), with the statistics this view shows
+        when they are worked out; :meth:`_on_report_written` says how it
+        went."""
+        insight = self.insight if self._insight_batch is self.batch else None
+        self.report_writer.request(self.batch, Path(path), self.folder, insight)
+
+    def _on_export_report(self) -> None:
+        if self.batch is None or not self.batch.runs:
+            return
+        path_str, chosen = QFileDialog.getSaveFileName(self, "Export Monte Carlo report", "monte_carlo_report.md",
+                                                       "Markdown (*.md);;JSON (*.json)")
+        if not path_str:
+            return
+        path = Path(path_str)
+        if path.suffix.lower() not in monte_carlo_report.SUFFIXES:  # the format chosen in the dialog
+            path = path.with_name(path.name + (".json" if "json" in chosen.lower() else ".md"))
+        self.export_report(path)
+
+    def _on_report_written(self, path, error: str) -> None:
+        if error:
+            report(self, f"Could not export the Monte Carlo report to {path}: {error}")
+            return
+        export_log.record("monte_carlo_report", path)
+        report(self, f"Exported the Monte Carlo report to {path}", kind="success")
 
     def _on_export(self) -> None:
         path_str, _ = QFileDialog.getSaveFileName(self, "Export Monte Carlo runs to CSV", "monte_carlo_runs.csv",

@@ -1,0 +1,179 @@
+{
+  "name": "37 - Monte Carlo: requirements, statistics and sensitivity",
+  "epoch_utc": "2030-01-01T00:00:00",
+  "simulation_mode": "orbit_only",
+  "gravity": {
+    "central_body": "earth",
+    "central_body_degree": 10,
+    "third_body_perturbers": [
+      "sun",
+      "moon"
+    ],
+    "polyhedral_gravity": false,
+    "albedo": false
+  },
+  "spacecraft": [
+    {
+      "name": "sat-1",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6778.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.03,
+        "raan_deg": 259.03,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "enable_drag": true,
+      "drag_coeff": 3.0,
+      "drag_area_m2": 0.8,
+      "enable_srp": false,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.0,
+      "facets": [],
+      "enable_gravity_gradient": false,
+      "sensors": [],
+      "actuators": [],
+      "fsw_mode": null,
+      "fsw_params": {},
+      "control_params": {},
+      "power": null,
+      "rf_link": null,
+      "comms_pointing": null,
+      "data_handling": null,
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": null,
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    }
+  ],
+  "ground_stations": [],
+  "space_weather": {
+    "source": "bundled",
+    "local_file_path": null,
+    "cache_dir": null,
+    "atmosphere_model": "nrlmsise00",
+    "forecast_percentile": 50.0,
+    "msfc_file_path": null
+  },
+  "sim_settings": {
+    "duration_days": 0.5,
+    "dynamics_task_rate_s": 30.0,
+    "integrator": "rkf78",
+    "record_interval_s": 0.0,
+    "seed": 0
+  },
+  "monte_carlo": {
+    "enabled": true,
+    "num_runs": 30,
+    "thread_count": 1,
+    "verbose": false,
+    "dispersions": [
+      {
+        "spacecraft": "sat-1",
+        "quantity": "orbit_elements",
+        "kind": "normal",
+        "bounds": null,
+        "mean": null,
+        "std_deviation": null,
+        "element_spread": {
+          "semi_major_axis_km": 0.5,
+          "inclination_deg": 0.02,
+          "true_anomaly_deg": 0.05
+        },
+        "angle_std_deg": null
+      },
+      {
+        "spacecraft": "sat-1",
+        "quantity": "drag_coeff",
+        "kind": "uniform",
+        "bounds": [
+          2.2,
+          3.0
+        ],
+        "mean": null,
+        "std_deviation": null,
+        "element_spread": null,
+        "angle_std_deg": null
+      },
+      {
+        "spacecraft": "sat-1",
+        "quantity": "dry_mass_kg",
+        "kind": "normal",
+        "bounds": null,
+        "mean": 150.0,
+        "std_deviation": 7.5,
+        "element_spread": null,
+        "angle_std_deg": null
+      }
+    ],
+    "requirements": [
+      {
+        "name": "R-ALT-01",
+        "spacecraft": "sat-1",
+        "outcome": "lowest_altitude",
+        "at_least": 389.0,
+        "at_most": null,
+        "confidence": 0.9,
+        "max_probability": 0.1
+      },
+      {
+        "name": "R-DECAY-01",
+        "spacecraft": "sat-1",
+        "outcome": "mean_sma_change",
+        "at_least": -0.019,
+        "at_most": null,
+        "confidence": 0.9,
+        "max_probability": null
+      }
+    ],
+    "seed": 37
+  },
+  "mission_sequence": [],
+  "fsw_exports": [],
+  "description": "A 30-run Monte Carlo batch with requirements, a batch seed, outcome statistics and sensitivity. Template 25's satellite, half a day at 400 km: each run draws its orbit, drag coefficient (2.2 to 3.0) and dry mass (150 kg +/- 7.5 kg).\n\nWhat to look at:\n- Run it in Monte Carlo mode (the mode beside Run): about a minute in one process.\n- Requirements tab: R-ALT-01 (lowest altitude at least 389 km, 90 % confidence) is met: no run is below, and the bound, 0.074, is under the allowed 0.1.\n- R-DECAY-01 (at most 19 m of semi-major axis lost) has no allowed probability: 2 of 30 runs lose more, an estimate of 0.067 with a bound of 0.17.\n- Statistics: each outcome's percentiles and its distribution over the runs.\n- Sensitivity: the drag coefficient drives the decay (rank correlation about -0.9); the dry mass, 5 % 1-sigma, much less (about +0.3, which 30 runs can give by chance).\n- Export report... writes all of it, with the batch's provenance, as Markdown or JSON.\n\nTry changing:\n- The batch seed: other draws, so other counts.\n- Number of runs: with more runs the bound comes closer to the estimate.\n- Processes, for a shorter batch on a computer with several CPUs.\n\nNote:\n- The batch seed (37) gives the same draws every time, with one process or many.",
+  "schema_version": 7
+}

@@ -542,6 +542,34 @@ def _drag_coeff_bound(index: int):
     return get, set_
 
 
+def _dry_mass_spread():
+    """Get/set for the 1-sigma of '37's dry-mass dispersion [kg]."""
+    def dispersion(scenario: Scenario):
+        return next(d for d in scenario.monte_carlo.dispersions if d.quantity == "dry_mass_kg")
+
+    def get(scenario: Scenario) -> float:
+        return float(dispersion(scenario).std_deviation)
+
+    def set_(scenario: Scenario, value: float) -> None:
+        dispersion(scenario).std_deviation = value
+
+    return get, set_
+
+
+def _requirement_limit(name: str):
+    """Get/set for the "at least" limit of '37's requirement ``name``."""
+    def requirement(scenario: Scenario):
+        return next(r for r in scenario.monte_carlo.requirements if r.name == name)
+
+    def get(scenario: Scenario) -> float:
+        return float(requirement(scenario).at_least)
+
+    def set_(scenario: Scenario, value: float) -> None:
+        requirement(scenario).at_least = value
+
+    return get, set_
+
+
 def _final_coast_command(scenario: Scenario):
     return scenario.mission_sequence[-1]
 
@@ -1902,6 +1930,63 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                     ),
                 ],
             ),
+        ],
+    ),
+    "37_monte_carlo_requirements_and_sensitivity.json": TemplateWizardSpec(
+        template_filename="37_monte_carlo_requirements_and_sensitivity.json",
+        pages=[
+            WizardPageSpec(
+                title="Monte Carlo batch",
+                intro="Each run draws its own orbit, drag coefficient and dry mass.",
+                fields=[
+                    WizardField(
+                        "Number of runs", "More runs give a tighter bound and smoother statistics, at "
+                        "proportional runtime.",
+                        lambda s: float(s.monte_carlo.num_runs),
+                        lambda s, v: setattr(s.monte_carlo, "num_runs", int(round(v))),
+                        1.0, 1000.0, decimals=0, step=5.0, hint="More runs = tighter bound, longer runtime",
+                    ),
+                    WizardField(
+                        "Batch seed", "The draws come from this number: another seed, other draws.",
+                        lambda s: float(s.monte_carlo.seed),
+                        lambda s, v: setattr(s.monte_carlo, "seed", int(round(v))),
+                        0.0, 2147483647.0, decimals=0, step=1.0, kind="int", hint="Same seed, same draws",
+                    ),
+                    WizardField(
+                        "Drag coefficient, low", "The lowest drag coefficient a run can draw.",
+                        *_drag_coeff_bound(0), 1.0, 4.0, decimals=2, step=0.1,
+                        hint="Each run draws Cd between low and high",
+                    ),
+                    WizardField(
+                        "Drag coefficient, high", "The highest drag coefficient a run can draw.",
+                        *_drag_coeff_bound(1), 1.0, 4.0, decimals=2, step=0.1,
+                        hint="Must stay above the low end",
+                    ),
+                    WizardField(
+                        "Dry mass spread", "1-sigma spread of the dry mass around the spacecraft's 150 kg.",
+                        *_dry_mass_spread(), 0.0, 50.0, decimals=1, step=0.5, suffix=" kg", hint="1-sigma",
+                    ),
+                ],
+            ),
+            WizardPageSpec(
+                title="Requirements",
+                intro="Each requirement is judged on the runs, with its bound at 90 % confidence.",
+                fields=[
+                    WizardField(
+                        "Lowest altitude", "R-ALT-01: every run's lowest altitude must be at least this.",
+                        *_requirement_limit("R-ALT-01"), 0.0, 2000.0, decimals=1, step=1.0, suffix=" km",
+                        hint="R-ALT-01, allowed probability 0.1",
+                    ),
+                    WizardField(
+                        "Semi-major axis change", "R-DECAY-01: every run's mean semi-major axis change must be "
+                        "at least this (a decay is negative).",
+                        *_requirement_limit("R-DECAY-01"), -100.0, 0.0, decimals=3, step=0.001, suffix=" km",
+                        hint="R-DECAY-01, no allowed probability",
+                    ),
+                ],
+            ),
+            _duration_page("Each run's length: the decay and the spread grow with time.",
+                           SimSettings._MAX_SINGLE_RUN_DAYS),
         ],
     ),
     "36_constellation_operations.json": TemplateWizardSpec(

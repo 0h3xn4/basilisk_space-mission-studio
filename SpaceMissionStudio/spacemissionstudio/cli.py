@@ -45,6 +45,8 @@ Usage::
     spacemissionstudio run scenario.json --out-dir results/
     spacemissionstudio monte-carlo scenario.json --archive-dir mc_results/
     spacemissionstudio monte-carlo scenario.json --archive-dir mc_results/ --case 7 --out-dir case7/
+    spacemissionstudio monte-carlo scenario.json --archive-dir mc_results/ --runs 200 --report report.md
+    spacemissionstudio monte-carlo --summarize mc_results/ --csv runs.csv --report report.json
     spacemissionstudio kernels-status
     spacemissionstudio spaceweather-resolve scenario.json
     spacemissionstudio generate-constellation template.json --out constellation.json \
@@ -566,14 +568,47 @@ def cmd_reproduce(args: argparse.Namespace) -> int:
     return 0 if report.reproduced else EXIT_CHECK_FAILED
 
 
+def _monte_carlo_usage_error(args: argparse.Namespace) -> str:
+    """Why the ``monte-carlo`` options do not go together ("" when they
+    do): exit status 2, a usage error (ICD-02), before anything is read."""
+    summarize, case = getattr(args, "summarize", None), args.case
+    if summarize is not None:
+        if args.scenario is not None:
+            return ("--summarize reads the batch in DIR and runs nothing: give no scenario with it (the batch "
+                    "records the settings it ran with)")
+        named = [flag for flag, value in (("--case", case), ("--out-dir", args.out_dir), ("--runs", args.runs),
+                                          ("--processes", args.processes)) if value is not None]
+        named += [flag for flag, value in (("--overwrite", args.overwrite), ("--allow-scripts", args.allow_scripts))
+                  if value]
+        if named:
+            return f"--summarize runs nothing: {', '.join(named)} cannot go with it"
+    elif args.scenario is None:
+        return "give the scenario file, or --summarize DIR to show an earlier batch"
+    if case is None and args.out_dir is not None:
+        return "--out-dir is where --case writes its run: give --case N with it"
+    if case is not None:
+        if args.overwrite:
+            return "--case runs one case of the batch in --archive-dir and changes nothing there; --overwrite is for a new batch"
+        named = [flag for flag, value in (("--runs", args.runs), ("--processes", args.processes),
+                                          ("--report", args.report), ("--csv", args.csv)) if value is not None]
+        if named:
+            return f"--case runs one case as a plain run: {', '.join(named)} are for a batch"
+    if args.report is not None:
+        from .engine.monte_carlo_report import suffix_error
+
+        problem = suffix_error(args.report)
+        if problem:
+            return problem
+    return ""
+
+
 def cmd_monte_carlo(args: argparse.Namespace) -> int:
-    if args.case is None and args.out_dir is not None:
-        print("ERROR: --out-dir is where --case writes its run: give --case N with it", file=sys.stderr)
+    usage = _monte_carlo_usage_error(args)
+    if usage:
+        print(f"ERROR: {usage}", file=sys.stderr)
         return 2
-    if args.case is not None and args.overwrite:
-        print("ERROR: --case runs one case of the batch in --archive-dir and changes nothing there; "
-              "--overwrite is for a new batch", file=sys.stderr)
-        return 2
+    if args.summarize is not None:
+        return _monte_carlo_summarize(args)
     loaded = _load_hashed(args.scenario)
     if isinstance(loaded, int):
         return loaded
@@ -592,12 +627,21 @@ def cmd_monte_carlo(args: argparse.Namespace) -> int:
         print(f"ERROR: Basilisk is not installed/built ({exc}) -- see SpaceMissionStudio/README.md", file=sys.stderr)
         return 2
 
-    print(f"Running {scenario.monte_carlo.num_runs} Monte Carlo case(s) of {scenario.name!r} "
-          f"({len(scenario.monte_carlo.dispersions)} dispersion(s), {scenario.monte_carlo.thread_count} thread(s))...")
-    if scenario.monte_carlo.seed is not None:  # without one, Basilisk's own seeding, as before (decision MC-20)
-        print(f"Batch seed: {scenario.monte_carlo.seed} (monte_carlo.seed)")
+    # --runs and --processes change this batch only: the scenario object and its file stay as they are, so its
+    # hash (and Run This Case) is the file's; the provenance records both values (decision MC-33).
+    mc_config = dataclasses.replace(
+        scenario.monte_carlo, num_runs=args.runs if args.runs is not None else scenario.monte_carlo.num_runs,
+        thread_count=args.processes if args.processes is not None else scenario.monte_carlo.thread_count)
+    print(f"Running {mc_config.num_runs} Monte Carlo case(s) of {scenario.name!r} "
+          f"({len(mc_config.dispersions)} dispersion(s), {mc_config.thread_count} thread(s))...")
+    for flag, key in (("--runs", "num_runs"), ("--processes", "thread_count")):
+        if getattr(mc_config, key) != getattr(scenario.monte_carlo, key):
+            print(f"{flag} {getattr(mc_config, key)}: for this batch only (the scenario file has "
+                  f"monte_carlo.{key} {getattr(scenario.monte_carlo, key)} and is not changed)")
+    if mc_config.seed is not None:  # without one, Basilisk's own seeding, as before (decision MC-20)
+        print(f"Batch seed: {mc_config.seed} (monte_carlo.seed)")
     try:
-        failures = run_monte_carlo(scenario, scenario.monte_carlo, args.archive_dir,
+        failures = run_monte_carlo(scenario, mc_config, args.archive_dir,
                                    allow_scripts=args.allow_scripts, overwrite=args.overwrite,
                                    scenario_file=file_record)
     except MonteCarloError as exc:
@@ -608,26 +652,123 @@ def cmd_monte_carlo(args: argparse.Namespace) -> int:
         return 3
 
     print(f"Archived results to {args.archive_dir}")
-    from .engine import monte_carlo_requirements, monte_carlo_results
+    from .engine import monte_carlo_results
 
     not_shown = []
     if monte_carlo_results.has_summary(args.archive_dir):
         batch = monte_carlo_results.load(args.archive_dir)
-        for line in monte_carlo_results.summary_lines(batch) + [monte_carlo_results.statistic_line(batch)]:
-            print(f"  {line}")
-        _print_outcome_ranges(batch)
-        results = monte_carlo_requirements.evaluate(batch)
-        _print_requirements(batch, results)
-        not_shown = monte_carlo_requirements.not_shown_met(results)
+        not_shown = _print_batch(batch)
+        if _write_batch_files(args, batch, args.archive_dir, args.csv):
+            return 3
     if failures:
         print(f"FAILED runs: {failures}", file=sys.stderr)
         return 3  # runs failed (ICD-02); 4 in 1.3.1 and earlier, the status of an internal error (audit 3.2)
-    print(f"All {scenario.monte_carlo.num_runs} run(s) succeeded.")
+    print(f"All {mc_config.num_runs} run(s) succeeded.")
     if not_shown:  # the batch ran; its check did not pass (decision MC-10)
-        print(f"NOT SHOWN MET: {', '.join(result.name for result in not_shown)} (the upper bound is above the "
-              "allowed probability)", file=sys.stderr)
+        _print_not_shown(not_shown)
         return EXIT_CHECK_FAILED
     return 0
+
+
+# Where --summarize writes the Runs table without --csv: the GUI's own default file name (decision MC-33).
+DEFAULT_RUNS_CSV = Path("monte_carlo_runs.csv")
+# The strongest correlations the command line prints; the report (--report) has every pair.
+SENSITIVITY_ROWS = 10
+
+
+def _monte_carlo_summarize(args: argparse.Namespace) -> int:
+    """``monte-carlo --summarize DIR``: an earlier batch's summary, printed
+    as after the batch, and its Runs table as CSV (``--csv``, default
+    :data:`DEFAULT_RUNS_CSV`), with ``--report`` its report too. Runs
+    nothing and changes nothing in DIR. 1 for a folder without a summary
+    that can be read; 3 when a file cannot be written; 5 when a
+    requirement with an allowed probability is not shown met (the check,
+    as after the batch)."""
+    from .engine import monte_carlo_results
+
+    folder = args.summarize
+    try:
+        batch = monte_carlo_results.load(folder)
+    except monte_carlo_results.MonteCarloResultsError as exc:
+        print(f"INVALID: {exc}", file=sys.stderr)
+        return 1
+    print(f"Monte Carlo batch in {folder} ({batch.scenario_name!r}); nothing is run")
+    not_shown = _print_batch(batch)
+    if _write_batch_files(args, batch, folder, args.csv if args.csv is not None else DEFAULT_RUNS_CSV):
+        return 3
+    if not_shown:
+        _print_not_shown(not_shown)
+        return EXIT_CHECK_FAILED
+    return 0
+
+
+def _print_not_shown(not_shown) -> None:
+    print(f"NOT SHOWN MET: {', '.join(result.name for result in not_shown)} (the upper bound is above the "
+          "allowed probability)", file=sys.stderr)
+
+
+def _print_batch(batch) -> list:
+    """What ``monte-carlo`` prints of a batch: its summary lines, each
+    outcome's range, the requirements, a thermal batch's node limits, the
+    outcome statistics and the strongest correlations (Monte Carlo plan
+    B7). Returns the requirements not shown met."""
+    from .engine import monte_carlo_requirements, monte_carlo_results
+
+    for line in monte_carlo_results.summary_lines(batch) + [monte_carlo_results.statistic_line(batch)]:
+        print(f"  {line}")
+    _print_outcome_ranges(batch)
+    results = monte_carlo_requirements.evaluate(batch)
+    _print_requirements(batch, results)
+    _print_node_limits(batch)
+    _print_insight(batch)
+    return monte_carlo_requirements.not_shown_met(results)
+
+
+def _print_insight(batch) -> None:
+    """The outcome statistics and the :data:`SENSITIVITY_ROWS` strongest
+    correlations, the Statistics and Sensitivity tabs' text (plan B2, B3)."""
+    from .config import models
+    from .engine import monte_carlo_statistics as mcs
+
+    if not batch.runs:
+        return
+    insight = mcs.insight(batch)
+    if insight.statistics:
+        method = models.model(mcs.PERCENTILE_CHOICE, insight.method)
+        print(f"  Outcome statistics ({mcs.PERCENTILE_CHOICE}: {method.name}; N is the runs that recorded it):")
+        _print_table(*mcs.statistics_table(insight), left=2)
+    if insight.sensitivity:
+        shown = min(SENSITIVITY_ROWS, len(insight.sensitivity))
+        more = len(insight.sensitivity) - shown
+        print(f"  Sensitivity ({mcs.SENSITIVITY_CHOICE}: {insight.measure}; the {shown} strongest of "
+              f"{len(insight.sensitivity)} pairs{', --report lists them all' if more else ''}; "
+              "a correlation is not a cause):")
+        _print_table(*mcs.sensitivity_table(insight, SENSITIVITY_ROWS), left=2)
+
+
+def _write_batch_files(args: argparse.Namespace, batch, folder, csv_path) -> bool:
+    """The Runs table (``csv_path``, when given) and the report
+    (``--report``) of a batch; True when one could not be written (said)."""
+    from .engine import monte_carlo_report
+
+    if csv_path is not None:
+        try:
+            monte_carlo_report.write_runs_csv(batch, csv_path, folder=folder)
+        except OSError as exc:
+            print(f"ERROR: could not write the Runs table to {csv_path}: {exc}", file=sys.stderr)
+            return True
+        several = batch.items[1:]
+        note = (f" (for {batch.items[0]}; the window's Runs table exports {', '.join(several)})"
+                if several else "")
+        print(f"Wrote the Runs table to {csv_path}{note}")
+    if args.report is not None:
+        try:
+            monte_carlo_report.write(batch, args.report, folder=folder)
+        except (OSError, monte_carlo_report.MonteCarloReportError) as exc:
+            print(f"ERROR: could not write the report to {args.report}: {exc}", file=sys.stderr)
+            return True
+        print(f"Wrote the Monte Carlo report to {args.report}")
+    return False
 
 
 def _monte_carlo_case(args: argparse.Namespace, scenario, file_record) -> int:
@@ -1586,6 +1727,30 @@ def _positive_int_arg(text: str) -> int:
     if value < 1:
         raise argparse.ArgumentTypeError(f"{text!r}: a whole number of 1 or more")  # 0 and -3 were accepted (L7)
     return value
+
+
+def _bounded_int(text: str, low: int, high: int) -> int:
+    try:
+        value = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r}: a whole number from {low} to {high}") from None
+    if not low <= value <= high:
+        raise argparse.ArgumentTypeError(f"{text!r}: a whole number from {low} to {high}")
+    return value
+
+
+def _monte_carlo_runs_arg(text: str) -> int:
+    """``--runs``: the scenario file's limits on ``monte_carlo.num_runs``."""
+    from .schema.scenario import MAX_MONTE_CARLO_RUNS
+
+    return _bounded_int(text, 1, MAX_MONTE_CARLO_RUNS)
+
+
+def _monte_carlo_processes_arg(text: str) -> int:
+    """``--processes``: the scenario file's limits on ``monte_carlo.thread_count``."""
+    from .schema.scenario import MAX_MONTE_CARLO_THREADS
+
+    return _bounded_int(text, 1, MAX_MONTE_CARLO_THREADS)
 
 
 def _non_negative_int_arg(text: str) -> int:
@@ -2619,11 +2784,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_mc = subparsers.add_parser(
         "monte-carlo", help="run a Monte Carlo batch and archive retained results",
         description="Run a Monte Carlo batch, archive its retained results and print each outcome's range over "
-                    "the runs and the scenario's requirements. Exit status 3 when a run failed; else 5 when a "
-                    "requirement with an allowed probability is not shown met. With --case N, run case N of the "
-                    "batch in --archive-dir again as a plain run and write what 'run --out-dir' writes; exit "
-                    "status 1 when the scenario or a reference data file changed since the batch.")
-    p_mc.add_argument("scenario", type=Path)
+                    "the runs, the scenario's requirements, the outcome statistics and the strongest "
+                    "correlations. Exit status 3 when a run failed; else 5 when a requirement with an allowed "
+                    "probability is not shown met. With --case N, run case N of the batch in --archive-dir again "
+                    "as a plain run and write what 'run --out-dir' writes; exit status 1 when the scenario or a "
+                    "reference data file changed since the batch. With --summarize DIR (and no scenario), show the "
+                    "batch an earlier run saved in DIR and write its Runs table, running nothing; exit status 5 "
+                    "as after the batch.")
+    p_mc.add_argument("scenario", type=Path, nargs="?", default=None,
+                      help="the scenario file (not with --summarize)")
     p_mc.add_argument("--archive-dir", type=Path, default=Path("monte_carlo_results"),
                        help="directory to archive per-run parameters and retained data to (empty, or an earlier "
                             "batch with --overwrite)")
@@ -2638,6 +2807,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_mc.add_argument("--out-dir", type=Path, default=None,
                       help="with --case: the directory to write the case's results to, as 'run --out-dir' "
                            "(default: results)")
+    p_mc.add_argument("--runs", type=_monte_carlo_runs_arg, default=None, metavar="N",
+                      help="run N cases instead of the scenario's monte_carlo.num_runs, for this batch only (the "
+                           "file is not changed; the batch's provenance records both)")
+    p_mc.add_argument("--processes", type=_monte_carlo_processes_arg, default=None, metavar="N",
+                      help="use N processes instead of the scenario's monte_carlo.thread_count, for this batch only "
+                           "(at most one per CPU is used; the batch's provenance records both)")
+    p_mc.add_argument("--summarize", type=Path, default=None, metavar="DIR",
+                      help="run nothing: print the batch an earlier run saved in DIR and write its Runs table "
+                           "(--csv; default monte_carlo_runs.csv); give no scenario")
+    p_mc.add_argument("--csv", type=Path, default=None, metavar="FILE",
+                      help="write the batch's Runs table (its first spacecraft's) as CSV to FILE, with "
+                           "FILE.provenance.json beside it")
+    p_mc.add_argument("--report", type=Path, default=None, metavar="FILE",
+                      help="write the batch report to FILE: JSON for a .json file, Markdown for a .md file (the "
+                           "settings, dispersions, requirements, outcome statistics, sensitivity, crashed runs and "
+                           "provenance)")
     p_mc.set_defaults(func=cmd_monte_carlo)
 
     p_life = subparsers.add_parser("lifetime", help="estimate when a spacecraft re-enters (orbit-averaged drag)")

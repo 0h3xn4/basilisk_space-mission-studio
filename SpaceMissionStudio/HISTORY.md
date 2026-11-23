@@ -20909,3 +20909,83 @@ added and that test file passes. The other is the known local-only
 `test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
 (511 px against 509 px). The compliance generators change nothing on a
 second run, and `check_drds.py` finds 0 problems.
+
+## Monte Carlo phase B, part 3: batch report, command line, template 37 (2026-11-23)
+
+Items B5, B7 and B9 of `docs/developer/monte-carlo-plan.md`, on branch
+`feature/monte-carlo-report` from `feature/monte-carlo-insight` at
+`f85e1c7` (part 2, pull request #314, on part 1, #313; neither merged
+yet). The owner has not answered Q7; the work ran without questions,
+and `docs/DECISIONS.md` records each choice as MC-32 to MC-35 (MC-34 is
+provisional). Commits name SRS-F-13. With this part, phase B is done
+once the three parts are merged.
+
+**No scenario format step.** No scenario key was needed: the scenario
+stays at schema version 7. `archive.provenance.json` gains
+`monte_carlo_settings` (what the batch ran with, and any command-line
+override); the batch summary is unchanged (format 1). The golden files
+of the 36 existing templates are byte-identical; template 37 has its
+own.
+
+**B5, the batch report.** `engine/monte_carlo_report.py` builds one
+report of a batch and writes it as JSON (`kind: "monte_carlo_report"`,
+`format` 1) or Markdown, by the file's suffix: the settings, the
+dispersions, the spread, the requirements with their verdicts, the
+outcome statistics with the percentile method, the sensitivity with the
+measure, the crashed runs with their draws, and the provenance (the
+scenario's SHA-256, the data files' SHA-256, the versions). Its numbers
+come from the functions the view uses; the GUI hands it the view's own
+`Insight`, and a GUI test compares every Statistics, Sensitivity and
+Requirements cell with the report read back. The cell text functions
+(`number_text`, `percentile_title`) moved from the GUI module to the
+engine for the Markdown. In the window, **Export report...** starts a
+one-thread worker that builds and writes the file; the GUI thread only
+starts it (a test requires under 50 ms) and a toast says where the file
+is. The Runs table's CSV writer moved to the engine, for the command
+line.
+
+**B7, the command line.** `monte-carlo --summarize DIR` prints an
+earlier batch and writes its Runs table (`monte_carlo_runs.csv` or
+`--csv`) and, with `--report`, its report, running nothing and changing
+nothing in DIR (a test compares every file's bytes). It exits 5 when a
+requirement is not shown met, as after a batch. `--runs N` and
+`--processes N` override the scenario for one batch: the scenario file
+is byte for byte the same afterwards and its hash is the batch's, and
+`monte_carlo_settings.overrides` records both values. A batch run and
+`--summarize` now also print the outcome statistics and the ten
+strongest correlations (MC-28 had left them to this part). Flags that
+do not go together are usage errors (2) before anything is read.
+
+**B9, template 37** ("Monte Carlo: requirements, statistics and
+sensitivity"). Template 25's satellite for half a day, 30 runs, batch
+seed 37, three dispersions (orbit, drag coefficient, dry mass) and two
+requirements at 90 % confidence. Measured: **53 s for the batch in one
+process** (the CLI's wall time on this 4-CPU container, about 1.7 s a
+run); R-ALT-01 met (0 of 30, bound 0.0739 against 0.1 allowed);
+R-DECAY-01 2 of 30 (estimate 0.0667, bound 0.168); Spearman's
+correlation of the drag coefficient with the semi-major axis change
+-0.90, of the dry mass +0.27. A first draft at 40 runs took 67 s; 30
+runs keep the bound at k = 0 under 0.1. Its golden file was recorded
+for it alone; `tests/data/scenario_hashes.json` gained its two hashes;
+running `scripts/_generate_templates.py` writes the 36 others byte for
+byte as committed, except template 03, whose orbit elements differ in
+their last digits on this machine before and after this change (not
+committed). It has a Customize wizard and a README row. Its wizard
+showed a code name in a dispersion's group heading ("Dispersion:
+sat-1 dry_mass_kg", found by `tests/gui/test_label_text.py`); the
+heading now reads "dry mass".
+
+**Tests.** New: 8 tests in `tests/test_monte_carlo_report.py`, 16 in
+`tests/test_cli.py` (with the parametrized cases), 2 in
+`tests/gui/test_monte_carlo_results_widget.py` and the slow template 37
+claim in `tests/test_template_claims.py`. Three lists grew (MC-35): the
+templates in `tests/gui/test_home.py` and
+`tests/test_monte_carlo_statistics.py`, and the exports in
+`tests/gui/test_reports_and_settings.py`. The first full run found two
+failures of template 37 itself, both fixed: a description bullet over
+200 characters (`tests/test_scenario_templates.py`) and the wizard's
+code-name heading (above). The full suite after the last change, 4
+workers: 5945 passed, 19 skipped, 1 failed: the known local-only
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`.
+`ruff check` passes. The compliance generators change nothing on a
+second run, `check_drds.py` finds 0 problems, and pre-commit passes.
