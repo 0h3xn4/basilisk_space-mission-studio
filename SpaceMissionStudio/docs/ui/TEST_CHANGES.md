@@ -2744,3 +2744,21 @@ again), in `tests/test_monte_carlo_requirements.py` 3, in
 `tests/test_thermal_studies.py` 1, in
 `tests/gui/test_monte_carlo_editor.py` 2 and in
 `tests/gui/test_monte_carlo_results_widget.py` 2.
+
+## The Budgets area shows quickly (SRelD K-40, 2026-11-23)
+
+One existing GUI test gets its stricter limit back, as the backlog item
+asks. Nothing is weakened.
+
+| Test | Before | Now | Why |
+|---|---|---|---|
+| `tests/gui/test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` | a move under 50 ms, or, for a view slow to show in place, under twice its show time plus 10 ms | every move under 50 ms | the Budgets area no longer makes Qt ask every area's page for its height (K-40), so its show takes about 1 ms on Linux (8 to 11 ms before; 50 to 81 ms on the Windows runner) |
+
+Added in `tests/gui/test_breakout.py`:
+- `test_the_budgets_area_shows_in_place_in_under_50_ms`: the area hidden
+  and shown in place, the median of five, under 50 ms;
+- `test_showing_an_area_asks_no_hidden_area_its_height`: a probe in the
+  hidden Home area is never asked its height for a width while the
+  Budgets area shows.
+
+The probe test failed before the fix (asked 2 times) and passes after.

@@ -5231,3 +5231,65 @@ questions; each choice below has its reason.
   test and `test_thermal_studies.py`'s command-line test gained checks.
   **Why:** CLAUDE.md: no test weakened; each change keeps the check's
   strength or adds to it.
+
+## The Budgets area shows quickly (SRelD K-40, 2026-11-23)
+
+The first item of `BACKLOG.md` "Next release".
+
+- **An area's page (`shell.AreaPage`) tells Qt that its height does not
+  follow its width** (`hasHeightForWidth` is False). **Why:** the
+  Equipment page has a word-wrapped note, so the page said True, and
+  Qt's stacked layout then asked every area's page, the hidden ones too,
+  for its height for a width at each show. That was the whole cost: on
+  Linux the Budgets area took 8 to 11 ms to show (438 widgets, only 52
+  of them shown) and takes about 1 ms now; detach and attach take 3 to
+  5 ms instead of 10 to 12 ms. A page fills the area stack and the main
+  window ignores a height for width, so nothing that the window shows
+  changes: 82 grabs of every area and tab at three window sizes and of
+  the detached Budgets window were the same before and after, except for
+  a toast or a page caught at another moment, which also differ between
+  two runs of the same code.
+- **The fix is at the area's page, not at the note.** **Why:** a note
+  that does not wrap, or that has no height for width, would show
+  differently in a narrow window. At the page, every area gains, and the
+  wrapped labels inside a page still get their height from the page's
+  own layout. A cut at `BudgetsViews` as well gave no more: the rest of
+  a move is the window change itself.
+- **The move test's limit is a plain 50 ms again**, as the backlog item
+  asks; the rule "twice the show time plus 10 ms" is gone
+  (`docs/ui/TEST_CHANGES.md`).
+
+## Pointing error budget: design (2026-11-23)
+
+The second item of `BACKLOG.md` "Next release": the design and its
+decisions first, then the owner's choice of scope
+(`docs/developer/pointing-error-budget-design.md`). All decisions are
+provisional until the owner answers that page's section 7. No code
+changed.
+
+- **PE-1. A "Pointing" tab of the Budgets area.** **Why:** the area holds
+  the spacecraft's other budgets, and its tables, report and CLI can be
+  reused.
+- **PE-2. The data is a `pointing` subsection of a spacecraft's
+  `budgets`, every value a `SourcedValue`.** **Why:** as the other
+  budgets; a value without a source is "TBD", never a default number.
+- **PE-3. Clean room from ECSS-E-ST-60-10C's public concepts only.**
+  **Why:** the owner's rule; no other tool's name, user interface, files
+  or numbers, and no text or table of the standard reproduced.
+- **PE-4. Summation per index and axis: means linearly, independent
+  standard deviations root-sum-square, correlated groups linearly.**
+  **Why:** the standard summation idea, and simple to check by hand.
+- **PE-5. No default probability level; a new requirement has "TBD".**
+  **Why:** every number has a source (question 2 to the owner).
+- **PE-6. Per-axis first; a line-of-sight value from two axes by a
+  stated rule.** **Why:** per-axis is the simplest correct form
+  (question 3 to the owner).
+- **PE-7. A periodic contributor enters an index by the share of its
+  amplitude seen in the window.** **Why:** the full amplitude in every
+  index overstates relative errors over short windows (question 4 to the
+  owner gives the simpler, conservative choice).
+- **PE-8. A budget with a "TBD" input shows "TBD" for the indices it
+  enters.** **Why:** a smaller number would claim more than is known.
+- **PE-9. The recommended scope is option B** (the table, plus the
+  scenario's sensor noises as knowledge contributors). **Why:** most of
+  the value for a third of option C's effort; C is its own item.
