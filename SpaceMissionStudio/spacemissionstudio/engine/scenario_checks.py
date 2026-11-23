@@ -553,7 +553,7 @@ def plausibility_warnings(scenario, base_dir=None) -> list[str]:
                         ("3D models", lambda s: _model_warnings(s, base_dir)),
                         ("design checks", lambda s: _design_warnings(s, base_dir)),
                         ("thermal models", lambda s: _thermal_warnings(s, base_dir)),
-                        ("budgets", _budget_warnings)):
+                        ("budgets", _budget_warnings), ("Monte Carlo dispersions", _dispersion_warnings)):
         warnings += _checked(name, check, scenario)
     return warnings
 
@@ -752,6 +752,54 @@ def _monte_carlo_warnings(scenario) -> list[str]:
                     f"{usable_thread_count(config.thread_count)} CPUs, so it runs that many at once",
                     "monte_carlo.processes", actual=f"{config.thread_count} processes",
                     limit=f"{usable_thread_count(config.thread_count)} CPUs")]
+
+
+# The dispersions that draw an absolute value of a spacecraft field (Monte Carlo plan B6, decision
+# MC-29): (quantity, the field, its label, its unit). The other quantities are spread around the
+# spacecraft's own value (orbit elements, inertia, body rate) or draw an attitude whose Euler angles are not
+# unique (attitude_sigma_bn), so they have no nominal value to contain.
+_ABSOLUTE_DISPERSIONS = {"dry_mass_kg": ("dry_mass_kg", "dry mass", "kg"),
+                         "drag_coeff": ("drag_coeff", "drag coefficient", "-"),
+                         "srp_coeff": ("srp_coeff", "SRP coefficient", "-")}
+
+
+def _dispersion_warnings(scenario) -> list[str]:
+    """A Monte Carlo dispersion of an absolute value whose bounds do not
+    contain the spacecraft's value, or whose mean (a normal one) is not
+    that value: a dispersion keeps its own numbers, so it does not follow
+    an edit of the spacecraft (Monte Carlo plan B6). Only while Monte Carlo
+    is on."""
+    config = scenario.monte_carlo
+    if not config.enabled:
+        return []
+    spacecraft = {sc.name: sc for sc in scenario.spacecraft}
+    warnings = []
+    for dispersion in config.dispersions:
+        sc = spacecraft.get(dispersion.spacecraft)
+        found = _ABSOLUTE_DISPERSIONS.get(dispersion.quantity)
+        if sc is None or found is None:
+            continue
+        field, label, unit = found
+        nominal = float(getattr(sc, field))
+        suffix = "" if unit == "-" else f" {unit}"
+        if dispersion.bounds is not None:
+            low, high = (float(value) for value in dispersion.bounds)
+            if not low <= nominal <= high:
+                warnings.append(Finding(
+                    f"{sc.name}: {field} {nominal:g}{suffix} is outside its Monte Carlo dispersion's bounds "
+                    f"{low:g} to {high:g}{suffix}: a dispersion keeps its own numbers and does not follow an edit "
+                    f"of the spacecraft, so every run would draw a {label} away from the spacecraft's",
+                    "monte_carlo.nominal_outside", actual=f"{nominal:g}{suffix}", limit=f"{low:g} to {high:g}{suffix}"))
+                continue
+        if dispersion.kind == "normal" and dispersion.mean is not None:
+            mean = float(dispersion.mean)
+            if not math.isclose(mean, nominal, rel_tol=1e-9, abs_tol=0.0):
+                warnings.append(Finding(
+                    f"{sc.name}: {field} {nominal:g}{suffix} is not the mean {mean:g}{suffix} of its Monte Carlo "
+                    "dispersion: a dispersion keeps its own numbers and does not follow an edit of the spacecraft, "
+                    f"so the runs would draw a {label} around {mean:g}{suffix}",
+                    "monte_carlo.nominal_outside", actual=f"{nominal:g}{suffix}", limit=f"mean {mean:g}{suffix}"))
+    return warnings
 
 
 def _pass_warnings(scenario) -> list[str]:

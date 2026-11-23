@@ -460,7 +460,8 @@ new version opens an old batch without them.
 | A-1 Outcomes, draws of crashed runs, requirements | done (`feature/monte-carlo-outcomes`, 2026-11-21; DECISIONS MC-11 to MC-16) |
 | A-2 Reproduce one case | done (`feature/monte-carlo-rerun-case`, 2026-11-21; DECISIONS MC-17, MC-18 and MC-19) |
 | B-1 Batch seed (B1), thermal node limits (B4), small fixes (B8) | done (`feature/monte-carlo-seed`, 2026-11-23; DECISIONS MC-20 to MC-25) |
-| B, the rest (B2, B3, B5, B6, B7, B9) | later |
+| B-2 Sensitivity (B2), outcome statistics (B3), trust checks (B6) | done (`feature/monte-carlo-insight`, 2026-11-23; DECISIONS MC-26 to MC-31; Q8 answered provisionally by MC-27) |
+| B, the rest (B5, B7, B9) | later |
 | C | later |
 
 ---

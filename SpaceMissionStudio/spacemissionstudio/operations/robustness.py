@@ -178,6 +178,7 @@ def run(planning, plan: Plan, runs: int, seed: int = 0, lost_pass_probability: f
 
 def to_batch(planning, plan: Plan, draws: list[Draw], seed: int, settings: dict):
     """The draws as a ``MonteCarloBatch`` of kind ``operations``."""
+    from ..engine import monte_carlo_statistics
     from ..engine.monte_carlo_results import MonteCarloBatch
 
     first = next(iter(plan.resources.values()))
@@ -198,7 +199,8 @@ def to_batch(planning, plan: Plan, draws: list[Draw], seed: int, settings: dict)
                       "outcome: backlog at the end [Gbit]": d.backlog_bit / 1e9})
     return MonteCarloBatch(planning.scenario.name, "earth", time_s, [d.run for d in draws], [], {}, {}, drawn,
                            planning.scenario.epoch_utc, "population", "operations", {},
-                           f"robustness, seed {seed}, {settings}", profiles, units)
+                           f"robustness, seed {seed}, {settings}", profiles, units,
+                           **monte_carlo_statistics.choices(planning.scenario))
 
 
 def compare(a: Plan, b: Plan) -> dict:

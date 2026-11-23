@@ -77,13 +77,35 @@ Problems panel names the missing field.
   **not shown**. Read the bound next to the estimate: 20 runs without a
   failure show, at a confidence of 0.95, only that the probability is
   below 0.139.
+- **Statistics:** per outcome, the runs that recorded it (N), the
+  minimum, the percentiles (1, 5, 50, 95 and 99 % by default) and the
+  maximum. Pick a row for its empirical distribution: the fraction of runs
+  at or below each value, a step plot that ends at 1.
+- **Sensitivity:** Spearman's rank correlation of each drawn value with
+  each outcome, the strongest first, with N per pair; "—" where a value
+  does not vary. Pick a row for the scatter plot of the runs. Read it as
+  "goes with", not "causes".
 
 The spread is the population standard deviation of the runs, unless a
 project file chooses the sample one
 ([Choose a model](project-configuration.md#choose-a-model)); the page
 names the statistic, and a batch keeps the one it was run with.
 
-**Open Monte Carlo Results...** (the Run area) opens a batch you ran earlier.
+The percentiles, their method and the correlation are project
+parameters (`monte_carlo.percentiles`, `monte_carlo.percentile_method`,
+`monte_carlo.sensitivity_measure`); a batch keeps the ones it was run
+with. A thermal or operations batch's band around the mean is the mean
+plus and minus 3 standard deviations of the runs, labelled "not a
+probability bound".
+
+**Open Monte Carlo Results...** (the Run area) opens a batch you ran
+earlier. If the scenario open is not the one the batch was run with, a
+warning under the title says so, with both scenario hashes.
+
+Before a batch, the Problems panel warns when a dispersion of the dry
+mass, the drag coefficient or the SRP coefficient no longer contains the
+spacecraft's value (its bounds around it, a normal one's mean on it):
+the dispersion keeps its own numbers when you edit the spacecraft.
 
 ## Run one case again
 

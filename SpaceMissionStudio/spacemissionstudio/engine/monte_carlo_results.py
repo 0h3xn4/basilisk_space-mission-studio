@@ -63,7 +63,11 @@ without them opens as before, and an older version ignores them):
 * ``node_limits`` (a thermal batch): each node's operating and survival
   range judged on the runs (plan B4, decisions MC-22 and MC-23; rows of
   ``engine.monte_carlo_requirements.NodeLimitResult.to_dict``), with
-  ``probability_bound``, the model of their bound.
+  ``probability_bound``, the model of their bound;
+* ``sensitivity_measure``, ``percentile_method`` and ``percentiles``: the
+  choices the batch's outcome statistics and sensitivity are read with
+  (plan B2 and B3, ``engine.monte_carlo_statistics``); a summary without
+  them reads with the defaults.
 """
 
 from __future__ import annotations
@@ -92,6 +96,14 @@ SPREAD_CHOICE = "monte_carlo.spread_statistic"
 BOUND_CHOICE = "monte_carlo.probability_bound"  # engine.monte_carlo_requirements
 # numpy.std's ddof of each model of SPREAD_CHOICE: the divisor is N - ddof.
 SPREAD_DDOF = {"population": 0, "sample": 1}
+# The thermal and operations batches' band around the mean (decision MC-27, plan Q8): the runs' mean
+# plus or minus three of their standard deviations at each sample, by the batch's spread statistic. It
+# assumes no distribution, so it is no probability bound; its label says both.
+MEAN_MINUS_3_SD = "mean - 3 standard deviations (not a probability bound)"
+MEAN_PLUS_3_SD = "mean + 3 standard deviations (not a probability bound)"
+SENSITIVITY_CHOICE = "monte_carlo.sensitivity_measure"  # engine.monte_carlo_statistics
+PERCENTILE_CHOICE = "monte_carlo.percentile_method"
+PERCENTILES = "monte_carlo.percentiles"
 
 
 class MonteCarloResultsError(Exception):
@@ -145,6 +157,11 @@ class MonteCarloBatch:
     # A thermal batch against its nodes' limits (B4): rows of
     # engine.monte_carlo_requirements.NodeLimitResult.to_dict; empty without them.
     node_limits: list = field(default_factory=list)
+    # How the outcome statistics and the sensitivity are read (B2, B3): the models of
+    # SENSITIVITY_CHOICE and PERCENTILE_CHOICE, and the percentiles shown [%] (PERCENTILES).
+    sensitivity_measure: str = "spearman"
+    percentile_method: str = "linear"
+    percentiles: list = field(default_factory=lambda: [1.0, 5.0, 50.0, 95.0, 99.0])
 
     @property
     def spacecraft(self) -> list[str]:
@@ -186,6 +203,9 @@ def save(batch: MonteCarloBatch, folder: str | Path) -> Path:
         "failed": [int(run) for run in batch.failed],
         "drawn": batch.drawn,
         "spread_statistic": batch.spread_statistic,
+        "sensitivity_measure": batch.sensitivity_measure,
+        "percentile_method": batch.percentile_method,
+        "percentiles": [float(p) for p in batch.percentiles],
     }
     if batch.outcomes:
         meta.update(outcomes=batch.outcomes, outcome_units=dict(batch.outcome_units))
@@ -339,6 +359,14 @@ def load(folder: str | Path) -> MonteCarloBatch:
     node_limits = meta.get("node_limits") or []  # a thermal summary written before B4 has none
     _require(isinstance(node_limits, list) and all(_is_node_limit(row) for row in node_limits),
              f"{SUMMARY_JSON}: node_limits is not a table of node limits")
+    measure = str(meta.get("sensitivity_measure", "spearman"))  # a summary written before B2: the default
+    _require(measure in models.names(SENSITIVITY_CHOICE), f"{SUMMARY_JSON}: unknown sensitivity measure {measure!r}")
+    method = str(meta.get("percentile_method", "linear"))
+    _require(method in models.names(PERCENTILE_CHOICE), f"{SUMMARY_JSON}: unknown percentile method {method!r}")
+    percentiles = meta.get("percentiles", [1.0, 5.0, 50.0, 95.0, 99.0])
+    _require(isinstance(percentiles, list) and all(isinstance(p, (int, float)) and not isinstance(p, bool)
+                                                   and 0.0 <= p <= 100.0 for p in percentiles),
+             f"{SUMMARY_JSON}: percentiles is not a list of percentiles from 0 to 100")
     return MonteCarloBatch(str(meta.get("scenario_name", "")), str(meta.get("central_body", "earth")), time_s,
                            runs, [int(run) for run in meta.get("failed", [])], positions, velocities,
                            [{str(k): float(v) for k, v in row.items()} for row in drawn],
@@ -349,7 +377,8 @@ def load(folder: str | Path) -> MonteCarloBatch:
                            {int(run): {str(k): float(v) for k, v in row.items()} for run, row in failed_drawn.items()},
                            [dict(r) for r in requirements], bound,
                            [{str(kind): {str(k): str(v) for k, v in record.items()} for kind, record in row.items()}
-                            for row in data_files], seed, [dict(row) for row in node_limits])
+                            for row in data_files], seed, [dict(row) for row in node_limits],
+                           measure, method, [float(p) for p in percentiles])
 
 
 def _is_node_limit(row) -> bool:
@@ -460,7 +489,7 @@ def to_result_set(batch: MonteCarloBatch) -> ResultSet:
             sigma = spread(values, batch.spread_statistic)
             mean = values.mean(axis=0)
             result.add(TimeSeries(f"operations_monte_carlo.{name}.spread", batch.time_s,
-                                  ["mean", "mean - 3 sigma", "mean + 3 sigma", "lowest run", "highest run"],
+                                  ["mean", MEAN_MINUS_3_SD, MEAN_PLUS_3_SD, "lowest run", "highest run"],
                                   np.column_stack([mean, mean - 3 * sigma, mean + 3 * sigma, values.min(axis=0),
                                                    values.max(axis=0)]), unit))
         return result
@@ -471,7 +500,7 @@ def to_result_set(batch: MonteCarloBatch) -> ResultSet:
             sigma = spread(values, batch.spread_statistic)
             mean = values.mean(axis=0)
             result.add(TimeSeries(f"thermal_monte_carlo.{name}.spread", batch.time_s,
-                                  ["mean", "mean - 3 sigma", "mean + 3 sigma", "coldest run", "hottest run"],
+                                  ["mean", MEAN_MINUS_3_SD, MEAN_PLUS_3_SD, "coldest run", "hottest run"],
                                   np.column_stack([mean, mean - 3 * sigma, mean + 3 * sigma, values.min(axis=0),
                                                    values.max(axis=0)]), "degC"))
         return result

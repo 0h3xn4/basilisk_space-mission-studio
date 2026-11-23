@@ -20,7 +20,7 @@ configuration file changes them without editing code
 | The attitude thrusters' Schmitt trigger, optical and landmark navigation's filters | [Flight software and navigation](flight-software-and-navigation.md) | `flight_software.*`, `navigation.*` |
 | The pre-run checks: pass prediction, recording, step, late pass, sun sensor | [Pre-run checks](pre-run-checks.md) | `checks.*` |
 | Explain's labels and notes; the mission sequence's numerical settings | [Explain and the mission sequence](explain.md) | `explain.*` |
-| A Monte Carlo batch's offsets, the statistic of its spread, and the bound on the probability of not meeting a requirement | [Monte Carlo statistics](monte-carlo-statistics.md) | `monte_carlo.*` |
+| A Monte Carlo batch's offsets, the statistic of its spread, the bound on the probability of not meeting a requirement, its outcome statistics and its sensitivity | [Monte Carlo statistics](monte-carlo-statistics.md) | `monte_carlo.*` |
 | Analyses built on the 3D model: fields of view, thrusters, mass budget, launcher, disturbance torques, blinding, shading, exposure, brightness | [Analyses built on the 3D model](model-analyses.md) | `analyses.*` |
 | The preliminary re-entry casualty estimate: break-up, demise, casualty area, risk | [Preliminary re-entry casualty estimate](reentry.md) | `reentry.*` |
 | The thermal model: nodes, conductors, heat pipes, heaters, the environment on every face, cases, the solver | [Thermal model](thermal.md) | none (the scenario's `thermal` section) |
@@ -74,6 +74,8 @@ recorded with the results it gives and named where they are shown.
 |---|---|---|
 | `monte_carlo.spread_statistic` | `population` (default), `sample` | [Monte Carlo statistics](monte-carlo-statistics.md) |
 | `monte_carlo.probability_bound` | `clopper_pearson` (default, the only one) | [Monte Carlo statistics](monte-carlo-statistics.md#the-probability-of-not-meeting-a-requirement-probability_bound) |
+| `monte_carlo.sensitivity_measure` | `spearman` (default), `pearson` | [Monte Carlo statistics](monte-carlo-statistics.md#sensitivity-sensitivity_measure) |
+| `monte_carlo.percentile_method` | `linear` (default, the only one) | [Monte Carlo statistics](monte-carlo-statistics.md#outcome-statistics-percentile_method-and-percentiles) |
 | `propellant_budget.margin_policy` | `ad10_equations` (default), `ad10_summary_table` | [Propellant budget](propellant-budget.md#the-margin-policy-margin_policy) |
 | `dynamics.shadowing_bodies` | `central_body` (default), `tracked_bodies` | [Dynamics: integration and run control](dynamics-run-control.md#shadows-shadowing_bodies) |
 | `link.atmospheric_loss` | `none` (default), `itu_r_p676` | [RF link, data handling and power](link-data-and-power.md#the-atmospheric-gases-atmospheric_loss) |
