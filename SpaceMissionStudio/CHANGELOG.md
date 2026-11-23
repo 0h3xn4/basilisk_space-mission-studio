@@ -8,7 +8,14 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.14.2 (2026-11-23)
+
+SpaceMissionStudio 2.14.2 is a small patch on top of 2.14.1. The
+Budgets area now appears at once when you open it or move it into its
+own window and back, also on a slow Windows machine, where it could
+make the window pause for up to about 80 ms. It looks exactly as
+before. Nothing the tool computes has changed, and 2.14.1 and 2.14.2
+open each other's files.
 
 ### Fixed
 
@@ -19,6 +26,20 @@ fixes bugs.
   The areas' pages now tell Qt that their height does not depend on
   their width, and the area shows in about 1 ms on Linux (8 to 11 ms
   before). It looks exactly as before (SRelD K-40).
+
+### Who should update
+
+- **Anyone who uses the Budgets area on Windows:** it no longer makes
+  the window pause when it opens or moves.
+- **Everyone on 2.14.1:** the update is small and safe. Nothing that a
+  run computes has changed, and the scenario format is still version 6.
+
+### Known limits
+
+- The bundled space weather is still 2.13.0's (observations to
+  2026-11-18): CelesTrak refused the connection when this release was
+  prepared. Fetch the current file before a drag study (Home, or
+  **Settings > Reference data**).
 
 ## 2.14.1 (2026-11-23)
 

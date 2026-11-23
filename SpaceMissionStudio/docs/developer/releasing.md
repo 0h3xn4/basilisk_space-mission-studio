@@ -651,6 +651,17 @@ built, installed and checked every file. It attached the eleven and
 published the release 51 minutes after the tag. It was never a public
 release without files.
 
+2.14.2 was prepared on 2026-11-23 by this checklist, from the backlog
+procedure (`CLAUDE.md`, "Backlog and release procedure") of an
+unattended run: a patch release with one fix, the Budgets area shown
+quickly (SRelD K-40), and the 2.14.1 publication record (#312). It has
+no release pull request: the run commits to `develop` and starts the tag
+workflow there. No file format changed: the scenario file is still at
+schema version 6, and `schema/`, the templates, the golden files and
+`packaging/` are as at the 2.14.1 tag `caabf11`. The space weather was
+not refreshed: CelesTrak reset all three connections, so 2.14.2 carries
+2.13.0's file (observations to 2026-11-18).
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

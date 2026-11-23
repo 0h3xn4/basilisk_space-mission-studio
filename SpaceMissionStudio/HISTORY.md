@@ -20769,3 +20769,103 @@ The release and its files were checked after the publication:
 
 SRelD issue 52, the SDP, H05 and `releasing.md` record the tag, the runs
 and the files' digests. The CHANGELOG and `BACKLOG.md` are unchanged.
+
+## 2.14.2: the Budgets area shows quickly (2026-11-23)
+
+The first item of `BACKLOG.md` "Next release" (SRelD K-40), done by an
+unattended backlog run on `develop` (`29bbdb5`).
+
+**The problem.** On the Windows CI runner, the Budgets area took 50 to
+81 ms of the GUI thread to show, or to move into its own window and
+back (design rule 6: about 50 ms at most). On Linux it took 8 to 11 ms.
+2.12.0 had measured that the time was the `show()` of the area's 435
+widgets, with no single part dominating, and the move test allowed a
+slow view twice its show time plus 10 ms.
+
+**How the cause was found.** A script built the window as the move test
+does (template 22 with an equipment list, the Budgets area shown) and
+timed `show()` of the area after `hide()`. cProfile put all the time in
+Qt's C++ `show()`: no Python handler took any. Only 52 of the area's
+438 widgets are shown (the Equipment page; the other pages are hidden).
+Each shown widget was then hidden in turn and the area's show timed
+again: hiding one `QLabel` took the show from 7.4 ms to 0.4 ms. That is
+the Equipment page's note "The run does not use the budgets yet...",
+which is word-wrapped. A word-wrapped label has a height for width.
+Every layout up to the area stack then reported a height for width, and
+Qt's stacked layout answers that question by asking every page it holds,
+the hidden ones too. So each show of the Budgets area laid out the
+hidden areas. With the note's size policy changed to no height for
+width, the show took 0.4 ms. Telling Qt that a whole level has no
+height for width gave: at the Equipment page 0.5 ms, at the area
+(`BudgetsViews`) 0.5 ms, at the area's page (`AreaPage`) 0.9 ms; the
+rest at that level is the area's own hidden tabs.
+
+**The fix.** `AreaPage.hasHeightForWidth()` returns False. An area's
+page fills the area stack, so its height never follows its width, and
+`QMainWindow` ignores a height for width anyway. The page's own layout
+still gives a wrapped label the height its width needs. The note stays
+as it is: without wrap, or without a height for width, it would show
+differently in a narrow window. A second cut at `BudgetsViews` gave no
+more: the rest of a move (3 to 5 ms against the Thermal view's 1 to
+2 ms) is the window change itself.
+
+**What the window shows is unchanged.** 82 grabs of the window, each
+area and each tab of a tabbed area at 1280 x 720, 900 x 600 and
+1600 x 1000, and the detached Budgets window, were taken before and
+after the fix, with the toasts hidden. Two runs before the fix already
+differed in a few grabs of Results and Run (a page caught at another
+moment of its load); before and after differed only in one of those.
+In a first set taken with the toasts shown, "Opened b.json" stood at
+another height in one grab: the toast moves until it covers no
+control, and that grab caught it at another moment.
+
+**Measured on Linux** (offscreen, this container): the show of the
+area 8 to 11 ms before, about 1 ms after; detach 10 to 12 ms before,
+4.5 to 5.0 ms after; attach 10 to 23 ms before, 2.9 to 3.4 ms after.
+On the Windows runner the move test passed with the plain 50 ms limit
+(CI run 45109373728, on `39da9d7`: the Windows job's Tests step passed;
+the run was then cancelled by the next push, before its Linux job
+ended).
+
+**Tests.** `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+has a plain 50 ms limit again (`docs/ui/TEST_CHANGES.md`). New:
+`test_showing_an_area_asks_no_hidden_area_its_height` (a probe widget in
+the hidden Home area counts the questions: 2 before the fix, 0 after)
+and `test_the_budgets_area_shows_in_place_in_under_50_ms`.
+
+**The same run** wrote the pointing error budget's design
+(`39da9d7`, `docs/developer/pointing-error-budget-design.md`, PE-1 to
+PE-9) and moved that item to "Needs human" for the owner's choice of
+scope.
+
+## Release 2.14.2 prepared (2026-11-23)
+
+A patch release, prepared by the unattended backlog run that fixed K-40
+(`CLAUDE.md`, "Backlog and release procedure"). It changes no file
+format. Contents since 2.14.1: the 2.14.1 publication record (#312) and
+the Budgets area shown quickly (`29bbdb5`). The pointing error budget's
+design (`39da9d7`) and the backlog's moves (`c0f62c7`) are on `develop`
+too; they change no software. There is no release pull request: the run
+commits to `develop`, as the procedure says, and starts the tag workflow
+there.
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4. The version
+is 2.14.2 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+The CHANGELOG's Unreleased entry is under 2.14.2, with an introduction,
+Who should update and Known limits. SRelD issue 53 records the release:
+K-40 is closed and K-13 is extended. The SDP, SRS, ICD, CSD, SUM,
+limitations, `releasing.md` and both READMEs name 2.14.2.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so a download was tried on 2026-11-23 from 04:27 to
+04:28 UTC: CelesTrak reset all three connections (`curl` error 35).
+2.14.2 so carries 2.13.0's file (observations to 2026-11-18, updated
+2026-11-19). NASA MSFC's page still links the November 2026
+prediction, the bundled one.
+
+The file format was checked on the code. `git diff caabf11` (the 2.14.1
+tag) shows no change in `schema/`, the templates
+(`scenarios/templates/`), the golden files (`tests/golden/`),
+`tests/data/` or `packaging/`. In the package, only `gui/shell.py`
+changed. The scenario file is still at schema version 6, so 2.14.1 and
+2.14.2 save and open the same files.

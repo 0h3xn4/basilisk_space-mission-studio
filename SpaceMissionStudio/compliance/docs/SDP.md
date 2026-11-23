@@ -61,7 +61,9 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.14.1, a patch release:
+signed (decision 11). The current release is 2.14.2, a patch release:
+the Budgets area shows quickly (SRelD K-40), with the scenario format
+unchanged (prepared 2026-11-23); before it 2.14.1, a patch release:
 pandas imported off the GUI thread at the first Monte Carlo start, the
 cause of "Slot '...::' not found" fixed with weak-reference connections,
 and CI downloads tried again, with the scenario format unchanged
@@ -189,7 +191,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.14.1, and the code is at 2.14.1.
+  release is 2.14.2, and the code is at 2.14.2.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;
