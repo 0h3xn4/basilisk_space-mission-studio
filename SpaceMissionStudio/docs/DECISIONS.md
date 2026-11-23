@@ -5124,3 +5124,38 @@ The first item of `BACKLOG.md` "Next release".
 - **The move test's limit is a plain 50 ms again**, as the backlog item
   asks; the rule "twice the show time plus 10 ms" is gone
   (`docs/ui/TEST_CHANGES.md`).
+
+## Pointing error budget: design (2026-11-23)
+
+The second item of `BACKLOG.md` "Next release": the design and its
+decisions first, then the owner's choice of scope
+(`docs/developer/pointing-error-budget-design.md`). All decisions are
+provisional until the owner answers that page's section 7. No code
+changed.
+
+- **PE-1. A "Pointing" tab of the Budgets area.** **Why:** the area holds
+  the spacecraft's other budgets, and its tables, report and CLI can be
+  reused.
+- **PE-2. The data is a `pointing` subsection of a spacecraft's
+  `budgets`, every value a `SourcedValue`.** **Why:** as the other
+  budgets; a value without a source is "TBD", never a default number.
+- **PE-3. Clean room from ECSS-E-ST-60-10C's public concepts only.**
+  **Why:** the owner's rule; no other tool's name, user interface, files
+  or numbers, and no text or table of the standard reproduced.
+- **PE-4. Summation per index and axis: means linearly, independent
+  standard deviations root-sum-square, correlated groups linearly.**
+  **Why:** the standard summation idea, and simple to check by hand.
+- **PE-5. No default probability level; a new requirement has "TBD".**
+  **Why:** every number has a source (question 2 to the owner).
+- **PE-6. Per-axis first; a line-of-sight value from two axes by a
+  stated rule.** **Why:** per-axis is the simplest correct form
+  (question 3 to the owner).
+- **PE-7. A periodic contributor enters an index by the share of its
+  amplitude seen in the window.** **Why:** the full amplitude in every
+  index overstates relative errors over short windows (question 4 to the
+  owner gives the simpler, conservative choice).
+- **PE-8. A budget with a "TBD" input shows "TBD" for the indices it
+  enters.** **Why:** a smaller number would claim more than is known.
+- **PE-9. The recommended scope is option B** (the table, plus the
+  scenario's sensor noises as knowledge contributors). **Why:** most of
+  the value for a third of option C's effort; C is its own item.
