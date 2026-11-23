@@ -5294,6 +5294,75 @@ changed.
   scenario's sensor noises as knowledge contributors). **Why:** most of
   the value for a third of option C's effort; C is its own item.
 
+## A hidden area that becomes wider lays the window out again (2.14.2, 2026-11-23)
+
+CI on `develop` (`ce6123e`, run 45114509231) failed
+`test_the_sweep_table_fits_the_page_at_1280[inspector]`.
+
+- **An area's page passes its layout request to the area stack while it
+  is hidden** (`AreaPage.event`). **Why:** `QStackedLayout` makes the
+  stack as wide as its widest page, hidden pages too, but Qt ignores
+  `updateGeometry()` from a hidden widget. When the hidden Timeline page
+  became wider (its filters, with the theme's fonts: 923 to 1039 px),
+  the window kept its old layout: the stack 923 px wide with a minimum
+  of 1039 px, the Inspector 277 px, the sweep table 889 px for 947 px of
+  headings. It changed only when some other change laid the window out
+  again, so the test passed or failed by timing. Measured: the module
+  with the theme applied failed 2 of 4 times on `7a9a25f` (before K-40)
+  and 6 of 12 times on `develop`; with the fix 11 of 11 passed.
+- **K-40 is not the cause and stays.** **Why:** the same failure, with
+  the same widths, came on `7a9a25f`. The fix does not ask a hidden page
+  its height for a width, so the Budgets area still shows in about 1 ms
+  and K-40's probe test passes.
+- **Only the request is passed; the hidden page is not laid out.**
+  **Why:** laying it out (`QLayout.activate()`) would arm it for its next
+  change too, but it asks its wrapped labels their height (K-40's probe
+  was asked once). Qt sends a hidden page's request only while its
+  layout is armed (laid out since its last change); a later change then
+  waits for the next layout of the window, as before.
+- **The Windows failure of `test_every_customize_button_is_inside_the_list`
+  (PR #313, job 137490865645) is not changed.** **Why:** its numbers
+  (the details 320 px wide, its buttons 169 and 266 px wide, 20 px high)
+  show a button row wider than the details column, on the shown Home
+  page. That is not the hidden-page fault and not K-40, which only
+  changes what the stack asks its pages. It did not come in 25 local
+  runs, with or without the theme, so no fix is guessed.
+
+## The Home details' buttons wrap (2026-11-23)
+
+`test_every_customize_button_is_inside_the_list` failed on the Windows
+runner on `feature/monte-carlo-seed` (#313), twice with the same numbers:
+the details column 320 px wide, its two buttons 169 and 266 px wide and
+20 px high.
+
+- **The cause.** The details column put Open template and Customize and
+  open... in a `QHBoxLayout`. The details' scroll area has no horizontal
+  scroll bar, so the part of the row past the column's edge was hidden.
+  With a larger font the row squeezed the buttons and cut their text
+  (Linux) or went past the edge (the Windows runner).
+- **Why only on #313.** A GUI test runs in the native style and font
+  unless the test or an earlier test in the same process applied the
+  theme (see `test_stale_results_and_window_size.py`'s `app_theme`). The
+  buttons were 20 px high, so the theme (32 px controls) was not
+  applied. On `develop` an earlier test on that worker had left it
+  applied; #313 adds tests, so pytest-xdist gives the Windows worker
+  other tests in another order. No test leaks a font or a style sheet:
+  every `setFont` and `setStyleSheet` in the tests is restored.
+- **Decision: a `FlowLayout`** (`gui/flow_layout.py`, already used for
+  the Results toolbar and the overview cards) instead of the row. The
+  buttons keep their own width and sit side by side while they fit;
+  otherwise Customize and open... goes below Open template. **Why:** it
+  fixes the layout for every font and column width, not only for the
+  runner, and it needs no new code.
+- **Test:** `test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
+  gives both buttons the largest font with which each fits the column
+  alone but the two do not fit side by side (chosen from the measured
+  widths, so it holds in the theme and in the native style). It failed
+  before the fix (the buttons stayed side by side and were squeezed) and
+  passes after. A first version used a fixed 26 px font: on the Windows
+  runner's native style one button alone was then wider than the column.
+  No existing test changed.
+
 ## Monte Carlo phase B, part 2: outcome statistics, sensitivity, trust checks (2026-11-23)
 
 Items B2, B3 and B6 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),

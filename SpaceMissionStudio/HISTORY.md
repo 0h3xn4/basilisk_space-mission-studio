@@ -20838,6 +20838,172 @@ workers: 5865 passed, 19 skipped, 1 failed: the known local-only
 (511 px against 509 px). The compliance generators change nothing on a
 second run, and `check_drds.py` finds 0 problems.
 
+## 2.14.2: the Budgets area shows quickly (2026-11-23)
+
+The first item of `BACKLOG.md` "Next release" (SRelD K-40), done by an
+unattended backlog run on `develop` (`29bbdb5`).
+
+**The problem.** On the Windows CI runner, the Budgets area took 50 to
+81 ms of the GUI thread to show, or to move into its own window and
+back (design rule 6: about 50 ms at most). On Linux it took 8 to 11 ms.
+2.12.0 had measured that the time was the `show()` of the area's 435
+widgets, with no single part dominating, and the move test allowed a
+slow view twice its show time plus 10 ms.
+
+**How the cause was found.** A script built the window as the move test
+does (template 22 with an equipment list, the Budgets area shown) and
+timed `show()` of the area after `hide()`. cProfile put all the time in
+Qt's C++ `show()`: no Python handler took any. Only 52 of the area's
+438 widgets are shown (the Equipment page; the other pages are hidden).
+Each shown widget was then hidden in turn and the area's show timed
+again: hiding one `QLabel` took the show from 7.4 ms to 0.4 ms. That is
+the Equipment page's note "The run does not use the budgets yet...",
+which is word-wrapped. A word-wrapped label has a height for width.
+Every layout up to the area stack then reported a height for width, and
+Qt's stacked layout answers that question by asking every page it holds,
+the hidden ones too. So each show of the Budgets area laid out the
+hidden areas. With the note's size policy changed to no height for
+width, the show took 0.4 ms. Telling Qt that a whole level has no
+height for width gave: at the Equipment page 0.5 ms, at the area
+(`BudgetsViews`) 0.5 ms, at the area's page (`AreaPage`) 0.9 ms; the
+rest at that level is the area's own hidden tabs.
+
+**The fix.** `AreaPage.hasHeightForWidth()` returns False. An area's
+page fills the area stack, so its height never follows its width, and
+`QMainWindow` ignores a height for width anyway. The page's own layout
+still gives a wrapped label the height its width needs. The note stays
+as it is: without wrap, or without a height for width, it would show
+differently in a narrow window. A second cut at `BudgetsViews` gave no
+more: the rest of a move (3 to 5 ms against the Thermal view's 1 to
+2 ms) is the window change itself.
+
+**What the window shows is unchanged.** 82 grabs of the window, each
+area and each tab of a tabbed area at 1280 x 720, 900 x 600 and
+1600 x 1000, and the detached Budgets window, were taken before and
+after the fix, with the toasts hidden. Two runs before the fix already
+differed in a few grabs of Results and Run (a page caught at another
+moment of its load); before and after differed only in one of those.
+In a first set taken with the toasts shown, "Opened b.json" stood at
+another height in one grab: the toast moves until it covers no
+control, and that grab caught it at another moment.
+
+**Measured on Linux** (offscreen, this container): the show of the
+area 8 to 11 ms before, about 1 ms after; detach 10 to 12 ms before,
+4.5 to 5.0 ms after; attach 10 to 23 ms before, 2.9 to 3.4 ms after.
+On the Windows runner the move test passed with the plain 50 ms limit
+(CI run 45109373728, on `39da9d7`: the Windows job's Tests step passed;
+the run was then cancelled by the next push, before its Linux job
+ended).
+
+**Tests.** `test_detach_and_attach_take_under_50_ms_on_the_gui_thread`
+has a plain 50 ms limit again (`docs/ui/TEST_CHANGES.md`). New:
+`test_showing_an_area_asks_no_hidden_area_its_height` (a probe widget in
+the hidden Home area counts the questions: 2 before the fix, 0 after)
+and `test_the_budgets_area_shows_in_place_in_under_50_ms`.
+
+**The same run** wrote the pointing error budget's design
+(`39da9d7`, `docs/developer/pointing-error-budget-design.md`, PE-1 to
+PE-9) and moved that item to "Needs human" for the owner's choice of
+scope.
+
+## Release 2.14.2 prepared (2026-11-23)
+
+A patch release, prepared by the unattended backlog run that fixed K-40
+(`CLAUDE.md`, "Backlog and release procedure"). It changes no file
+format. Contents since 2.14.1: the 2.14.1 publication record (#312) and
+the Budgets area shown quickly (`29bbdb5`). The pointing error budget's
+design (`39da9d7`) and the backlog's moves (`c0f62c7`) are on `develop`
+too; they change no software. There is no release pull request: the run
+commits to `develop`, as the procedure says, and starts the tag workflow
+there.
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4. The version
+is 2.14.2 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+The CHANGELOG's Unreleased entry is under 2.14.2, with an introduction,
+Who should update and Known limits. SRelD issue 53 records the release:
+K-40 is closed and K-13 is extended. The SDP, SRS, ICD, CSD, SUM,
+limitations, `releasing.md` and both READMEs name 2.14.2.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so a download was tried on 2026-11-23 from 04:27 to
+04:28 UTC: CelesTrak reset all three connections (`curl` error 35).
+2.14.2 so carries 2.13.0's file (observations to 2026-11-18, updated
+2026-11-19). NASA MSFC's page still links the November 2026
+prediction, the bundled one.
+
+The file format was checked on the code. `git diff caabf11` (the 2.14.1
+tag) shows no change in `schema/`, the templates
+(`scenarios/templates/`), the golden files (`tests/golden/`),
+`tests/data/` or `packaging/`. In the package, only `gui/shell.py`
+changed. The scenario file is still at schema version 6, so 2.14.1 and
+2.14.2 save and open the same files.
+
+## 2.14.2: a hidden area that becomes wider lays the window out again (2026-11-23)
+
+**The problem.** CI on `develop` (`ce6123e`, run 45114509231) failed one
+test on Linux: `test_the_sweep_table_fits_the_page_at_1280[inspector]`
+waited 3 s for Run > Thermal's sweep table to fit and it did not. K-40
+(`29bbdb5`) was the first suspect: it was the only code change since the
+last green run, and it changes how the area stack asks its pages.
+
+**How the cause was found.** The test passed alone, also under CPU load.
+It failed when the whole module ran in one process after the theme was
+applied (as many GUI tests leave it): 6 of 12 runs on `develop`, and
+2 of 4 runs on `7a9a25f`, the commit before K-40, with the same widths.
+So K-40 is not the cause. A dump at the timeout showed the window in a
+layout that broke its own rule: the area stack 923 px wide but its
+minimum 1039 px, the Inspector 277 px, the table 889 px for 947 px of
+headings (Inter 13 px). The 1039 px came from the hidden Timeline page:
+its row of filters became wider after the scenario opened. A
+`QStackedLayout` is as wide as its widest page, hidden pages too, but Qt
+ignores `updateGeometry()` from a hidden widget. The hidden page did get
+its layout request, but a hidden widget's layout does nothing with it.
+So the window kept the old layout until some other change laid it out
+again; then the Inspector narrowed to about 160 px and the table fitted.
+A trace of the layout requests showed the timing: when the Timeline
+page's request came after the last layout of the window, the test
+failed.
+
+**The fix.** `AreaPage.event()`: a hidden page that gets a layout request
+calls `updateGeometry()` on the area stack, so the window lays out again
+at once. It does not lay out the hidden page itself: that would also
+arm the page for its next change, but it asks the page's wrapped labels
+their height, and K-40's probe test counted one question. Qt sends a
+hidden page's request only while its layout is armed, so a later change
+still waits for the next layout of the window, as before.
+
+**Measured.** The themed module run passed 11 of 11 times with the fix
+(it failed 6 of 12 times without it). K-40's tests pass: no hidden page
+is asked its height, and the Budgets area still shows in under 50 ms.
+
+**Tests.** New in `tests/gui/test_shell.py`:
+`test_a_hidden_area_that_becomes_wider_widens_the_area_stack_at_once`.
+A widget in the hidden Timeline page of a bare shell becomes 200 px
+wider; the stack must follow with no other change. It fails on `develop`
+and passes with the fix.
+
+**Not fixed: a Windows failure on PR #313.** On `feature/monte-carlo-seed`
+(`db80cfa`) the Windows job failed
+`test_every_customize_button_is_inside_the_list`: the Customize button's
+right edge at 447 px in a details column 320 px wide. Its numbers (the
+buttons 169 and 266 px wide, 20 px high; on Linux 98 and 141 px, or 117
+and 166 px with the theme) show a row of buttons wider than the column,
+on the shown Home page. That is neither this fault nor K-40, and it did
+not come in 25 local runs, so no fix was guessed. It stays open.
+
+## Monte Carlo phase B, part 1: the Home details' buttons wrap (2026-11-23)
+
+`test_every_customize_button_is_inside_the_list` failed on the Windows
+runner for #313 twice (`assert 447 < 320`). The details column's two
+buttons were in a row, and the scroll area hid what went past its edge.
+On that worker the test ran in the native style and font (the buttons
+20 px high), because no earlier test on the worker had applied the
+theme. The buttons are now in a `FlowLayout`: Customize and open... goes
+below Open template when the two do not fit. The new test
+`test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
+failed before the fix and passes after. The open point of the previous
+entry is closed (`docs/DECISIONS.md`, "The Home details' buttons wrap").
+
 ## Monte Carlo phase B, part 2: outcome statistics, sensitivity, trust checks (2026-11-23)
 
 Items B2, B3 and B6 of `docs/developer/monte-carlo-plan.md`, on branch

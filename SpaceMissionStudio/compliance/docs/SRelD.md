@@ -1,83 +1,37 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 52, 2026-11-23. Remediation R14.
+Document: SMS-SRelD, issue 53, 2026-11-23. Remediation R14.
 
-**Status:** release **2.14.1**, published 2026-11-23 (02:20 UTC).
-2.14.1 is a patch release. It holds the fixes
-of #310 and the 2.14.0 publication record (#309):
-- **pandas imported off the GUI thread** (#310, K-48). The first Monte
-  Carlo batch or case of a process imported pandas on the GUI thread
-  (about 280 ms). The batch's or the case's worker now imports it with
-  `FIRST_IMPORTS` held, and the plots wait for that import. The GUI
-  thread's part of the start is now under 1 ms.
-- **"Slot '...::' not found" fixed** (#310, K-44). The garbage collector
-  could free a child widget before its owner, and the child's last
-  signal then reached the owner after its wrapper was cleared. These
-  signals now reach their owner through `widgets.connect_while_alive`,
-  a weak reference. The Monte Carlo editor's Requirements list uses
-  `EmptyStack` again.
-- **CI downloads tried again** (#310). `scripts/retry_download.py`
-  makes up to four attempts, 60 s apart, for each reference data
-  download of the SpaceMissionStudio workflows.
-- **The SIL stress workflow gets CI's WebGL set-up** (#310): the
-  software WebGL flags, the ITU-R P.676-13 download and the 3D View's
-  tests in a process of their own.
+**Status:** release **2.14.2**, prepared 2026-11-23, not yet
+published. It is to be tagged with the tag workflow on `develop`'s head
+after its release commit, by the backlog procedure (`CLAUDE.md`, "Backlog
+and release procedure"): no release pull request. 2.14.2 is a patch
+release. It holds one fix and the 2.14.1 publication record (#312):
+- **The Budgets area shows quickly** (`29bbdb5`, K-40). The Equipment
+  page's word-wrapped note made the area's page report a height for
+  width, and Qt's stacked layout then asked every area's page, the
+  hidden ones too, at each show: 8 to 11 ms on Linux, 50 to 81 ms on
+  the Windows CI runner. `shell.AreaPage` now reports none. The area
+  shows in about 1 ms on Linux, and the move test passes on the Windows
+  runner with a plain 50 ms limit (CI run 45109373728).
+
+Also on `develop` since 2.14.1, with no effect on the software: the
+pointing error budget's design (`39da9d7`, no code; `BACKLOG.md`,
+"Needs human") and the backlog's moves (`c0f62c7`).
 
 No file format changed: the scenario file is still at schema version 6
-(K-47). `schema/`, the templates and the golden files have no change
-since the 2.14.0 tag `1b4060c`, and outside `gui/` the package has no
-change. No computed result changed. The bundled CelesTrak space weather
-is 2.13.0's (observations to 2026-11-18; K-13, not refreshed: CelesTrak
-reset the connection). By the owner's decision of 2026-11-19, the
-release pull request may be merged with CI's "Windows (MAX Python)" job
-red, but only for the Basilisk framework test `LambertInputValidation`
-(K-45). Basilisk is unchanged. Outside `SpaceMissionStudio/` only the
-front-page `README.md`'s SpaceMissionStudio part and two
-SpaceMissionStudio workflows changed (section 4).
-The release pull request (#311) was merged at 00:34 UTC on 2026-11-23.
-As the owner asked, the assistant tagged and published it with the tag
-workflow.
-- On the head of #311 (`2f927c8`), only CI's "Windows (MAX Python)" job
-  was red. It failed only the framework test of K-45, 1 test of 842.
-- CI ("SpaceMissionStudio") on `develop`'s head `caabf11`, the merge of
-  #311 ([run 45089535321](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45089535321)), passed at
-  the first attempt. No job was run again.
-- The tag workflow ([run 45094821804](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45094821804)) ran from
-  01:29:08 to 01:29:58 UTC with publish on. It ran the release check on
-  `caabf11` and passed.
-- The tag workflow (github-actions) tagged `spacemissionstudio-v2.14.1`
-  (annotated, not signed, D-13; tag object `f4ce919`) on commit
-  `caabf11` (`caabf1170d333919d5a3de66bf5bd2f262bcb334`) at 01:29:52
-  UTC.
-- The release workflow ([run 45094885068](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45094885068)) ran from
-  01:29:55 to 02:20:54 UTC. It built, installed, checked and attached
-  the eleven files. It counted the eleven files and then published the
-  GitHub release "SpaceMissionStudio 2.14.1" at 02:20:50 UTC, not as a
-  draft and not as a pre-release
-  (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.1>).
-  The release was never public without its files. Its notes are the
-  CHANGELOG's 2.14.1 section.
-- GitHub's SHA-256 digests: `.deb` (`spacemissionstudio_2.14.1_amd64.deb`,
-  441 031 904 bytes) `59bca317...ee57`, setup program
-  (`spacemissionstudio-2.14.1-setup.exe`, 387 033 348 bytes)
-  `2a411bbe...c8e9`, wheel (9 059 994 bytes) `f4027015...afc4`, sdist
-  (9 368 748 bytes) `89097611...d10f`, the `.deb`'s bill of materials
-  (`spacemissionstudio_2.14.1_amd64.cdx.json`, 35 359 bytes)
-  `9a90ce91...ae04`, the setup program's
-  (`spacemissionstudio-2.14.1-setup.cdx.json`, 36 459 bytes)
-  `815d2039...3bb2`, `SHA256SUMS-linux` `1bc91bbb...224f`,
-  `SHA256SUMS-windows` `44660ea5...120d`, and the LGPL sources, the same
-  as 2.14.0's: `qt-everywhere-src-6.11.2.tar.xz` (1 019 661 552 bytes)
-  `6dcfbca2...6f33`, `pyside-setup-everywhere-src-6.11.2.tar.xz`
-  (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
-  `1301daba...e6f6`.
-- Every file's digest equals its checksum in `SHA256SUMS-*`. The
-  digests table of the release notes gives the same digests. The wheel,
-  the sdist, both bills of materials and the three `SHA256SUMS-*`
-  files, downloaded from the release, give the same digests.
+(K-47). `schema/`, the templates, the golden files and `packaging/` have
+no change since the 2.14.1 tag `caabf11`; in the package only
+`gui/shell.py` changed. No computed result changed. The bundled
+CelesTrak space weather is 2.13.0's (observations to 2026-11-18; K-13,
+not refreshed: CelesTrak reset the connection). Basilisk is unchanged.
+Outside `SpaceMissionStudio/` only the front-page `README.md`'s
+SpaceMissionStudio part changed (section 4).
 
-**Previous release:** 2.14.0, published 2026-11-22 (20:07 UTC).
+**Previous release:** 2.14.1, published 2026-11-23 (02:20 UTC), tag
+`spacemissionstudio-v2.14.1` on `caabf11`; its publication is recorded
+in issue 52 of this document (#312).
 2.14.0 is a minor release: it adds features and
 an optional scenario field. It holds Monte Carlo phase A
 (`docs/developer/monte-carlo-plan.md`), the plan (#305) and the 2.13.1
@@ -1140,9 +1094,9 @@ internet access and, for the setup program, Python 3.11 on `PATH`
 
 ## 1 Introduction (G.2.1<1>)
 
-This SRelD describes release 2.14.1 of SpaceMissionStudio in
-`0h3xn4/basilisk_space-mission-studio`: what it contains, what changed since 2.14.0
-(commit `1b4060c`), what is known to be wrong, and how to use it.
+This SRelD describes release 2.14.2 of SpaceMissionStudio in
+`0h3xn4/basilisk_space-mission-studio`: what it contains, what changed since 2.14.1
+(commit `caabf11`), what is known to be wrong, and how to use it.
 
 ## 2 Applicable and reference documents (G.2.1<2>)
 
@@ -1166,75 +1120,70 @@ This SRelD describes release 2.14.1 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.14.1 release pull request (the changes of #309 and #310, from `develop` at `ed99937`, and the release's records), tagged `spacemissionstudio-v2.14.1` on `caabf11` (`caabf1170d333919d5a3de66bf5bd2f262bcb334`), the merge of #311, by the tag workflow. Previous release: 2.14.0, commit `1b4060c` (`1b4060c9eedfd9029d0e08e2a33ede0ee36a8792`), tagged `spacemissionstudio-v2.14.0`. |
+| Baseline | `develop` at the 2.14.2 release commit (the changes since 2.14.1: #312, `29bbdb5`, `39da9d7` and `c0f62c7`, and the release's records), to be tagged `spacemissionstudio-v2.14.2` by the tag workflow; the commit is recorded at publication. Previous release: 2.14.1, commit `caabf11` (`caabf1170d333919d5a3de66bf5bd2f262bcb334`), tagged `spacemissionstudio-v2.14.1`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 47 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble (also under the 2D map and in the app icon) and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
-| Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.14.1_amd64.deb`, the Windows setup program `spacemissionstudio-2.14.1-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.14.1_amd64.cdx.json`, `spacemissionstudio-2.14.1-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
+| Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.14.2_amd64.deb`, the Windows setup program `spacemissionstudio-2.14.2-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.14.2_amd64.cdx.json`, `spacemissionstudio-2.14.2-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
 | Documentation | SUM and `USER_MANUAL.md`; the documents in `compliance/docs/` |
-| Basilisk framework | No Basilisk source, module or test changed. Since 2.14.0 these files outside `SpaceMissionStudio/` changed (`git diff --name-only 1b4060c develop`): the front-page `README.md`'s SpaceMissionStudio part (its version badge and Version line), and SpaceMissionStudio's own workflows `.github/workflows/spacemissionstudio.yml` (each reference data download through `scripts/retry_download.py`, #310) and `spacemissionstudio-sil-stress.yml` (the same downloads, and CI's WebGL set-up for the suite jobs, #310). The fixes use no Basilisk module; Monte Carlo phase A uses Basilisk 2.12.0's own interfaces as in 2.14.0: `RetentionPolicy.addRetentionFunction` for the outcomes and data files, and `SimulationExecutor.applyModification` to apply a case's `run<N>.json`. CI's "Windows (MAX Python)" job, in Basilisk's own "Pull Request" workflow, fails the framework test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling` on GitHub's runner image 20261111 (MSVC 19.52.37029; it passed on 20261103, MSVC 19.51); by the owner's decision of 2026-11-19 SpaceMissionStudio's pull requests are merged with that check red, and the framework is not changed (K-45). The installers carry Basilisk 2.12.0 from PyPI, not this repository's framework, and add its support data next to the installed package, in the folder its own `dataFetcher` reads |
+| Basilisk framework | No Basilisk source, module or test changed. Since 2.14.1 one file outside `SpaceMissionStudio/` changed (`git diff --name-only caabf11 develop`): the front-page `README.md`'s SpaceMissionStudio part (its version badge and Version line). The fix uses no Basilisk module; Monte Carlo phase A uses Basilisk 2.12.0's own interfaces as in 2.14.0: `RetentionPolicy.addRetentionFunction` for the outcomes and data files, and `SimulationExecutor.applyModification` to apply a case's `run<N>.json`. CI's "Windows (MAX Python)" job, in Basilisk's own "Pull Request" workflow, fails the framework test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling` on GitHub's runner image 20261111 (MSVC 19.52.37029; it passed on 20261103, MSVC 19.51); by the owner's decision of 2026-11-19 SpaceMissionStudio's pull requests are merged with that check red, and the framework is not changed (K-45). The installers carry Basilisk 2.12.0 from PyPI, not this repository's framework, and add its support data next to the installed package, in the folder its own `dataFetcher` reads |
 
 ## 5 Status of the software configuration item
 
 ### 5.1 Evolution since previous version (G.2.1<5.1>)
 
-`CHANGELOG.md` 2.14.1 lists the changes since 2.14.0 (commit `1b4060c`);
-RD1 has the full story ("2.14.1: small fixes"). In summary:
+`CHANGELOG.md` 2.14.2 lists the changes since 2.14.1 (commit `caabf11`);
+RD1 has the full story ("2.14.2: the Budgets area shows quickly"). In
+summary:
 
-- **pandas in the worker** (#310, K-48; `gui/background_threads.py`):
-  `import_pandas()` imports pandas with `FIRST_IMPORTS` held.
-  `MonteCarloWorker.run` calls it, and `RunWorker.run` calls it for a
-  case. `wait_for_pandas()` makes the GUI thread's plotly code wait
-  while another thread imports pandas: `ResultsWidget._build_plot` and
-  `_figure_json`, `CompareWidget._draw_plot` and
-  `model_view_widget.model_figure`. The GUI thread's part of the first
-  start: 258 to 271 ms before, 0.1 to 0.2 ms after. A plot built during
-  the import waits for it (233 ms measured).
-- **Teardown signals connected weakly** (#310, K-44;
-  `widgets.connect_while_alive`): `EmptyStack`'s four model signals,
-  and every `currentChanged` of a tab or stacked widget connected to a
-  method (nine in `MainWindow`; one each in the shell, the scenario
-  editor, the spacecraft editor, the Budgets area and the thermal page).
-  The Monte Carlo editor's Requirements list uses `EmptyStack` again,
-  and its own switching (MC-16) is gone.
-- **CI downloads tried again** (#310; `scripts/retry_download.py`):
-  four attempts, 60 s apart, and the exit status of the last attempt,
-  for `kernels-status`, `earth-orientation --fetch`, `small-bodies
-  --fetch` and `gaseous-attenuation --fetch` in `spacemissionstudio.yml`
-  and `spacemissionstudio-sil-stress.yml`. The SIL stress suite jobs get
-  `QTWEBENGINE_CHROMIUM_FLAGS`, the ITU-R P.676-13 download and the 3D
-  View's tests in a process of their own.
-- **Records:** the 2.14.0 publication (#309).
+- **An area's page reports no height for width** (`29bbdb5`, K-40;
+  `gui/shell.py`): `AreaPage.hasHeightForWidth()` returns False. The
+  page fills the area stack and the main window ignores a height for
+  width, so the window shows the same: 82 grabs of every area and tab
+  at three window sizes, and of the detached Budgets window, are equal
+  before and after except where two runs of the same code also differ
+  (a toast or a page caught at another moment). On Linux the Budgets
+  area shows in about 1 ms (8 to 11 ms before) and a move takes 3 to
+  5 ms (10 to 12 ms). `test_breakout.py`'s move test has a plain 50 ms
+  limit again (`docs/ui/TEST_CHANGES.md`) and passed on the Windows
+  runner (CI run 45109373728).
+- **A hidden area that becomes wider lays the window out again at once**
+  (`gui/shell.py`): `AreaPage.event()` passes a hidden page's layout
+  request to the area stack, which Qt does not do for a hidden widget.
+  Before, the window kept a layout with the stack narrower than its own
+  minimum until another change, and Run > Thermal's sweep table did not
+  fit at 1280 px in CI run 45114509231. The cause is older than K-40: the
+  same failure came on `7a9a25f`. A new test in `tests/gui/test_shell.py`.
+- **Design only:** the pointing error budget (`39da9d7`;
+  `docs/developer/pointing-error-budget-design.md`, `docs/DECISIONS.md`
+  PE-1 to PE-9). No code; it waits for the owner's choice of scope.
+- **Records:** the 2.14.1 publication (#312), the backlog's moves.
 
 **Unchanged:** the schema version (6) and every field, command, option,
 exit status and API function, and what runs compute: the golden outputs
 of the 36 templates pass unchanged. `schema/`, the templates, the golden
-files and `packaging/` have no change since 2.14.0 (`git diff 1b4060c`),
-and outside `gui/` the package has no change, so 2.14.0 and 2.14.1 save
-and open the same files. The batch summary is still format 1. The space
-weather is 2.13.0's.
+files and `packaging/` have no change since 2.14.1 (`git diff caabf11`),
+and in the package only `gui/shell.py` changed, so 2.14.1 and 2.14.2
+save and open the same files. The batch summary is still format 1. The
+space weather is 2.13.0's.
 **Changed in the interface:** none (ICD).
 
-**Tests:** 5843 passed and 19 skipped on Linux, Python 3.14, on the
-release's code, in one run of `pytest tests -n 4` as CI runs it (5863
-tests: 3616 outside `tests/gui/` and 2247 in it; 5828 passed at
-2.14.0); coverage was not measured again for this release. One test
-failed: `tests/gui/test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
-(511 px against 509 px). It fails only in this container when its whole
-module runs, on `develop` too, and passes alone (HISTORY.md, "Monte
-Carlo phase A, part 1"); CI is the reference. The new test files are
-`tests/gui/test_teardown_signals.py` and `tests/test_retry_download.py`;
-more new tests are in `tests/gui/test_run_worker.py`. The changed test
-lines are in `docs/ui/TEST_CHANGES.md`. The release itself changed no
-test.
+**Tests:** 5863 passed and 2 skipped on Linux, Python 3.14, on the
+release's code, in one run of `pytest tests -n auto` with the reference
+data fetched as CI fetches it (5865 tests: 3616 outside `tests/gui/` and
+2249 in it; 5843 passed at 2.14.1); coverage was not measured again for
+this release. The new tests are two in `tests/gui/test_breakout.py`; the
+changed test is in `docs/ui/TEST_CHANGES.md`. The release itself changed
+no test. On the Windows runner the suite's Tests step passed on
+`39da9d7` (CI run 45109373728; the run was then cancelled by the next
+push, before its Linux job ended). CI on the release commit is the
+reference.
 
 **Still open:** K-19 (about 0.4 s), K-22, K-23 (smaller), K-24, K-25,
-K-26, K-27, K-28, K-30, K-31, K-34, K-35, K-36, K-37, K-38, K-39, K-40,
-K-41, K-42, K-43, K-44 (partly fixed), K-45, K-47, K-48 (its pause
-fixed). Closed: none.
+K-26, K-27, K-28, K-30, K-31, K-34, K-35, K-36, K-37, K-38, K-39,
+K-41, K-42, K-43, K-44 (partly fixed), K-45, K-47, K-48. Closed: K-40.
 
-**Changes users notice:** the first Monte Carlo batch or case of a
-session starts without a pause; no "Slot '...' not found" error when a
-window or a list is freed.
+**Changes users notice:** the Budgets area shows at once when it opens
+or moves to its own window and back, also on a slow Windows machine.
 
 ### 5.2 Known problems and limitations (G.2.1<5.2>)
 
@@ -1254,7 +1203,7 @@ window or a list is freed.
 | K-08 | Closed: the PNG/SVG export polled the page with overlapping asynchronous queries; a late timer tick read the cleared state (the CI tracebacks), and several answers could save the file twice. One query at a time now, late answers ignored (F-12) | – | `review_log.md` F-12 |
 | K-09 | Closed (2026-10-19): 1054 of the 2314 unit and integration test functions had no docstring. Every one now has a docstring stating what it checks, read from its body; no test code changed (each file's syntax tree without docstrings equals the one before) | – | `SUITP_test_cases.md`; HISTORY.md |
 | K-12 | The Windows setup program is built, installed silently and the installed tool run on a GitHub Windows runner (1.1.1: with an empty support-data cache, the GUI opened offscreen); the wizard has not been clicked through by hand and the GUI not opened on a real Windows machine, and an upgrade over an installed 1.1.0 has not been tried. The graceful SIL close (M15) has not run on Windows | Unknown for interactive use on Windows | `AUDIT.md` sections 5 and 6; `packaging/README.md` |
-| K-13 | Closed: the bundled CelesTrak space weather (observations to 2025-07-20) was refreshed for this release: observations to 2026-10-11, updated 2026-10-12. Refreshed again on 2026-10-19 for the next release: observations to 2026-10-18, CelesTrak's daily forecast to 2026-12-02, updated 2026-10-19 20:34 UTC. Refreshed for 1.3.0 on 2026-10-26: observations to 2026-10-24, daily forecast to 2026-12-07, updated 2026-10-25 23:32 UTC (CelesTrak revised its values from 2026-09-09 and the monthly forecast's 2027-01 and 2027-02). Results of drag runs dated after 2025-07-20 change, because observed solar activity replaces the earlier forecasts. Not refreshed for 2.0.0, 2.1.0, 2.1.1, 2.2.0, 2.3.0, 2.4.0, 2.5.0 nor 2.6.0: on 2026-11-03, twice on 2026-11-04, three times on 2026-11-05, on 2026-11-08 and on 2026-11-09 CelesTrak reset or refused every connection from the environment the release was prepared in, so 2.0.0 to 2.6.0 carry 1.3.0's file (observations to 2026-10-24, forecast to 2026-12-07). Refreshed for 2.7.0 on 2026-11-10: observations to 2026-11-09, daily forecast to 2026-12-24, updated 2026-11-10 21:33 UTC (CelesTrak revised its observed values from 2026-09-17 and NOAA the monthly forecast's 2027-01 to 2031-09, which no run uses while an MSFC prediction is there); drag on dates from 2026-09-17 to 2026-12-24 changes, no template does. Refreshed for 2.8.0 on 2026-11-15: observations to 2026-11-14, daily forecast to 2026-12-29, updated 2026-11-15 20:37 UTC (CelesTrak reset the first two connections from this environment and answered the third); drag on dates from 2026-11-10 to 2026-12-29 changes, no template does (the golden outputs pass unchanged). Not refreshed for 2.9.0: on 2026-11-16 CelesTrak reset all three connections from this environment, so 2.9.0 carries 2.8.0's file. Not refreshed for 2.10.0: on 2026-11-17 CelesTrak reset the connection again, so 2.10.0 carries the same file. Not refreshed for 2.11.0: later on 2026-11-17 CelesTrak reset the connection again, so 2.11.0 carries the same file. Not refreshed for 2.12.0: the release was prepared without a refresh (not tried), so 2.12.0 carries the same file. Refreshed for 2.13.0 on 2026-11-19: observations to 2026-11-18, daily forecast to 2027-01-02, updated 2026-11-19 17:33 UTC (CelesTrak answered the first connection; it revised its 81-day averages from 2026-10-08, and its monthly forecast now starts in February 2027, so the file has no row from 2027-01-03 to 2027-01-31, which NASA MSFC's prediction covers); drag on dates from 2026-10-08 to 2027-01-02 changes, no template does (the golden outputs pass unchanged). NASA MSFC's November 2026 prediction is still the latest issue (checked on 2026-11-19). Not refreshed for 2.13.1: it was refreshed for 2.13.0 the day before, so 2.13.1 carries 2.13.0's file. Not refreshed for 2.14.0: on 2026-11-22 CelesTrak reset all three connections from this environment (the TLS handshake, `curl` error 35), so 2.14.0 carries 2.13.0's file; NASA MSFC's November 2026 prediction is still the latest issue (its page, checked on 2026-11-22, links `nov2026f10-prd.txt`). Not refreshed for 2.14.1: on 2026-11-22 at 23:16 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.1 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`, the bundled prediction. Users fetch the current one in the app (Home's reference-data card, **Settings > Reference data**) or with `spacemissionstudio spaceweather-download` | Drag on dates after 2026-11-18 uses CelesTrak's forecast until the file is fetched | `spacemissionstudio/data/spaceweather/README.md` |
+| K-13 | Closed: the bundled CelesTrak space weather (observations to 2025-07-20) was refreshed for this release: observations to 2026-10-11, updated 2026-10-12. Refreshed again on 2026-10-19 for the next release: observations to 2026-10-18, CelesTrak's daily forecast to 2026-12-02, updated 2026-10-19 20:34 UTC. Refreshed for 1.3.0 on 2026-10-26: observations to 2026-10-24, daily forecast to 2026-12-07, updated 2026-10-25 23:32 UTC (CelesTrak revised its values from 2026-09-09 and the monthly forecast's 2027-01 and 2027-02). Results of drag runs dated after 2025-07-20 change, because observed solar activity replaces the earlier forecasts. Not refreshed for 2.0.0, 2.1.0, 2.1.1, 2.2.0, 2.3.0, 2.4.0, 2.5.0 nor 2.6.0: on 2026-11-03, twice on 2026-11-04, three times on 2026-11-05, on 2026-11-08 and on 2026-11-09 CelesTrak reset or refused every connection from the environment the release was prepared in, so 2.0.0 to 2.6.0 carry 1.3.0's file (observations to 2026-10-24, forecast to 2026-12-07). Refreshed for 2.7.0 on 2026-11-10: observations to 2026-11-09, daily forecast to 2026-12-24, updated 2026-11-10 21:33 UTC (CelesTrak revised its observed values from 2026-09-17 and NOAA the monthly forecast's 2027-01 to 2031-09, which no run uses while an MSFC prediction is there); drag on dates from 2026-09-17 to 2026-12-24 changes, no template does. Refreshed for 2.8.0 on 2026-11-15: observations to 2026-11-14, daily forecast to 2026-12-29, updated 2026-11-15 20:37 UTC (CelesTrak reset the first two connections from this environment and answered the third); drag on dates from 2026-11-10 to 2026-12-29 changes, no template does (the golden outputs pass unchanged). Not refreshed for 2.9.0: on 2026-11-16 CelesTrak reset all three connections from this environment, so 2.9.0 carries 2.8.0's file. Not refreshed for 2.10.0: on 2026-11-17 CelesTrak reset the connection again, so 2.10.0 carries the same file. Not refreshed for 2.11.0: later on 2026-11-17 CelesTrak reset the connection again, so 2.11.0 carries the same file. Not refreshed for 2.12.0: the release was prepared without a refresh (not tried), so 2.12.0 carries the same file. Refreshed for 2.13.0 on 2026-11-19: observations to 2026-11-18, daily forecast to 2027-01-02, updated 2026-11-19 17:33 UTC (CelesTrak answered the first connection; it revised its 81-day averages from 2026-10-08, and its monthly forecast now starts in February 2027, so the file has no row from 2027-01-03 to 2027-01-31, which NASA MSFC's prediction covers); drag on dates from 2026-10-08 to 2027-01-02 changes, no template does (the golden outputs pass unchanged). NASA MSFC's November 2026 prediction is still the latest issue (checked on 2026-11-19). Not refreshed for 2.13.1: it was refreshed for 2.13.0 the day before, so 2.13.1 carries 2.13.0's file. Not refreshed for 2.14.0: on 2026-11-22 CelesTrak reset all three connections from this environment (the TLS handshake, `curl` error 35), so 2.14.0 carries 2.13.0's file; NASA MSFC's November 2026 prediction is still the latest issue (its page, checked on 2026-11-22, links `nov2026f10-prd.txt`). Not refreshed for 2.14.1: on 2026-11-22 at 23:16 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.1 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`, the bundled prediction. Not refreshed for 2.14.2: on 2026-11-23 from 04:27 to 04:28 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.2 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`. Users fetch the current one in the app (Home's reference-data card, **Settings > Reference data**) or with `spacemissionstudio spaceweather-download` | Drag on dates after 2026-11-18 uses CelesTrak's forecast until the file is fetched | `spacemissionstudio/data/spaceweather/README.md` |
 | K-14 | Addressed, under watch: platform test failures. On Windows, two tests fail intermittently in CI (PR #64, 2026-10-14; each passed on the same commit in another run). `test_the_altitude_trade_runs_its_altitudes_in_parallel_processes`: a worker hit a Basilisk error whose exception cannot be pickled, so its message is lost (cause not yet known; suspected: the cached space-weather file opened by one worker while another replaces it). `test_a_step_without_deadline_waits_while_earlier_steps_are_still_answered`: its fake flight software went over the 0.3 s step timeout on a loaded runner (a test margin). On macOS (PR #65, 2026-10-14), `test_forms_stay_at_a_readable_width` and `test_a_template_row_keeps_its_customize_button_close` fail their own precondition: Qt's `cocoa` platform fits the 2560 x 1440 test window to the runner's screen, so the page is 618 px wide and there is no wide screen to check (a test set-up problem, not the layout). Fixed on the ROE branch (PR #73, commit `f601576c1`, 2026-10-18): the test window is laid out with `WA_DontShowOnScreen`, which the screen does not constrain, and the fixture asserts its 2560 x 1440 size; macOS CI then passed both (3347 passed, 0 failed, 11 skipped, run 39165811899). On the release commit `f288e0c73` (run 38633749308) Windows passed (3224 passed, 16 skipped) and macOS failed these two (3229 passed, 2 failed, 11 skipped). By the user's decision 1.0.0 is a Linux release; Windows and macOS are fixed and released later. Windows pair addressed on 2026-10-18 (after PR #73): the SIL test's step timeout is 1 s against 30 ms answers (it was 0.3 s against 20 ms), and the altitude trade's lost message is a confirmed bug, now fixed: Basilisk's `BasiliskError` cannot be pickled (its module `_bskLogging` does not import by that name), so any Basilisk error in a worker arrived as a pickling error. Workers now send such an error as a `BudgetError` with its type, message and traceback. The suspected cause is removed too: a complete space-weather file is no longer replaced by a second worker's copy, which on Windows could meet the first worker opening it. The Basilisk error behind the 2026-10-14 failure was never seen, so its cause is not confirmed; if it recurs, its message now shows. macOS, 2026-10-19 (PR #75, run 39218996167): `test_the_keys_work_where_results_has_the_focus` timed out waiting for its window to become active (passed on the PR's previous commit). On macOS activation is per application, and the parallel test workers are separate processes whose windows can keep it from this one; the test now sets Qt's active window itself (`QApplication.setActiveWindow`), which is what the shortcut map checks. Not reproducible on Linux (offscreen activates every shown window); confirmed only by the next macOS CI runs. Windows, 2026-10-19 (PR #76, job 118026573080): `test_thousands_of_dropped_steps_never_block_the_link[tcp]` failed with "the flight software took no STEP for 10 s" at step 16172 of 20000; the other Windows job on the same commit and the one re-run passed. The fake flight software was waiting to read when the link closed, so the simulation side's send found the socket not writable for 10 s, or did not run for that long. Cause not confirmed: not reproduced on Linux in 60 runs under CPU overload. A related defect was confirmed and fixed: `SocketTransport.send` gave up as soon as its time had run out, before trying the socket again, so a stall of the simulation's own process counted as the flight software's silence. The send now counts its time from the last bytes the peer took and tries once more without waiting before it gives up (`test_a_stall_of_this_process_is_not_the_peers_silence`, which fails on the previous code). Whether this was the Windows failure is confirmed only if it does not recur. It recurred on 2026-10-21 (PR #90, job 119083739177, on the 1.1.1 release commit `9dca37d5f`): the same message at step 10907 of 20000, and again the fake flight software was waiting to read when the link closed. So the send's stall handling was not the cause, and the cause is still not known. Not a Basilisk thread holding Python's interpreter lock: a Basilisk run in a second thread let the other thread run at least every 0.03 s (measured on Linux). Only this test has shown it (20000 steps, every one dropped, over TCP on a Windows runner); it may also stop a Windows SIL session that drops thousands of steps, with "the flight software took no STEP for 10 s". Not reproduced since (PR #91, 2026-10-21): the test alone passed 240 times on `windows-latest` (four workers side by side, two processes keeping the CPU busy) and the whole suite passed seven times on Windows (six runs of the new workflow "SpaceMissionStudio SIL stress (Windows)" and the platforms job). On a stall the test now fails with the state of both ends of the link: frames sent and dropped, bytes received and not read, the socket buffer sizes, what the fake flight software last did, when, and its stack, and the last `select()` calls of the send. The next recurrence names its cause. It recurred three times on 2026-10-27 (runs 40526819275 and 40543074495, twice) and named it: every `select()` of the stalled send saw the socket readable and not writable, the fake flight software alive and reading its backlog (12462 frames sent, 4568 read). The send's 10 s limit counted only bytes the peer took, and Windows reopens a full receive window only once the reader has freed much of it, so a peer that was answering looked silent. Fixed in 2.0.0 (#128): bytes the peer sends count too (`SocketTransport.send`); `test_a_peer_that_keeps_answering_is_not_silent` fails without the fix | Windows: an altitude trade with several workers may have failed with an unexplained error; a recurrence now names the error. macOS: the wide-screen layout was not checked in CI until PR #73 | PR #64 and #65 comments |
 | K-15 | Fixed (2026-10-19): a run around, or with a third body, `mars` or `jupiter` passed validation and then failed. The bundled DE430 ephemeris has the Mars and Jupiter system barycentres, not the planets: a `mars` run stopped the whole process with `SPICE(SPKINSUFFDATA)` (the GUI runs in its own process, so the app closed), and Basilisk has no body named `jupiter`. The schema now offers `mars barycenter` and `jupiter barycenter` (Basilisk gives them the planet's mass and radius) and refuses the two old names with the one to use; a test flies every offered body | A scenario with `mars` or `jupiter` could not be run, and in the GUI closed the app; no result was ever produced with them | `tests/test_central_bodies.py`; HISTORY.md |
 | K-16 | Fixed (2026-10-19): a thermal sensor's heat balance used the solar flux at Earth's distance from the Sun on the epoch, whatever the central body. Basilisk's `sensorThermal` assumes 1366 W/m^2 at any distance, and the tool's correction of it took Earth's flux. The flux is now the one at the spacecraft's own distance from the Sun when the run starts (SPICE), for every central body | Thermal sensors around the Sun, Mercury or Venus ran too cold, and around Mars, Jupiter or Eros too hot: around Mars on 2030-01-01 they absorbed 1408 W/m^2 instead of 713 W/m^2. Runs around Earth or the Moon are unchanged | `tests/test_sensor_thermal_flux.py`; HISTORY.md |
@@ -1284,7 +1233,7 @@ window or a list is freed.
 | K-37 | Limitation (2026-11-17): the operations planner's models are simpler than the simulation: a one-axis slew model of the controller (planned to half the convergence threshold, O-25), the panel's angle to the Sun from the planned attitude, resources at the geometry's step (O-26); no weather or clouds, conjunctions, a ground network's costs or bookings, or binary telecommands. Without the IERS Earth orientation files the geometry is about 10 km off on the ground (IAU_EARTH in the run), so a window at a limit can hold an image or not: template 35 plans 17 or 18 of 23 images. A week of template 35 takes about 40 s to plan with 20 improvement steps, more than the design's aim (a few seconds), and about ten minutes to fly. The AEM's rotation direction (EME2000 to the body) follows the CCSDS NDM/XML schema and version 1's convention; the Blue Book could not be read to confirm it (O-20) | **Fly and verify** says how far the simplifications matter for a spacecraft; an AEM reader that assumes the other direction gets the inverse rotation | `docs/reference/limitations.md`, "Operations planning"; `docs/developer/operations-planning-decisions.md` O-20, O-25, O-26 |
 | K-38 | Limitation (2026-11-17): 2.10.0 and earlier do not open a scenario file saved by 2.11.0, with or without a `budgets` section: 2.11.0 saves every file at schema version 5 (B-01), and an older version refuses a newer schema version. 2.10.0's message: "scenario file is schema_version 5, but this build of SpaceMissionStudio only understands up to version 4 -- upgrade SpaceMissionStudio to open it, or use the version that wrote it." (its `validate` command prints it after "INVALID:" and exits with status 1). Checked with 2.10.0's code (`b074260`) on the 36 templates as 2.11.0 saves them and a file with a `budgets` section: all 37 are refused with that message. 2.11.0 opens and validates the 36 templates as 2.10.0 saves them (version 4) with no message | A team that shares scenario files updates together; a user of 2.10.0 or earlier still opens every file those versions saved | `CHANGELOG.md` 2.11.0, Who should update; `docs/changes.md`, 2026-11-17 |
 | K-39 | Limitation (2026-11-17): phase 1 of the System Budget Studio merge. The run does not use the `budgets` section: it still takes `dry_mass_kg` and the power budget's bus load, and the power modes become a load in the simulation only in phase 2. No budget report is exported: each Budgets page copies its table as CSV with the provenance, and `budgets --csv` prints the totals (B-25). An IDM-CIC model gives no converter efficiency, distribution loss or power margin, so `idm-import --budgets` writes them as placeholders, and the power at the source stays unknown until the user sets them (B-08) | The budgets are a design check beside the run, not an input of it | `docs/user-manual/budgets.md`; `docs/developer/system-budget-phase1-design.md`; `docs/developer/system-budget-decisions.md` B-08, B-25 |
-| K-40 | Limitation (2026-11-18): on a slow Windows machine the Budgets area can take 50 ms or more of the GUI thread to show. On the Windows CI runner each move of the area into its own window or back took 50 to 81 ms (the 3D View 5 to 17 ms); on Linux a move takes 10 to 11 ms, and showing the area in place 9 to 10 ms, so the move adds about 1 ms. The time is the `show()` of the area's 435 widgets; no one part dominates. The move test allows a view that is slow to show in place under twice that time plus 10 ms; on Linux every limit stays 50 ms. Making the area quicker to show is still to do | The window can pause for up to about 80 ms when the Budgets area moves on such a machine | HISTORY.md, "2.12.0 windows and views: breakout windows"; `docs/ui/TEST_CHANGES.md` |
+| K-40 | Closed for 2.14.2 (2026-11-23, `29bbdb5`). Was a limitation (2026-11-18): on a slow Windows machine the Budgets area took 50 ms or more of the GUI thread to show; on the Windows CI runner each move into its own window or back took 50 to 81 ms, on Linux 10 to 11 ms. **Cause found:** the Equipment page's word-wrapped note made the area's page report a height for width, and Qt's stacked layout then asked every area's page, the hidden ones too, for its height at each show (on Linux, without the note's height for width, the show took 0.4 ms instead of 8 to 11 ms). `shell.AreaPage` now reports none; the area shows in about 1 ms on Linux, and a move takes 3 to 5 ms. The move test's limit is a plain 50 ms again and passed on the Windows runner (CI run 45109373728); a new test checks that no hidden area is asked its height | None after 2.14.2 | HISTORY.md, "2.12.0 windows and views: breakout windows" and "2.14.2: the Budgets area shows quickly"; `docs/ui/TEST_CHANGES.md`; `docs/DECISIONS.md` |
 | K-41 | Limitation (2026-11-18): the Windows CI job draws Chromium's compositor in software (`--disable-gpu-compositing`), as it already drew WebGL (SwiftShader), because the runner has no GPU: with the compositor's Direct3D shared images, WebGL contexts were lost at random and a different set of 3D View tests failed in each run. The app's own Chromium flags (`gui/webengine_setup.py`) are unchanged. So CI on Windows does not test the 3D View, its own window or the WebGL recovery with the GPU compositor, and they have not been tried on a Windows machine with a GPU (see also K-12) | Unknown for the 3D View on Windows with a GPU; a lost context is recovered up to five times, then the view says WebGL is gone | `docs/DECISIONS.md`, "Breakout windows" (the owner's decision, 2026-11-18); `.github/workflows/spacemissionstudio.yml` |
 | K-42 | Not verified (2026-11-18): the screenshot harness (`scripts/capture_ui_screens.py`) was not run for the new 2D map; a software centre's page for a downloaded `.deb` before it is installed was not seen (it needs Ubuntu 24.04 with a desktop; appstreamcli and desktop-file-validate accept the files); the taskbar icon and its AppUserModelID were not seen on a real Windows machine; Inno Setup compiles the script with the `.ico` only in the Windows installer workflow | The map has no reference screenshot; how the App Center and the Windows taskbar show the app is unknown | HISTORY.md, "Desktop integration", "A new app icon" and "ground tracks, stations and a live 2D map" |
 | K-43 | Limitation (2026-11-18): the 2.12.0 windows and views. On Wayland a view's window keeps only its size, not its place; a crash loses the windows' places since the start, as it loses the rest of the layout. The 2D map uses geocentric latitude (at most about 0.19 deg from geodetic) and says so. A run shown while it runs has no temperatures: the thermal analysis runs after the run (T-01, T-42). The app icon's Earth layer takes about 100 ms the first time it is made, once per process at start-up, above the 50 ms target | Small; the map says that its latitude is geocentric, and the user manual says what Wayland keeps | `docs/developer/windows-views-design.md`; `docs/DECISIONS.md`, "Ground tracks, stations and the live map" and "The app icon shows a mission" |
