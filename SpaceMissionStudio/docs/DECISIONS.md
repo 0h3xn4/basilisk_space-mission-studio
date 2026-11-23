@@ -5730,3 +5730,24 @@ existing templates are byte-identical; template 37 has its own.
   a widget another way, so `docs/ui/TEST_CHANGES.md` has no entry.
   **Why:** CLAUDE.md: no test weakened; each list only grows, and every
   check on the 36 templates still runs on them.
+
+## Template 37's drawn orbit angles held to the golden angle floor (2026-11-23)
+
+`test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_drives_the_decay`
+failed on the Linux CI runner (#316, `c6ef559`). One drawn value of the
+first two runs differed from the golden file: the true anomaly,
+-0.068391551 deg against -0.068390697 deg, which is 8.54e-7 deg, or
+1.49e-8 rad = 2^-26 rad. The test compared every drawn value to 1e-12.
+
+- **Cause:** the drawn orbit elements are not the generator's numbers.
+  They come from `rv2elem` of the dispersed initial state
+  (`monte_carlo._drawn_values`). Template 37's orbit is near circular, so
+  its true anomaly comes through an arccos near 1, which gives 0 on one
+  computer and 2^-26 rad on another. `tests/golden_capture.py` already
+  describes this and holds such angles to `ABSOLUTE_FLOORS["deg"]`
+  (1e-6 rad).
+- **Decision:** the test compares a drawn value in degrees with that same
+  floor, and every other drawn value (drag coefficient, dry mass,
+  semi-major axis) still to a relative 1e-12. **Why:** the golden test of
+  the same batch already uses this floor. The draws that the generator
+  makes still have to match to the last digits.

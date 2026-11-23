@@ -708,9 +708,18 @@ def test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_dr
     golden = json.loads((Path(__file__).resolve().parent / "golden"
                          / "37_monte_carlo_requirements_and_sensitivity.json").read_text(encoding="utf-8"))
     labels, rows = golden["monte_carlo"]["runs"]
+    import golden_capture
+
     for k in range(2):
         drawn = {label: value for label, value in zip(labels[1:6], rows[k][1:6])}
-        assert batch.drawn[k] == pytest.approx(drawn, rel=1e-12)
+        assert batch.drawn[k].keys() >= drawn.keys()
+        for label, value in drawn.items():
+            # The drawn orbit angles are rv2elem of the dispersed state; for this near-circular orbit an
+            # arccos near 1 differs by 2^-26 rad between computers (8.5e-7 deg on the Linux runner), so they
+            # get the golden files' angle floor. The other draws are the generator's own numbers.
+            tolerance = ({"abs": golden_capture.ABSOLUTE_FLOORS["deg"]} if label.endswith("[deg]")
+                         else {"rel": 1e-12})
+            assert batch.drawn[k][label] == pytest.approx(value, **tolerance), label
     report = monte_carlo_report.build(batch, tmp_path / "mc", insight)
     assert report["settings"]["seed"] == 37 and report["settings"]["processes"] == 1
     assert [r["verdict"] for r in report["requirements"]["results"]] == ["met", None]

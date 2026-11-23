@@ -21164,3 +21164,12 @@ workers: 5945 passed, 19 skipped, 1 failed: the known local-only
 `test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`.
 `ruff check` passes. The compliance generators change nothing on a
 second run, `check_drds.py` finds 0 problems, and pre-commit passes.
+
+## Monte Carlo phase B, part 3: template 37's drawn angles on another computer (2026-11-23)
+
+Template 37's claims test compared its drawn values with the golden file
+to 1e-12. On the Linux CI runner the true anomaly of a near-circular
+orbit, made by `rv2elem` from the dispersed state, differed by 2^-26 rad.
+That is the arccos case that the golden comparison already allows for.
+Drawn angles in degrees now get the golden angle floor, and the other
+draws still have to match to 1e-12 (`docs/DECISIONS.md`).
