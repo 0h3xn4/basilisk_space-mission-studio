@@ -585,10 +585,10 @@ def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
     (a layout write held the interpreter lock, 146 ms in CI). Each view
     three times, the 3D View with its page loaded.
 
-    A move must take under 50 ms, or, on a machine where showing the view
-    alone takes longer (the Windows runner shows the 435 widgets of the
-    Budgets area in about 50 ms, Linux in about 9), under twice that plus
-    10 ms: the move adds nothing to showing the view.
+    A move must take under 50 ms. (Until SRelD K-40 was fixed, a view
+    slow to show in place had a limit of twice its show plus 10 ms: the
+    Budgets area took 50 to 81 ms to show on the Windows runner, because
+    every area's page was asked its height for its width.)
 
     As in the app (``app.freeze_start_up_objects``), what exists before the
     moves leaves the full collections: in the test process a full
@@ -618,16 +618,15 @@ def test_detach_and_attach_take_under_50_ms_on_the_gui_thread(window, qtbot):
 
 
 def _over_limit(took: dict, shown: dict) -> dict:
-    """The views whose slowest move reached their limit: (slowest move,
-    limit, plain show) in ms."""
-    limits = {view_id: max(_GUI_THREAD_MS, 2.0 * shown[view_id] + 10.0) for view_id in took}
-    return {view_id: (round(max(times), 1), round(limits[view_id], 1), round(shown[view_id], 1))
-            for view_id, times in took.items() if max(times) >= limits[view_id]}
+    """The views whose slowest move reached the 50 ms limit: (slowest
+    move, limit, plain show) in ms."""
+    return {view_id: (round(max(times), 1), _GUI_THREAD_MS, round(shown[view_id], 1))
+            for view_id, times in took.items() if max(times) >= _GUI_THREAD_MS}
 
 
-def _time_the_moves(window, view_ids: tuple) -> tuple[dict, dict]:
-    """Each view's moves (detach, attach; three times) and its plain show
-    (the median of three), in ms."""
+def _time_the_moves(window, view_ids: tuple, plain_rounds: int = 3, moves: bool = True) -> tuple[dict, dict]:
+    """Each view's moves (detach, attach; three times; none when ``moves``
+    is False) and its plain show (the median of ``plain_rounds``), in ms."""
     import statistics
 
     from PySide6.QtWidgets import QApplication
@@ -638,7 +637,7 @@ def _time_the_moves(window, view_ids: tuple) -> tuple[dict, dict]:
         window.show_view(widget)
         QApplication.processEvents()
         plain = []
-        for _round in range(3):  # the view's own cost: hidden and shown in place
+        for _round in range(plain_rounds):  # the view's own cost: hidden and shown in place
             widget.hide()
             QApplication.processEvents()
             start = time.perf_counter()
@@ -646,13 +645,58 @@ def _time_the_moves(window, view_ids: tuple) -> tuple[dict, dict]:
             plain.append(1000.0 * (time.perf_counter() - start))
             QApplication.processEvents()
         shown[view_id] = statistics.median(plain)
-        for _round in range(3):
+        for _round in range(3 if moves else 0):
             for move in (window.breakouts.detach, window.breakouts.attach):
                 start = time.perf_counter()
                 move(view_id)
                 took.setdefault(view_id, []).append(1000.0 * (time.perf_counter() - start))
                 QApplication.processEvents()
     return took, shown
+
+
+def test_the_budgets_area_shows_in_place_in_under_50_ms(window, qtbot):
+    """SRelD K-40: the Budgets area, hidden and shown again in place, takes
+    under 50 ms of the GUI thread (the median of five; 8 to 11 ms on Linux
+    and 50 to 81 ms on the Windows runner before the fix, under 2 ms on
+    Linux after it)."""
+    _with_run(window, qtbot)
+    _took, shown = _time_the_moves(window, ("budgets",), plain_rounds=5, moves=False)
+    assert shown["budgets"] < _GUI_THREAD_MS, f"the Budgets area took {shown['budgets']:.1f} ms to show"
+
+
+def test_showing_an_area_asks_no_hidden_area_its_height(window, qtbot):
+    """SRelD K-40: to show the Budgets area (its Equipment page has a
+    word-wrapped note), Qt does not ask a hidden area for its height for
+    a width. Before the fix the area stack asked every area's page, and
+    the hidden pages' widgets made the show slow."""
+    from PySide6.QtWidgets import QApplication, QWidget
+
+    class Probe(QWidget):
+        """A widget whose height follows its width, which counts the
+        questions."""
+
+        asked = 0
+
+        def hasHeightForWidth(self) -> bool:  # noqa: N802 -- Qt API name
+            return True
+
+        def heightForWidth(self, width: int) -> int:  # noqa: N802 -- Qt API name
+            Probe.asked += 1
+            return 10  # [px]
+
+    probe = Probe()
+    window.shell.page("home").layout().addWidget(probe)
+    budgets = window.breakouts.widget("budgets")
+    window.show_view(budgets)
+    QApplication.processEvents()
+    assert not window.shell.page("home").isVisible()
+    assert budgets.equipment_page.notes.isVisibleTo(budgets) and budgets.equipment_page.notes.wordWrap()
+    Probe.asked = 0
+    budgets.hide()
+    QApplication.processEvents()
+    budgets.show()
+    QApplication.processEvents()
+    assert Probe.asked == 0
 
 
 # -- a live run -------------------------------------------------------------------------------------------

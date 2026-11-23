@@ -5097,3 +5097,30 @@ Three items of `BACKLOG.md` "Next release". Each choice has its reason.
 - **The release workflows' `kernels-status` is not wrapped.** **Why:** it
   checks the installed package with an empty cache and must download
   nothing; a failure there is a fault of the package.
+
+## The Budgets area shows quickly (SRelD K-40, 2026-11-23)
+
+The first item of `BACKLOG.md` "Next release".
+
+- **An area's page (`shell.AreaPage`) tells Qt that its height does not
+  follow its width** (`hasHeightForWidth` is False). **Why:** the
+  Equipment page has a word-wrapped note, so the page said True, and
+  Qt's stacked layout then asked every area's page, the hidden ones too,
+  for its height for a width at each show. That was the whole cost: on
+  Linux the Budgets area took 8 to 11 ms to show (438 widgets, only 52
+  of them shown) and takes about 1 ms now; detach and attach take 3 to
+  5 ms instead of 10 to 12 ms. A page fills the area stack and the main
+  window ignores a height for width, so nothing that the window shows
+  changes: 82 grabs of every area and tab at three window sizes and of
+  the detached Budgets window were the same before and after, except for
+  a toast or a page caught at another moment, which also differ between
+  two runs of the same code.
+- **The fix is at the area's page, not at the note.** **Why:** a note
+  that does not wrap, or that has no height for width, would show
+  differently in a narrow window. At the page, every area gains, and the
+  wrapped labels inside a page still get their height from the page's
+  own layout. A cut at `BudgetsViews` as well gave no more: the rest of
+  a move is the window change itself.
+- **The move test's limit is a plain 50 ms again**, as the backlog item
+  asks; the rule "twice the show time plus 10 ms" is gone
+  (`docs/ui/TEST_CHANGES.md`).

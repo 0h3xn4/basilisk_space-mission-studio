@@ -159,6 +159,18 @@ class AreaPage(QWidget):
         self.empty_state: QWidget | None = None
         self.showing_empty = False
 
+    def hasHeightForWidth(self) -> bool:  # noqa: N802 -- Qt API name
+        """False: the page fills the area stack, so its height never
+        follows its width, and the main window ignores a height for width
+        anyway. Its own layout still gives its labels their wrapped height.
+
+        When a page said True (a word-wrapped label anywhere in it, such
+        as the Equipment page's note), Qt's stacked layout asked every
+        area's page, shown or hidden, for its height at each show (SRelD
+        K-40): the Budgets area took 8 to 11 ms to show on Linux (50 to
+        81 ms on the Windows CI runner) instead of under 1 ms."""
+        return False
+
     def _inset_content(self) -> None:
         content = self.content
         if isinstance(content, QTabWidget):

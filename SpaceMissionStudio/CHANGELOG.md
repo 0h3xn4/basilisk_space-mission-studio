@@ -8,6 +8,18 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Fixed
+
+- **The Budgets area shows quickly again on a slow Windows machine.**
+  Showing it, or moving it into its own window and back, took 50 to
+  81 ms on such a machine and made the window pause. The Equipment
+  page's wrapped note made Qt measure every hidden area at each show.
+  The areas' pages now tell Qt that their height does not depend on
+  their width, and the area shows in about 1 ms on Linux (8 to 11 ms
+  before). It looks exactly as before (SRelD K-40).
+
 ## 2.14.1 (2026-11-23)
 
 SpaceMissionStudio 2.14.1 is a small patch on top of 2.14.0. The first
