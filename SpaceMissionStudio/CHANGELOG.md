@@ -26,6 +26,13 @@ open each other's files.
   The areas' pages now tell Qt that their height does not depend on
   their width, and the area shows in about 1 ms on Linux (8 to 11 ms
   before). It looks exactly as before (SRelD K-40).
+- **The Inspector no longer changes width at a random moment.** When a
+  hidden area became wider (Timeline's row of filters, once a scenario
+  is open), the window kept its old layout until some other change: the
+  Inspector beside the area stayed wider than the areas allow, then
+  narrowed later. Run > Thermal's sweep table could then scroll sideways
+  at 1280 px. The window now lays out again as soon as a hidden area
+  changes its size.
 
 ### Who should update
 

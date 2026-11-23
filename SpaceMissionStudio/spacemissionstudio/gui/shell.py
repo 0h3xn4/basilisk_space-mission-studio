@@ -38,7 +38,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QEvent, QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -170,6 +170,25 @@ class AreaPage(QWidget):
         K-40): the Budgets area took 8 to 11 ms to show on Linux (50 to
         81 ms on the Windows CI runner) instead of under 1 ms."""
         return False
+
+    def event(self, event) -> bool:
+        """A hidden page tells the area stack that its layout changed.
+
+        The stack is as wide as its widest page, the hidden pages too
+        (``QStackedLayout.minimumSize``), but Qt ignores
+        ``updateGeometry()`` from a hidden widget. A hidden page that
+        became wider (the Timeline page's row of filters, once a scenario
+        is open) left the window laid out for the old width, with the
+        stack narrower than its own minimum, until another change laid the
+        window out again: the Inspector then became narrower at a random
+        moment. Qt still sends the hidden page its layout request; the page
+        now passes it to the stack, so the window lays out again at once.
+        Nothing asks the page its height for a width (K-40)."""
+        if event.type() == QEvent.Type.LayoutRequest and self.isHidden():
+            stack = self.parentWidget()
+            if stack is not None:
+                stack.updateGeometry()
+        return super().event(event)
 
     def _inset_content(self) -> None:
         content = self.content
