@@ -8,7 +8,35 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.15.0 (2026-11-24)
+
+SpaceMissionStudio 2.15.0 helps you trust a Monte Carlo batch and
+understand what drives it. A batch can now have its own seed: two
+batches with different seeds are independent samples, and the same seed
+gives exactly the same batch again. A thermal batch counts the runs in
+which a node leaves its operating or survival range and, at the
+confidence you give, puts an exact upper bound on the true rate. The new
+Statistics tab gives each outcome's percentiles and plots its
+distribution, and the new Sensitivity tab shows which drawn value drives
+which outcome, strongest first.
+
+Before you rely on a batch, the Problems panel now warns you when a
+dispersion no longer fits its spacecraft, and a batch shown next to
+another scenario says so. Everything a batch says goes into one report,
+Markdown to read or JSON for your scripts, from the window or with
+`monte-carlo --report`. On the command line, `--summarize` shows a batch
+you ran earlier without running it again, and `--runs` and
+`--processes` change one batch's size or processes without editing the
+scenario. Template 37 shows all of this in a 30-run batch that takes
+about a minute.
+
+Two smaller changes come with it. The Home page's Customize and
+open... button no longer goes past the edge of the template details,
+and the new Monte Carlo plots are written in the background, so even a
+batch of 100 000 runs does not pause the window. Nothing that a single
+run computes has changed. The scenario file moves to schema version 7
+for the seed: 2.15.0 opens every older file, but 2.14.2 and earlier do
+not open a file that 2.15.0 saves.
 
 ### Added
 
@@ -112,7 +140,7 @@ fixes bugs.
 - **The scenario file is at schema version 7**, which adds the optional
   Monte Carlo batch seed and the thermal Monte Carlo's confidence. Every
   older file still opens, unchanged. A file saved by this version, with
-  or without them, does not open in 2.14.1 or earlier. No computed
+  or without them, does not open in 2.14.2 or earlier. No computed
   result changes, and batches saved by earlier versions open as before.
 - **The Monte Carlo editor's "Thread count" is now called "Processes"**,
   which is what it is: each run goes in its own process.
@@ -140,6 +168,79 @@ fixes bugs.
   for example with a larger font, the second button went past the
   column's edge, where you could not see or click it. Now it moves below
   Open template when the two do not fit side by side.
+
+### Who should update
+
+- **Anyone who runs Monte Carlo batches:** this release is for you. Set
+  a **Batch seed** under **Scenario › Monte Carlo** when you want a
+  second, independent batch, read the new Statistics and Sensitivity
+  tabs of **Results › Monte Carlo**, and keep the batch's report with
+  **Export report...**. Open template 37 to see it all on one batch. In
+  scripts, `spacemissionstudio monte-carlo --summarize DIR` reads a
+  batch without running it, and `--report FILE` writes its report.
+- **Anyone who runs a thermal Monte Carlo:** the new Node limits tab
+  counts the runs outside each node's range. Give the thermal Monte
+  Carlo a confidence to get the bound as well.
+- **Everyone else:** nothing that a run computes has changed. The 36
+  templates of 2.14.2 give 2.14.2's results, and their golden outputs
+  pass unchanged, byte for byte.
+- **Compatibility:** the scenario format moves to version 7, and 2.15.0
+  saves every file at version 7, with or without a seed. 2.14.2 and
+  earlier refuse such a file ("scenario file is schema_version 7, but
+  this build of SpaceMissionStudio only understands up to version 6").
+  If you share scenarios with someone on an older version, update
+  together. 2.15.0 opens every file the earlier versions saved,
+  unchanged, and a 2.14.2 file saved again by 2.15.0 changes only in its
+  version line. Batches saved by earlier versions still open, and a
+  batch without a seed draws what it drew before. The batch summary
+  keeps its format: 2.15.0 only adds optional keys, which older versions
+  ignore.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.15.0_amd64.deb` replaces 2.14.2; on Windows, run
+  the 2.15.0 setup over 2.14.2. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The batch seed relies on how Basilisk 2.12.0 seeds a run.** The
+  seed takes effect after Basilisk's own seeding and before the draws.
+  A Basilisk version that seeds in another order fails every run of a
+  seeded batch with a message; it does not draw other values silently.
+  A batch without a seed is not affected.
+- **Some Monte Carlo choices are provisional.** The percentiles shown
+  (1, 5, 50, 95 and 99 %) and the new template 37, instead of a changed
+  template 25, are the project's choices until the owner decides. The
+  same is true of the answers to the Monte Carlo plan's open questions
+  Q1 to Q8. They can change in a later release.
+- **The sensitivity is one drawn value against one outcome.** It shows
+  what goes with an outcome, not what causes it, and does not separate
+  the effects of several drawn values. The percentiles describe the
+  runs and carry no confidence. The node limits' bound, like a
+  requirement's, is one-sided and assumes independent runs.
+- **Batches made by 2.14.2 or earlier** have no node limits and did not
+  record their processes and dispersions: run a thermal batch again for
+  its node limits; the report of an older batch says what it lacks.
+- **A requirement limits one outcome,** and **Run This Case needs the
+  batch's own scenario and data,** as in 2.14.0.
+- **One CI check of the Basilisk framework is still red on Windows,** as
+  in 2.14.2. The framework test
+  `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+  fails in the "Windows (MAX Python)" job with the MSVC 19.52 compiler.
+  It belongs to the framework, which SpaceMissionStudio never changes,
+  and the installers carry Basilisk 2.12.0 from PyPI.
+- **Moving the 3D View into its own window, or back, can take 64 to
+  73 ms** on the Windows CI runner, above the 50 ms the interface aims
+  at. The Budgets area is quick since 2.14.2.
+- **The bundled space weather is 2.13.0's,** with observations to
+  2026-11-18: CelesTrak reset the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**
+  before a drag study near today's date.
+- **The 3D View without a graphics card is slow,** as before: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.14.2 (2026-11-23)
 

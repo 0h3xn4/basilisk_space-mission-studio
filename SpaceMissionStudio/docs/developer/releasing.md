@@ -678,6 +678,30 @@ again once. The second attempt built, installed and checked every file,
 attached the eleven and published the release 100 minutes after the
 tag. It was never a public release without files.
 
+2.15.0 was prepared on 2026-11-23 by this checklist: Monte Carlo phase B
+(`monte-carlo-plan.md`), with the batch seed, the thermal node limits
+and the small fixes (#313), the outcome statistics, the sensitivity and
+the trust checks (#314), the batch report, `monte-carlo --summarize`,
+`--report`, `--csv`, `--runs` and `--processes`, and template 37 (#316),
+and the 2.14.2 publication record (#317); a minor release because it
+adds features and a scenario schema step. The release branch starts
+from `records/2.14.2-published` at `79e0331` (#317, not merged yet),
+which holds `develop` at `0dc0810`, so the release pull request merges
+after #317. The scenario file moves to schema version 7, so 2.14.2 and
+earlier refuse every file 2.15.0 saves, by its version (checked with
+2.14.2's code, the tag `452e164`, on the 37 templates as 2.15.0 saves
+them: all refused); 2.15.0 opens the files 2.14.2 saves. `git diff
+452e164` shows the step in `schema/`, the scenario hashes recorded
+again, template 37 and its golden file new, and the 36 earlier
+templates changed only on their version line; the 36 earlier golden
+files are byte-identical. The space weather was not refreshed:
+CelesTrak reset all three connections, so 2.15.0 carries 2.13.0's file
+(observations to 2026-11-18). The CHANGELOG heading carries 2026-11-24,
+the UTC day the tag will be made, because the release check wants the
+tag's day. By the owner's decision (SRelD K-45), the release pull
+request may be merged with CI's "Windows (MAX Python)" job red, for the
+Basilisk framework test `LambertInputValidation` only.
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

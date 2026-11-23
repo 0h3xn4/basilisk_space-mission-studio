@@ -64,7 +64,7 @@ SUFFIXES = (".json", ".md")
 ARCHIVE_PROVENANCE = "archive.provenance.json"
 # What a batch's archive.provenance.json records of its settings (engine.monte_carlo.archive_record).
 SETTINGS_KEY = "monte_carlo_settings"
-NOT_RECORDED = "not recorded: the batch was made before its settings were kept (SpaceMissionStudio 2.14.1 or earlier)"
+NOT_RECORDED = "not recorded: the batch was made before its settings were kept (SpaceMissionStudio 2.14.2 or earlier)"
 # The unit of each dispersed quantity's bounds, mean and spread (schema.scenario.DispersionConfig).
 DISPERSION_UNITS = {"dry_mass_kg": "kg", "attitude_sigma_bn": "rad", "orbit_elements": "per element",
                     "inertia_kg_m2": "kg*m^2", "angular_rate_bn_b": "deg/s", "drag_coeff": "-", "srp_coeff": "-"}

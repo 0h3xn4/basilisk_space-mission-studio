@@ -55,7 +55,7 @@ def batch_scenario_hash(archive_dir: Path) -> tuple[str, str] | str:
 def batch_seed(archive_dir: str | Path) -> int | None:
     """The batch seed (``monte_carlo_seed``) the folder's
     ``archive.provenance.json`` records, or None: a batch without one
-    (Basilisk's own seeding), made before it was recorded (2.14.1 and
+    (Basilisk's own seeding), made before it was recorded (2.14.2 and
     earlier), or a record that cannot be read (decision MC-20)."""
     try:
         record = json.loads((Path(archive_dir) / "archive.provenance.json").read_text(encoding="utf-8"))
