@@ -20869,3 +20869,56 @@ tag) shows no change in `schema/`, the templates
 `tests/data/` or `packaging/`. In the package, only `gui/shell.py`
 changed. The scenario file is still at schema version 6, so 2.14.1 and
 2.14.2 save and open the same files.
+
+## 2.14.2: a hidden area that becomes wider lays the window out again (2026-11-23)
+
+**The problem.** CI on `develop` (`ce6123e`, run 45114509231) failed one
+test on Linux: `test_the_sweep_table_fits_the_page_at_1280[inspector]`
+waited 3 s for Run > Thermal's sweep table to fit and it did not. K-40
+(`29bbdb5`) was the first suspect: it was the only code change since the
+last green run, and it changes how the area stack asks its pages.
+
+**How the cause was found.** The test passed alone, also under CPU load.
+It failed when the whole module ran in one process after the theme was
+applied (as many GUI tests leave it): 6 of 12 runs on `develop`, and
+2 of 4 runs on `7a9a25f`, the commit before K-40, with the same widths.
+So K-40 is not the cause. A dump at the timeout showed the window in a
+layout that broke its own rule: the area stack 923 px wide but its
+minimum 1039 px, the Inspector 277 px, the table 889 px for 947 px of
+headings (Inter 13 px). The 1039 px came from the hidden Timeline page:
+its row of filters became wider after the scenario opened. A
+`QStackedLayout` is as wide as its widest page, hidden pages too, but Qt
+ignores `updateGeometry()` from a hidden widget. The hidden page did get
+its layout request, but a hidden widget's layout does nothing with it.
+So the window kept the old layout until some other change laid it out
+again; then the Inspector narrowed to about 160 px and the table fitted.
+A trace of the layout requests showed the timing: when the Timeline
+page's request came after the last layout of the window, the test
+failed.
+
+**The fix.** `AreaPage.event()`: a hidden page that gets a layout request
+calls `updateGeometry()` on the area stack, so the window lays out again
+at once. It does not lay out the hidden page itself: that would also
+arm the page for its next change, but it asks the page's wrapped labels
+their height, and K-40's probe test counted one question. Qt sends a
+hidden page's request only while its layout is armed, so a later change
+still waits for the next layout of the window, as before.
+
+**Measured.** The themed module run passed 11 of 11 times with the fix
+(it failed 6 of 12 times without it). K-40's tests pass: no hidden page
+is asked its height, and the Budgets area still shows in under 50 ms.
+
+**Tests.** New in `tests/gui/test_shell.py`:
+`test_a_hidden_area_that_becomes_wider_widens_the_area_stack_at_once`.
+A widget in the hidden Timeline page of a bare shell becomes 200 px
+wider; the stack must follow with no other change. It fails on `develop`
+and passes with the fix.
+
+**Not fixed: a Windows failure on PR #313.** On `feature/monte-carlo-seed`
+(`db80cfa`) the Windows job failed
+`test_every_customize_button_is_inside_the_list`: the Customize button's
+right edge at 447 px in a details column 320 px wide. Its numbers (the
+buttons 169 and 266 px wide, 20 px high; on Linux 98 and 141 px, or 117
+and 166 px with the theme) show a row of buttons wider than the column,
+on the shown Home page. That is neither this fault nor K-40, and it did
+not come in 25 local runs, so no fix was guessed. It stays open.

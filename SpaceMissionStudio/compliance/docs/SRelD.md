@@ -1146,6 +1146,13 @@ summary:
   5 ms (10 to 12 ms). `test_breakout.py`'s move test has a plain 50 ms
   limit again (`docs/ui/TEST_CHANGES.md`) and passed on the Windows
   runner (CI run 45109373728).
+- **A hidden area that becomes wider lays the window out again at once**
+  (`gui/shell.py`): `AreaPage.event()` passes a hidden page's layout
+  request to the area stack, which Qt does not do for a hidden widget.
+  Before, the window kept a layout with the stack narrower than its own
+  minimum until another change, and Run > Thermal's sweep table did not
+  fit at 1280 px in CI run 45114509231. The cause is older than K-40: the
+  same failure came on `7a9a25f`. A new test in `tests/gui/test_shell.py`.
 - **Design only:** the pointing error budget (`39da9d7`;
   `docs/developer/pointing-error-budget-design.md`, `docs/DECISIONS.md`
   PE-1 to PE-9). No code; it waits for the owner's choice of scope.
