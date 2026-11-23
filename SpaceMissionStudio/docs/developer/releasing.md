@@ -661,6 +661,22 @@ schema version 6, and `schema/`, the templates, the golden files and
 `packaging/` are as at the 2.14.1 tag `caabf11`. The space weather was
 not refreshed: CelesTrak reset all three connections, so 2.14.2 carries
 2.13.0's file (observations to 2026-11-18).
+It was published on 2026-11-23 at 11:13 UTC (SRelD issue 54). It was
+not tagged on the release commit `ce6123e`: CI on it
+([run 45114509231](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45114509231)) failed one Linux test, and the
+unattended run stopped and tagged nothing. #315 fixed the cause, a
+fault older than 2.14.1, and was merged at 09:02 UTC as `452e164`. CI
+on `452e164` passed at the first attempt
+([run 45143562273](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45143562273)). The tag workflow
+([run 45147869658](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45147869658)) passed the release check and tagged
+`452e164` at 09:33:01. The first attempt of the release workflow
+([run 45148067729](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45148067729)) failed one Windows test: the 3D
+View's move took 64.0 ms, then 72.7 ms, against the 50 ms limit (SRelD
+K-40). The attach job did not run, so nothing was published. The same
+test had passed on the same commit in CI, so the failed jobs were run
+again once. The second attempt built, installed and checked every file,
+attached the eleven and published the release 100 minutes after the
+tag. It was never a public release without files.
 
 ---
 

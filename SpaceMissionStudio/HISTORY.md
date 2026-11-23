@@ -20922,3 +20922,63 @@ buttons 169 and 266 px wide, 20 px high; on Linux 98 and 141 px, or 117
 and 166 px with the theme) show a row of buttons wider than the column,
 on the shown Home page. That is neither this fault nor K-40, and it did
 not come in 25 local runs, so no fix was guessed. It stays open.
+
+### Release 2.14.2 published (2026-11-23)
+
+The weekly unattended backlog run prepared 2.14.2 on `develop`: the
+K-40 fix (`29bbdb5`), the pointing error budget's design (`39da9d7`),
+the backlog's moves (`c0f62c7`) and the release commit `ce6123e`
+(04:53 UTC, SRelD issue 53, "prepared"). CI ("SpaceMissionStudio") on
+`ce6123e` (run 45114509231) failed the Linux `test` job:
+`test_thermal_page_audit.py::test_the_sweep_table_fits_the_page_at_1280[inspector]`.
+The run stopped without a fix, and it tagged nothing.
+
+#315 found and fixed the cause ("2.14.2: a hidden area that becomes
+wider lays the window out again", above). The fault is older than K-40:
+it failed 2 of 4 runs on `7a9a25f`. #315 also added the CHANGELOG's
+2.14.2 "Fixed" entry. On its head only CI's "Windows (MAX Python)" job
+was red, for the Basilisk framework test of K-45 (1 test of 842). It was
+merged at 09:02:53 UTC as `452e164`. CI on `452e164` (run 45143562273,
+09:02:55 to 09:31:20 UTC) passed at the first attempt.
+
+The tag workflow (run 45147869658, 09:31:50 to 09:33:11 UTC) ran the
+release check on `452e164`. The check passed, and the workflow tagged
+`spacemissionstudio-v2.14.2` at 09:33:01 UTC. The tag is annotated and
+not signed (tag object `d916f0c`). It is on the merge of #315, not on
+`ce6123e`.
+
+The release workflow (run 45148067729) needed two attempts:
+- Attempt 1 (09:33:07 to 10:23:40 UTC) failed. Its job "tests /
+  platforms (windows-latest)" failed
+  `tests/gui/test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread`.
+  The 3D View's slowest move took 64.0 ms, and 72.7 ms when the test
+  timed it again. The limit is the plain 50 ms that K-40 set again. The
+  attach job was skipped, so nothing was published.
+- The same test passed on the same commit in CI run 45143562273. So the
+  failed jobs were run again, once.
+- Attempt 2 (10:26:10 to 11:13:16 UTC) passed. It built, installed and
+  checked every file, attached the eleven files and published
+  "SpaceMissionStudio 2.14.2" at 11:13:13 UTC, 100 minutes after the
+  tag. The release is not a draft and not a pre-release. It was never
+  public without its files.
+
+The release and its files were checked after the publication:
+- The release notes are the CHANGELOG's 2.14.2 section. Their digests
+  table gives the same digests as the `.deb` and the setup program.
+- Each file's GitHub digest equals its line in `SHA256SUMS-linux`,
+  `SHA256SUMS-windows` or `SHA256SUMS-sources`.
+- The wheel, the sdist, both bills of materials and the three
+  `SHA256SUMS-*` files, downloaded from the release, give the same
+  digests.
+- The LGPL sources are the same files as 2.14.0's and 2.14.1's.
+
+**K-40 is only partly met.** Its backlog item's done criterion was
+"every view under 50 ms on the Windows runner". The Budgets area meets
+it. The 3D View's move took 64.0 and 72.7 ms on the release workflow's
+Windows runner, but passed in CI on the same commit, so it sits at the
+limit. SRelD K-40 now says "partly met" with these values. The test is
+not loosened. A new item in `BACKLOG.md` "Next release" asks for a
+3D View move under 50 ms on the Windows runner.
+
+SRelD issue 54, the SDP, H05 and `releasing.md` record the tag, the runs
+and the files' digests. The CHANGELOG is unchanged.

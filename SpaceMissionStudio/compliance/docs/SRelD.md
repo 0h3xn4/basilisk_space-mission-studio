@@ -1,20 +1,85 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 53, 2026-11-23. Remediation R14.
+Document: SMS-SRelD, issue 54, 2026-11-23. Remediation R14.
 
-**Status:** release **2.14.2**, prepared 2026-11-23, not yet
-published. It is to be tagged with the tag workflow on `develop`'s head
-after its release commit, by the backlog procedure (`CLAUDE.md`, "Backlog
-and release procedure"): no release pull request. 2.14.2 is a patch
-release. It holds one fix and the 2.14.1 publication record (#312):
+**Status:** release **2.14.2**, published 2026-11-23 (11:13 UTC).
+2.14.2 is a patch release. The backlog procedure (`CLAUDE.md`, "Backlog
+and release procedure") prepared it: no release pull request. It holds
+two fixes and the 2.14.1 publication record (#312):
 - **The Budgets area shows quickly** (`29bbdb5`, K-40). The Equipment
   page's word-wrapped note made the area's page report a height for
   width, and Qt's stacked layout then asked every area's page, the
   hidden ones too, at each show: 8 to 11 ms on Linux, 50 to 81 ms on
   the Windows CI runner. `shell.AreaPage` now reports none. The area
   shows in about 1 ms on Linux, and the move test passes on the Windows
-  runner with a plain 50 ms limit (CI run 45109373728).
+  runner with a plain 50 ms limit (CI run 45109373728). K-40 is only
+  partly met: on the release workflow's Windows runner, the 3D View's
+  move took 64.0 ms and 72.7 ms (section 5.2).
+- **A hidden area that becomes wider lays the window out again at
+  once** (#315, `452e164`). Qt ignores `updateGeometry()` from a hidden
+  widget. When a hidden area's page became wider (Timeline's row of
+  filters), the window kept the layout of the old width until another
+  change laid it out again. `AreaPage.event()` now passes a hidden
+  page's layout request to the area stack. The fault is older than
+  K-40: it failed 2 of 4 runs on `7a9a25f`.
+
+How 2.14.2 was tagged and published:
+- The unattended backlog run made the release commit `ce6123e` at
+  04:53 UTC (issue 53, "prepared").
+- CI ("SpaceMissionStudio") on `ce6123e` ([run 45114509231](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45114509231))
+  failed the Linux `test` job:
+  `test_thermal_page_audit.py::test_the_sweep_table_fits_the_page_at_1280[inspector]`.
+  The backlog run stopped without a fix, and it tagged nothing.
+- #315 found the cause and fixed it (the second fix above). It was
+  merged at 09:02:53 UTC as `452e164`. On the head of #315, only CI's
+  "Windows (MAX Python)" job was red. It failed only the framework test
+  of K-45, 1 test of 842.
+- CI on `develop`'s head `452e164`, the merge of #315
+  ([run 45143562273](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45143562273)), ran from 09:02:55 to 09:31:20 UTC
+  and passed at the first attempt.
+- The tag workflow ([run 45147869658](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45147869658)) ran from 09:31:50
+  to 09:33:11 UTC. It ran the release check on `452e164` and passed.
+- The tag workflow (github-actions) tagged `spacemissionstudio-v2.14.2`
+  (annotated, not signed, D-13; tag object `d916f0c`) on commit
+  `452e164` (`452e164e7652de7135fe513d82039bbf311b388f`) at 09:33:01
+  UTC. The tagged commit is the merge of #315, not `ce6123e`.
+- The release workflow ([run 45148067729](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45148067729)) needed two
+  attempts:
+  - Attempt 1 (09:33:07 to 10:23:40 UTC) failed. Its job "tests /
+    platforms (windows-latest)" failed
+    `tests/gui/test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread`:
+    the 3D View's slowest move took 64.0 ms, and 72.7 ms when the test
+    timed it again, against the plain 50 ms limit of K-40. The attach
+    job was skipped, so nothing was published.
+  - The same test passed on the same commit in CI run 45143562273. So
+    the failed jobs were run again, once.
+  - Attempt 2 (10:26:10 to 11:13:16 UTC) passed. It built, installed,
+    checked and attached the eleven files. It counted the eleven files
+    and then published the GitHub release "SpaceMissionStudio 2.14.2"
+    at 11:13:13 UTC, not as a draft and not as a pre-release
+    (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.2>).
+    The release was never public without its files. Its notes are the
+    CHANGELOG's 2.14.2 section.
+- GitHub's SHA-256 digests: `.deb` (`spacemissionstudio_2.14.2_amd64.deb`,
+  441 058 000 bytes) `a739a471...2b0a`, setup program
+  (`spacemissionstudio-2.14.2-setup.exe`, 387 084 882 bytes)
+  `eec0d743...97d4`, wheel (9 060 659 bytes) `cfd39e0a...7ad8`, sdist
+  (9 369 416 bytes) `b5352941...f3d5`, the `.deb`'s bill of materials
+  (`spacemissionstudio_2.14.2_amd64.cdx.json`, 35 359 bytes)
+  `e433b5a8...65b5`, the setup program's
+  (`spacemissionstudio-2.14.2-setup.cdx.json`, 36 459 bytes)
+  `84423398...0023`, `SHA256SUMS-linux` `ed0494ba...f848`,
+  `SHA256SUMS-windows` `867c046e...eb2e`, and the LGPL sources, the same
+  as 2.14.0's and 2.14.1's: `qt-everywhere-src-6.11.2.tar.xz`
+  (1 019 661 552 bytes) `6dcfbca2...6f33`,
+  `pyside-setup-everywhere-src-6.11.2.tar.xz` (18 053 248 bytes)
+  `cba47efb...fdf8`, `SHA256SUMS-sources` `1301daba...e6f6`.
+- Every file's digest equals its checksum in `SHA256SUMS-*`. The
+  digests table of the release notes gives the same digests for the
+  `.deb` and the setup program. The wheel, the sdist, both bills of
+  materials and the three `SHA256SUMS-*` files, downloaded from the
+  release, give the same digests.
 
 Also on `develop` since 2.14.1, with no effect on the software: the
 pointing error budget's design (`39da9d7`, no code; `BACKLOG.md`,
@@ -1120,7 +1185,7 @@ This SRelD describes release 2.14.2 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` at the 2.14.2 release commit (the changes since 2.14.1: #312, `29bbdb5`, `39da9d7` and `c0f62c7`, and the release's records), to be tagged `spacemissionstudio-v2.14.2` by the tag workflow; the commit is recorded at publication. Previous release: 2.14.1, commit `caabf11` (`caabf1170d333919d5a3de66bf5bd2f262bcb334`), tagged `spacemissionstudio-v2.14.1`. |
+| Baseline | `develop` after the 2.14.2 release commit `ce6123e` and the fix of #315 (the changes since 2.14.1: #312, `29bbdb5`, `39da9d7` and `c0f62c7`, the release's records, and #315), tagged `spacemissionstudio-v2.14.2` on `452e164` (`452e164e7652de7135fe513d82039bbf311b388f`), the merge of #315, by the tag workflow. Previous release: 2.14.1, commit `caabf11` (`caabf1170d333919d5a3de66bf5bd2f262bcb334`), tagged `spacemissionstudio-v2.14.1`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 47 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble (also under the 2D map and in the app icon) and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
 | Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.14.2_amd64.deb`, the Windows setup program `spacemissionstudio-2.14.2-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.14.2_amd64.cdx.json`, `spacemissionstudio-2.14.2-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
@@ -1145,7 +1210,9 @@ summary:
   area shows in about 1 ms (8 to 11 ms before) and a move takes 3 to
   5 ms (10 to 12 ms). `test_breakout.py`'s move test has a plain 50 ms
   limit again (`docs/ui/TEST_CHANGES.md`) and passed on the Windows
-  runner (CI run 45109373728).
+  runner (CI run 45109373728). It failed once on the release
+  workflow's Windows runner, for the 3D View (64.0 and 72.7 ms; K-40 is
+  only partly met, section 5.2).
 - **A hidden area that becomes wider lays the window out again at once**
   (`gui/shell.py`): `AreaPage.event()` passes a hidden page's layout
   request to the area stack, which Qt does not do for a hidden widget.
@@ -1153,6 +1220,7 @@ summary:
   minimum until another change, and Run > Thermal's sweep table did not
   fit at 1280 px in CI run 45114509231. The cause is older than K-40: the
   same failure came on `7a9a25f`. A new test in `tests/gui/test_shell.py`.
+  (#315, merged as `452e164`, the tagged commit.)
 - **Design only:** the pointing error budget (`39da9d7`;
   `docs/developer/pointing-error-budget-design.md`, `docs/DECISIONS.md`
   PE-1 to PE-9). No code; it waits for the owner's choice of scope.
@@ -1175,12 +1243,17 @@ this release. The new tests are two in `tests/gui/test_breakout.py`; the
 changed test is in `docs/ui/TEST_CHANGES.md`. The release itself changed
 no test. On the Windows runner the suite's Tests step passed on
 `39da9d7` (CI run 45109373728; the run was then cancelled by the next
-push, before its Linux job ended). CI on the release commit is the
-reference.
+push, before its Linux job ended). CI on the release commit `ce6123e`
+(run 45114509231) failed one Linux test, which #315 fixed. CI on the
+tagged commit `452e164` (run 45143562273) passed at the first attempt.
+The release workflow's tests (run 45148067729) failed on the Windows
+runner at the first attempt, for the 3D View's move (K-40), and passed
+when the failed jobs were run again.
 
 **Still open:** K-19 (about 0.4 s), K-22, K-23 (smaller), K-24, K-25,
 K-26, K-27, K-28, K-30, K-31, K-34, K-35, K-36, K-37, K-38, K-39,
-K-41, K-42, K-43, K-44 (partly fixed), K-45, K-47, K-48. Closed: K-40.
+K-40 (partly met), K-41, K-42, K-43, K-44 (partly fixed), K-45, K-47,
+K-48.
 
 **Changes users notice:** the Budgets area shows at once when it opens
 or moves to its own window and back, also on a slow Windows machine.
@@ -1233,7 +1306,7 @@ or moves to its own window and back, also on a slow Windows machine.
 | K-37 | Limitation (2026-11-17): the operations planner's models are simpler than the simulation: a one-axis slew model of the controller (planned to half the convergence threshold, O-25), the panel's angle to the Sun from the planned attitude, resources at the geometry's step (O-26); no weather or clouds, conjunctions, a ground network's costs or bookings, or binary telecommands. Without the IERS Earth orientation files the geometry is about 10 km off on the ground (IAU_EARTH in the run), so a window at a limit can hold an image or not: template 35 plans 17 or 18 of 23 images. A week of template 35 takes about 40 s to plan with 20 improvement steps, more than the design's aim (a few seconds), and about ten minutes to fly. The AEM's rotation direction (EME2000 to the body) follows the CCSDS NDM/XML schema and version 1's convention; the Blue Book could not be read to confirm it (O-20) | **Fly and verify** says how far the simplifications matter for a spacecraft; an AEM reader that assumes the other direction gets the inverse rotation | `docs/reference/limitations.md`, "Operations planning"; `docs/developer/operations-planning-decisions.md` O-20, O-25, O-26 |
 | K-38 | Limitation (2026-11-17): 2.10.0 and earlier do not open a scenario file saved by 2.11.0, with or without a `budgets` section: 2.11.0 saves every file at schema version 5 (B-01), and an older version refuses a newer schema version. 2.10.0's message: "scenario file is schema_version 5, but this build of SpaceMissionStudio only understands up to version 4 -- upgrade SpaceMissionStudio to open it, or use the version that wrote it." (its `validate` command prints it after "INVALID:" and exits with status 1). Checked with 2.10.0's code (`b074260`) on the 36 templates as 2.11.0 saves them and a file with a `budgets` section: all 37 are refused with that message. 2.11.0 opens and validates the 36 templates as 2.10.0 saves them (version 4) with no message | A team that shares scenario files updates together; a user of 2.10.0 or earlier still opens every file those versions saved | `CHANGELOG.md` 2.11.0, Who should update; `docs/changes.md`, 2026-11-17 |
 | K-39 | Limitation (2026-11-17): phase 1 of the System Budget Studio merge. The run does not use the `budgets` section: it still takes `dry_mass_kg` and the power budget's bus load, and the power modes become a load in the simulation only in phase 2. No budget report is exported: each Budgets page copies its table as CSV with the provenance, and `budgets --csv` prints the totals (B-25). An IDM-CIC model gives no converter efficiency, distribution loss or power margin, so `idm-import --budgets` writes them as placeholders, and the power at the source stays unknown until the user sets them (B-08) | The budgets are a design check beside the run, not an input of it | `docs/user-manual/budgets.md`; `docs/developer/system-budget-phase1-design.md`; `docs/developer/system-budget-decisions.md` B-08, B-25 |
-| K-40 | Closed for 2.14.2 (2026-11-23, `29bbdb5`). Was a limitation (2026-11-18): on a slow Windows machine the Budgets area took 50 ms or more of the GUI thread to show; on the Windows CI runner each move into its own window or back took 50 to 81 ms, on Linux 10 to 11 ms. **Cause found:** the Equipment page's word-wrapped note made the area's page report a height for width, and Qt's stacked layout then asked every area's page, the hidden ones too, for its height at each show (on Linux, without the note's height for width, the show took 0.4 ms instead of 8 to 11 ms). `shell.AreaPage` now reports none; the area shows in about 1 ms on Linux, and a move takes 3 to 5 ms. The move test's limit is a plain 50 ms again and passed on the Windows runner (CI run 45109373728); a new test checks that no hidden area is asked its height | None after 2.14.2 | HISTORY.md, "2.12.0 windows and views: breakout windows" and "2.14.2: the Budgets area shows quickly"; `docs/ui/TEST_CHANGES.md`; `docs/DECISIONS.md` |
+| K-40 | Partly met in 2.14.2 (2026-11-23, `29bbdb5`). Was a limitation (2026-11-18): on a slow Windows machine the Budgets area took 50 ms or more of the GUI thread to show; on the Windows CI runner each move into its own window or back took 50 to 81 ms, on Linux 10 to 11 ms. **Cause found:** the Equipment page's word-wrapped note made the area's page report a height for width, and Qt's stacked layout then asked every area's page, the hidden ones too, for its height at each show (on Linux, without the note's height for width, the show took 0.4 ms instead of 8 to 11 ms). `shell.AreaPage` now reports none; the area shows in about 1 ms on Linux, and a move takes 3 to 5 ms. The move test's limit is a plain 50 ms again and passed on the Windows runner (CI run 45109373728); a new test checks that no hidden area is asked its height. **Only partly met:** the backlog item's done criterion was every view under 50 ms on the Windows runner. On the tagged commit `452e164` the move test passed in CI (run 45143562273, Windows runner), but it failed in the release workflow (run 45148067729, attempt 1, job "tests / platforms (windows-latest)"): the 3D View's slowest move took 64.0 ms, and 72.7 ms when the test timed it again, against the 50 ms limit. The run again of the failed jobs (attempt 2) passed. So the 3D View's move sits at the limit on the Windows runner; the cause is not known. The test is not loosened | On the Windows runner, a move of the 3D View into its own window or back can take 64 to 73 ms of the GUI thread (design rule 6: about 50 ms at most). The Budgets area shows quickly | HISTORY.md, "2.12.0 windows and views: breakout windows", "2.14.2: the Budgets area shows quickly" and "Release 2.14.2 published"; `docs/ui/TEST_CHANGES.md`; `docs/DECISIONS.md`; `BACKLOG.md`, "Next release" |
 | K-41 | Limitation (2026-11-18): the Windows CI job draws Chromium's compositor in software (`--disable-gpu-compositing`), as it already drew WebGL (SwiftShader), because the runner has no GPU: with the compositor's Direct3D shared images, WebGL contexts were lost at random and a different set of 3D View tests failed in each run. The app's own Chromium flags (`gui/webengine_setup.py`) are unchanged. So CI on Windows does not test the 3D View, its own window or the WebGL recovery with the GPU compositor, and they have not been tried on a Windows machine with a GPU (see also K-12) | Unknown for the 3D View on Windows with a GPU; a lost context is recovered up to five times, then the view says WebGL is gone | `docs/DECISIONS.md`, "Breakout windows" (the owner's decision, 2026-11-18); `.github/workflows/spacemissionstudio.yml` |
 | K-42 | Not verified (2026-11-18): the screenshot harness (`scripts/capture_ui_screens.py`) was not run for the new 2D map; a software centre's page for a downloaded `.deb` before it is installed was not seen (it needs Ubuntu 24.04 with a desktop; appstreamcli and desktop-file-validate accept the files); the taskbar icon and its AppUserModelID were not seen on a real Windows machine; Inno Setup compiles the script with the `.ico` only in the Windows installer workflow | The map has no reference screenshot; how the App Center and the Windows taskbar show the app is unknown | HISTORY.md, "Desktop integration", "A new app icon" and "ground tracks, stations and a live 2D map" |
 | K-43 | Limitation (2026-11-18): the 2.12.0 windows and views. On Wayland a view's window keeps only its size, not its place; a crash loses the windows' places since the start, as it loses the rest of the layout. The 2D map uses geocentric latitude (at most about 0.19 deg from geodetic) and says so. A run shown while it runs has no temperatures: the thermal analysis runs after the run (T-01, T-42). The app icon's Earth layer takes about 100 ms the first time it is made, once per process at start-up, above the 50 ms target | Small; the map says that its latitude is geocentric, and the user manual says what Wayland keeps | `docs/developer/windows-views-design.md`; `docs/DECISIONS.md`, "Ground tracks, stations and the live map" and "The app icon shows a mission" |
