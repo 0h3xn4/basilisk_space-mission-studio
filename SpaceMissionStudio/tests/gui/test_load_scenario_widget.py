@@ -437,3 +437,39 @@ def test_every_customize_button_is_inside_the_list(qtbot):
     button, details = widget.customize_template_button, widget.description_scroll.viewport()
     qtbot.waitUntil(button.isVisible)
     assert button.mapTo(details, button.rect().topRight()).x() < details.width()
+
+
+def test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit(qtbot):
+    """The details column's Open template and Customize and open... sit side
+    by side while they fit. When they are wider than the column (a larger
+    font; on the Windows runner a worker without the style sheet gave 169
+    and 266 px in a column of 320 px), Customize and open... goes below
+    Open template instead of past the column's right edge, where nothing
+    could reach it (the horizontal scroll bar is off)."""
+    from PySide6.QtGui import QFont
+
+    from spacemissionstudio.gui.load_scenario_widget import LoadScenarioWidget
+
+    widget = LoadScenarioWidget()
+    qtbot.addWidget(widget)
+    widget.resize(1440, 900)  # [px]
+    widget.show()
+    qtbot.waitExposed(widget)
+    widget.select(0)
+    first, second = widget.open_template_button, widget.customize_template_button
+    details = widget.description_scroll.viewport()
+    qtbot.waitUntil(second.isVisible)
+    big = QFont(first.font())
+    big.setPixelSize(26)  # [px]
+    for button in (first, second):
+        button.setFont(big)
+    width = first.sizeHint().width() + second.sizeHint().width()
+    assert width > details.width()  # they cannot sit side by side
+
+    def inside(button):
+        corner = button.mapTo(details, button.rect().topRight())
+        whole = button.width() >= button.sizeHint().width()  # its text is not cut
+        return whole and corner.x() < details.width() and button.mapTo(details, button.rect().topLeft()).x() >= 0
+
+    qtbot.waitUntil(lambda: inside(first) and inside(second), timeout=3000)
+    assert second.mapTo(details, second.rect().topLeft()).y() > first.mapTo(details, first.rect().bottomLeft()).y()

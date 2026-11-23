@@ -20990,3 +20990,16 @@ buttons 169 and 266 px wide, 20 px high; on Linux 98 and 141 px, or 117
 and 166 px with the theme) show a row of buttons wider than the column,
 on the shown Home page. That is neither this fault nor K-40, and it did
 not come in 25 local runs, so no fix was guessed. It stays open.
+
+## Monte Carlo phase B, part 1: the Home details' buttons wrap (2026-11-23)
+
+`test_every_customize_button_is_inside_the_list` failed on the Windows
+runner for #313 twice (`assert 447 < 320`). The details column's two
+buttons were in a row, and the scroll area hid what went past its edge.
+On that worker the test ran in the native style and font (the buttons
+20 px high), because no earlier test on the worker had applied the
+theme. The buttons are now in a `FlowLayout`: Customize and open... goes
+below Open template when the two do not fit. The new test
+`test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
+failed before the fix and passes after. The open point of the previous
+entry is closed (`docs/DECISIONS.md`, "The Home details' buttons wrap").

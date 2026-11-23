@@ -89,6 +89,7 @@ from ..engine.scenario_explainer import _BODY_RADIUS_KM, _EARTH_REQUATOR_KM, _is
 from ..schema import load_scenario
 from . import recent_files
 from .feedback import report
+from .flow_layout import FlowLayout
 from .mission_guide import StartFromScratchCard
 from .startup_fetch_dialog import ReferenceDataCard
 from .template_wizard import TemplateCustomizeWizard, get_wizard_spec
@@ -775,8 +776,12 @@ class LoadScenarioWidget(QWidget):
         self.description_meta = set_role(QLabel(), tone="secondary")
         self.description_meta.setWordWrap(True)
         self.description_meta.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        buttons = QHBoxLayout()
-        buttons.setSpacing(SPACE["xs"])
+        # A flow, not a row: when the two buttons are wider than the column
+        # (a larger font, a narrow column), Customize and open... goes
+        # below Open template instead of past the column's edge, where the
+        # scroll area (no horizontal scroll bar) hid it.
+        button_row = QWidget()
+        buttons = FlowLayout(button_row, spacing=SPACE["xs"])
         self.open_template_button = QPushButton("Open template")
         self.set_primary(True)
         self.open_template_button.setEnabled(False)
@@ -790,7 +795,6 @@ class LoadScenarioWidget(QWidget):
         self.customize_template_button.clicked.connect(self._on_customize_selected)
         buttons.addWidget(self.open_template_button)
         buttons.addWidget(self.customize_template_button)
-        buttons.addStretch(1)
         self.description_label = QLabel()
         self.description_label.setWordWrap(True)
         self.description_label.setTextFormat(Qt.TextFormat.RichText)
@@ -802,7 +806,7 @@ class LoadScenarioWidget(QWidget):
         column.addWidget(self.details_empty)
         column.addWidget(self.description_title)
         column.addWidget(self.description_meta)
-        column.addLayout(buttons)
+        column.addWidget(button_row)
         column.addWidget(self.description_label)
         # The headed parts ("What to look at", "Try changing"), folded.
         self.details_sections = QVBoxLayout()

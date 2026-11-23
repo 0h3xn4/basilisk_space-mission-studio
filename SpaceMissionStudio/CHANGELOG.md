@@ -54,6 +54,15 @@ fixes bugs.
   "crashed" for an orbit batch and, new, "failed" for a thermal batch,
   with the values each one drew.
 
+### Fixed
+
+- **The Home page's Customize and open... button can always be
+  reached.** The template details put Open template and Customize and
+  open... side by side. When the two were wider than the details column,
+  for example with a larger font, the second button went past the
+  column's edge, where you could not see or click it. Now it moves below
+  Open template when the two do not fit side by side.
+
 ## 2.14.2 (2026-11-23)
 
 SpaceMissionStudio 2.14.2 is a small patch on top of 2.14.1. The

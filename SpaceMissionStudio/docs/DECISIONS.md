@@ -5327,3 +5327,34 @@ CI on `develop` (`ce6123e`, run 45114509231) failed
   page. That is not the hidden-page fault and not K-40, which only
   changes what the stack asks its pages. It did not come in 25 local
   runs, with or without the theme, so no fix is guessed.
+
+## The Home details' buttons wrap (2026-11-23)
+
+`test_every_customize_button_is_inside_the_list` failed on the Windows
+runner on `feature/monte-carlo-seed` (#313), twice with the same numbers:
+the details column 320 px wide, its two buttons 169 and 266 px wide and
+20 px high.
+
+- **The cause.** The details column put Open template and Customize and
+  open... in a `QHBoxLayout`. The details' scroll area has no horizontal
+  scroll bar, so the part of the row past the column's edge was hidden.
+  With a larger font the row squeezed the buttons and cut their text
+  (Linux) or went past the edge (the Windows runner).
+- **Why only on #313.** A GUI test runs in the native style and font
+  unless the test or an earlier test in the same process applied the
+  theme (see `test_stale_results_and_window_size.py`'s `app_theme`). The
+  buttons were 20 px high, so the theme (32 px controls) was not
+  applied. On `develop` an earlier test on that worker had left it
+  applied; #313 adds tests, so pytest-xdist gives the Windows worker
+  other tests in another order. No test leaks a font or a style sheet:
+  every `setFont` and `setStyleSheet` in the tests is restored.
+- **Decision: a `FlowLayout`** (`gui/flow_layout.py`, already used for
+  the Results toolbar and the overview cards) instead of the row. The
+  buttons keep their own width and sit side by side while they fit;
+  otherwise Customize and open... goes below Open template. **Why:** it
+  fixes the layout for every font and column width, not only for the
+  runner, and it needs no new code.
+- **Test:** `test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
+  gives both buttons a 26 px font. It failed before the fix (the buttons
+  stayed side by side and were squeezed) and passes after. No existing
+  test changed.

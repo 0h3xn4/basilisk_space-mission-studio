@@ -2771,3 +2771,11 @@ A widget in the hidden Timeline page of a bare shell becomes 200 px
 wider; with no other change, the area stack must become as wide as its
 new minimum. It fails before the fix (the stack keeps its old width) and
 passes after.
+
+## The Home details' buttons wrap (2026-11-23)
+
+No existing test changed. New:
+`tests/gui/test_load_scenario_widget.py::test_the_details_buttons_go_one_above_the_other_when_they_do_not_fit`
+(both buttons with a 26 px font stay whole and inside the details
+column, Customize and open... below Open template). It failed before the
+fix and passes after.
