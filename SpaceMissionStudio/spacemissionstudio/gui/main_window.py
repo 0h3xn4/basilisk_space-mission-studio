@@ -1434,12 +1434,14 @@ class MainWindow(QMainWindow):
         if key == "ccsds_orbits":
             self.on_export_ccsds_orbits()
             return
-        if key == "monte_carlo_csv" and self.results_views.indexOf(self.monte_carlo_results_widget) < 0:
+        if key in ("monte_carlo_csv", "monte_carlo_report") and \
+                self.results_views.indexOf(self.monte_carlo_results_widget) < 0:
             self.show_view(self.results_views)
             show_toast(self, "No Monte Carlo batch is shown: run one, or Open Monte Carlo Results...", kind="info")
             return
         views = {"events_csv": self.event_timeline_widget, "output_csv": self.mission_output_widget,
-                 "monte_carlo_csv": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
+                 "monte_carlo_csv": self.monte_carlo_results_widget,
+                 "monte_carlo_report": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
                  "design_checks": self.design_checks_widget, "reentry_json": self.lifetime_widget,
                  "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_widget,
                  "plan": self.plan_scroll, "operations": self.plan_scroll, "operations_robustness": self.plan_scroll,

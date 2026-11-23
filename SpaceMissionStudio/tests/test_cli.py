@@ -1247,6 +1247,151 @@ def test_monte_carlo_out_dir_needs_case_and_case_refuses_overwrite(tmp_path, cap
 
 
 @pytest.mark.requires_basilisk
+def test_runs_and_processes_change_this_batch_only_and_are_recorded(tmp_path, capsys):
+    """Monte Carlo plan B7 (decision MC-33): --runs and --processes override
+    the scenario's monte_carlo.num_runs and thread_count for this batch
+    only. The batch runs that many cases; archive.provenance.json records
+    both values of each; the scenario file is byte for byte as before, and
+    its hash is the batch's (so Run This Case still matches it). --report
+    and --csv write the report and the Runs table after the batch."""
+    import json
+
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.engine import monte_carlo_report, monte_carlo_results
+    from spacemissionstudio.schema import load_scenario
+
+    path = tmp_path / "scenario.json"
+    _write_monte_carlo_scenario(path, [])  # num_runs 2, thread_count 1
+    before = path.read_bytes()
+    archive = tmp_path / "mc"
+    rc = cli.main(["monte-carlo", str(path), "--archive-dir", str(archive), "--runs", "3", "--processes", "2",
+                   "--report", str(tmp_path / "report.json"), "--csv", str(tmp_path / "runs.csv")])
+    out, err = capsys.readouterr()
+    assert rc == 0, err
+    assert path.read_bytes() == before
+    assert "--runs 3: for this batch only (the scenario file has monte_carlo.num_runs 2" in out
+    assert "--processes 2: for this batch only (the scenario file has monte_carlo.thread_count 1" in out
+    batch = monte_carlo_results.load(archive)
+    assert len(batch.runs) + len(batch.failed) == 3
+    record = json.loads((archive / "archive.provenance.json").read_text(encoding="utf-8"))
+    settings = record["monte_carlo_settings"]
+    assert (settings["num_runs"], settings["thread_count"]) == (3, 2)
+    assert settings["overrides"] == {"num_runs": {"scenario": 2, "batch": 3},
+                                     "thread_count": {"scenario": 1, "batch": 2}}
+    assert record["scenario_sha256"] == output_provenance.scenario_sha256(load_scenario(path))
+    report = monte_carlo_report.load(tmp_path / "report.json")
+    assert report["settings"]["runs_requested"] == 3 and report["settings"]["overrides"] == settings["overrides"]
+    assert (tmp_path / "runs.csv").is_file() and (tmp_path / "runs.csv.provenance.json").is_file()
+    assert "Outcome statistics (monte_carlo.percentile_method: linear" in out
+    capsys.readouterr()
+    assert cli.main(["monte-carlo", str(path), "--archive-dir", str(tmp_path / "mc2")]) == 0
+    record = json.loads((tmp_path / "mc2" / "archive.provenance.json").read_text(encoding="utf-8"))
+    assert record["monte_carlo_settings"]["num_runs"] == 2 and record["monte_carlo_settings"]["overrides"] == {}
+    assert "for this batch only" not in capsys.readouterr().out
+    assert path.read_bytes() == before
+
+
+def _save_summary(folder, requirements=()):
+    """A synthetic orbit batch of 4 runs saved as a batch does (no
+    Basilisk): Cd drawn, the lowest altitude 398 + k km."""
+    import math
+
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    radius, rate = 6778.0e3, math.sqrt(3.986004415e14 / 6778.0e3 ** 3)  # [m], [rad/s]
+    t = np.linspace(0.0, 600.0, 5)  # [s]
+    u = rate * t[None, :] + np.arange(4)[:, None] * 1e-4
+    r = np.stack([radius * np.cos(u), radius * np.sin(u), np.zeros_like(u)], axis=-1)
+    v = np.stack([-radius * rate * np.sin(u), radius * rate * np.cos(u), np.zeros_like(u)], axis=-1)
+    batch = mcr.MonteCarloBatch("summary batch", "earth", t, [0, 1, 2, 3], [], {"sat-1": r}, {"sat-1": v},
+                                [{"sat-1 drag coefficient [-]": 2.2 + 0.2 * k} for k in range(4)],
+                                outcomes=[{"sat-1.lowest_altitude": 398.0 + k} for k in range(4)],
+                                outcome_units={"sat-1.lowest_altitude": "km"}, requirements=list(requirements))
+    mcr.save(batch, folder)
+    return batch
+
+
+def test_summarize_prints_an_earlier_batch_and_writes_its_runs_table(tmp_path, capsys, monkeypatch):
+    """Monte Carlo plan B7: --summarize DIR runs nothing. It prints what a
+    batch prints (summary, outcomes, statistics, the strongest
+    correlations), writes the Runs table (by default monte_carlo_runs.csv
+    in the working folder, else --csv) and, with --report, the report. The
+    batch folder is byte for byte as before."""
+    from spacemissionstudio.engine import monte_carlo_report, monte_carlo_results
+
+    folder = tmp_path / "mc"
+    batch = _save_summary(folder)
+    before = {entry.name: entry.read_bytes() for entry in folder.iterdir()}
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["monte-carlo", "--summarize", str(folder)]) == 0
+    out = capsys.readouterr().out
+    assert "nothing is run" in out and "4 run(s) summarized" in out
+    assert "Outcome statistics (monte_carlo.percentile_method: linear" in out
+    assert "Sensitivity (monte_carlo.sensitivity_measure: spearman; the 4 strongest of 4 pairs" in out
+    rows = (tmp_path / "monte_carlo_runs.csv").read_text(encoding="utf-8").splitlines()
+    assert rows[0].split(",") == monte_carlo_results.run_table(batch, outcomes=True)[0] and len(rows) == 5
+    assert cli.main(["monte-carlo", "--summarize", str(folder), "--csv", str(tmp_path / "runs.csv"),
+                     "--report", str(tmp_path / "report.md")]) == 0
+    assert (tmp_path / "runs.csv").read_text(encoding="utf-8") == (tmp_path / "monte_carlo_runs.csv").read_text(
+        encoding="utf-8")
+    assert (tmp_path / "report.md").read_text(encoding="utf-8").startswith("# Monte Carlo report: summary batch")
+    assert cli.main(["monte-carlo", "--summarize", str(folder), "--report", str(tmp_path / "report.json")]) == 0
+    assert monte_carlo_report.load(tmp_path / "report.json")["batch"]["scenario_name"] == "summary batch"
+    assert {entry.name: entry.read_bytes() for entry in folder.iterdir()} == before
+
+
+def test_summarize_exits_5_for_a_requirement_not_shown_met_and_1_without_a_batch(tmp_path, capsys):
+    """The check, as after the batch (decision MC-10): a requirement with an
+    allowed probability not shown met exits 5; one shown met exits 0. A
+    folder without a summary is an input error (1)."""
+    met = {"name": "R-LOW", "spacecraft": "sat-1", "outcome": "lowest_altitude", "at_least": 300.0, "at_most": None,
+           "confidence": 0.5, "max_probability": 0.9}
+    _save_summary(tmp_path / "met", [met])
+    assert cli.main(["monte-carlo", "--summarize", str(tmp_path / "met"), "--csv", str(tmp_path / "a.csv")]) == 0
+    _save_summary(tmp_path / "not", [dict(met, at_least=500.0)])
+    assert cli.main(["monte-carlo", "--summarize", str(tmp_path / "not"), "--csv",
+                     str(tmp_path / "b.csv")]) == cli.EXIT_CHECK_FAILED
+    out, err = capsys.readouterr()
+    assert "NOT SHOWN MET: R-LOW" in err and (tmp_path / "b.csv").is_file()
+    (tmp_path / "empty").mkdir()
+    assert cli.main(["monte-carlo", "--summarize", str(tmp_path / "empty")]) == 1
+    assert "has no Monte Carlo results" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("argv, message", [
+    (["scenario.json", "--summarize", "mc"], "give no scenario with it"),
+    (["--summarize", "mc", "--runs", "5"], "--runs cannot go with it"),
+    (["--summarize", "mc", "--processes", "2", "--overwrite"], "--processes, --overwrite cannot go with it"),
+    (["--summarize", "mc", "--case", "1"], "--case cannot go with it"),
+    ([], "give the scenario file, or --summarize DIR"),
+    (["scenario.json", "--case", "0", "--report", "r.md"], "--report are for a batch"),
+    (["scenario.json", "--case", "0", "--runs", "4"], "--runs are for a batch"),
+    (["scenario.json", "--report", "report.txt"], "a .json or a .md file"),
+])
+def test_monte_carlo_flags_that_do_not_go_together_are_usage_errors(tmp_path, capsys, monkeypatch, argv, message):
+    """Usage errors (2, ICD-02), said before anything is read or run: the
+    scenario file is not even opened."""
+    work = tmp_path / "work"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    assert cli.main(["monte-carlo"] + argv) == 2
+    assert message in capsys.readouterr().err
+    assert not any(work.iterdir())
+
+
+@pytest.mark.parametrize("flag, value", [("--runs", "0"), ("--runs", "100001"), ("--processes", "0"),
+                                         ("--processes", "257"), ("--runs", "2.5")])
+def test_runs_and_processes_keep_the_scenario_files_limits(capsys, flag, value):
+    """--runs from 1 to 100 000 and --processes from 1 to 256, as the
+    scenario file's monte_carlo.num_runs and thread_count."""
+    with pytest.raises(SystemExit) as usage:
+        cli.main(["monte-carlo", "scenario.json", flag, value])
+    assert usage.value.code == 2 and "a whole number from 1 to" in capsys.readouterr().err
+
+
+@pytest.mark.requires_basilisk
 def test_kernels_status_with_a_missing_kernel_exits_2(capsys, monkeypatch):
     """Audit 3.2: a missing support-data file is a missing component (2 in
     ICD-02), not an input error (1, as in 1.3.1 and earlier)."""

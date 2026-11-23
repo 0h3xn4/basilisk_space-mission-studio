@@ -22,6 +22,8 @@ B3 and B2): their worker, their plots and their tables' rows.
 * :class:`InsightComputer` computes ``engine.monte_carlo_statistics.insight``
   of a batch off the GUI thread: a batch can hold 100 000 runs, and its
   ranks and percentiles take longer than design rule 6 allows.
+* :class:`ReportWriter` writes a batch's report (plan B5) off the GUI
+  thread.
 * :class:`InsightPlot` shows one Plotly figure. Its web view is made
   the first time it has a figure to show (an idle web view costs a
   Chromium renderer). It builds the figure again in the new theme's
@@ -43,6 +45,7 @@ from PySide6.QtCore import QObject, QThreadPool, QTimer, QUrl, Signal
 from PySide6.QtWidgets import QLabel, QStackedWidget, QVBoxLayout, QWidget
 
 from .. import temp_folders
+from ..engine import monte_carlo_report
 from ..engine import monte_carlo_statistics as mcs
 from .theme import SERIES_COLORS, TOKENS, on_change, set_role
 from .theme import plotly_template as pt
@@ -51,17 +54,8 @@ logger = logging.getLogger(__name__)
 
 # Above this many points a plot draws with WebGL (Scattergl): SVG markers of 100 000 runs are slow to draw.
 WEBGL_POINTS = 5000
-NO_VALUE = "—"  # a correlation that has no value: a column that does not vary, or too few runs
-
-
-def number_text(value: float | None) -> str:
-    """A table cell: 6 significant figures; "—" for no value."""
-    return NO_VALUE if value is None or not np.isfinite(value) else f"{value:.6g}"
-
-
-def percentile_title(percentile: float) -> str:
-    """A percentile's column heading: "P5" for the 5th."""
-    return f"P{percentile:g}"
+# The cells' text is the engine's, so the batch report and the command line read as the view (plan B5).
+NO_VALUE, number_text, percentile_title = mcs.NO_VALUE, mcs.number_text, mcs.percentile_title
 
 
 class InsightComputer(QObject):
@@ -117,6 +111,51 @@ class InsightComputer(QObject):
             self._start(batch)
             return
         self.ready.emit(batch, result, error)
+
+
+class ReportWriter(QObject):
+    """Writes a batch's report (``engine.monte_carlo_report.write``, Monte
+    Carlo plan B5) in one serial worker, so the GUI thread neither works out
+    the statistics nor writes the file (design rule 6). ``written(path,
+    error)`` arrives on the GUI thread (``error`` "" when the file is
+    written). The pool waits for its job when it is deleted."""
+
+    written = Signal(object, str)
+    _done = Signal(object, str)
+
+    def __init__(self, parent: QObject | None = None) -> None:
+        super().__init__(parent)
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)
+        self.write: Callable = monte_carlo_report.write  # what the worker runs (a test may replace it)
+        self.pending = 0  # reports asked for and not yet written
+        self._done.connect(self._on_done)
+
+    def request(self, batch, path: Path, folder: Path | None, insight=None) -> None:
+        self.pending += 1
+        write = self.write
+        self._pool.start(lambda: self._work(write, batch, path, folder, insight))
+
+    def wait(self) -> None:
+        """Until the reports asked for are written (tests, closing)."""
+        self._pool.waitForDone()
+
+    def _work(self, write: Callable, batch, path: Path, folder: Path | None, insight) -> None:
+        try:
+            write(batch, path, folder, insight)
+            error = ""
+        except (OSError, ValueError, monte_carlo_report.MonteCarloReportError) as exc:
+            error = str(exc)
+        except Exception as exc:  # noqa: BLE001 -- said in a toast and the Log, never a crash of the window
+            error = f"{type(exc).__name__}: {exc}"
+        try:
+            self._done.emit(path, error)
+        except RuntimeError:  # the view was closed meanwhile
+            pass
+
+    def _on_done(self, path, error: str) -> None:
+        self.pending -= 1
+        self.written.emit(path, error)
 
 
 # -- the figures --------------------------------------------------------------------------------

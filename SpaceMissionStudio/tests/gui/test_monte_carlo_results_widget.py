@@ -823,3 +823,90 @@ def test_the_main_window_compares_an_opened_batch_with_the_open_scenario(qtbot, 
     window.open_monte_carlo_results_action.trigger()
     (note,) = window.monte_carlo_results_widget.scenario_notes.notes
     assert f"scenario SHA-256 {'0' * 64} at the batch" in note
+
+
+def test_the_report_has_the_views_numbers_and_is_written_off_the_gui_thread(qtbot, tmp_path):
+    """Plan B5 (decision MC-32): Export report... hands the batch, its
+    folder and the view's own statistics to a worker; the GUI thread
+    returns at once (under 50 ms, design rule 6) and a toast says where the
+    report is. Each number of the report is the one the view's tables show:
+    the Statistics and Sensitivity cells, the Requirements cells."""
+    import threading
+    import time
+
+    from spacemissionstudio.engine import monte_carlo_report
+    from spacemissionstudio.engine.monte_carlo_statistics import number_text
+    from spacemissionstudio.gui import export_log
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch_with_outcomes(tmp_path, [_ALTITUDE])
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    assert not widget.report_button.isEnabled()  # no batch yet
+    widget.load_folder(tmp_path)
+    assert widget.report_button.isEnabled()
+    _show_tab(qtbot, widget, widget._sensitivity_index)
+    threads, given = [], []
+    real = widget.report_writer.write
+
+    def write(batch, path, folder, insight):
+        threads.append(threading.current_thread())
+        given.append(insight)
+        return real(batch, path, folder, insight)
+
+    widget.report_writer.write = write
+    path = tmp_path / "report.json"
+    start = time.perf_counter()
+    widget.export_report(path)
+    assert time.perf_counter() - start < 0.050
+    qtbot.waitUntil(lambda: widget.report_writer.pending == 0, timeout=10000)
+    assert threads[0] is not threading.main_thread() and given[0] is widget.insight
+    assert export_log.last("monte_carlo_report")[1] == str(path)
+    report = monte_carlo_report.load(path)
+
+    table = widget.statistics_table
+    shown = {table.cell(r, 0): [table.cell(r, c) for c in range(table.column_count())]
+             for r in range(table.row_count())}
+    for outcome in report["outcome_statistics"]["outcomes"]:
+        cells = shown[widget._short(outcome["name"])]
+        assert cells[1:] == [outcome["unit"], str(outcome["n"]), number_text(outcome["minimum"]),
+                             *(number_text(p["value"]) for p in outcome["percentiles"]),
+                             number_text(outcome["maximum"])]
+    assert [o["minimum"] for o in report["outcome_statistics"]["outcomes"]] == [
+        s.minimum for s in widget.insight.statistics]
+    table = widget.sensitivity_table
+    shown = [[table.cell(r, c) for c in range(4)] for r in range(table.row_count())]
+    assert shown == [[widget._short(p["drawn_value"]), widget._short(p["outcome"]), number_text(p["correlation"]),
+                      str(p["n"])] for p in report["sensitivity"]["pairs"]]
+    table = widget.requirements_table
+    (row,) = report["requirements"]["results"]
+    assert [table.cell(0, c) for c in (0, 3, 4, 5, 7, 8, 11)] == [
+        row["name"], str(row["evaluated"]), str(row["not_met"]), str(row["crashed"]), f"{row['estimate']:.4g}",
+        f"{row['upper_bound']:.4g}", row["verdict"]]
+
+
+def test_export_report_asks_for_the_file_and_its_format(qtbot, tmp_path, monkeypatch):
+    """The dialog offers Markdown and JSON; a name without a suffix takes
+    the format chosen; a file that cannot be written is said, not raised."""
+    from PySide6.QtWidgets import QFileDialog
+
+    from spacemissionstudio.engine import monte_carlo_report
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch_with_outcomes(tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    answers = iter([(str(tmp_path / "mine"), "JSON (*.json)"), (str(tmp_path / "notes"), "Markdown (*.md)"),
+                    (str(tmp_path / "missing" / "report.md"), "Markdown (*.md)")])
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(lambda *a, **k: next(answers)))
+    said = []
+    monkeypatch.setattr("spacemissionstudio.gui.monte_carlo_results_widget.report",
+                        lambda widget, text, kind="error": said.append((kind, text)))
+    for _ in range(3):
+        widget.report_button.click()
+        qtbot.waitUntil(lambda: widget.report_writer.pending == 0, timeout=10000)
+    assert monte_carlo_report.load(tmp_path / "mine.json")["batch"]["scenario_name"] == "Synthetic batch"
+    assert (tmp_path / "notes.md").read_text(encoding="utf-8").startswith("# Monte Carlo report: Synthetic batch")
+    assert [kind for kind, _text in said] == ["success", "success", "error"]
+    assert said[2][1].startswith(f"Could not export the Monte Carlo report to {tmp_path / 'missing' / 'report.md'}")

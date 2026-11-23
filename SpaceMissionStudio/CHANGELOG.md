@@ -71,6 +71,41 @@ fixes bugs.
   editor is not the one the batch was run with, a warning under the
   title gives both scenario hashes and reminds you that Run This Case
   needs the batch's own scenario.
+- **A Monte Carlo batch now gives you a report you can keep.** Results ›
+  Monte Carlo has a new Export report... button, and `monte-carlo`
+  takes `--report FILE`. You get one file, Markdown (`.md`) to read or
+  JSON (`.json`) for your own scripts, with everything the batch says:
+  how many runs and processes it used and its seed, the dispersions, the
+  spread at the end, every requirement with its estimate, its bound and
+  its verdict, the outcome statistics with their percentile method, the
+  sensitivity table with its measure, the runs that crashed with what
+  they drew, and the provenance (the scenario's hash, each data file's
+  hash and the versions). The numbers are the very ones the view shows,
+  worked out by the same code, and the file is written in the
+  background, so the window never waits for it.
+- **`monte-carlo` can show a batch you ran earlier without running it
+  again.** `spacemissionstudio monte-carlo --summarize DIR` prints the
+  batch's summary, the requirements, the outcome statistics and the
+  strongest correlations, and writes its Runs table as CSV
+  (`monte_carlo_runs.csv`, or the file you give with `--csv`). Add
+  `--report FILE` for the full report. Nothing in the batch folder
+  changes. It exits with 5, as after the batch, when a requirement is
+  not shown met. A batch run now prints the outcome statistics and the
+  strongest correlations too, and can write its Runs table with `--csv`.
+- **Run a different number of cases, or on more processes, without
+  editing the scenario.** `monte-carlo --runs N` and `--processes N`
+  change the batch's size and its processes for that one batch. The
+  scenario file stays exactly as it is (so Run This Case still matches
+  it), and the batch's `archive.provenance.json` records both the file's
+  value and the one used. Every new batch's provenance also records the
+  settings it ran with and its dispersions, which the report reads.
+- **A new template shows the Monte Carlo tools at work.** Template 37,
+  "Monte Carlo: requirements, statistics and sensitivity", is template
+  25's satellite as a 30-run batch with a batch seed and two
+  requirements with a confidence: one is met, the other shows its
+  estimate and bound. The Sensitivity tab finds that the drag
+  coefficient drives the orbit's decay. It runs in about a minute in one
+  process. Template 25 is unchanged.
 
 ### Changed
 

@@ -5560,3 +5560,194 @@ not count.
   thread's part, best of three under 50 ms as before, and checks that
   the worker writes the page (over 1 MB), that it is shown and that the
   older pages are gone (`docs/ui/TEST_CHANGES.md`).
+
+## Monte Carlo phase B, part 3: batch report, command line, template 37 (2026-11-23)
+
+Items B5, B7 and B9 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
+built on part 2 (MC-26 to MC-31). The owner has not answered Q7 (a
+template for the new features). The work ran without questions. **MC-34
+is provisional: the owner may change it.** No scenario field changed, so
+there is no schema step: the scenario stays at version 7, and the
+command-line overrides are not scenario keys. The golden files of the 36
+existing templates are byte-identical; template 37 has its own.
+
+- **Decision MC-32: the batch report** (B5).
+  - A new module, `engine/monte_carlo_report.py` (Basilisk-free,
+    Qt-free), builds the report as a dict and writes it as JSON (`kind:
+    "monte_carlo_report"`, `format` 1, `spacemissionstudio_version`,
+    `created_utc` with `Z`) or as Markdown. The file's suffix chooses:
+    `.json` or `.md`, in any case; another suffix is refused before
+    anything runs or is written. **Why:** one file, two readers (a
+    script, a person), and no format flag to forget.
+  - Its sections: the batch (scenario name, kind, folder, epoch, run
+    length, spacecraft or nodes), the settings (runs asked for, done and
+    failed; processes asked for and used; the seed; the command-line
+    overrides), the dispersions, the spread at the end (the view's
+    tiles), the requirements (every field of `RequirementResult`, the
+    verdict null without an allowed probability) with the bound's model,
+    a thermal batch's node limits, the outcome statistics with the
+    percentile method's model record, the sensitivity with the measure's
+    model record and every pair, the crashed runs with what they drew,
+    and the provenance (the batch's `archive.provenance.json`: scenario
+    SHA-256, scenario file and its SHA-256, versions, models, seeds note;
+    the data files with their SHA-256). **Why:** the plan's list, plus
+    the spread, which is the view's headline.
+  - The numbers come from the functions the view uses:
+    `monte_carlo_requirements.evaluate`, `monte_carlo_statistics.insight`,
+    `monte_carlo_results.final_spread` and `node_spread`. The GUI hands
+    the report its own `Insight` when the Statistics or Sensitivity tab
+    has worked it out, so the report holds the very objects the tables
+    show. The Markdown cells come from the same text functions:
+    `table_rows`, `node_limit_rows`, and `number_text` and
+    `percentile_title`, which moved from `gui.monte_carlo_insight` to
+    `engine.monte_carlo_statistics` (the GUI module keeps the names).
+    **Why:** the plan's acceptance ("the report's numbers equal the
+    view's") holds by construction, and a test checks it cell by cell.
+  - JSON numbers are written in full (Python's shortest round-trip
+    form); NaN and infinity are null (`allow_nan=False`). **Why:** a
+    script reads the exact value the view rounds; strict JSON.
+  - The data files are listed once per kind and SHA-256 with the number
+    of runs that read each, from the summary's `data_files`; a summary
+    without them falls back to the nominal run's record in the
+    provenance, and says so. **Why:** a batch normally reads one set of
+    files; a list per run would repeat it N times.
+  - A batch made before this version has no `monte_carlo_settings`. Its
+    report gives the runs and the seed from the summary, and says that
+    the processes and the dispersions are not recorded. A thermal or
+    operations batch says why it lists no dispersions. **Why:** the report
+    never invents what the batch did not keep.
+  - GUI: **Export report...** beside **Open results...**, enabled with a
+    batch; a save dialog offers Markdown and JSON, and a name without a
+    suffix takes the chosen format. The report is built and written by
+    `gui.monte_carlo_insight.ReportWriter`, a one-thread `QThreadPool` as
+    the insight's; success is a toast and Reports › Exports lists it
+    (`monte_carlo_report`); a failure is said in a toast and the Log.
+    The window's close waits for it with the insight. **Why:** design
+    rule 6: for a large batch the statistics alone take 0.2 to 0.5 s; the
+    GUI thread only starts the job (a test requires under 50 ms).
+  - The Runs table's CSV writer moved to the engine
+    (`monte_carlo_report.write_runs_csv`); the view's **Export table
+    CSV...** calls it and writes what it wrote before. **Why:** the
+    command line writes the same file; one writer.
+- **Decision MC-33: the command line** (B7).
+  - `monte-carlo --summarize DIR` runs nothing and reads only the
+    summary. It takes no scenario (a usage error, 2, if one is given):
+    the batch records what it ran with. It prints what a batch prints,
+    writes the Runs table and, with `--report FILE`, the report. Nothing
+    in DIR changes (a test compares every file's bytes). It exits 1 for
+    a folder without a summary that can be read, 3 when a file cannot be
+    written, 5 when a requirement with an allowed probability is not
+    shown met, else 0; never 3 for the batch's own crashed runs, since
+    no run fails in this command. **Why:** ICD-02's meanings; the same
+    check as after the batch, so a script can judge an old batch.
+  - Its Runs table goes to `--csv FILE`, by default `monte_carlo_runs.csv`
+    in the working folder (the GUI's default name), with
+    `<file>.provenance.json` beside it. Not in DIR. **Why:** a file
+    added to the batch folder would make the folder "other" and
+    `--overwrite` would then refuse to reuse it.
+  - The CSV holds the first spacecraft's (or node's, or profile's) Runs
+    table, as the view's first choice; with several, the command says
+    which and that the window exports the others. **Why:** the table is
+    per spacecraft by design (its offsets and outcomes); a merged table
+    would be a second format. A `--spacecraft` flag can come later if
+    needed.
+  - `--csv FILE` and `--report FILE` also work after a batch run.
+    **Why:** the plan's "monte-carlo --report FILE"; the CSV was the
+    other half of G9 ("no CSV from the CLI").
+  - The batch run and `--summarize` print the same lines (one function):
+    as before, then the outcome statistics (the Statistics tab's
+    columns) and the 10 strongest correlations, with a pointer to the
+    report for the rest. **Why:** MC-28 left these tables to B5 and B7;
+    every pair of a large batch (inputs times outcomes, 50 for template
+    37) is too long for a terminal.
+  - `--runs N` (1 to 100 000) and `--processes N` (1 to 256), the
+    scenario file's limits, checked by argparse. They change a copy of
+    the Monte Carlo settings for this batch; the scenario object and its
+    file are not changed (a test compares the file's bytes), so the
+    batch's scenario hash is the file's and Run This Case still accepts
+    the file. **Why:** neither changes what a case draws (a case's draws
+    depend on its index and the seed, MC-20), so the cases stay
+    reproducible from the unchanged file.
+  - Every new batch's `archive.provenance.json` gets
+    `monte_carlo_settings`: `num_runs` and `thread_count` as used,
+    `processes_used` (one per CPU at most), `seed`, the `dispersions` as
+    the scenario file writes them, and `overrides`, each overridden value
+    as `{"scenario": ..., "batch": ...}` (empty without one). Written
+    always, also by the GUI's batches. **Why:** the plan's "recorded in
+    the provenance"; a provenance record says what was used, also "no
+    override" (as `monte_carlo_seed`, MC-21); the report reads the
+    settings and dispersions from it, so `--summarize` needs no
+    scenario.
+  - `--case` with `--runs`, `--processes`, `--report` or `--csv`, and
+    `--summarize` with `--case`, `--out-dir`, `--runs`, `--processes`,
+    `--overwrite` or `--allow-scripts` are usage errors (2), said before
+    anything is read. **Why:** each would be silently ignored otherwise.
+- **Decision MC-34 (provisional, the owner may change it; Q7): template
+  37.** A new template, "37 - Monte Carlo: requirements, statistics and
+  sensitivity"; template 25 is unchanged, so no golden file changes.
+  - Template 25's 150 kg satellite at 400 km (its gravity, Sun, Moon,
+    real space weather, Cd 3.0), for 0.5 day; 30 runs, one process,
+    batch seed 37; three dispersions: the orbit (1-sigma 0.5 km in
+    semi-major axis, 0.02 deg in inclination, 0.05 deg along track), the
+    drag coefficient (uniform 2.2 to 3.0, as 25) and the dry mass (normal,
+    150 kg, 7.5 kg, 5 %); two requirements at 90 % confidence:
+    R-ALT-01, lowest altitude at least 389 km with an allowed probability
+    of 0.1, and R-DECAY-01, mean semi-major axis change at least
+    -0.019 km with none. **Why:** each phase A and B feature shows: a
+    verdict (met), an estimate with its bound and no verdict, the seed,
+    percentiles of ten outcomes, and a sensitivity with a strong (Cd)
+    and a weak (mass) driver. The limits are round numbers placed by the
+    measured batch: 389 km is 1.4 km under the lowest run, -19 m cuts
+    the tail.
+  - 30 runs: the smallest batch whose bound at k = 0 (1 - 0.1^(1/30) =
+    0.074) is under the allowed 0.1, and whose correlations stand out of
+    their chance spread (about 1/sqrt(29) = 0.19). **Measured here: 53 s
+    for the 30 runs in one process** (the CLI, wall time; 4 CPUs), about
+    1.7 s a run. One process, as every other template: a template must
+    not warn on a one-CPU computer (more processes than CPUs).
+  - Measured with the seed: R-ALT-01 met (0 of 30, bound 0.0739);
+    R-DECAY-01 2 of 30 (estimate 0.0667, bound 0.168); Spearman's
+    correlation of Cd with the decay -0.90, of the dry mass +0.27.
+    `tests/test_template_claims.py` checks these (slow: about a minute).
+  - Its golden file was recorded with `scripts/update_golden_outputs.py
+    37_ --write` and covers the usual run and a 2-run, 0.05-day batch;
+    `tests/data/scenario_hashes.json` gained its two hashes. It has a
+    Customize wizard (runs, seed, Cd bounds, dry-mass spread, the two
+    limits, duration), a row in the templates' README and the learning
+    path's "Uncertainty" step.
+  - The wizard's page of the other settings headed a dispersion's group
+    with its file name ("Dispersion: sat-1 dry_mass_kg"); it now says
+    "Dispersion: sat-1 dry mass" (`gui.wizard_settings`). Found by
+    `tests/gui/test_label_text.py` on template 37, whose orbit and mass
+    dispersions are not all on its curated pages. **Why:** UI audit B4
+    (labels, not identifiers); templates 09 and 25 never showed it.
+- **Decision MC-35: tests changed for this work.** Lists that enumerate
+  the templates grew by template 37: `tests/gui/test_home.py` (37 cards;
+  the "monte carlo" filter finds 09, 25, 34 and 37, "4 of 37") and
+  `tests/test_monte_carlo_statistics.py`'s check that no template has a
+  false finding (37 files). `tests/gui/test_reports_and_settings.py`'s
+  list of exports grew by "Monte Carlo report" (23). No GUI test reaches
+  a widget another way, so `docs/ui/TEST_CHANGES.md` has no entry.
+  **Why:** CLAUDE.md: no test weakened; each list only grows, and every
+  check on the 36 templates still runs on them.
+
+## Template 37's drawn orbit angles held to the golden angle floor (2026-11-23)
+
+`test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_drives_the_decay`
+failed on the Linux CI runner (#316, `c6ef559`). One drawn value of the
+first two runs differed from the golden file: the true anomaly,
+-0.068391551 deg against -0.068390697 deg, which is 8.54e-7 deg, or
+1.49e-8 rad = 2^-26 rad. The test compared every drawn value to 1e-12.
+
+- **Cause:** the drawn orbit elements are not the generator's numbers.
+  They come from `rv2elem` of the dispersed initial state
+  (`monte_carlo._drawn_values`). Template 37's orbit is near circular, so
+  its true anomaly comes through an arccos near 1, which gives 0 on one
+  computer and 2^-26 rad on another. `tests/golden_capture.py` already
+  describes this and holds such angles to `ABSOLUTE_FLOORS["deg"]`
+  (1e-6 rad).
+- **Decision:** the test compares a drawn value in degrees with that same
+  floor, and every other drawn value (drag coefficient, dry mass,
+  semi-major axis) still to a relative 1e-12. **Why:** the golden test of
+  the same batch already uses this floor. The draws that the generator
+  makes still have to match to the last digits.

@@ -335,6 +335,11 @@ parameters:
   heading, and each tab's hint gives the method and its reference in its
   tooltip. The statistics and correlations are worked out off the GUI
   thread when the Statistics or Sensitivity tab is first shown.
+- **The batch report** (Export report..., `monte-carlo --report`;
+  `engine.monte_carlo_report`) writes the same numbers, from the same
+  functions, with each model's record (name, title, method and
+  references). The command line (`monte-carlo`, and `--summarize`)
+  prints the statistics table and the ten strongest correlations.
 
 ## Not covered
 

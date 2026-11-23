@@ -81,12 +81,17 @@ run a Monte Carlo batch and archive retained results
 
 | Argument | Help |
 |---|---|
-| `scenario` |  |
+| `scenario` | the scenario file (not with --summarize) |
 | `--archive-dir` | directory to archive per-run parameters and retained data to (empty, or an earlier batch with --overwrite) |
 | `--overwrite` | replace an earlier Monte Carlo batch in --archive-dir |
 | `--allow-scripts` | run the Mission Sequence's script_block commands in every run (unrestricted Python: only for files you trust and have read) |
 | `--case` | run case N of the batch in --archive-dir again, as a plain run with the same draws and seeds (refused when the scenario or a reference data file changed since the batch) |
 | `--out-dir` | with --case: the directory to write the case's results to, as 'run --out-dir' (default: results) |
+| `--runs` | run N cases instead of the scenario's monte_carlo.num_runs, for this batch only (the file is not changed; the batch's provenance records both) |
+| `--processes` | use N processes instead of the scenario's monte_carlo.thread_count, for this batch only (at most one per CPU is used; the batch's provenance records both) |
+| `--summarize` | run nothing: print the batch an earlier run saved in DIR and write its Runs table (--csv; default monte_carlo_runs.csv); give no scenario |
+| `--csv` | write the batch's Runs table (its first spacecraft's) as CSV to FILE, with FILE.provenance.json beside it |
+| `--report` | write the batch report to FILE: JSON for a .json file, Markdown for a .md file (the settings, dispersions, requirements, outcome statistics, sensitivity, crashed runs and provenance) |
 
 ## `lifetime`
 

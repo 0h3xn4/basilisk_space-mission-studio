@@ -345,7 +345,10 @@ section 6), and
 Monte Carlo batch analysis (`Basilisk.utilities.MonteCarlo`: dry mass,
 attitude, orbital elements, inertia, body rate, drag and SRP
 coefficients), shown in the Monte Carlo view of Results (each run, the spread
-along, across and out of the orbit, and a table of what each run drew).
+along, across and out of the orbit, and a table of what each run drew),
+with requirements and their exact bounds, outcome statistics, the
+sensitivity of each outcome to each drawn value, and a batch report in
+Markdown or JSON (template 37).
 
 ### Automatic Sun-pointing / ground-station-pointing attitude switching
 
@@ -458,7 +461,7 @@ spacecraft's axis or instrument.
 Four spacecraft "bus" templates
 (100 kg ESPA-class, 150 kg microsatellite, 300 kg and 500 kg small
 satellites) and
-thirty-six complete example scenarios: most cover one concept each,
+thirty-seven complete example scenarios: most cover one concept each,
 several integrate a whole system, and four are starting points for your
 own mission (the [template catalog](../../spacemissionstudio/scenarios/templates/README.md)).
 Five Python scripts in [`examples/`](../../examples/README.md) use the
@@ -568,7 +571,7 @@ compliance matrix.
   runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-36 in Basilisk and
   checks the headline numbers their descriptions quote; template 25 runs
   in `tests/test_examples.py`. `tests/test_golden_outputs.py` checks that
-  all 36 templates still give the outputs recorded in `tests/golden/`.
+  all 37 templates still give the outputs recorded in `tests/golden/`.
 - **The thermal model** is verified against closed forms, hand
   calculations and Basilisk's own `sensorThermal` module
   ([compliance/validation/thermal-vv.md](../../compliance/validation/thermal-vv.md)).
