@@ -20739,3 +20739,33 @@ metadata for 2.14.1 passed `appstreamcli validate --no-net`
 (`tests/test_metainfo.py`). The four compliance generators changed
 nothing on two runs, and `check_drds.py` found 0 problems. ruff and
 pre-commit passed on the changed files.
+
+### Release 2.14.1 published (2026-11-23)
+
+The release pull request #311 was merged at 00:34 UTC. On its head
+`2f927c8`, only CI's "Windows (MAX Python)" job was red. It failed only
+the Basilisk framework test `LambertInputValidation` (K-45), 1 test of
+842. CI ("SpaceMissionStudio") on `develop`'s head `caabf11`, the merge
+of #311 (run 45089535321), passed at the first attempt. No job was run
+again.
+
+The tag workflow (run 45094821804) ran the release check on `caabf11`.
+The check passed, and the workflow tagged `spacemissionstudio-v2.14.1`
+at 01:29:52 UTC. The tag is annotated and not signed. The release
+workflow (run 45094885068) built, installed and checked every file. It
+attached the eleven files and published "SpaceMissionStudio 2.14.1" at
+02:20:50 UTC, 51 minutes after the tag. The release is not a draft and
+not a pre-release. It was never public without its files.
+
+The release and its files were checked after the publication:
+- The release notes are the CHANGELOG's 2.14.1 section. Their digests
+  table gives the same digests as the files.
+- Each file's GitHub digest equals its line in `SHA256SUMS-linux`,
+  `SHA256SUMS-windows` or `SHA256SUMS-sources`.
+- The wheel, the sdist, both bills of materials and the three
+  `SHA256SUMS-*` files, downloaded from the release, give the same
+  digests.
+- The LGPL sources are the same files as 2.14.0's.
+
+SRelD issue 52, the SDP, H05 and `releasing.md` record the tag, the runs
+and the files' digests. The CHANGELOG and `BACKLOG.md` are unchanged.

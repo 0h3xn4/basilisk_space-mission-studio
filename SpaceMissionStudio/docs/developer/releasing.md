@@ -641,6 +641,15 @@ because the release check wants the tag's day. By the owner's decision
 (SRelD K-45), the release pull request may be merged with CI's "Windows
 (MAX Python)" job red, for the Basilisk framework test
 `LambertInputValidation` only.
+It was published on 2026-11-23 at 02:20 UTC, tagged and published from
+the Actions tab with **publish** on (SRelD issue 52). #311 was merged at
+00:34 UTC. CI on `caabf11` passed at the first attempt
+([run 45089535321](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45089535321)). The tag workflow
+([run 45094821804](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45094821804)) passed the release check and tagged
+it at 01:29:52. The release workflow ([run 45094885068](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45094885068))
+built, installed and checked every file. It attached the eleven and
+published the release 51 minutes after the tag. It was never a public
+release without files.
 
 ---
 

@@ -65,7 +65,7 @@ signed (decision 11). The current release is 2.14.1, a patch release:
 pandas imported off the GUI thread at the first Monte Carlo start, the
 cause of "Slot '...::' not found" fixed with weak-reference connections,
 and CI downloads tried again, with the scenario format unchanged
-(prepared 2026-11-22); before it 2.14.0, Monte Carlo phase A:
+(published 2026-11-23); before it 2.14.0, Monte Carlo phase A:
 each run's outcomes, requirements with the Clopper-Pearson bound, the
 draws of crashed runs and one case run again, with the scenario file at
 schema version 6, which 2.13.1 and earlier do not open (published
