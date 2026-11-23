@@ -2,6 +2,20 @@
 
 ## Next release
 
+- Make the move of the 3D View into its own window, or back, take under
+  50 ms of the GUI thread on the Windows runner, every time (SRelD K-40,
+  partly met). In the release workflow's run 45148067729, attempt 1, on
+  `452e164` (the 2.14.2 tag), the Windows job failed
+  `tests/gui/test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread`:
+  the 3D View's slowest move took 64.0 ms, and 72.7 ms when the test
+  timed it again. The same test passed on the same commit in CI run
+  45143562273 (Windows runner). So the move sits at the limit. Find the
+  cause of the time in the 3D View's move, and fix it in the app. Do
+  not loosen the test: its limit stays a plain 50 ms. Done when the
+  move test passes on the Windows runner with every view under 50 ms.
+  If the cause is QtWebEngine's own reparenting and no change in the app
+  helps, move this item to `## Needs human` with the measurements.
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
@@ -40,7 +54,9 @@ owner has answered the plan's open questions.
   before), a move takes 3 to 5 ms (10 to 12 ms). The move test's limit is
   a plain 50 ms again, and it passed on the Windows runner (CI run
   45109373728). What the window shows is unchanged (82 grabs). Records:
-  `docs/DECISIONS.md`, `docs/ui/TEST_CHANGES.md`.
+  `docs/DECISIONS.md`, `docs/ui/TEST_CHANGES.md`. Only partly met: on
+  the 2.14.2 release run's Windows runner the 3D View's move took 64.0
+  and 72.7 ms (the item under "Next release").
 - 2.14.1 small fixes, on branch `fix/2.14.1-small` (2026-11-22). pandas
   is imported in the batch's or the case's worker with
   `FIRST_IMPORTS` held, and the plots wait for that import (the first
