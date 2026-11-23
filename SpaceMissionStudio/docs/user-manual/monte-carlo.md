@@ -8,7 +8,10 @@ far apart the results end up.
 1. In the scenario tree, open the **Monte Carlo** page and tick
    **Enabled**.
 2. Set how many runs (**Number of runs**, up to 100 000), and how many
-   run in parallel (**Thread count**; at most one process per CPU is used).
+   run in parallel (**Processes**; at most one process per CPU is used).
+   Optionally give a **Batch seed** for an independent batch: left at
+   **Not set**, two batches of the scenario draw the same values; with a
+   seed, another seed gives other draws and the same seed the same batch.
 3. Add one or more **dispersions**: which quantity varies, for which
    spacecraft, and by how much. A new dispersion starts at the
    spacecraft's own value (dry mass, drag or radiation-pressure
@@ -26,7 +29,7 @@ What can vary:
 | Quantity | Varies | Kinds |
 |---|---|---|
 | `dry_mass_kg` | Dry mass [kg] | uniform, normal |
-| `attitude_sigma_bn` | Starting attitude | uniform_euler_mrp |
+| `attitude_sigma_bn` | Starting attitude, Euler angles [deg] (saved in rad) | uniform_euler_mrp |
 | `orbit_elements` | Each orbital element of the starting orbit | normal, uniform |
 | `inertia_kg_m2` | The inertia [kg m^2] | normal |
 | `angular_rate_bn_b` | Starting body rate [deg/s] | normal, uniform |
@@ -57,8 +60,9 @@ Problems panel names the missing field.
 
 **Results > Monte Carlo** opens on the batch:
 
-- **Tiles:** how many runs succeeded, and the 1-sigma spread at the end
-  along track, radially and across track.
+- **Tiles:** how many runs succeeded, how many failed (the tile's tooltip
+  names them), and the 1-sigma spread at the end along track, radially
+  and across track.
 - **Plots:** every run's altitude and its offset from the mean, and the
   spread over time.
 - **Runs:** what each run drew, where it ended and its outcomes (the
@@ -119,8 +123,9 @@ spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/25_monte_c
 python3 examples/monte_carlo_spread.py --runs 20 --archive mc_out
 ```
 
-`monte-carlo` also prints each outcome's lowest and highest value over
-the runs and the requirements table. It exits with status 3 when a run
+`monte-carlo` also prints the batch seed (when one is set), each
+outcome's lowest and highest value over the runs and the requirements
+table. It exits with status 3 when a run
 failed, else 5 when a requirement with an allowed probability is not
 shown met.
 

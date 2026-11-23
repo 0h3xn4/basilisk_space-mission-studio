@@ -1127,7 +1127,13 @@ provenance, from the one **Save...** menu of the page.
 On the same run, without running Basilisk again, you can sweep any
 parameter, rank the parameters by their effect (a one-at-a-time
 sensitivity), and run a seeded thermal Monte Carlo that opens in the
-Monte Carlo view. The 3D model can be coloured by temperature, and
+Monte Carlo view. There, the **Node limits** tab counts, for each node
+with an operating or survival range, the runs whose temperature leaves
+the range at any time step, with the rate k/N and, when the thermal
+Monte Carlo has a **Confidence** (Cases page; no default), the exact
+upper bound on that rate at it, as for a requirement. A run whose draw
+the model refuses counts as leaving every range, and the **Runs** table
+lists it with the status "failed". The 3D model can be coloured by temperature, and
 **Results › 3D View** can colour the spacecraft by a case's temperatures
 as it plays the run back. Flexible
 solar arrays are nodes whose faces turn with their hinge, and a node's
@@ -1818,13 +1824,23 @@ Real spacecraft never have perfectly known mass, attitude, etc. –
 variations and reports the spread of outcomes, instead of one single
 result. On the scenario tree's **Monte Carlo** page, check
 **Enabled**, set how many runs (up to 100 000) and how many to run in
-parallel (each in its own process; at most one per CPU is used), and add
-one or more **dispersions** (which quantity varies, and by how much;
+parallel (**Processes**: each run in its own process; at most one per
+CPU is used), and add one or more **dispersions** (which quantity varies, and by how much;
 **Add** adds one, and the selected one's form is under the list) –
 then set the run mode beside **Run** to **Monte Carlo** and press
 **Run**. While Monte Carlo is off, the Run page says so, with **Enable
 Monte Carlo**, which turns it on and opens this page. This is a more advanced feature; most people won't need it
 for a first mission. Templates 09 and 25 are ready-made batches.
+
+**Batch seed.** Left at **Not set**, every run draws what Basilisk's own
+seeding gives it, the run's number times 10: two batches of the same
+scenario then draw exactly the same values. Give the **Batch seed** a
+number (0 to 2147483647) for an independent batch: each run's draws
+then come from the seed and the run's number, so another seed gives
+other draws, and the same seed gives the same batch again, with one
+process or many. The batch's summary and its provenance
+(`archive.provenance.json`, `monte_carlo_seed`) record the seed, and the
+line under the Monte Carlo view's title names it.
 
 A Monte Carlo run saves every run in the archive folder on the Run
 area's **Run** page (with **Browse...**; remembered for each scenario;
@@ -1838,7 +1854,8 @@ whenever the scenario has Monte Carlo on, or a batch is open):
 
 ![The Monte Carlo view for template 25: tiles with the spread at the end, and every run's along-track offset from the batch mean](docs/images/monte_carlo_tab.png)
 
-* **Tiles:** how many runs succeeded, which failed, and how far apart
+* **Tiles:** how many runs succeeded, how many failed (which ones: the
+  tile's tooltip, and the **Runs** table's **Status** column), and how far apart
   the runs ended (1-sigma) along the orbit, radially and across it, plus
   the range of final altitudes. The 1-sigma is the population standard
   deviation of the runs unless the project configuration chooses the
@@ -1933,7 +1950,7 @@ What can vary, each spacecraft on its own:
 | Quantity | Varies | Kinds |
 |---|---|---|
 | `dry_mass_kg` | dry mass [kg] | uniform, normal |
-| `attitude_sigma_bn` | starting attitude, as random Euler angles | uniform |
+| `attitude_sigma_bn` | starting attitude, as random Euler angles [°] (the file keeps radians) | uniform |
 | `orbit_elements` | each orbital element around the spacecraft's starting orbit: semi-major axis [km], eccentricity, inclination, RAAN, argument of periapsis, true anomaly [°] | normal (1-sigma), uniform (half-width) |
 | `inertia_kg_m2` | each diagonal element of the inertia [kg·m²], plus an optional small rotation that adds products of inertia | normal |
 | `angular_rate_bn_b` | starting body rate, each axis [°/s], on top of the configured rate | normal, uniform |

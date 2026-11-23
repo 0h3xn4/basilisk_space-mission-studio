@@ -52,6 +52,19 @@ def batch_scenario_hash(archive_dir: Path) -> tuple[str, str] | str:
     return digest, name if isinstance(name, str) else ""
 
 
+def batch_seed(archive_dir: str | Path) -> int | None:
+    """The batch seed (``monte_carlo_seed``) the folder's
+    ``archive.provenance.json`` records, or None: a batch without one
+    (Basilisk's own seeding), made before it was recorded (2.14.1 and
+    earlier), or a record that cannot be read (decision MC-20)."""
+    try:
+        record = json.loads((Path(archive_dir) / "archive.provenance.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    seed = record.get("monte_carlo_seed") if isinstance(record, dict) else None
+    return seed if isinstance(seed, int) and not isinstance(seed, bool) else None
+
+
 def read_case(scenario, archive_dir: str | Path, case: int) -> tuple[dict, str] | str:
     """(the entries of ``run<case>.json``, the batch's scenario SHA-256) when
     ``case`` of the batch in ``archive_dir`` can run again with

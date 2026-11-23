@@ -459,7 +459,8 @@ new version opens an old batch without them.
 | 0 Investigation, plan, decisions, backlog | done (this page) |
 | A-1 Outcomes, draws of crashed runs, requirements | done (`feature/monte-carlo-outcomes`, 2026-11-21; DECISIONS MC-11 to MC-16) |
 | A-2 Reproduce one case | done (`feature/monte-carlo-rerun-case`, 2026-11-21; DECISIONS MC-17, MC-18 and MC-19) |
-| B | later |
+| B-1 Batch seed (B1), thermal node limits (B4), small fixes (B8) | done (`feature/monte-carlo-seed`, 2026-11-23; DECISIONS MC-20 to MC-25) |
+| B, the rest (B2, B3, B5, B6, B7, B9) | later |
 | C | later |
 
 ---

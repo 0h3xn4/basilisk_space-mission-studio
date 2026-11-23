@@ -98,13 +98,16 @@ _HEATER = (("name", "Name", "s"), ("node", "Node", "s"), ("power_w", "Power [W]"
 _CASE = (("name", "Name", "s"), ("preset", "Preset", "s"), ("overrides", "Overrides (JSON)", "J"))
 _ENVIRONMENT = (("solar_flux_w_m2", "Solar flux at 1 AU [W/m²]", "f?"), ("albedo", "Albedo", "f?"),
                 ("planet_ir_w_m2", "Planet IR [W/m²]", "f?"), ("albedo_model", "Albedo model", "s"))
-_MONTE_CARLO = (("runs", "Runs", "i"), ("seed", "Seed", "i"), ("case", "Case", "s"))
+_MONTE_CARLO = (("runs", "Runs", "i"), ("seed", "Seed", "i"), ("case", "Case", "s"),
+                ("confidence", "Confidence [-]", "f?"))
 _DISPERSION = (("path", "Parameter path", "s"), ("sigma", "σ or half-width", "f"),
                ("distribution", "Distribution", "s"), ("relative", "Relative", "b"))
 _SOLVER = (("time_step_s", "Time step [s]", "f"), ("start", "Start", "s"), ("tolerance_k", "Tolerance [K]", "f"),
            ("max_orbits", "Max orbits", "i"), ("initial_c", "Initial [°C]", "f?"))
 # A heading's full name, on hover (UI audit B9); a heading not listed is its own.
 _HEADING_TIPS = {
+    "Confidence [-]": ("Confidence [-]: the confidence of the upper bound on the probability that a run leaves a "
+                       "node's operating or survival range, between 0 and 1 (blank: counts and the estimate only)"),
     "C [J/K]": "C [J/K]: the capacitance (blank: mass × specific heat)",
     "cp [J/(kg·K)]": "cp [J/(kg·K)]: the specific heat",
     "cp(T)": "cp(T): the specific heat by temperature, as JSON [[°C, J/(kg·K)], ...]",

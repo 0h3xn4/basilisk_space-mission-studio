@@ -20769,3 +20769,71 @@ The release and its files were checked after the publication:
 
 SRelD issue 52, the SDP, H05 and `releasing.md` record the tag, the runs
 and the files' digests. The CHANGELOG and `BACKLOG.md` are unchanged.
+
+## Monte Carlo phase B, part 1: batch seed, thermal node limits, small fixes (2026-11-23)
+
+Items B1, B4 and B8 of `docs/developer/monte-carlo-plan.md`, on branch
+`feature/monte-carlo-seed` from `develop` at `7a9a25f` (2.14.1 and its
+records). The owner answered Q2: the seed is phase B, with its own
+schema step. The work ran without questions; `docs/DECISIONS.md`
+records each choice as MC-20 to MC-25. Commits name SRS-F-13.
+
+**Schema version 7.** The step from 6 only sets the version, as the
+steps to 5 and 6 did. It adds `monte_carlo.seed` and a thermal Monte
+Carlo's `confidence`, both optional and written only when set. The 36
+templates changed only on their `schema_version` line; with the version
+set back to 6, each gives its recorded hashes again, so the version is
+the only difference (`docs/changes.md`). 2.14.1's code (a worktree of
+`7a9a25f`) refuses the 36 templates as this branch saves them, and
+template 25 with a seed and template 34 with a confidence, with its
+usual message. This branch opens 2.14.1's templates with no migration
+recorded and saves them byte for byte as its own. 2.14.1 opens a seeded
+batch summary and a thermal summary with node limits.
+
+**B1, the batch seed (K-24).** Basilisk 2.12.0's worker
+(`Controller.SimulationExecutor.__call__`, read in the installed wheel)
+seeds NumPy's legacy generator and `random` with the run index times 10,
+calls the creation function, draws every model's `RNGSeed` from `random`
+and every dispersion from NumPy. The creation function is the only app
+code between the seeding and the draws, so it reseeds there. Basilisk
+does not give it the run index: right after `numpy.random.seed(<int>)`
+the MT19937 state's first key is the integer and its position is 624,
+so the index is read back from the state (`basilisk_run_index`); a state
+already drawn from fails the run with a message. The new state is
+`SeedSequence(entropy=seed, spawn_key=(index,))`, four words for NumPy
+and the same as one integer for `random`. Measured: building the run
+draws nothing from either generator, so without a seed the draws are
+exactly the earlier ones. With a 0.01-day, 2-run batch of template 25,
+seed 5 twice gives identical `run<N>.json` files (also with two
+processes), seed 6 other ones, and both differ from the unseeded batch.
+Every case of a seeded batch run again agrees with the summary to 1e-6 m
+and leaves the GUI process's generators as they were.
+
+**B4, node limits.** `thermal.sweeps.monte_carlo` now keeps each run's
+lowest and highest solved temperature per node, not the values resampled
+to the first run's grid, and judges each node's operating and survival
+range of the case (`monte_carlo_requirements.node_limits`): a run on a
+limit is inside, a failed run outside every range (as a crashed run and a
+requirement). The bound is A2's `clopper_pearson_upper` at the thermal
+Monte Carlo's confidence, which has no default. Template 33 (6 runs,
+seed 7): the counts equal those read back from the kept temperatures.
+Template 34: the battery's operating range shows 4 of 20 runs outside,
+the 4 runs its description names. The view's Node limits tab and the
+`thermal --monte-carlo` table read the rows the summary keeps.
+
+**B8.** "Thread count" is "Processes" (the file keeps `thread_count`).
+The Failed tile shows a count; the run numbers are in its tooltip and in
+the Runs table's Status column, which a thermal batch now has too
+("failed", with the draws the summary now keeps for those runs). The
+starting attitude's bounds are in degrees in the form; the file keeps
+radians, and an unedited bound is saved as read, as a test of the round
+trip checks. A first form text "deg, as Euler angles" failed
+`test_gui_strings.py`'s ASCII-unit rule (UI-35); it now reads "°".
+
+**Tests.** Four existing tests changed, none weakened (MC-25,
+`docs/ui/TEST_CHANGES.md`). New: 18 tests (22 with their parameters) in
+eight files, and two existing tests check more. The full suite, 4
+workers: 5865 passed, 19 skipped, 1 failed: the known local-only
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px). The compliance generators change nothing on a
+second run, and `check_drds.py` finds 0 problems.

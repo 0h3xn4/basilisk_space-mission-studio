@@ -28,7 +28,10 @@ once) with parameters overridden by path, as a case's own overrides are
 - :func:`monte_carlo`: runs drawn from the dispersions (a seeded
   generator: the same seed, the same draws), each solved; the batch saved
   as a Monte Carlo summary of kind ``thermal`` that the Monte Carlo view
-  opens (``engine.monte_carlo_results``).
+  opens (``engine.monte_carlo_results``). The batch counts, for each node
+  with an operating or survival range, the runs that leave it, with the
+  estimate and, at the ``confidence`` the section gives, an exact upper
+  bound (Monte Carlo plan B4, ``engine.monte_carlo_requirements.node_limits``).
 """
 
 from __future__ import annotations
@@ -189,8 +192,18 @@ def monte_carlo(prepared, config: thermal_schema.ThermalMonteCarloConfig,
                 progress: Callable[[str], None] | None = None):
     """The thermal Monte Carlo of ``config`` on ``prepared``: an
     ``engine.monte_carlo_results.MonteCarloBatch`` of kind ``thermal``
-    (each run's node temperatures and drawn values). Draws are clipped to
-    a parameter's valid range (optics to [0, 1], the rest to 0 and up)."""
+    (each run's node temperatures and drawn values, what each failed run
+    drew, and each node's limits judged on the runs). Draws are clipped to
+    a parameter's valid range (optics to [0, 1], the rest to 0 and up).
+
+    The limits are the case's (its overrides applied). A run leaves a range
+    when its own solved temperature, at any step, is outside it; a run whose
+    draw the model refuses counts as leaving every range (decision MC-23).
+    The bound is at ``config.confidence`` by the model
+    ``monte_carlo.probability_bound``; without a confidence, the counts and
+    the estimate only."""
+    from ..config import registry
+    from ..engine import monte_carlo_requirements as mcreq
     from ..engine import monte_carlo_results as mcr
 
     case = next((c for c in cases.cases_of(prepared.spacecraft.thermal) if c.name == config.case), None)
@@ -201,6 +214,7 @@ def monte_carlo(prepared, config: thermal_schema.ThermalMonteCarloConfig,
     rng = np.random.default_rng(config.seed)
     draws = [{d.path: _draw(rng, d, bases[d.path]) for d in config.dispersions} for _run in range(config.runs)]
     temperatures, drawn, done, failed = {}, [], [], []
+    extremes: dict[str, list] = {}  # [degC] (lowest, highest) of each run solved, from its own steps
     time_s = None
     for run, values in enumerate(draws):
         if progress is not None:
@@ -215,13 +229,21 @@ def monte_carlo(prepared, config: thermal_schema.ThermalMonteCarloConfig,
             time_s = solved.time_s
             temperatures = {name: [] for name in solved.network.names}
         for name in solved.network.names:
-            temperatures[name].append(np.interp(time_s, solved.time_s, solved.temperature_c(name)))
+            series = np.asarray(solved.temperature_c(name), dtype=float)
+            temperatures[name].append(np.interp(time_s, solved.time_s, series))
+            extremes.setdefault(name, []).append((float(series.min()), float(series.max())))
         drawn.append(dict(values))
         done.append(run)
     if not done:
         raise SweepError("every run failed: the dispersions draw values the model refuses")
+    limits = {node.name: {name: getattr(node, attribute) for name, attribute in mcreq.NODE_RANGES}
+              for node in resolved.nodes}
+    bound = registry.value(mcr.BOUND_CHOICE, prepared.scenario)
+    judged = mcreq.node_limits(limits, extremes, done, failed, config.confidence, bound)
     return mcr.MonteCarloBatch(
         f"{prepared.scenario.name}: {prepared.spacecraft.name} thermal, case {case.name}",
         prepared.environment.central_body, np.asarray(time_s), done, failed, {}, {}, drawn,
         getattr(prepared.scenario, "epoch_utc", "") or "", kind="thermal",
-        temperatures_c={name: np.array(rows) for name, rows in temperatures.items()}, case=case.name)
+        temperatures_c={name: np.array(rows) for name, rows in temperatures.items()}, case=case.name,
+        failed_drawn={run: dict(draws[run]) for run in failed}, probability_bound=bound,
+        node_limits=[row.to_dict() for row in judged])

@@ -603,6 +603,8 @@ def test_34_the_wings_turn_with_the_run_and_the_monte_carlo_finds_a_warm_battery
     batch = api.thermal_monte_carlo(scenario, result)
     warm = batch.temperatures_c["battery"].max(axis=1) > 30.0
     assert len(batch.runs) == 20 and not batch.failed and int(warm.sum()) == 4
+    battery = next(row for row in batch.node_limits if (row["node"], row["range"]) == ("battery", "operating"))
+    assert (battery["outside"], battery["evaluated"], battery["high_c"]) == (4, 20, 30.0)  # B4 counts them
     assert np.array_equal(api.thermal_monte_carlo(scenario, result).temperatures_c["battery"],
                           batch.temperatures_c["battery"])
 

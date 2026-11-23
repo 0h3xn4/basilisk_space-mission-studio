@@ -57,7 +57,8 @@ _NO_UNIT = {
     "SRP reflectivity coefficient": "a coefficient [-]",
     "sigma_BN (MRP, body B relative to EME2000 N)": "an MRP [-]",
     "Number of runs": "a count",
-    "Thread count": "a count",
+    "Processes": "a count",
+    "Batch seed": "a seed",
     "Degree/order": "a count",
     "Number of revolutions": "a count",
 }

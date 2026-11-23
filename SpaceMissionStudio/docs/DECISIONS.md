@@ -5097,3 +5097,137 @@ Three items of `BACKLOG.md` "Next release". Each choice has its reason.
 - **The release workflows' `kernels-status` is not wrapped.** **Why:** it
   checks the installed package with an empty cache and must download
   nothing; a failure there is a fault of the package.
+
+## Monte Carlo phase B, part 1: batch seed, thermal node limits, small fixes (2026-11-23)
+
+Items B1, B4 and B8 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
+built as the plan says. The owner answered Q2 for this work: the seed is
+phase B and has its own schema step (MC-12). The work ran without
+questions; each choice below has its reason.
+
+- **Decision MC-20: the batch seed** (B1, SRelD K-24). `monte_carlo.seed`
+  is optional, a whole number from 0 to 2147483647, empty by default.
+  - Empty: nothing changes. The creation function draws nothing from
+    NumPy's legacy global generator or Python's `random` and does not
+    reseed them, so the Controller draws from the state its own seeding
+    (the run index times 10) left: today's draws. **Why:** batches and
+    golden files made before stay as they are; a test checks the state.
+  - Set: the creation function, first, reseeds both generators from the
+    batch seed and the run index (`engine.monte_carlo._reseed`). The
+    order was checked in Basilisk 2.12.0's installed
+    `Basilisk/utilities/MonteCarlo/Controller.py`
+    (`SimulationExecutor.__call__`, read only): seed with index × 10,
+    call the creation function, draw every model's `RNGSeed` from
+    `random`, then every dispersion from NumPy. **Why:** the creation
+    function is the only code of the app that runs between Basilisk's
+    seeding and its draws, and it needs no change to Basilisk.
+  - The run index is read back from NumPy's state: right after
+    `numpy.random.seed(<int>)` the MT19937 state's first key is that
+    integer and its position is 624 (nothing drawn yet). A state that is
+    not so (another Basilisk order) fails the run with a message that
+    names plan risk R1. **Why:** Basilisk does not pass the index to the
+    creation function; a seeded run must not draw from a state it cannot
+    name, and a test fails if a new Basilisk changes the order.
+  - Both generators get the four 32-bit words of
+    `numpy.random.SeedSequence(entropy=seed, spawn_key=(index,))`
+    (NumPy's own way to derive independent streams for parallel work);
+    `random` gets them as one integer. **Why:** each run's stream is its
+    own; the same seed gives the same draws with one process or many (a
+    test runs both), another seed other draws.
+  - The range is that of the editor's whole-number field, as
+    `sim_settings.seed`. **Why:** one range for the two seeds a user sets.
+- **Decision MC-21: where the seed is recorded.**
+  - The batch summary: optional key `seed`, written only when set
+    (format 1 still, as MC-3). **Why:** an older version opens the
+    batch; an older batch reads as "no seed".
+  - `archive.provenance.json`: `monte_carlo_seed`, always (null for
+    Basilisk's own seeding), and `rng_seeds` says the seeds were drawn
+    after the batch seed reseeded the run. **Why:** a provenance record
+    says what was used, also "none".
+  - A case run again (A3): the run's `monte_carlo_case` gains
+    `batch_seed`, only when the batch had one. The case itself is not
+    reseeded (MC-18 stands): its draws and seeds come from its
+    `run<N>.json`. A test runs every case of a seeded batch again: the
+    positions agree to 1e-6 m, the outcomes are equal, and the global
+    generators are untouched. **Why:** the case file already holds what
+    the seed produced; reseeding would change the state of the GUI
+    process.
+  - The seed is part of the scenario, so of its hash: a case of a seeded
+    batch is refused for the scenario with another seed (MC-17). **Why:**
+    another seed is another batch.
+  - `monte-carlo` prints "Batch seed: N" only when one is set; the
+    Monte Carlo view says "Batch seed N." in its hint line. **Why:** the
+    output of a batch without a seed stays as it was.
+- **Decision MC-22: the thermal Monte Carlo's confidence** (B4).
+  `thermal.monte_carlo.confidence` is optional, in (0, 1), with no
+  default; without it, the node limits give counts and the estimate
+  only. It is written only when set, so template 34 saves as before. It
+  shares schema step 7 with the batch seed: both are phase B, part 1,
+  and one step marks the files that 2.14.1 refuses. **Why:** a default
+  would be a number without a source (MC-9, MC-13); one step per pull
+  request, as phase A.
+- **Decision MC-23: how a thermal batch is judged against its node
+  limits** (B4).
+  - Each node with an operating or survival range gets one row per range
+    it has, in the thermal model's order, operating first. The ranges
+    are the case's (its overrides applied).
+  - A run leaves a range when its lowest temperature is below the low
+    end or its highest above the high end; a run on a limit is inside.
+    The extremes are those of the run's own solved temperatures, not of
+    the ones the summary keeps on the first run's time grid. **Why:**
+    the exact meaning of "leaves the range"; the kept series are
+    resampled and could miss a peak.
+  - A run whose draw the model refuses (a "failed" thermal run) counts as
+    leaving every range, shown apart ("Of which failed"). **Why:** the
+    same conservative reading as a crashed run and a requirement
+    (MC-11).
+  - The estimate is k/N; the bound is A2's
+    (`engine.monte_carlo_requirements.clopper_pearson_upper`), by the
+    model `monte_carlo.probability_bound` in effect for the scenario.
+    **Why:** one statistic and one model for both, with its source.
+  - The counts are made when the batch is solved and kept in the thermal
+    summary as the optional key `node_limits` (one row per node and
+    range), with `probability_bound`; an opened batch shows the rows it
+    keeps. A thermal summary saved before has none, and the tab says so.
+    The requirements' verdicts, in contrast, are computed when the batch
+    is read (MC-16). **Why:** the exact extremes exist only while the
+    batch is solved.
+  - The thermal summary also keeps what each failed run drew
+    (`failed_drawn`, as A4 does for orbit batches). **Why:** B8 puts the
+    failed runs in the Runs table.
+  - The GUI shows the rows in a new "Node limits" tab of Results › Monte
+    Carlo, a `DataTable` (sortable, copyable), visible for a thermal
+    batch only; the runs outside are in each count's tooltip.
+    `spacemissionstudio thermal --monte-carlo` prints the same table.
+    **Why:** CLAUDE.md design rule 4 (a long, sortable list is a
+    `DataTable`); a tab, as the requirements have one.
+- **Decision MC-24: the small fixes** (B8).
+  - "Thread count" is "Processes" in the editor and in the Problems
+    panel's field title. The file keeps `thread_count`. **Why:** the
+    plan's item; a file change would need a migration for a label.
+  - The "Failed" tile shows the count ("0" when none). The run numbers
+    are in the tile's tooltip. The Runs table already lists the crashed
+    runs whose draws the batch kept, with "crashed" in its Status
+    column; a thermal batch's table now does the same with "failed". No
+    new filter: the Status column sorts. A batch saved before A4 keeps
+    no draws of its failed runs; the table cannot list them, and the
+    tooltip says so. **Why:** the plan names "a filter or a status
+    column already there"; the column exists, and a second way to find
+    the same rows adds nothing.
+  - The starting attitude (`attitude_sigma_bn`, Euler-angle bounds) is
+    in degrees in the form, with a "°" suffix, and in radians in the
+    file. A bound that was read and not edited is saved exactly as read.
+    **Why:** degrees, as every other angle of the GUI; converting an
+    unedited value to degrees and back can change its last digit, and
+    opening a form must not change the file.
+- **Decision MC-25: tests changed for this work.** Two non-GUI tests
+  pinned version 6: `test_migrations.py`'s step 5 to 6 now checks the
+  step itself (it already did) and that the file reaches the current
+  version, as phase A did for the step 4 to 5; `test_scenario_schema.py`'s
+  requirement round trip pins 7. Two GUI tests changed, logged in
+  `docs/ui/TEST_CHANGES.md`: the "Failed" tile's expected text and the
+  renamed field in the display-units test (plus the new "Batch seed"
+  field, a seed without a unit). `test_template_claims.py`'s template 34
+  test and `test_thermal_studies.py`'s command-line test gained checks.
+  **Why:** CLAUDE.md: no test weakened; each change keeps the check's
+  strength or adds to it.
