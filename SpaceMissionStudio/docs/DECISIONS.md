@@ -5531,3 +5531,32 @@ byte-identical.
   No GUI test reaches a widget another way, so `docs/ui/TEST_CHANGES.md`
   has no entry. **Why:** CLAUDE.md: no test weakened; each list only
   grows.
+
+## Monte Carlo plot pages written off the GUI thread (2026-11-23)
+
+`test_the_plots_of_a_batch_of_100000_runs_are_made_within_50_ms` failed
+on the Windows runner for #314 (`e6902e4`): 102.6, 88.8 and 50.7 ms,
+where the best of three must be under 50 ms. Here the same steps took
+12 to 17 ms: the figure 4 to 5 ms, its JSON (base64 arrays) 5 to 10 ms,
+the page 1 to 2 ms, plus the write of a 2 to 3 MB file that the test did
+not count.
+
+- **Decision:** `InsightPlot` builds the figure on the GUI thread and
+  makes its JSON, its page and the page's file in one serial worker
+  (`monte_carlo_insight.write_page`, a `QThreadPool` of one thread, as
+  `InsightComputer`). The GUI thread then only loads the page. **Why:**
+  the JSON and the file are most of the time and touch no Qt or plotly
+  object. The figure stays on the GUI thread, because plotly checks its
+  layout there for every other plot and is not made for two threads at
+  once.
+- Each page has its own file name (`monte_carlo_insight_<n>.html`). Only
+  the newest page asked for is loaded; an older one is deleted when it
+  arrives, and the page shown before is deleted when a new one is shown
+  (a file the web view still holds stays until the folder is removed).
+  An error writing a page is logged and leaves the shown page as it is.
+- Measured here after the change: `show_figure` takes 4 to 7 ms of the
+  GUI thread for 100 000 runs (12 to 17 ms before).
+- **Test:** the timing test now times `InsightPlot.show_figure`, the GUI
+  thread's part, best of three under 50 ms as before, and checks that
+  the worker writes the page (over 1 MB), that it is shown and that the
+  older pages are gone (`docs/ui/TEST_CHANGES.md`).

@@ -21075,3 +21075,12 @@ added and that test file passes. The other is the known local-only
 `test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
 (511 px against 509 px). The compliance generators change nothing on a
 second run, and `check_drds.py` finds 0 problems.
+
+## Monte Carlo phase B, part 2: plot pages written off the GUI thread (2026-11-23)
+
+On the Windows runner, the plots of a batch of 100 000 runs took 50 to
+100 ms of the GUI thread (#314, `e6902e4`). The figure's JSON, its page
+and the page's file are now made in a worker of the plot; the GUI thread
+builds the figure and loads the page, 4 to 7 ms here (12 to 17 ms
+before). Only the newest page is shown, and the older files are
+deleted.

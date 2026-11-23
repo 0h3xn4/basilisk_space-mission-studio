@@ -56,8 +56,8 @@ fixes bugs.
   runs as a scatter plot, with each run's number on hover. A project can
   choose Pearson's correlation instead (`monte_carlo.sensitivity_measure`).
   The numbers are worked out in the background the first time you open
-  either tab, so even a batch of 100 000 runs does not freeze the
-  window.
+  either tab, and each plot's page is written in the background too, so
+  even a batch of 100 000 runs does not freeze the window.
 - **The Problems panel now warns you when a Monte Carlo dispersion no
   longer fits its spacecraft.** A dispersion of the dry mass, the drag
   coefficient or the SRP coefficient keeps its own numbers. If you then

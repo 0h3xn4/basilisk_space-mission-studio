@@ -688,39 +688,49 @@ def test_the_sensitivity_tab_sorts_the_correlations_by_size(qtbot, tmp_path):
     assert "Spearman's rank correlation -1 over 4 runs" in layout["title"]["text"]
 
 
-def test_the_plots_of_a_batch_of_100000_runs_are_made_within_50_ms():
+def test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread(qtbot, tmp_path):
     """Design rule 6: a figure of 100 000 runs (the scatter of a pair, the
-    step plot of an outcome) and its page are made on the GUI thread in
-    under 50 ms (about 10 to 20 ms measured here; the best of three, so a
-    busy test machine does not decide it). The plot page reads the typed
-    arrays back as the values."""
+    step plot of an outcome) is built and its page started in under 50 ms
+    of the GUI thread (the best of three, so a busy test machine does not
+    decide it). The page itself, its JSON and its file, megabytes, is made
+    by the plot's worker: on the Windows CI runner that part alone took 50
+    to 100 ms. The page reads the typed arrays back as the values, and the
+    newest page is the one shown."""
     import base64
     import json
     import time
+    from pathlib import Path
 
     from spacemissionstudio.engine import monte_carlo_statistics as mcs
     from spacemissionstudio.gui import monte_carlo_insight as mi
-    from spacemissionstudio.gui import plot_page
-    from spacemissionstudio.gui.results_widget import _page_style
 
     rng = np.random.default_rng(30)
     x, y = mcs.Column("a [-]", rng.normal(size=100_000)), mcs.Column("b [km]", rng.normal(size=100_000))
     runs = list(range(100_000))
     builds = (lambda: mi.scatter_figure(x, y, runs, "b against a", "", "a [-]", "b [km]"),
               lambda: mi.ecdf_figure(y, "b", ""))
+    plot = mi.InsightPlot("empty")
+    qtbot.addWidget(plot)
     for build in builds:
-        build()  # plotly's first import is not the plot's
+        plot.show_figure(build)  # plotly's first import and the web view are not the plot's
+        plot.wait()
         took = []
         for _ in range(3):
             start = time.perf_counter()
-            page = plot_page.build_page([mi.figure_json(build())], "1x1", 0, [False], "plotly.js", _page_style())
+            plot.show_figure(build)
             took.append(time.perf_counter() - start)
+            plot.wait()
         assert min(took) < 0.050, took
+        qtbot.waitUntil(lambda: plot._shown_page.endswith(f"_{plot._request}.html"))
+        assert plot.page_error == "" and plot.stack.currentWidget() is plot.web_view
+        page = Path(plot._shown_page)
+        assert page.stat().st_size > 1_000_000
+        assert sorted(page.parent.glob("monte_carlo_insight_*.html")) == [page]  # the older pages removed
     trace = json.loads(mi.figure_json(builds[0]()))["data"][0]
     assert trace["type"] == "scattergl" and trace["x"]["dtype"] == "f8"
     assert np.frombuffer(base64.b64decode(trace["x"]["bdata"]), "<f8").tolist() == x.values.tolist()
     assert np.frombuffer(base64.b64decode(trace["customdata"]["bdata"]), "<i4").tolist() == runs
-    assert len(page) > 1_000_000
+    assert mi.write_page(builds[1](), "plotly.js", "", tmp_path / "gone" / "page.html") == "the plot folder is gone"
 
 
 def test_a_batch_without_draws_says_there_is_nothing_to_correlate(qtbot, tmp_path):
