@@ -399,12 +399,18 @@ class ThermalDispersionConfig:
 @dataclass
 class ThermalMonteCarloConfig:
     """A thermal Monte Carlo on one run (Phase 2, T-36): ``runs`` draws of
-    the ``dispersions``, from ``seed``, each solved in ``case``."""
+    the ``dispersions``, from ``seed``, each solved in ``case``. With
+    ``confidence`` (scenario schema 7, Monte Carlo plan B4, decision MC-22),
+    the runs that leave a node's operating or survival range get an exact
+    upper bound on that probability at this confidence; without it, the
+    counts and the estimate only. It has no default (as a requirement's,
+    MC-13)."""
 
     runs: int = 50
     seed: int = 1
     case: str = "nominal"
     dispersions: list = field(default_factory=list)  # list[ThermalDispersionConfig]
+    confidence: float | None = None  # [-] optional: the node limits' bound confidence, in (0, 1) (MC-22)
 
     def validate(self, where: str) -> None:
         where = f"{where}: monte_carlo"
@@ -413,6 +419,8 @@ class ThermalMonteCarloConfig:
         _require(isinstance(self.seed, int) and not isinstance(self.seed, bool) and 0 <= self.seed < 2 ** 32,
                  f"{where}: seed must be an integer from 0 to 2^32 - 1")
         _require(isinstance(self.case, str) and self.case, f"{where}: case must name a case or a preset")
+        _require(self.confidence is None or (_number(self.confidence) and 0.0 < self.confidence < 1.0),
+                 f"{where}: confidence must be empty or a number between 0 and 1 (both excluded)")
         _require(bool(self.dispersions), f"{where}: give at least one dispersion")
         for item in self.dispersions:
             item.validate(where)
@@ -608,4 +616,6 @@ def compact(section: dict) -> dict:
             out[name] = changed
     if section.get("monte_carlo") is not None:
         out["monte_carlo"] = dict(section["monte_carlo"])
+        if out["monte_carlo"].get("confidence") is None:  # written only when set (schema 7, MC-22)
+            out["monte_carlo"].pop("confidence", None)
     return out

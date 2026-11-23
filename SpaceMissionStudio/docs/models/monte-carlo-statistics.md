@@ -169,6 +169,29 @@ batch was run with (`requirements`) and the bound's model
 from the outcomes it keeps. The batch's provenance records the model
 under `models`.
 
+## A thermal batch against its nodes' limits
+
+The thermal Monte Carlo (`thermal.monte_carlo`) uses the same bound for
+the probability that a run leaves a node's operating or survival range
+(Monte Carlo plan B4, decisions MC-22 and MC-23):
+
+- **Inputs:** N, the runs evaluated (the runs solved and the runs whose
+  draw the model refused); k, the runs whose own solved temperature is,
+  at any time step, below the range's low end or above its high end (a
+  refused run counts as outside every range); C, the thermal Monte
+  Carlo's `confidence`, optional, with no default.
+- **Outputs:** per node and range, k/N and, with C, the Clopper-Pearson
+  upper bound above (the model in effect for `probability_bound`); the
+  Node limits tab of Results › Monte Carlo and the command line's
+  `thermal --monte-carlo` table. The thermal summary keeps the rows
+  (`node_limits`), counted when the batch is solved.
+- **Assumptions:** as above (independent runs, one probability each),
+  and the ranges of the case solved (its overrides applied).
+- **Checked against:** `tests/test_monte_carlo_requirements.py` (a
+  synthetic batch with known exceedances) and
+  `tests/test_thermal_studies.py` (template 33: the counts equal those
+  read from the kept temperatures).
+
 ## Not covered
 
 No other statistic (a percentile, a median absolute deviation) and no

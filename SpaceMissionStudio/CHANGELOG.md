@@ -8,6 +8,61 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
+## Unreleased
+
+### Added
+
+- **A Monte Carlo batch can now have its own seed.** Until now, two
+  batches of the same scenario drew exactly the same values, so a second
+  batch told you nothing new (SRelD K-24). Scenario › Monte Carlo has a
+  new "Batch seed" field. Leave it at "Not set" and every run draws what
+  it drew before, so your earlier batches and their numbers stay as they
+  were. Give it a number and each run's draws come from that seed and
+  the run's number: another seed gives an independent batch, and the
+  same seed gives the same batch again, with one process or with many.
+  The batch's summary and its provenance record the seed, `monte-carlo`
+  prints it, and Run This Case still reproduces any case of a seeded
+  batch exactly.
+- **A thermal Monte Carlo now tells you how often a node leaves its
+  limits.** For every node with an operating or a survival range, the
+  new Node limits tab of Results › Monte Carlo counts the runs whose
+  temperature leaves the range at any time step, shows the observed rate
+  and, if you give the thermal Monte Carlo a confidence, an exact upper
+  bound on the true rate at that confidence (the same Clopper-Pearson
+  bound as the requirements). There is no default confidence: without
+  one you get the counts and the rate. A run whose draw the model
+  refuses counts as leaving every range and is shown apart. The thermal
+  batch's summary keeps the table, and `spacemissionstudio thermal
+  --monte-carlo` prints it. Template 34's warm battery now shows up
+  there directly: 4 of 20 runs above 30 °C.
+
+### Changed
+
+- **The scenario file is at schema version 7**, which adds the optional
+  Monte Carlo batch seed and the thermal Monte Carlo's confidence. Every
+  older file still opens, unchanged. A file saved by this version, with
+  or without them, does not open in 2.14.1 or earlier. No computed
+  result changes, and batches saved by earlier versions open as before.
+- **The Monte Carlo editor's "Thread count" is now called "Processes"**,
+  which is what it is: each run goes in its own process.
+- **The starting attitude of a Monte Carlo dispersion is in degrees in
+  the form**, like every other angle in the app. The scenario file keeps
+  radians, and a value you do not touch is saved exactly as it was.
+- **The "Failed" tile of a Monte Carlo batch shows how many runs failed**
+  instead of a list of their numbers. The numbers are in the tile's
+  tooltip, and the Runs table lists the failed runs with their status:
+  "crashed" for an orbit batch and, new, "failed" for a thermal batch,
+  with the values each one drew.
+
+### Fixed
+
+- **The Home page's Customize and open... button can always be
+  reached.** The template details put Open template and Customize and
+  open... side by side. When the two were wider than the details column,
+  for example with a larger font, the second button went past the
+  column's edge, where you could not see or click it. Now it moves below
+  Open template when the two do not fit side by side.
+
 ## 2.14.2 (2026-11-23)
 
 SpaceMissionStudio 2.14.2 is a small patch on top of 2.14.1. The

@@ -24,6 +24,7 @@ the run table and plots the Monte Carlo view shows; the API and the
 command line reach all three."""
 
 import copy
+import re
 
 import numpy as np
 import pytest
@@ -133,6 +134,38 @@ def test_the_thermal_monte_carlo_is_reproducible_and_opens_in_the_monte_carlo_vi
     assert view.table.row_count() == 6
 
 
+def test_the_thermal_monte_carlo_counts_the_runs_outside_each_node_range(prepared, tmp_path):
+    """Monte Carlo plan B4 on template 33's nominal case: each node with
+    limits gets a row per range it has (battery, avionics and bus: both;
+    the arrays: operating only; the radiator: none); a run is outside when
+    its own temperature leaves the range, so the counts equal those read
+    from the kept temperatures; with a confidence the bound is the A2 bound,
+    without one there is none. The failed runs' draws are kept."""
+    from spacemissionstudio.engine import monte_carlo_requirements as req
+
+    scenario, _result, prep = prepared
+    config = copy.replace(scenario.spacecraft[0].thermal.monte_carlo, confidence=0.9)
+    batch = sweeps.monte_carlo(prep, config)
+    results = [req.NodeLimitResult.from_dict(row) for row in batch.node_limits]
+    assert [(r.node, r.range) for r in results] == [
+        ("bus", "operating"), ("bus", "survival"), ("array +y", "operating"), ("array -y", "operating"),
+        ("battery", "operating"), ("battery", "survival"), ("avionics", "operating"), ("avionics", "survival")]
+    nodes = {node.name: node for node in prep.spacecraft.thermal.nodes}
+    for r in results:
+        low, high = getattr(nodes[r.node], f"{r.range}_c")
+        values = batch.temperatures_c[r.node]
+        outside = [run for run, row in zip(batch.runs, values) if row.min() < low or row.max() > high]
+        assert (r.low_c, r.high_c, r.evaluated, r.failed) == (low, high, 6, 0)
+        assert r.outside_runs == tuple(outside) and r.outside == len(outside)
+        assert r.upper_bound == req.clopper_pearson_upper(r.outside, 6, 0.9) and r.confidence == 0.9
+    assert batch.failed_drawn == {} and batch.probability_bound == "clopper_pearson"
+    mcr.save(batch, tmp_path / "batch")
+    assert mcr.load(tmp_path / "batch").node_limits == batch.node_limits
+    plain = sweeps.monte_carlo(prep, scenario.spacecraft[0].thermal.monte_carlo)
+    assert all(row["upper_bound"] is None and row["confidence"] is None for row in plain.node_limits)
+    assert [row["outside"] for row in plain.node_limits] == [r.outside for r in results]
+
+
 def test_the_api_and_the_command_line_reach_the_studies(prepared, tmp_path, capsys):
     scenario, result, _prep = prepared
     points = api.thermal_sweep(scenario, result, _RADIATOR, [0.1, 0.2])
@@ -150,3 +183,5 @@ def test_the_api_and_the_command_line_reach_the_studies(prepared, tmp_path, caps
     out = capsys.readouterr().out
     assert code == 0 and "sweep of faces[radiator].absorptance" in out and "sensitivity in case nominal" in out
     assert mcr.has_summary(tmp_path / "cli") and "wrote the thermal Monte Carlo" in out
+    assert "Node limits (monte_carlo.probability_bound: clopper_pearson" in out
+    assert re.search(r"^ +battery +operating +10 +30 +6 ", out, re.MULTILINE)

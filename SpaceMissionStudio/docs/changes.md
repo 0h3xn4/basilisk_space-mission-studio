@@ -17,6 +17,44 @@ case; and how it was checked.
 
 Newest first.
 
+## 2026-11-23: Scenario schema version 7 (decisions MC-20 and MC-22)
+
+**No computed number changes. The scenario hashes of the templates
+change.** The scenario file is now at schema version 7. Version 7 adds
+the optional Monte Carlo batch seed (`monte_carlo.seed`, Monte Carlo
+plan item B1) and the optional confidence of a spacecraft's thermal
+Monte Carlo (`thermal.monte_carlo.confidence`, item B4,
+`docs/developer/monte-carlo-plan.md`). The migration from 6 to 7 sets
+the version and changes nothing else, as the steps to 5 and 6 did.
+
+The 36 templates are saved at version 7. In each template file, only the
+line `"schema_version": 6` changed to `"schema_version": 7`. No template
+has a batch seed or a thermal confidence, and neither is written when it
+is empty, so nothing else in the saved text changes. The version is part
+of the saved text and of the scenario's canonical JSON, so both hashes
+of each template in `tests/data/scenario_hashes.json` change (72
+values). The file was recorded again with the computation of
+`tests/test_scenario_hashes.py`.
+
+| Template | Hash | Before (version 6) | After (version 7) |
+|---|---|---|---|
+| 01 two-body circular orbit | saved text SHA-256 | `5fe0c12ed95b...` | `2e5451d7e2df...` |
+| 01 two-body circular orbit | scenario SHA-256 | `87df88c83426...` | `7011c393d4db...` |
+| 25 Monte Carlo orbit and drag dispersions | saved text SHA-256 | `ee22d35d892d...` | `1eadc7b75e51...` |
+| 25 Monte Carlo orbit and drag dispersions | scenario SHA-256 | `143c05791586...` | `fc8d17a68e69...` |
+
+How it was checked: for each template, the saved text at version 7 with
+the version set back to 6 gives the recorded version 6 hash, and so does
+the canonical JSON. So the version is the only difference. The 36 golden
+output files (`tests/golden/`) do not change: they hold no schema
+version, a run records no migration for a template, and a batch without
+a seed draws what it drew before (the Monte Carlo golden outputs of
+templates 09 and 25, `final_spread`, `run_table`'s default columns and
+`summary_lines`, are byte-identical).
+
+A file saved at version 7 does not open in SpaceMissionStudio 2.14.1 or
+earlier. Every older file still opens.
+
 ## 2026-11-21: Scenario schema version 6 (decision MC-4)
 
 **No computed number changes. The scenario hashes of the templates

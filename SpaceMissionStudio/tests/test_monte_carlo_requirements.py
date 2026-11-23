@@ -255,3 +255,84 @@ def test_the_run_table_adds_outcomes_and_crashed_runs_only_when_asked():
     assert rows[2][1] == 2.4 and all(math.isnan(value) for value in rows[2][2:7])
     assert [row[-2:] for row in rows] == [["succeeded", "yes"], ["succeeded", "no"], ["crashed", "no"]]
     assert mcr.outcome_ranges(batch) == [("Run length", 1.0, 1.0, "h"), ("sat-1 lowest altitude", 395.0, 410.0, "km")]
+
+
+# -- a thermal batch against its nodes' limits (Monte Carlo plan B4) ----------------------------
+
+def _thermal_extremes():
+    """Ten runs of two nodes with known extremes [degC]: the battery leaves
+    its operating range [0, 30] in runs 2, 5 and 7 (above 30 or below 0)
+    and its survival range [-10, 40] in run 7 only; the bus never leaves
+    either. Runs are numbered 0 to 11, runs 3 and 9 failed."""
+    runs = [0, 1, 2, 4, 5, 6, 7, 8, 10, 11]
+    battery = {run: (10.0, 25.0) for run in runs}
+    battery.update({2: (10.0, 30.5), 5: (-0.1, 20.0), 7: (-12.0, 41.0)})
+    battery[4] = (0.0, 30.0)  # on the limits: inside (a run leaves a range only beyond it)
+    limits = {"battery": {"operating": [0.0, 30.0], "survival": [-10.0, 40.0]},
+              "bus": {"operating": [-20.0, 50.0], "survival": None},
+              "radiator": {"operating": None, "survival": None}}
+    extremes = {"battery": [battery[run] for run in runs], "bus": [(5.0, 15.0)] * len(runs),
+                "radiator": [(-80.0, 20.0)] * len(runs)}
+    return limits, extremes, runs, [3, 9]
+
+
+def test_a_thermal_batch_counts_the_runs_outside_each_node_range():
+    """B4's acceptance: a synthetic batch with known exceedances gives the
+    expected counts, the estimate k/N and the A2 bound at the confidence
+    given. A failed run counts as leaving every range, shown apart (MC-23);
+    a range not set is not judged; a run on a limit is inside."""
+    limits, extremes, runs, failed = _thermal_extremes()
+    results = req.node_limits(limits, extremes, runs, failed, 0.9)
+    assert [(r.node, r.range) for r in results] == [("battery", "operating"), ("battery", "survival"),
+                                                     ("bus", "operating")]
+    operating, survival, bus = results
+    assert (operating.evaluated, operating.outside, operating.failed) == (12, 5, 2)
+    assert operating.outside_runs == (2, 3, 5, 7, 9)
+    assert operating.estimate == pytest.approx(5 / 12)
+    assert operating.upper_bound == req.clopper_pearson_upper(5, 12, 0.9)
+    assert (survival.outside, survival.outside_runs) == (3, (3, 7, 9))
+    assert survival.upper_bound == req.clopper_pearson_upper(3, 12, 0.9)
+    assert (bus.outside, bus.outside_runs, bus.estimate) == (2, (3, 9), pytest.approx(2 / 12))
+    assert (operating.low_c, operating.high_c, operating.confidence) == (0.0, 30.0, 0.9)
+    rows = req.node_limit_rows(results)
+    assert rows[0] == ("battery", "operating", "0", "30", "12", "5", "2", f"{5 / 12:.4g}",
+                       f"{req.clopper_pearson_upper(5, 12, 0.9):.4g}", "0.9")
+    assert len(req.NODE_LIMITS_HEADER) == len(rows[0])
+
+
+def test_without_a_confidence_the_node_limits_give_counts_and_the_estimate_only():
+    """No confidence in the thermal Monte Carlo: no bound (no default, as a
+    requirement's, MC-13); the counts and the estimate are the same."""
+    limits, extremes, runs, _failed = _thermal_extremes()
+    results = req.node_limits(limits, extremes, runs, [], None)
+    assert all(r.upper_bound is None and r.confidence is None for r in results)
+    assert (results[0].evaluated, results[0].outside, results[0].estimate) == (10, 3, pytest.approx(0.3))
+    assert req.node_limit_rows(results)[0][-2:] == ("", "")
+
+
+def test_the_node_limits_round_trip_through_the_thermal_summary(tmp_path):
+    """The thermal summary keeps the node limits (optional key
+    ``node_limits``, format 1 still) and reads them back; a thermal summary
+    without them (saved before B4) opens with none; a broken row is
+    refused."""
+    import json
+
+    limits, extremes, runs, failed = _thermal_extremes()
+    results = req.node_limits(limits, extremes, runs, failed, 0.95)
+    t = np.linspace(0.0, 100.0, 5)
+    batch = mcr.MonteCarloBatch("Thermal", "earth", t, runs, failed, {}, {}, [{} for _ in runs], kind="thermal",
+                                temperatures_c={"battery": np.zeros((len(runs), t.size))}, case="hot",
+                                node_limits=[r.to_dict() for r in results])
+    mcr.save(batch, tmp_path / "a")
+    meta = json.loads((tmp_path / "a" / mcr.SUMMARY_JSON).read_text())
+    assert meta["format"] == 1 and meta["probability_bound"] == "clopper_pearson" and len(meta["node_limits"]) == 3
+    loaded = mcr.load(tmp_path / "a")
+    assert [req.NodeLimitResult.from_dict(row) for row in loaded.node_limits] == results
+    mcr.save(mcr.MonteCarloBatch("Thermal", "earth", t, runs, failed, {}, {}, [{} for _ in runs], kind="thermal",
+                                 temperatures_c={"battery": np.zeros((len(runs), t.size))}), tmp_path / "b")
+    assert "node_limits" not in json.loads((tmp_path / "b" / mcr.SUMMARY_JSON).read_text())
+    assert mcr.load(tmp_path / "b").node_limits == []
+    meta["node_limits"][0].pop("outside")
+    (tmp_path / "a" / mcr.SUMMARY_JSON).write_text(json.dumps(meta))
+    with pytest.raises(mcr.MonteCarloResultsError, match="node_limits is not a table of node limits"):
+        mcr.load(tmp_path / "a")

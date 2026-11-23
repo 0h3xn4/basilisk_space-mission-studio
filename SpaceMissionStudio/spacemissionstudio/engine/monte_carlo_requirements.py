@@ -41,6 +41,13 @@ outcome's unit. For each requirement the batch gives:
 The verdicts are computed when the batch is read, from the outcomes the
 summary keeps and the requirements it was run with, so an opened batch
 reads the same later. Basilisk-free, with no SciPy.
+
+A thermal Monte Carlo is judged the same way against its nodes' limits
+(Monte Carlo plan B4, :func:`node_limits`): for each node with an
+operating or survival range, the runs that leave it, the estimate and, at
+the confidence the thermal Monte Carlo gives, the same upper bound. These
+are counted when the batch is solved, from each run's own temperatures,
+and kept in the summary (``node_limits``).
 """
 
 from __future__ import annotations
@@ -249,3 +256,90 @@ def table_rows(results: list[RequirementResult], several_spacecraft: bool = True
                      f"{r.confidence:g}", "" if r.max_probability is None else f"{r.max_probability:g}",
                      r.verdict or "no allowed probability"))
     return rows
+
+
+# -- A thermal batch against its nodes' limits (Monte Carlo plan B4) ----------
+
+#: A node's ranges, by name, and the node field that holds each.
+NODE_RANGES = (("operating", "operating_c"), ("survival", "survival_c"))
+
+
+@dataclass(frozen=True)
+class NodeLimitResult:
+    """One range of one thermal node judged on a thermal Monte Carlo
+    (decisions MC-22 and MC-23): of the N runs evaluated (the runs solved
+    and the failed runs), the k that leave the range at any sample (a
+    failed run counts as leaving it, shown apart, as a crashed run counts
+    as not meeting a requirement, MC-11); the estimate k/N and, with a
+    confidence, the exact upper bound (:func:`clopper_pearson_upper`)."""
+
+    node: str
+    range: str  # "operating" or "survival"
+    low_c: float  # [degC]
+    high_c: float  # [degC]
+    evaluated: int  # N
+    outside: int  # k, failed runs included
+    failed: int  # of the k, the failed runs
+    outside_runs: tuple[int, ...]  # the runs of the k, failed ones included
+    estimate: float  # k / N
+    confidence: float | None = None
+    upper_bound: float | None = None  # at ``confidence``; None without one
+
+    def to_dict(self) -> dict:
+        return {"node": self.node, "range": self.range, "low_c": self.low_c, "high_c": self.high_c,
+                "evaluated": self.evaluated, "outside": self.outside, "failed": self.failed,
+                "outside_runs": list(self.outside_runs), "estimate": self.estimate, "confidence": self.confidence,
+                "upper_bound": self.upper_bound}
+
+    @classmethod
+    def from_dict(cls, row: dict) -> NodeLimitResult:
+        """A row as :meth:`to_dict` wrote it; raises ``KeyError``,
+        ``TypeError`` or ``ValueError`` for anything else."""
+        confidence, bound = row.get("confidence"), row.get("upper_bound")
+        return cls(str(row["node"]), str(row["range"]), float(row["low_c"]), float(row["high_c"]),
+                   int(row["evaluated"]), int(row["outside"]), int(row["failed"]),
+                   tuple(int(run) for run in row["outside_runs"]), float(row["estimate"]),
+                   None if confidence is None else float(confidence), None if bound is None else float(bound))
+
+
+def node_limits(limits: dict, extremes: dict, runs: list[int], failed: list[int], confidence: float | None,
+                bound: str = "clopper_pearson") -> list[NodeLimitResult]:
+    """Each node's operating and survival range judged on a thermal batch
+    (:class:`NodeLimitResult`). ``limits`` is ``{node: {"operating": [low,
+    high] or None, "survival": ...}}`` [degC], in the thermal model's
+    order; ``extremes[node]`` the (lowest, highest) temperature [degC] of
+    each run of ``runs``, in that order. A run leaves a range when its
+    lowest temperature is below the range's low end or its highest above
+    its high end. The bound is the model ``bound`` of
+    ``monte_carlo.probability_bound`` at ``confidence``; without a
+    confidence, counts and the estimate only."""
+    upper = _BOUNDS[bound]
+    failed = sorted(int(run) for run in failed)
+    results = []
+    for node, ranges in limits.items():
+        for name, _field in NODE_RANGES:
+            limit = ranges.get(name)
+            if limit is None or node not in extremes:
+                continue
+            low, high = float(limit[0]), float(limit[1])
+            outside = [int(run) for run, (lowest, highest) in zip(runs, extremes[node])
+                       if lowest < low or highest > high]
+            n = len(runs) + len(failed)
+            k = len(outside) + len(failed)
+            results.append(NodeLimitResult(
+                str(node), name, low, high, n, k, len(failed), tuple(sorted(outside + failed)),
+                k / n if n else 0.0, None if confidence is None else float(confidence),
+                upper(k, n, float(confidence)) if confidence is not None and n else None))
+    return results
+
+
+NODE_LIMITS_HEADER = ("Node", "Range", "Low [degC]", "High [degC]", "Evaluated", "Outside", "Of which failed",
+                      "Estimate [-]", "Upper bound [-]", "Confidence [-]")
+
+
+def node_limit_rows(results: list[NodeLimitResult]) -> list[tuple[str, ...]]:
+    """The node limits table, one text row per node and range (the command
+    line and the Results page)."""
+    return [(r.node, r.range, f"{r.low_c:g}", f"{r.high_c:g}", str(r.evaluated), str(r.outside), str(r.failed),
+             _probability(r.estimate), _probability(r.upper_bound),
+             "" if r.confidence is None else f"{r.confidence:g}") for r in results]

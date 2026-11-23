@@ -219,7 +219,8 @@
  },
  "MonteCarloConfig": {
   "dispersions": "list[DispersionConfig]",
-  "requirements": "list[MonteCarloRequirementConfig]"
+  "requirements": "list[MonteCarloRequirementConfig]",
+  "seed": "Optional, 0 to 2147483647: the batch seed (schema 7, decision MC-20). Empty: each run draws what Basilisk's own seeding gives it, as before; a number: each run's draws come from it and the run's index, so another seed gives other draws (engine.monte_carlo._reseed)."
  },
  "MonteCarloRequirementConfig": {
   "at_least": "a run meets it with the outcome at or above this, in the outcome's unit",
@@ -515,6 +516,7 @@
   "power_w": "[W]"
  },
  "ThermalMonteCarloConfig": {
+  "confidence": "[-] optional: the node limits' bound confidence, in (0, 1) (MC-22)",
   "dispersions": "list[ThermalDispersionConfig]"
  },
  "ThermalNodeConfig": {

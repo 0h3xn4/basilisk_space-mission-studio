@@ -80,7 +80,7 @@ from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence
 
-CURRENT_SCHEMA_VERSION = 6
+CURRENT_SCHEMA_VERSION = 7
 
 # Limits on what a scenario may ask for (audit R9): far above any template
 # (at most 6 spacecraft, 27 kB) and the editor's own ranges, so that a shared
@@ -3055,6 +3055,8 @@ class DispersionConfig:
 # process per CPU (usable_thread_count).
 MAX_MONTE_CARLO_RUNS = 100_000
 MAX_MONTE_CARLO_THREADS = 256
+# The largest batch seed: the editor's whole-number field, as sim_settings.seed (decision MC-20).
+MAX_MONTE_CARLO_SEED = 2 ** 31 - 1
 
 
 def usable_thread_count(requested: int) -> int:
@@ -3115,6 +3117,11 @@ class MonteCarloConfig:
     dispersions: list = field(default_factory=list)  # list[DispersionConfig]
     # Requirements on the runs' outcomes, judged after the batch (decision MC-4).
     requirements: list = field(default_factory=list)  # list[MonteCarloRequirementConfig]
+    # Optional, 0 to 2147483647: the batch seed (schema 7, decision MC-20).
+    # Empty: each run draws what Basilisk's own seeding gives it, as before;
+    # a number: each run's draws come from it and the run's index, so
+    # another seed gives other draws (engine.monte_carlo._reseed).
+    seed: int | None = None
 
     def validate(self) -> None:
         self.validate_settings()
@@ -3141,6 +3148,10 @@ class MonteCarloConfig:
                  f"monte_carlo.thread_count must be between 1 and {MAX_MONTE_CARLO_THREADS}, "
                  f"got {self.thread_count}", "schema.monte_carlo_threads" if self.thread_count > MAX_MONTE_CARLO_THREADS
                  else None, actual=f"{self.thread_count}", limit=f"{MAX_MONTE_CARLO_THREADS}")
+        _require(self.seed is None or (isinstance(self.seed, int) and not isinstance(self.seed, bool)
+                                       and 0 <= self.seed <= MAX_MONTE_CARLO_SEED),
+                 f"monte_carlo.seed must be empty or a whole number from 0 to {MAX_MONTE_CARLO_SEED}, "
+                 f"got {self.seed!r}")
         for dispersion in self.dispersions:
             dispersion.validate()
 
@@ -4136,6 +4147,8 @@ class Scenario:
             del data["space_weather"]["atmosphere_table"]
         if not data["monte_carlo"]["requirements"]:  # the same (schema 6, decision MC-4)
             del data["monte_carlo"]["requirements"]
+        if data["monte_carlo"]["seed"] is None:  # the same (schema 7, decision MC-20)
+            del data["monte_carlo"]["seed"]
         if not data["value_marks"]:  # the same
             del data["value_marks"]
         if not data["presets"]:  # the same

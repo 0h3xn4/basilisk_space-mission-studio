@@ -117,7 +117,15 @@ This is a requalification, described in
    applies them when a case runs again (`engine.monte_carlo.prepare_case`;
    the RNG seeds are entries too). `tests/test_monte_carlo.py` fails if
    one of them changes; `test_a_case_run_again_is_the_batchs_case`
-   compares a case run again with the batch to 1e-6 m.
+   compares a case run again with the batch to 1e-6 m. The batch seed
+   (decision MC-20) relies on the order of `SimulationExecutor.__call__`:
+   `np.random.seed(index * 10)` and `random.seed(index * 10)`, then the
+   creation function, then the RNG seeds (`random`) and the dispersions
+   (NumPy); `engine.monte_carlo.basilisk_run_index` reads the index back
+   from NumPy's freshly seeded state.
+   `test_without_a_seed_the_creation_function_leaves_basilisks_seeding_alone`
+   and `test_a_batch_seed_gives_other_draws_and_the_same_draws_again` fail
+   if that changes.
 
 ---
 

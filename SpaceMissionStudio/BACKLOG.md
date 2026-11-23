@@ -7,15 +7,14 @@
 Not for an unattended run: these wait until phase A is done and the
 owner has answered the plan's open questions.
 
-- Monte Carlo phase B: insight and trust
-  (`docs/developer/monte-carlo-plan.md` section 5; about 18 hours).
-  The batch seed (SRelD K-24), sensitivity by rank correlation with a
-  scatter plot, outcome percentiles and the empirical distribution,
-  thermal Monte Carlo runs against the node limits, a batch report
-  (JSON and Markdown), checks that a dispersion contains the nominal
-  value and that an opened batch matches the scenario, CLI
-  `--summarize`, `--report`, `--runs` and `--processes`, small label
-  fixes, and a template for the new features.
+- Monte Carlo phase B, the rest: insight and trust
+  (`docs/developer/monte-carlo-plan.md` section 5; part 1, B1, B4 and
+  B8, is done, below). Sensitivity by rank correlation with a scatter
+  plot, outcome percentiles and the empirical distribution, a batch
+  report (JSON and Markdown), checks that a dispersion contains the
+  nominal value and that an opened batch matches the scenario, CLI
+  `--summarize`, `--report`, `--runs` and `--processes`, and a template
+  for the new features.
 - Monte Carlo phase C: more dispersions and outcomes
   (`docs/developer/monte-carlo-plan.md` section 6; about 30 hours, each
   item with a spike first). Maneuver execution errors, thruster and
@@ -26,6 +25,13 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Monte Carlo phase B, part 1: the batch seed (B1, SRelD K-24), the
+  thermal Monte Carlo against the node limits (B4) and the small fixes
+  (B8), on branch `feature/monte-carlo-seed` (2026-11-23). Optional
+  `monte_carlo.seed` and thermal `confidence` at schema version 7; the
+  Node limits tab and table; "Processes"; the Failed tile as a count;
+  the starting attitude in degrees in the form. Decisions MC-20 to
+  MC-25.
 - Make the Budgets area quicker to show on a slow Windows machine
   (SRelD K-40), on `develop` at `29bbdb5` (2026-11-23). The cause: the
   Equipment page's word-wrapped note made the area's page say that its
@@ -36,7 +42,6 @@ owner has answered the plan's open questions.
   a plain 50 ms again, and it passed on the Windows runner (CI run
   45109373728). What the window shows is unchanged (82 grabs). Records:
   `docs/DECISIONS.md`, `docs/ui/TEST_CHANGES.md`.
-
 - 2.14.1 small fixes, on branch `fix/2.14.1-small` (2026-11-22). pandas
   is imported in the batch's or the case's worker with
   `FIRST_IMPORTS` held, and the plots wait for that import (the first

@@ -129,7 +129,7 @@ def _summary_child(scenario, archive_dir: str, num_runs: int) -> None:
     kind that had them written, security analysis S-04)."""
     from ..engine import monte_carlo, monte_carlo_results
 
-    batch = monte_carlo.collect_batch(scenario, archive_dir, num_runs, [])
+    batch = monte_carlo.collect_batch(scenario, archive_dir, num_runs, [], scenario.monte_carlo.seed)
     batch.failed = []  # the cases not finished were stopped, not failed: the controller's own list is gone
     batch.failed_drawn = {}  # so their draws are not those of crashed runs (Monte Carlo plan A4)
     if batch.runs:
