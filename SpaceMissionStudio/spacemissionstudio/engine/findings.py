@@ -300,6 +300,12 @@ RULES: dict[str, Rule] = {rule.rule_id: rule for rule in (
          "Use a shorter step, and 'Record every' to keep fewer samples.", parameter="checks.long_step_s"),
     Rule("monte_carlo.processes", "Monte Carlo runs at most one process per CPU.",
          "Asking for more does not run more at once.", "Ask for no more processes than CPUs."),
+    Rule("monte_carlo.nominal_outside", "A Monte Carlo dispersion of an absolute value (dry mass, drag or SRP "
+         "coefficient) contains the spacecraft's own value: its bounds around it, a normal one's mean on it.",
+         "A dispersion keeps its own numbers: when the spacecraft's value is edited, the batch still draws around "
+         "the old one, and its runs are not variations of the spacecraft shown.",
+         "Set the dispersion's mean or bounds around the spacecraft's value (Scenario > Monte Carlo), or set the "
+         "spacecraft's value back."),
     Rule("passes.late_first", "A station whose first pass comes late in the run is flagged.",
          "Until then the run has no contact with it.", "Move the epoch or lengthen the run.",
          parameter="checks.late_first_pass_fraction"),

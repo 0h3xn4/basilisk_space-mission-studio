@@ -77,13 +77,42 @@ Problems panel names the missing field.
   **not shown**. Read the bound next to the estimate: 20 runs without a
   failure show, at a confidence of 0.95, only that the probability is
   below 0.139.
+- **Statistics:** per outcome, the runs that recorded it (N), the
+  minimum, the percentiles (1, 5, 50, 95 and 99 % by default) and the
+  maximum. Pick a row for its empirical distribution: the fraction of runs
+  at or below each value, a step plot that ends at 1.
+- **Sensitivity:** Spearman's rank correlation of each drawn value with
+  each outcome, the strongest first, with N per pair; "—" where a value
+  does not vary. Pick a row for the scatter plot of the runs. Read it as
+  "goes with", not "causes".
+
+**Export report...** (beside **Open results...**) writes all of this to
+one file, Markdown (`.md`) or JSON (`.json`): the settings, the
+dispersions, the spread, the requirements with their verdicts, the
+statistics, the sensitivity, the crashed runs and the provenance (the
+scenario's and the data files' SHA-256, the versions). The numbers are
+the view's. It is written in the background; a message says where.
 
 The spread is the population standard deviation of the runs, unless a
 project file chooses the sample one
 ([Choose a model](project-configuration.md#choose-a-model)); the page
 names the statistic, and a batch keeps the one it was run with.
 
-**Open Monte Carlo Results...** (the Run area) opens a batch you ran earlier.
+The percentiles, their method and the correlation are project
+parameters (`monte_carlo.percentiles`, `monte_carlo.percentile_method`,
+`monte_carlo.sensitivity_measure`); a batch keeps the ones it was run
+with. A thermal or operations batch's band around the mean is the mean
+plus and minus 3 standard deviations of the runs, labelled "not a
+probability bound".
+
+**Open Monte Carlo Results...** (the Run area) opens a batch you ran
+earlier. If the scenario open is not the one the batch was run with, a
+warning under the title says so, with both scenario hashes.
+
+Before a batch, the Problems panel warns when a dispersion of the dry
+mass, the drag coefficient or the SRP coefficient no longer contains the
+spacecraft's value (its bounds around it, a normal one's mean on it):
+the dispersion keeps its own numbers when you edit the spacecraft.
 
 ## Run one case again
 
@@ -120,14 +149,27 @@ keep its data files, and its cases are not checked for them.
 ```bash
 spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/25_monte_carlo_orbit_and_drag_dispersions.json --archive-dir mc
 spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/25_monte_carlo_orbit_and_drag_dispersions.json --archive-dir mc --case 7 --out-dir case7
+spacemissionstudio monte-carlo spacemissionstudio/scenarios/templates/37_monte_carlo_requirements_and_sensitivity.json --archive-dir mc37 --runs 60 --processes 4 --report mc37.md
+spacemissionstudio monte-carlo --summarize mc37 --csv runs.csv --report mc37.json
 python3 examples/monte_carlo_spread.py --runs 20 --archive mc_out
 ```
 
 `monte-carlo` also prints the batch seed (when one is set), each
-outcome's lowest and highest value over the runs and the requirements
-table. It exits with status 3 when a run
-failed, else 5 when a requirement with an allowed probability is not
-shown met.
+outcome's lowest and highest value over the runs, the requirements
+table, the outcome statistics and the ten strongest correlations. It
+exits with status 3 when a run failed, else 5 when a requirement with an
+allowed probability is not shown met.
+
+`--runs N` and `--processes N` change the batch's size and processes for
+this batch only; the scenario file is not changed, and
+`archive.provenance.json` records both values (`monte_carlo_settings`).
+`--report FILE` writes the batch report, Markdown for a `.md` file and
+JSON for a `.json` file, and `--csv FILE` the Runs table.
+`--summarize DIR` (with no scenario) runs nothing: it prints the batch in
+DIR as above and writes its Runs table (`monte_carlo_runs.csv` unless
+`--csv` names another file) and, with `--report`, its report. It exits
+with 5 when a requirement is not shown met, and 1 for a folder without a
+batch.
 
 With `--case N`, `monte-carlo` runs case N of the batch in
 `--archive-dir` again and writes what `run --out-dir` writes (default
@@ -145,7 +187,11 @@ minutes in our clean-install tests.
 
 **09** varies the mass of a drag-free orbit (and shows that it changes
 nothing). **25** varies the orbit and the drag coefficient: the runs
-spread about 150 km per day along track.
+spread about 150 km per day along track. **37** is 25's satellite for
+half a day, 30 runs with a batch seed and two requirements: one is met
+(its 90 % bound under the allowed probability), the other shows its
+estimate and bound, and the Sensitivity tab finds that the drag
+coefficient drives the decay. It takes about a minute in one process.
 
 **More detail:** User Manual section 10,
 [Monte Carlo](../../USER_MANUAL.md#10-monte-carlo-running-many-variations-at-once).

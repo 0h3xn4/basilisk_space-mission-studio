@@ -669,3 +669,58 @@ def test_36_three_imagers_share_the_contested_passes():
         spans = sorted((a.start_s, a.end_s) for a in plan.activities if a.station == station)
         assert all(later[0] >= earlier[1] for earlier, later in zip(spans, spans[1:]))
     assert Counter(u.reason for u in plan.unscheduled if u.kind == "contact")["station_busy"] > 20
+
+
+@pytest.mark.slow
+def test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_drives_the_decay(tmp_path):
+    """Template 37 (Monte Carlo plan B9, decision MC-34): its 30 runs as
+    shipped (seed 37, one process; 53 s measured here). R-ALT-01 is met:
+    no run below 389 km, the bound 1 - 0.1^(1/30) = 0.074 under the allowed
+    0.1. R-DECAY-01 has no allowed probability: 2 of 30 runs lose more than
+    19 m, estimate 0.067, bound about 0.17. The drag coefficient drives the
+    semi-major axis change (rank correlation about -0.9), the dry mass much
+    less (about +0.3). The batch seed gives the draws the golden file
+    recorded for its first two runs. The report says the same."""
+    import json
+
+    from spacemissionstudio import api
+    from spacemissionstudio.engine import monte_carlo_report
+    from spacemissionstudio.engine import monte_carlo_requirements as mcreq
+    from spacemissionstudio.engine import monte_carlo_statistics as mcs
+
+    scenario = _template("37")
+    assert (scenario.monte_carlo.num_runs, scenario.monte_carlo.thread_count, scenario.monte_carlo.seed) == (30, 1, 37)
+    batch = api.monte_carlo(scenario, tmp_path / "mc")
+    assert len(batch.runs) == 30 and not batch.failed and batch.seed == 37
+    altitude, decay = mcreq.evaluate(batch)
+    assert (altitude.name, altitude.evaluated, altitude.not_met, altitude.verdict) == ("R-ALT-01", 30, 0, mcreq.MET)
+    assert altitude.upper_bound == pytest.approx(1.0 - 0.1 ** (1.0 / 30.0), rel=1e-9)
+    assert altitude.upper_bound == pytest.approx(0.074, abs=5e-4)
+    assert (decay.name, decay.not_met, decay.verdict) == ("R-DECAY-01", 2, "")
+    assert decay.estimate == pytest.approx(2.0 / 30.0) and decay.upper_bound == pytest.approx(0.17, abs=0.005)
+    insight = mcs.insight(batch)
+    pairs = {(p.input_label, p.outcome_label): p.value for p in insight.sensitivity}
+    change = "sat-1 mean semi-major axis change [km]"
+    assert pairs[("sat-1 drag coefficient [-]", change)] < -0.85
+    assert 0.0 < pairs[("sat-1 dry mass [kg]", change)] < 0.5
+    lowest = next(s for s in insight.statistics if s.name == "sat-1 lowest altitude")
+    assert lowest.minimum > 389.0
+    golden = json.loads((Path(__file__).resolve().parent / "golden"
+                         / "37_monte_carlo_requirements_and_sensitivity.json").read_text(encoding="utf-8"))
+    labels, rows = golden["monte_carlo"]["runs"]
+    import golden_capture
+
+    for k in range(2):
+        drawn = {label: value for label, value in zip(labels[1:6], rows[k][1:6])}
+        assert batch.drawn[k].keys() >= drawn.keys()
+        for label, value in drawn.items():
+            # The drawn orbit angles are rv2elem of the dispersed state; for this near-circular orbit an
+            # arccos near 1 differs by 2^-26 rad between computers (8.5e-7 deg on the Linux runner), so they
+            # get the golden files' angle floor. The other draws are the generator's own numbers.
+            tolerance = ({"abs": golden_capture.ABSOLUTE_FLOORS["deg"]} if label.endswith("[deg]")
+                         else {"rel": 1e-12})
+            assert batch.drawn[k][label] == pytest.approx(value, **tolerance), label
+    report = monte_carlo_report.build(batch, tmp_path / "mc", insight)
+    assert report["settings"]["seed"] == 37 and report["settings"]["processes"] == 1
+    assert [r["verdict"] for r in report["requirements"]["results"]] == ["met", None]
+    assert len(report["dispersions"]) == 3

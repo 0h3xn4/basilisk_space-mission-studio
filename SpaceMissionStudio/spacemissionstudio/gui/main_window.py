@@ -1434,12 +1434,14 @@ class MainWindow(QMainWindow):
         if key == "ccsds_orbits":
             self.on_export_ccsds_orbits()
             return
-        if key == "monte_carlo_csv" and self.results_views.indexOf(self.monte_carlo_results_widget) < 0:
+        if key in ("monte_carlo_csv", "monte_carlo_report") and \
+                self.results_views.indexOf(self.monte_carlo_results_widget) < 0:
             self.show_view(self.results_views)
             show_toast(self, "No Monte Carlo batch is shown: run one, or Open Monte Carlo Results...", kind="info")
             return
         views = {"events_csv": self.event_timeline_widget, "output_csv": self.mission_output_widget,
-                 "monte_carlo_csv": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
+                 "monte_carlo_csv": self.monte_carlo_results_widget,
+                 "monte_carlo_report": self.monte_carlo_results_widget, "budget_csv": self.budget_widget,
                  "design_checks": self.design_checks_widget, "reentry_json": self.lifetime_widget,
                  "model_analyses": self.model_analyses_scroll, "thermal": self.thermal_widget,
                  "plan": self.plan_scroll, "operations": self.plan_scroll, "operations_robustness": self.plan_scroll,
@@ -1955,8 +1957,22 @@ class MainWindow(QMainWindow):
             self._show_monte_carlo_tab()
 
     def _show_monte_carlo_tab(self) -> None:
+        """A batch was just loaded into the Monte Carlo view: shown, and
+        compared with the open scenario (plan B6: a batch of another
+        scenario says so)."""
         self._set_monte_carlo_tab(True)
+        self.monte_carlo_results_widget.compare_with_scenario(self._scenario_to_compare())
         self.show_view(self.monte_carlo_results_widget)
+
+    def _scenario_to_compare(self):
+        """The scenario open in the editor, or None: none is open, or it does
+        not validate (then it cannot be compared with a batch's)."""
+        if not self._scenario_open:
+            return None
+        try:
+            return self.scenario_editor.to_scenario()
+        except ScenarioValidationError:
+            return None
 
     def on_open_monte_carlo_results(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Open Monte Carlo results")
@@ -3290,6 +3306,7 @@ class MainWindow(QMainWindow):
             self.lifetime_widget.wait_for_worker()  # a few seconds at most; its thread must not be destroyed mid-run
             self.budget_widget.wait_for_worker()
             self.design_checks_widget.wait_for_worker()
+            self.monte_carlo_results_widget.wait_for_insight()  # a batch's statistics, at most a second or so
             self.thermal_widget.wait_for_worker()
             self.plan_widget.wait_for_worker()
             self.flight_software_widget.wait_for_worker()

@@ -35,6 +35,77 @@ fixes bugs.
   batch's summary keeps the table, and `spacemissionstudio thermal
   --monte-carlo` prints it. Template 34's warm battery now shows up
   there directly: 4 of 20 runs above 30 °C.
+- **Results › Monte Carlo now shows what your outcomes look like.** The
+  new Statistics tab lists every outcome of the batch (where each run
+  ended against the batch mean, and the Overview figures it recorded)
+  with the number of runs, the minimum, a few percentiles and the
+  maximum. Pick a row and you see its empirical distribution: the
+  fraction of runs at or below each value, as a step plot that climbs
+  to 1. The percentiles are computed exactly as NumPy computes them by
+  default, so you can check any of them from the Runs table's CSV. Which
+  percentiles you see (1, 5, 50, 95 and 99 % for now) and how they are
+  computed are project parameters, `monte_carlo.percentiles` and
+  `monte_carlo.percentile_method`.
+- **Results › Monte Carlo now tells you which drawn values drive your
+  outcomes.** The new Sensitivity tab gives, for each drawn value and
+  each outcome, Spearman's rank correlation over the runs that recorded
+  both: close to +1 when the outcome always grows with the value, close
+  to -1 when it always falls, near 0 when the two are unrelated. The
+  table puts the strongest links first and shows how many runs each one
+  rests on; a value that does not vary shows "—". Pick a row to see the
+  runs as a scatter plot, with each run's number on hover. A project can
+  choose Pearson's correlation instead (`monte_carlo.sensitivity_measure`).
+  The numbers are worked out in the background the first time you open
+  either tab, and each plot's page is written in the background too, so
+  even a batch of 100 000 runs does not freeze the window.
+- **The Problems panel now warns you when a Monte Carlo dispersion no
+  longer fits its spacecraft.** A dispersion of the dry mass, the drag
+  coefficient or the SRP coefficient keeps its own numbers. If you then
+  edit the spacecraft, the batch would still draw around the old value.
+  Now, while Monte Carlo is on, a dispersion whose bounds do not contain
+  the spacecraft's value, or whose mean is not that value, is listed in
+  the Problems panel, and double-clicking it takes you to the spacecraft's
+  field. None of the templates shows it.
+- **A batch opened next to another scenario says so.** When you open a
+  Monte Carlo batch (or one finishes) and the scenario open in the
+  editor is not the one the batch was run with, a warning under the
+  title gives both scenario hashes and reminds you that Run This Case
+  needs the batch's own scenario.
+- **A Monte Carlo batch now gives you a report you can keep.** Results ›
+  Monte Carlo has a new Export report... button, and `monte-carlo`
+  takes `--report FILE`. You get one file, Markdown (`.md`) to read or
+  JSON (`.json`) for your own scripts, with everything the batch says:
+  how many runs and processes it used and its seed, the dispersions, the
+  spread at the end, every requirement with its estimate, its bound and
+  its verdict, the outcome statistics with their percentile method, the
+  sensitivity table with its measure, the runs that crashed with what
+  they drew, and the provenance (the scenario's hash, each data file's
+  hash and the versions). The numbers are the very ones the view shows,
+  worked out by the same code, and the file is written in the
+  background, so the window never waits for it.
+- **`monte-carlo` can show a batch you ran earlier without running it
+  again.** `spacemissionstudio monte-carlo --summarize DIR` prints the
+  batch's summary, the requirements, the outcome statistics and the
+  strongest correlations, and writes its Runs table as CSV
+  (`monte_carlo_runs.csv`, or the file you give with `--csv`). Add
+  `--report FILE` for the full report. Nothing in the batch folder
+  changes. It exits with 5, as after the batch, when a requirement is
+  not shown met. A batch run now prints the outcome statistics and the
+  strongest correlations too, and can write its Runs table with `--csv`.
+- **Run a different number of cases, or on more processes, without
+  editing the scenario.** `monte-carlo --runs N` and `--processes N`
+  change the batch's size and its processes for that one batch. The
+  scenario file stays exactly as it is (so Run This Case still matches
+  it), and the batch's `archive.provenance.json` records both the file's
+  value and the one used. Every new batch's provenance also records the
+  settings it ran with and its dispersions, which the report reads.
+- **A new template shows the Monte Carlo tools at work.** Template 37,
+  "Monte Carlo: requirements, statistics and sensitivity", is template
+  25's satellite as a 30-run batch with a batch seed and two
+  requirements with a confidence: one is met, the other shows its
+  estimate and bound. The Sensitivity tab finds that the drag
+  coefficient drives the orbit's decay. It runs in about a minute in one
+  process. Template 25 is unchanged.
 
 ### Changed
 
@@ -53,6 +124,13 @@ fixes bugs.
   tooltip, and the Runs table lists the failed runs with their status:
   "crashed" for an orbit batch and, new, "failed" for a thermal batch,
   with the values each one drew.
+- **The "mean ± 3 sigma" lines of a thermal or operations batch now say
+  what they are.** They are now labelled "mean - 3 standard deviations
+  (not a probability bound)" and "mean + 3 standard deviations (not a
+  probability bound)", and the line under the title says the same. The
+  lines themselves have not changed. For how likely a value is, use the
+  new Statistics tab, a requirement or, for a thermal batch, the Node
+  limits tab.
 
 ### Fixed
 

@@ -139,6 +139,33 @@ Each item was checked against Basilisk's own source.
   given only with the thermal Monte Carlo's `confidence`. A run whose
   draw the model refuses counts as leaving every range. A thermal batch
   saved by 2.14.1 or earlier has no node limits: run it again.
+* **A Monte Carlo batch's sensitivity is one drawn value against one
+  outcome at a time** (Spearman's rank correlation, or Pearson's): no
+  partial correlation and no variance-based index, so it does not
+  separate the effects of several drawn values, and it says "goes
+  with", not "causes". A pair needs 3 runs and a value that varies. The
+  percentiles describe the runs, not the distribution they were drawn
+  from, and carry no confidence; which ones are shown (1, 5, 50, 95 and
+  99 %) is a provisional default the owner may change
+  (`monte_carlo.percentiles`). The final offsets are read to the
+  millimetre for these. The command line prints the statistics and the
+  ten strongest correlations; the batch report has every pair. The
+  band around the mean of a thermal or operations batch is the mean
+  plus and minus 3 standard deviations, labelled "not a probability
+  bound".
+* **The batch report** (Export report..., `monte-carlo --report`) takes
+  the processes and the dispersions from the batch's
+  `archive.provenance.json`: a batch made by 2.14.1 or earlier did not
+  record them, and its report says so. The command line's Runs table
+  (`--csv`, `--summarize`) is the first spacecraft's; the window's
+  **Export table CSV...** exports the one shown. `--summarize` reads the
+  batch folder only and does not compare it with a scenario.
+* **The check that a dispersion contains its spacecraft's value** covers
+  the dry mass and the drag and SRP coefficients only, while Monte Carlo
+  is on; the starting attitude is not checked. The warning that a batch
+  was run with another scenario needs the batch's
+  `archive.provenance.json`: thermal and operations batches have none,
+  and are not compared.
 * **Monte Carlo retains a fixed set of data per run** (each spacecraft's
   position/velocity, and the run's Overview figures as its outcomes) --
   there is no per-run custom retention-policy selection in the schema

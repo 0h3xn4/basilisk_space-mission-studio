@@ -2780,3 +2780,9 @@ No existing test changed. New:
 not both side by side, both stay whole and inside the details column,
 Customize and open... below Open template). It failed before the
 fix and passes after.
+
+## Monte Carlo plot pages written off the GUI thread (2026-11-23)
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `test_monte_carlo_results_widget.py::test_the_plots_of_a_batch_of_100000_runs_are_made_within_50_ms`, now `..._take_under_50_ms_of_the_gui_thread` | timed figure, JSON and page on the calling thread, best of three under 50 ms | times `InsightPlot.show_figure` (the figure on the GUI thread, the page started in the worker), best of three under 50 ms; checks the page written (over 1 MB), shown, and the older pages removed | the JSON, the page and its file moved to a worker (`docs/DECISIONS.md`, "Monte Carlo plot pages written off the GUI thread"); the limit is unchanged and the test checks more |

@@ -21063,3 +21063,173 @@ not loosened. A new item in `BACKLOG.md` "Next release" asks for a
 
 SRelD issue 54, the SDP, H05 and `releasing.md` record the tag, the runs
 and the files' digests. The CHANGELOG is unchanged.
+
+## Monte Carlo phase B, part 2: outcome statistics, sensitivity, trust checks (2026-11-23)
+
+Items B2, B3 and B6 of `docs/developer/monte-carlo-plan.md`, on branch
+`feature/monte-carlo-insight` from `feature/monte-carlo-seed` at
+`db80cfa` (part 1, pull request #313, not merged yet). The owner has
+not answered Q8; the work ran without questions, and
+`docs/DECISIONS.md` records each choice as MC-26 to MC-31 (MC-27 is
+provisional). Commits name SRS-F-13.
+
+**No file format step.** The new choices and the percentiles are
+parameters of the project configuration, not scenario keys, so the
+scenario stays at schema version 7 and the templates do not change. The
+batch summary keeps format 1 and gains three optional keys
+(`sensitivity_measure`, `percentile_method`, `percentiles`); a summary
+without them reads with the defaults. The golden files are
+byte-identical (`tests/test_golden_outputs.py` passes).
+
+**B3, outcome statistics.** `engine/monte_carlo_statistics.py`
+(NumPy only) gives, per outcome, N, the minimum, the percentiles and the
+maximum, and the empirical distribution function. The outcomes are the
+final radial, along-track and cross-track offsets (to the millimetre:
+below it they are rounding noise) and the Overview figures; a thermal
+batch's node minima and maxima; an operations batch's drawn outcomes
+and profile extremes. The percentiles are `numpy.percentile` with the
+model `monte_carlo.percentile_method` (`linear`, Hyndman and Fan's
+definition 7), and the test compares them with NumPy for every model.
+The percentiles shown, `monte_carlo.percentiles`, default to 1, 5, 50,
+95 and 99 % with the source "TBD" until the owner names them. The
+thermal and operations batches' band is labelled "mean ± 3 standard
+deviations (not a probability bound)"; its values do not change.
+
+**B2, sensitivity.** Spearman's rank correlation (ties at their mean
+rank) or Pearson's, by `monte_carlo.sensitivity_measure`, for each drawn
+value and outcome, pairwise, with N per pair; "—" for a column that does
+not vary or fewer than 3 runs. Checked on synthetic data (+1, -1 and
+about 0), on ties (sqrt(0.9) by hand) and on a five-value case computed
+by hand (Pearson's 20 / sqrt(761)). A first version ranked each pair
+again and took 3.3 s for 100 000 runs, 10 drawn values and 30 outcomes;
+ranking and centring each complete column once brings that to about
+0.5 s.
+
+**The GUI.** Results › Monte Carlo has two new tabs, Statistics and
+Sensitivity: a `DataTable` and, under it, a plot made the first time it
+is needed (the empirical distribution as a step plot that ends at 1; the
+scatter of the pair picked). The numbers are worked out in a one-thread
+`QThreadPool` the first time one tab is shown for a batch. The plots are
+written as Plotly's JSON form with typed arrays: for 100 000 runs the
+figure and its page take 10 to 20 ms instead of 57 ms (scatter) and
+99 ms (distribution) with `go.Figure`; a test keeps them under 50 ms.
+Both redraw on a theme change. The Assumptions page names the three new
+parameters.
+
+**B6, trust checks.** A plausibility warning,
+`monte_carlo.nominal_outside`, lists in the Problems panel a dispersion
+of the dry mass, the drag or the SRP coefficient whose bounds do not
+contain the spacecraft's value or whose mean is not that value, while
+Monte Carlo is on. None of the 36 templates gives it. A batch shown
+while the open scenario's SHA-256 is not the one in its
+`archive.provenance.json` shows a warning with both hashes
+(`monte_carlo_case.batch_scenario_hash`, the check Run This Case uses).
+
+**Tests.** No existing test changed its checks. Two lists in
+non-GUI tests gained the new choices and parameters (MC-31). New: 15
+tests in `tests/test_monte_carlo_statistics.py` and 7 in
+`tests/gui/test_monte_carlo_results_widget.py`. The full suite, 4
+workers: 5888 passed, 19 skipped, 2 failed. One failure was a missing
+Assumptions page label for the three new parameters; the label was then
+added and that test file passes. The other is the known local-only
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px). The compliance generators change nothing on a
+second run, and `check_drds.py` finds 0 problems.
+
+## Monte Carlo phase B, part 2: plot pages written off the GUI thread (2026-11-23)
+
+On the Windows runner, the plots of a batch of 100 000 runs took 50 to
+100 ms of the GUI thread (#314, `e6902e4`). The figure's JSON, its page
+and the page's file are now made in a worker of the plot; the GUI thread
+builds the figure and loads the page, 4 to 7 ms here (12 to 17 ms
+before). Only the newest page is shown, and the older files are
+deleted.
+
+## Monte Carlo phase B, part 3: batch report, command line, template 37 (2026-11-23)
+
+Items B5, B7 and B9 of `docs/developer/monte-carlo-plan.md`, on branch
+`feature/monte-carlo-report` from `feature/monte-carlo-insight` at
+`f85e1c7` (part 2, pull request #314, on part 1, #313; neither merged
+yet). The owner has not answered Q7; the work ran without questions,
+and `docs/DECISIONS.md` records each choice as MC-32 to MC-35 (MC-34 is
+provisional). Commits name SRS-F-13. With this part, phase B is done
+once the three parts are merged.
+
+**No scenario format step.** No scenario key was needed: the scenario
+stays at schema version 7. `archive.provenance.json` gains
+`monte_carlo_settings` (what the batch ran with, and any command-line
+override); the batch summary is unchanged (format 1). The golden files
+of the 36 existing templates are byte-identical; template 37 has its
+own.
+
+**B5, the batch report.** `engine/monte_carlo_report.py` builds one
+report of a batch and writes it as JSON (`kind: "monte_carlo_report"`,
+`format` 1) or Markdown, by the file's suffix: the settings, the
+dispersions, the spread, the requirements with their verdicts, the
+outcome statistics with the percentile method, the sensitivity with the
+measure, the crashed runs with their draws, and the provenance (the
+scenario's SHA-256, the data files' SHA-256, the versions). Its numbers
+come from the functions the view uses; the GUI hands it the view's own
+`Insight`, and a GUI test compares every Statistics, Sensitivity and
+Requirements cell with the report read back. The cell text functions
+(`number_text`, `percentile_title`) moved from the GUI module to the
+engine for the Markdown. In the window, **Export report...** starts a
+one-thread worker that builds and writes the file; the GUI thread only
+starts it (a test requires under 50 ms) and a toast says where the file
+is. The Runs table's CSV writer moved to the engine, for the command
+line.
+
+**B7, the command line.** `monte-carlo --summarize DIR` prints an
+earlier batch and writes its Runs table (`monte_carlo_runs.csv` or
+`--csv`) and, with `--report`, its report, running nothing and changing
+nothing in DIR (a test compares every file's bytes). It exits 5 when a
+requirement is not shown met, as after a batch. `--runs N` and
+`--processes N` override the scenario for one batch: the scenario file
+is byte for byte the same afterwards and its hash is the batch's, and
+`monte_carlo_settings.overrides` records both values. A batch run and
+`--summarize` now also print the outcome statistics and the ten
+strongest correlations (MC-28 had left them to this part). Flags that
+do not go together are usage errors (2) before anything is read.
+
+**B9, template 37** ("Monte Carlo: requirements, statistics and
+sensitivity"). Template 25's satellite for half a day, 30 runs, batch
+seed 37, three dispersions (orbit, drag coefficient, dry mass) and two
+requirements at 90 % confidence. Measured: **53 s for the batch in one
+process** (the CLI's wall time on this 4-CPU container, about 1.7 s a
+run); R-ALT-01 met (0 of 30, bound 0.0739 against 0.1 allowed);
+R-DECAY-01 2 of 30 (estimate 0.0667, bound 0.168); Spearman's
+correlation of the drag coefficient with the semi-major axis change
+-0.90, of the dry mass +0.27. A first draft at 40 runs took 67 s; 30
+runs keep the bound at k = 0 under 0.1. Its golden file was recorded
+for it alone; `tests/data/scenario_hashes.json` gained its two hashes;
+running `scripts/_generate_templates.py` writes the 36 others byte for
+byte as committed, except template 03, whose orbit elements differ in
+their last digits on this machine before and after this change (not
+committed). It has a Customize wizard and a README row. Its wizard
+showed a code name in a dispersion's group heading ("Dispersion:
+sat-1 dry_mass_kg", found by `tests/gui/test_label_text.py`); the
+heading now reads "dry mass".
+
+**Tests.** New: 8 tests in `tests/test_monte_carlo_report.py`, 16 in
+`tests/test_cli.py` (with the parametrized cases), 2 in
+`tests/gui/test_monte_carlo_results_widget.py` and the slow template 37
+claim in `tests/test_template_claims.py`. Three lists grew (MC-35): the
+templates in `tests/gui/test_home.py` and
+`tests/test_monte_carlo_statistics.py`, and the exports in
+`tests/gui/test_reports_and_settings.py`. The first full run found two
+failures of template 37 itself, both fixed: a description bullet over
+200 characters (`tests/test_scenario_templates.py`) and the wizard's
+code-name heading (above). The full suite after the last change, 4
+workers: 5945 passed, 19 skipped, 1 failed: the known local-only
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`.
+`ruff check` passes. The compliance generators change nothing on a
+second run, `check_drds.py` finds 0 problems, and pre-commit passes.
+
+## Monte Carlo phase B, part 3: template 37's drawn angles on another computer (2026-11-23)
+
+Template 37's claims test compared its drawn values with the golden file
+to 1e-12. On the Linux CI runner the true anomaly of a near-circular
+orbit, made by `rv2elem` from the dispersed state, differed by 2^-26 rad.
+That is the arccos case that the golden comparison already allows for.
+Drawn angles in degrees now get the golden angle floor, and the other
+draws still have to match to 1e-12 (`docs/DECISIONS.md`).

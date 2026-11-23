@@ -224,7 +224,11 @@ the same run. Nothing runs in Basilisk again, so a study takes seconds.
   you want a bound, the **Confidence** (between 0 and 1; no default).
   Press **Monte Carlo...** and pick a folder. The batch opens in the Monte Carlo
   view by node: the hottest and coldest any run reached, each run's
-  curve with the mean and its band, and the run table with the drawn
+  curve with the mean and its band (the mean plus and minus 3 standard
+  deviations of the runs, which is not a probability bound), the
+  Statistics and Sensitivity tabs (each node's lowest and highest
+  temperature over the runs, and which drawn value goes with them), and
+  the run table with the drawn
   values (a run whose draw the model refused is listed as "failed").
   The **Node limits** tab counts, for each node with an operating or
   survival range, the runs whose temperature leaves it at any step: the

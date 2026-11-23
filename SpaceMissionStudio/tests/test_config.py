@@ -347,6 +347,9 @@ _MODEL_CASES = {
     "monte_carlo.spread_statistic": "test_model_registry.py::test_each_spread_statistic_is_the_one_it_declares",
     "monte_carlo.probability_bound":
         "test_monte_carlo_requirements.py::test_a_batch_reads_its_bound_and_refuses_one_it_does_not_know",
+    "monte_carlo.sensitivity_measure": "test_monte_carlo_statistics.py::test_a_batch_reads_with_the_choices_it_was_run_with",
+    "monte_carlo.percentile_method": "test_monte_carlo_statistics.py::test_a_batch_reads_with_the_choices_it_was_run_with",
+    "monte_carlo.percentiles": "test_monte_carlo_statistics.py::test_a_batch_reads_with_the_choices_it_was_run_with",
     "propellant_budget.margin_policy": "test_model_registry.py::test_the_summary_tables_budget_says_so_and_records_it",
     "dynamics.shadowing_bodies": "test_shadows.py::test_the_moon_shadows_a_spacecraft_behind_it_with_tracked_bodies",
     "link.atmospheric_loss": "test_gaseous_attenuation.py::test_a_run_takes_the_loss_at_each_steps_elevation",

@@ -574,3 +574,339 @@ def test_a_thermal_batch_shows_its_node_limits_and_its_failed_runs(qtbot, tmp_pa
     widget.load_folder(tmp_path / "older")
     assert widget.views.isTabVisible(widget._node_limits_index)
     assert table.stack.currentWidget() is table.empty
+
+
+# -- Statistics and Sensitivity (Monte Carlo plan B3 and B2) -------------------------------------------
+
+def _show_tab(qtbot, widget, index):
+    """Show tab ``index`` of the view and wait for the batch's statistics."""
+    widget.views.setCurrentIndex(index)
+    qtbot.waitUntil(lambda: not widget.insight_pending, timeout=10000)
+    assert widget.insight is not None, widget.insight_error
+
+
+def test_the_statistics_tab_gives_each_outcomes_percentiles_and_its_distribution(qtbot, tmp_path, restored_theme):
+    """Shown, the tab works its numbers out off the GUI thread; per outcome:
+    N, the minimum, the percentiles of the batch (NumPy's, by its method),
+    the maximum, the unit; the picked row's empirical distribution is a step
+    plot that ends at 1, drawn with the theme's template and drawn again in
+    the new theme's colours on a theme change."""
+    import threading
+
+    from spacemissionstudio.engine import monte_carlo_statistics as mcs
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+    from spacemissionstudio.gui.theme import SERIES_COLORS, TOKENS, apply_theme
+
+    _save_batch_with_outcomes(tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    threads = []
+
+    def compute(batch):
+        threads.append(threading.current_thread())
+        return mcs.insight(batch)
+
+    widget.insight_computer.compute = compute
+    widget.load_folder(tmp_path)
+    assert widget.insight is None and threads == []  # nothing worked out before the tab is shown
+    _show_tab(qtbot, widget, widget._statistics_index)
+    assert threads and threads[0] is not threading.main_thread()
+    table = widget.statistics_table
+    headers = [table.header_text(c) for c in range(table.column_count())]
+    assert headers == ["Outcome", "Unit", "N", "Minimum", "P1", "P5", "P50", "P95", "P99", "Maximum"]
+    rows = {table.cell(r, 0): [table.cell(r, c) for c in range(table.column_count())] for r in range(table.row_count())}
+    altitude = rows["lowest altitude"]
+    values = 395.0 + 5.0 * np.arange(5)
+    expected = np.percentile(values, [1, 5, 50, 95, 99], method="linear")
+    assert altitude[1:4] == ["km", "5", "395"]
+    assert altitude[4:9] == [f"{v:.6g}" for v in expected] and altitude[9] == "415"
+    assert rows["Run length"][1:3] == ["h", "5"]
+    assert [table.cell(r, 0) for r in range(3)] == ["final radial offset", "final along-track offset",
+                                                    "final cross-track offset"]  # the batch's order first
+    from PySide6.QtCore import Qt
+
+    table.sort_by(4, Qt.SortOrder.DescendingOrder)  # sortable: by P1, the lowest altitude's the largest
+    assert table.cell(0, 0) == "lowest altitude"
+    assert widget.statistics_plot.figure is not None  # the first row is picked and plotted
+    table.view.selectRow([table.cell(r, 0) for r in range(table.row_count())].index("lowest altitude"))
+    figure = widget.statistics_plot.figure
+    (trace,) = figure["data"]
+    assert trace["line"]["shape"] == "hv" and trace["y"][0] == 0.0 and trace["y"][-1] == 1.0
+    assert list(trace["x"]) == [395.0, 395.0, 400.0, 405.0, 410.0, 415.0]
+    assert figure["layout"]["xaxis"]["title"]["text"] == "lowest altitude [km]"
+    assert figure["layout"]["yaxis"]["title"]["text"] == "Fraction of runs at or below [-]"
+    assert trace["line"]["color"] == SERIES_COLORS[0]
+    apply_theme(restored_theme, "light")
+    qtbot.waitUntil(lambda: widget.statistics_plot.figure is not figure)
+    light = widget.statistics_plot.figure["layout"]["xaxis"]["gridcolor"]
+    assert light == TOKENS["border.subtle"]
+    apply_theme(restored_theme, "dark")
+    qtbot.waitUntil(lambda: widget.statistics_plot.figure["layout"]["xaxis"]["gridcolor"] != light)
+    assert widget.statistics_plot.figure["layout"]["xaxis"]["gridcolor"] == TOKENS["border.subtle"]
+    assert widget.statistics_plot.figure["layout"]["font"]["color"] == TOKENS["text.primary"]
+
+
+def test_the_sensitivity_tab_sorts_the_correlations_by_size(qtbot, tmp_path):
+    """Every drawn value against every outcome, the largest first whatever
+    its sign, with N per pair; a value that does not vary shows "—"; the
+    picked pair is a scatter plot of the runs, its axes with their units."""
+    from dataclasses import replace
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    batch = _save_batch_with_outcomes(tmp_path)
+    batch = replace(batch, drawn=[{**row, "sat-1 dry mass [kg]": 100.0} for row in batch.drawn],
+                    outcomes=[dict(row, **({} if k == 2 else {"sat-1.delta_v": 10.0 - k}))
+                              for k, row in enumerate(batch.outcomes)],
+                    outcome_units={**batch.outcome_units, "sat-1.delta_v": "m/s"})
+    mcr.save(batch, tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    _show_tab(qtbot, widget, widget._sensitivity_index)
+    table = widget.sensitivity_table
+    assert [table.header_text(c) for c in range(table.column_count())] == [
+        "Drawn value", "Outcome", "Spearman's rank correlation [-]", "N"]
+    rows = [[table.cell(r, c) for c in range(4)] for r in range(table.row_count())]
+    sizes = [abs(float(row[2])) for row in rows if row[2] != "—"]
+    assert sizes == sorted(sizes, reverse=True) and sizes[0] == pytest.approx(1.0)
+    by_pair = {(row[0], row[1]): row[2:] for row in rows}
+    assert by_pair[("drag coefficient [-]", "lowest altitude [km]")] == ["1", "5"]
+    assert by_pair[("drag coefficient [-]", "delta-V [m/s]")] == ["-1", "4"]  # run 2 recorded none
+    assert by_pair[("dry mass [kg]", "lowest altitude [km]")] == ["—", "5"]
+    assert rows[-1][2] == "—"
+    pick = next(r for r, row in enumerate(rows) if row[:2] == ["drag coefficient [-]", "delta-V [m/s]"])
+    table.view.selectRow(pick)
+    figure = widget.sensitivity_plot.figure
+    (trace,) = figure["data"]
+    assert trace["mode"] == "markers" and list(trace["customdata"]) == [0, 1, 3, 4]
+    assert list(trace["x"]) == pytest.approx([2.0, 2.2, 2.6, 2.8]) and list(trace["y"]) == [10.0, 9.0, 7.0, 6.0]
+    layout = figure["layout"]
+    assert (layout["xaxis"]["title"]["text"], layout["yaxis"]["title"]["text"]) == ("drag coefficient [-]",
+                                                                                    "delta-V [m/s]")
+    assert "Spearman's rank correlation -1 over 4 runs" in layout["title"]["text"]
+
+
+def test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread(qtbot, tmp_path):
+    """Design rule 6: a figure of 100 000 runs (the scatter of a pair, the
+    step plot of an outcome) is built and its page started in under 50 ms
+    of the GUI thread (the best of three, so a busy test machine does not
+    decide it). The page itself, its JSON and its file, megabytes, is made
+    by the plot's worker: on the Windows CI runner that part alone took 50
+    to 100 ms. The page reads the typed arrays back as the values, and the
+    newest page is the one shown."""
+    import base64
+    import json
+    import time
+    from pathlib import Path
+
+    from spacemissionstudio.engine import monte_carlo_statistics as mcs
+    from spacemissionstudio.gui import monte_carlo_insight as mi
+
+    rng = np.random.default_rng(30)
+    x, y = mcs.Column("a [-]", rng.normal(size=100_000)), mcs.Column("b [km]", rng.normal(size=100_000))
+    runs = list(range(100_000))
+    builds = (lambda: mi.scatter_figure(x, y, runs, "b against a", "", "a [-]", "b [km]"),
+              lambda: mi.ecdf_figure(y, "b", ""))
+    plot = mi.InsightPlot("empty")
+    qtbot.addWidget(plot)
+    for build in builds:
+        plot.show_figure(build)  # plotly's first import and the web view are not the plot's
+        plot.wait()
+        took = []
+        for _ in range(3):
+            start = time.perf_counter()
+            plot.show_figure(build)
+            took.append(time.perf_counter() - start)
+            plot.wait()
+        assert min(took) < 0.050, took
+        qtbot.waitUntil(lambda: plot._shown_page.endswith(f"_{plot._request}.html"))
+        assert plot.page_error == "" and plot.stack.currentWidget() is plot.web_view
+        page = Path(plot._shown_page)
+        assert page.stat().st_size > 1_000_000
+        assert sorted(page.parent.glob("monte_carlo_insight_*.html")) == [page]  # the older pages removed
+    trace = json.loads(mi.figure_json(builds[0]()))["data"][0]
+    assert trace["type"] == "scattergl" and trace["x"]["dtype"] == "f8"
+    assert np.frombuffer(base64.b64decode(trace["x"]["bdata"]), "<f8").tolist() == x.values.tolist()
+    assert np.frombuffer(base64.b64decode(trace["customdata"]["bdata"]), "<i4").tolist() == runs
+    assert mi.write_page(builds[1](), "plotly.js", "", tmp_path / "gone" / "page.html") == "the plot folder is gone"
+
+
+def test_a_batch_without_draws_says_there_is_nothing_to_correlate(qtbot, tmp_path):
+    """No drawn value (a batch saved before they were kept): the
+    Sensitivity table's empty state says so; the statistics are still
+    there."""
+    from dataclasses import replace
+
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    mcr.save(replace(_save_batch(tmp_path), drawn=[{} for _ in range(5)]), tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    _show_tab(qtbot, widget, widget._sensitivity_index)
+    assert widget.sensitivity_table.row_count() == 0
+    assert "nothing to correlate" in widget.sensitivity_table.empty_label.text()
+    assert widget.statistics_table.row_count() == 3  # the final offsets
+
+
+def test_another_batch_shown_while_one_is_worked_out_shows_its_own_numbers(qtbot, tmp_path):
+    """The worker's result for a batch no longer shown is dropped; the batch
+    shown gets its own."""
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch(tmp_path / "five")
+    _save_batch(tmp_path / "seven", runs=7)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path / "five")
+    widget.views.setCurrentIndex(widget._statistics_index)
+    widget.load_folder(tmp_path / "seven")
+    qtbot.waitUntil(lambda: not widget.insight_pending and widget.insight is not None, timeout=10000)
+    widget.wait_for_insight()
+    assert widget.statistics_table.cell(0, 2) == "7"
+
+
+def test_a_batch_of_another_scenario_says_so(qtbot, tmp_path):
+    """Plan B6: opened next to a scenario whose SHA-256 is not the one the
+    batch's archive.provenance.json records, the view says so with both
+    hashes; with the batch's own scenario, or with no scenario open, it
+    says nothing."""
+    import json as json_module
+
+    from spacemissionstudio import output_provenance
+    from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+    from spacemissionstudio.schema import load_scenario
+
+    scenario = load_scenario(TEMPLATES_DIR / "25_monte_carlo_orbit_and_drag_dispersions.json")
+    digest = output_provenance.scenario_sha256(scenario)
+    _save_batch(tmp_path)
+    (tmp_path / "archive.provenance.json").write_text(json_module.dumps({"scenario_sha256": digest,
+                                                                         "scenario_file": "t25.json"}))
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    widget.compare_with_scenario(scenario)
+    assert widget.scenario_notes.notes == []
+    scenario.monte_carlo.num_runs = 21
+    widget.compare_with_scenario(scenario)
+    (note,) = widget.scenario_notes.notes
+    assert note.startswith("This batch was run with another scenario than the one open: scenario SHA-256 "
+                           f"{digest} at the batch, {output_provenance.scenario_sha256(scenario)} now.")
+    assert "(t25.json)" in note
+    widget.compare_with_scenario(None)
+    assert widget.scenario_notes.notes == []
+    widget.compare_with_scenario(scenario)
+    widget.load_folder(tmp_path)  # another batch shown: the note was about the one before
+    assert widget.scenario_notes.notes == []
+
+
+def test_the_main_window_compares_an_opened_batch_with_the_open_scenario(qtbot, tmp_path, monkeypatch):
+    """Open Monte Carlo Results... next to another scenario: the view says
+    the batch is of another scenario."""
+    import json as json_module
+
+    from PySide6.QtWidgets import QFileDialog
+
+    from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
+    from spacemissionstudio.gui.main_window import MainWindow
+
+    window = MainWindow(prompt_startup_fetch=False, check_autosave_recovery=False)
+    qtbot.addWidget(window)
+    window.open_path(TEMPLATES_DIR / "09_monte_carlo_dispersion_analysis.json")
+    _save_batch(tmp_path)
+    (tmp_path / "archive.provenance.json").write_text(json_module.dumps({"scenario_sha256": "0" * 64}))
+    monkeypatch.setattr(QFileDialog, "getExistingDirectory", lambda *args, **kwargs: str(tmp_path))
+    window.open_monte_carlo_results_action.trigger()
+    (note,) = window.monte_carlo_results_widget.scenario_notes.notes
+    assert f"scenario SHA-256 {'0' * 64} at the batch" in note
+
+
+def test_the_report_has_the_views_numbers_and_is_written_off_the_gui_thread(qtbot, tmp_path):
+    """Plan B5 (decision MC-32): Export report... hands the batch, its
+    folder and the view's own statistics to a worker; the GUI thread
+    returns at once (under 50 ms, design rule 6) and a toast says where the
+    report is. Each number of the report is the one the view's tables show:
+    the Statistics and Sensitivity cells, the Requirements cells."""
+    import threading
+    import time
+
+    from spacemissionstudio.engine import monte_carlo_report
+    from spacemissionstudio.engine.monte_carlo_statistics import number_text
+    from spacemissionstudio.gui import export_log
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch_with_outcomes(tmp_path, [_ALTITUDE])
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    assert not widget.report_button.isEnabled()  # no batch yet
+    widget.load_folder(tmp_path)
+    assert widget.report_button.isEnabled()
+    _show_tab(qtbot, widget, widget._sensitivity_index)
+    threads, given = [], []
+    real = widget.report_writer.write
+
+    def write(batch, path, folder, insight):
+        threads.append(threading.current_thread())
+        given.append(insight)
+        return real(batch, path, folder, insight)
+
+    widget.report_writer.write = write
+    path = tmp_path / "report.json"
+    start = time.perf_counter()
+    widget.export_report(path)
+    assert time.perf_counter() - start < 0.050
+    qtbot.waitUntil(lambda: widget.report_writer.pending == 0, timeout=10000)
+    assert threads[0] is not threading.main_thread() and given[0] is widget.insight
+    assert export_log.last("monte_carlo_report")[1] == str(path)
+    report = monte_carlo_report.load(path)
+
+    table = widget.statistics_table
+    shown = {table.cell(r, 0): [table.cell(r, c) for c in range(table.column_count())]
+             for r in range(table.row_count())}
+    for outcome in report["outcome_statistics"]["outcomes"]:
+        cells = shown[widget._short(outcome["name"])]
+        assert cells[1:] == [outcome["unit"], str(outcome["n"]), number_text(outcome["minimum"]),
+                             *(number_text(p["value"]) for p in outcome["percentiles"]),
+                             number_text(outcome["maximum"])]
+    assert [o["minimum"] for o in report["outcome_statistics"]["outcomes"]] == [
+        s.minimum for s in widget.insight.statistics]
+    table = widget.sensitivity_table
+    shown = [[table.cell(r, c) for c in range(4)] for r in range(table.row_count())]
+    assert shown == [[widget._short(p["drawn_value"]), widget._short(p["outcome"]), number_text(p["correlation"]),
+                      str(p["n"])] for p in report["sensitivity"]["pairs"]]
+    table = widget.requirements_table
+    (row,) = report["requirements"]["results"]
+    assert [table.cell(0, c) for c in (0, 3, 4, 5, 7, 8, 11)] == [
+        row["name"], str(row["evaluated"]), str(row["not_met"]), str(row["crashed"]), f"{row['estimate']:.4g}",
+        f"{row['upper_bound']:.4g}", row["verdict"]]
+
+
+def test_export_report_asks_for_the_file_and_its_format(qtbot, tmp_path, monkeypatch):
+    """The dialog offers Markdown and JSON; a name without a suffix takes
+    the format chosen; a file that cannot be written is said, not raised."""
+    from PySide6.QtWidgets import QFileDialog
+
+    from spacemissionstudio.engine import monte_carlo_report
+    from spacemissionstudio.gui.monte_carlo_results_widget import MonteCarloResultsWidget
+
+    _save_batch_with_outcomes(tmp_path)
+    widget = MonteCarloResultsWidget()
+    qtbot.addWidget(widget)
+    widget.load_folder(tmp_path)
+    answers = iter([(str(tmp_path / "mine"), "JSON (*.json)"), (str(tmp_path / "notes"), "Markdown (*.md)"),
+                    (str(tmp_path / "missing" / "report.md"), "Markdown (*.md)")])
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(lambda *a, **k: next(answers)))
+    said = []
+    monkeypatch.setattr("spacemissionstudio.gui.monte_carlo_results_widget.report",
+                        lambda widget, text, kind="error": said.append((kind, text)))
+    for _ in range(3):
+        widget.report_button.click()
+        qtbot.waitUntil(lambda: widget.report_writer.pending == 0, timeout=10000)
+    assert monte_carlo_report.load(tmp_path / "mine.json")["batch"]["scenario_name"] == "Synthetic batch"
+    assert (tmp_path / "notes.md").read_text(encoding="utf-8").startswith("# Monte Carlo report: Synthetic batch")
+    assert [kind for kind, _text in said] == ["success", "success", "error"]
+    assert said[2][1].startswith(f"Could not export the Monte Carlo report to {tmp_path / 'missing' / 'report.md'}")

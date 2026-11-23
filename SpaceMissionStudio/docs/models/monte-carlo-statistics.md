@@ -1,11 +1,14 @@
 # Monte Carlo statistics
 
 How a Monte Carlo batch's spread is measured: each run's offset from the
-mean of all runs, and the 1-sigma of those offsets. And how a batch
-judges a requirement on its runs' outcomes: the probability of not
-meeting it, with an exact upper bound. Code:
-`spacemissionstudio/engine/monte_carlo_results.py` and
-`spacemissionstudio/engine/monte_carlo_requirements.py`; the models are
+mean of all runs, and the 1-sigma of those offsets. How a batch judges a
+requirement on its runs' outcomes: the probability of not meeting it,
+with an exact upper bound. And how it describes its outcomes (minimum,
+percentiles, maximum, the empirical distribution) and which drawn values
+go with them (the sensitivity). Code:
+`spacemissionstudio/engine/monte_carlo_results.py`,
+`spacemissionstudio/engine/monte_carlo_requirements.py` and
+`spacemissionstudio/engine/monte_carlo_statistics.py`; the models are
 declared in `spacemissionstudio/config/models.py` (see
 [Selectable models](README.md#selectable-models)).
 
@@ -192,10 +195,158 @@ the probability that a run leaves a node's operating or survival range
   `tests/test_thermal_studies.py` (template 33: the counts equal those
   read from the kept temperatures).
 
+## The band of a thermal or operations batch
+
+The plots of a thermal and an operations batch draw, at each sample, the
+runs' mean and the lines "mean - 3 standard deviations (not a
+probability bound)" and "mean + 3 standard deviations (not a probability
+bound)": the mean plus or minus three standard deviations of the runs at
+that sample, by the batch's `spread_statistic`. The label says what they
+are. They assume no distribution, so they are no bound on a
+probability: for a normal distribution about 0.27 % of the runs would
+fall outside, for another distribution any share can. For a probability,
+use the outcome statistics below, a requirement, or the Node limits tab
+of a thermal batch (decision MC-27).
+
+## Outcome statistics: `percentile_method` and `percentiles`
+
+Each outcome of a batch, over the successful runs that recorded it
+(Monte Carlo plan B3): N, the minimum, the percentiles, the maximum, and
+the empirical distribution. The outcomes are where each run ended
+against the batch mean (the radial, along-track and cross-track offsets
+of the Runs table, in km) and its Overview figures; for a thermal batch
+each node's lowest and highest temperature; for an operations batch its
+drawn outcomes and each profile's lowest and highest value. A crashed run
+has no outcome and is not in N.
+
+- **The percentiles** shown are a parameter, `monte_carlo.percentiles`
+  [%]. Its value is provisional: the owner has not named the
+  percentiles (plan Q8), so the source is "TBD", and the default is 1,
+  5, 50, 95 and 99 % (decision MC-27). A project file changes them:
+
+  ```yaml
+  parameters:
+    monte_carlo.percentiles: [10, 50, 90]   # [%]
+  ```
+
+- **The method** is a choice, `monte_carlo.percentile_method`, with one
+  model; the choice exists so that a later one can be added.
+- **The empirical distribution function** F(x) is the fraction of the N
+  runs whose value is at or below x. The Statistics tab draws it as a
+  step plot: 0 below the smallest value, a step up at each value by the
+  share of runs that have it, 1 from the largest value on. No method is
+  chosen for it: it is the runs themselves.
+
+| Model | Name | Formula |
+|---|---|---|
+| Linear interpolation (Hyndman and Fan's definition 7) | `linear` (default) | h = (N - 1) p / 100 + 1; x_j + (h - j)(x_(j+1) - x_j), j = floor(h) |
+
+### Linear interpolation (Hyndman and Fan's definition 7) (`linear`)
+
+- **Inputs:** each successful run's value of the outcome (a run without
+  it is left out); the percentiles to show, `monte_carlo.percentiles`.
+- **Method:** for the p-th percentile of the N values sorted,
+  x_1 <= ... <= x_N: h = (N - 1) p / 100 + 1, and the percentile is
+  x_j + (h - j)(x_(j+1) - x_j) with j = floor(h). The 0th percentile is
+  the minimum and the 100th the maximum. It is `numpy.percentile` with
+  `method="linear"`, NumPy's default, so a percentile computed with
+  NumPy from the Runs table's CSV is the same number.
+- **Outputs:** the Statistics table of Results › Monte Carlo.
+- **Assumptions:** the percentiles describe these N runs, not the
+  distribution they were drawn from; they are no confidence bound. With
+  few runs the 1st and 99th percentiles lie between the two most extreme
+  runs.
+- **References:** R. J. Hyndman and Y. Fan, "Sample quantiles in
+  statistical packages", The American Statistician 50(4), 1996,
+  pp. 361-365, definition 7; NumPy reference, `numpy.percentile`.
+- **Checked against:** `tests/test_monte_carlo_statistics.py`: the
+  percentiles equal `numpy.percentile` with the method, for every model;
+  the step function's last value is exactly 1.
+
+## Sensitivity: `sensitivity_measure`
+
+Which drawn values go with which outcomes (Monte Carlo plan B2): the
+correlation of each drawn value (each dispersion's value in each run)
+with each outcome above, in a table sorted by the correlation's size,
+whatever its sign, and a scatter plot of the pair picked. The measure is
+a choice, `monte_carlo.sensitivity_measure`.
+
+- **Pairwise:** a run counts for a pair when it recorded both values. A
+  crashed run (no outcome) and a run without that outcome are left out of
+  that pair only. The table shows N per pair.
+- **No value:** a column that does not vary over those runs (template
+  09's drag-free orbit: the mass changes no outcome), or a pair of fewer
+  than 3 runs, has no correlation; the table shows "—", never NaN.
+- **Not a cause:** a correlation says which drawn values go with which
+  outcomes in these runs. Basilisk's controller draws each dispersion
+  independently, so two drawn values do not share a correlation by their
+  draw.
+
+| Model | Name | Formula |
+|---|---|---|
+| Spearman's rank correlation | `spearman` (default) | Pearson's correlation of the ranks, tied values at their mean rank |
+| Pearson's correlation | `pearson` | sum((x_k - mean x)(y_k - mean y)) / sqrt(sum((x_k - mean x)^2) sum((y_k - mean y)^2)) |
+
+```yaml
+parameters:
+  monte_carlo.sensitivity_measure: pearson   # [-] spearman (default) or pearson
+```
+
+### Spearman's rank correlation (`spearman`)
+
+- **Inputs:** each run's drawn value and outcome, pairwise; N.
+- **Method:** each column is replaced by its ranks (1 for the smallest;
+  tied values get the mean of the ranks they share, so 10, 20, 20, 30
+  rank 1, 2.5, 2.5, 4), then Pearson's correlation of the ranks is
+  computed. NumPy only, no SciPy.
+- **Outputs:** the Sensitivity table and its scatter plot.
+- **Reading it:** +1 when the outcome always grows with the drawn value,
+  -1 when it always falls, near 0 when they are unrelated. Any monotonic
+  relation counts, not only a straight line, and a few extreme runs move
+  it little: so it is the default.
+- **Reference:** C. Spearman, "The proof and measurement of association
+  between two things", American Journal of Psychology 15(1), 1904,
+  pp. 72-101.
+- **Checked against:** `tests/test_monte_carlo_statistics.py`: inputs
+  that make the outcome grow, fall or not change give +1, -1 and about 0;
+  ties take their mean rank (a case of four values computed by hand gives
+  sqrt(0.9)); a case of five values computed by hand.
+
+### Pearson's correlation (`pearson`)
+
+- **Inputs, outputs, assumptions:** as Spearman's.
+- **Method:** the correlation of the values themselves. +1 or -1 only
+  when the outcome is a straight-line function of the drawn value.
+- **Reference:** K. Pearson, "Mathematical contributions to the theory of
+  evolution. III. Regression, heredity, and panmixia", Philosophical
+  Transactions of the Royal Society of London A 187, 1896, pp. 253-318.
+- **Checked against:** `tests/test_monte_carlo_statistics.py`: a straight
+  line gives 1; x = 1..5 against (1, 2, 3, 4, 100) gives 20 / sqrt(761),
+  computed by hand.
+
+## Where these choices show
+
+- **The batch keeps them:** `batch_results.json` records
+  `sensitivity_measure`, `percentile_method` and `percentiles` as the
+  batch was run (optional keys, format 1 still), so a batch opened later
+  reads the same. A summary written before them reads with the defaults.
+  The batch's provenance records both models under `models`.
+- **The Monte Carlo view** names the model in the Sensitivity table's
+  heading, and each tab's hint gives the method and its reference in its
+  tooltip. The statistics and correlations are worked out off the GUI
+  thread when the Statistics or Sensitivity tab is first shown.
+- **The batch report** (Export report..., `monte-carlo --report`;
+  `engine.monte_carlo_report`) writes the same numbers, from the same
+  functions, with each model's record (name, title, method and
+  references). The command line (`monte-carlo`, and `--summarize`)
+  prints the statistics table and the ten strongest correlations.
+
 ## Not covered
 
-No other statistic (a percentile, a median absolute deviation) and no
-confidence interval on the spread itself. No two-sided interval on a
-probability, and no requirement on a combination of outcomes. The runs'
-drawn values, final offsets and outcomes are in the run table, and its
-CSV export, for any other statistic.
+No confidence interval on the spread, on a percentile or on a
+correlation. No two-sided interval on a probability, and no requirement
+on a combination of outcomes. No partial correlation and no
+variance-based sensitivity index: the correlation of one drawn value with
+one outcome does not separate the effects of several drawn values. The
+runs' drawn values, final offsets and outcomes are in the run table, and
+its CSV export, for any other statistic.

@@ -56,6 +56,7 @@ from spacemissionstudio.schema.scenario import (
     MagneticMomentumManagementConfig,
     MomentumDumpingConfig,
     MonteCarloConfig,
+    MonteCarloRequirementConfig,
     LandmarkNavigationConfig,
     OpticalNavigationConfig,
     OrbitIC,
@@ -1416,6 +1417,40 @@ def build_25_monte_carlo_orbit_and_drag_dispersions() -> Scenario:
     )
 
 
+def build_37_monte_carlo_requirements_and_sensitivity() -> Scenario:
+    # The Monte Carlo features of phases A and B in one small batch (Monte
+    # Carlo plan B9, decision MC-34): template 25's satellite for half a day,
+    # three dispersions (the orbit, the drag coefficient, the dry mass), a
+    # batch seed, and two requirements with a confidence: one with an
+    # allowed probability (a verdict), one without (the estimate and its
+    # bound only). 30 runs: enough for the percentiles and the rank
+    # correlations, about a minute in one process.
+    scenario = build_25_monte_carlo_orbit_and_drag_dispersions()
+    scenario.name = "37 - Monte Carlo: requirements, statistics and sensitivity"
+    scenario.description = DESCRIPTIONS["37"]
+    scenario.sim_settings.duration_days = 0.5  # [day]
+    scenario.monte_carlo = MonteCarloConfig(
+        enabled=True, num_runs=30, thread_count=1, seed=37,
+        dispersions=[
+            DispersionConfig(spacecraft="sat-1", quantity="orbit_elements", kind="normal",
+                             element_spread={"semi_major_axis_km": 0.5,  # [km] 1-sigma
+                                             "inclination_deg": 0.02,  # [deg]
+                                             "true_anomaly_deg": 0.05}),  # [deg]
+            DispersionConfig(spacecraft="sat-1", quantity="drag_coeff", kind="uniform",
+                             bounds=[2.2, 3.0]),  # [-] AD10's end-of-life to operations values
+            DispersionConfig(spacecraft="sat-1", quantity="dry_mass_kg", kind="normal",
+                             mean=_MICROSAT_MASS_KG, std_deviation=7.5),  # [kg] 5 % 1-sigma
+        ],
+        requirements=[
+            MonteCarloRequirementConfig(name="R-ALT-01", spacecraft="sat-1", outcome="lowest_altitude",
+                                        at_least=389.0, confidence=0.9, max_probability=0.1),  # [km], [-], [-]
+            MonteCarloRequirementConfig(name="R-DECAY-01", spacecraft="sat-1", outcome="mean_sma_change",
+                                        at_least=-0.019, confidence=0.9),  # [km] at most 19 m lost, [-]
+        ],
+    )
+    return scenario
+
+
 def build_26_earth_observation_data_downlink() -> Scenario:
     # The microsatellite preset turned to nadir (hillPoint: body x up, so
     # the camera and the S-band patch antenna sit on the -x face), with a
@@ -2197,6 +2232,7 @@ def main() -> None:
     _save(build_34_microsat_flexible_thermal(), "34_microsat_flexible_thermal.json")
     _save(build_35_eo_operations_week(), "35_eo_operations_week.json")
     _save(build_36_constellation_operations(), "36_constellation_operations.json")
+    _save(build_37_monte_carlo_requirements_and_sensitivity(), "37_monte_carlo_requirements_and_sensitivity.json")
 
 
 if __name__ == "__main__":

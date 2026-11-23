@@ -447,7 +447,9 @@ new version opens an old batch without them.
 - **Q6** Phase C: which dispersions first (maneuver errors, thrusters,
   wheels, density)?
 - **Q7** A template for the new features: change template 25 (its
-  golden file changes) or add template 37?
+  golden file changes) or add template 37? *Provisional answer (MC-34):
+  template 37 is added; template 25 and every golden file stay as they
+  are.*
 - **Q8** Thermal and operations batches: keep the "mean ± 3 sigma"
   lines with a clear label, or replace them by percentile lines (B3)?
   Which percentiles should the view show?
@@ -460,7 +462,8 @@ new version opens an old batch without them.
 | A-1 Outcomes, draws of crashed runs, requirements | done (`feature/monte-carlo-outcomes`, 2026-11-21; DECISIONS MC-11 to MC-16) |
 | A-2 Reproduce one case | done (`feature/monte-carlo-rerun-case`, 2026-11-21; DECISIONS MC-17, MC-18 and MC-19) |
 | B-1 Batch seed (B1), thermal node limits (B4), small fixes (B8) | done (`feature/monte-carlo-seed`, 2026-11-23; DECISIONS MC-20 to MC-25) |
-| B, the rest (B2, B3, B5, B6, B7, B9) | later |
+| B-2 Sensitivity (B2), outcome statistics (B3), trust checks (B6) | done (`feature/monte-carlo-insight`, 2026-11-23; DECISIONS MC-26 to MC-31; Q8 answered provisionally by MC-27) |
+| B-3 Batch report (B5), command line (B7), template 37 (B9) | done (`feature/monte-carlo-report`, 2026-11-23; DECISIONS MC-32 to MC-35; Q7 answered provisionally by MC-34: a new template 37, template 25 unchanged). Phase B is done when B-1, B-2 and B-3 are merged. |
 | C | later |
 
 ---

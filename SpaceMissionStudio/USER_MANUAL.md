@@ -105,7 +105,7 @@ Where each piece lives in the app, and which template shows it best:
 | 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32 |
 | Ground stations | Scenario tree > **Ground stations** > its name | 19, 22 |
 | Mission sequence | Scenario tree > **Mission sequence** | 08, 16, 23 |
-| Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25 |
+| Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25, 37 |
 | Results | the Results and Timeline areas, Results > Compare (Section 7) | any |
 
 **Orbit only or full attitude?** *Orbit only* simulates where each
@@ -541,7 +541,7 @@ path, each step building on the one before:
 | 5. Missions in steps | 08, 16, 23 | Mission Sequences: burns, a Lambert transfer, stopping on a ground pass |
 | 6. Several spacecraft | 04, 05, 24, 29 | A Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
 | 7. Whole systems | 19, 20, 23, 26 | Power, radio link and thermal working together; data from instrument to ground |
-| 8. Uncertainty | 09, 25 | Monte Carlo batches: mass, orbit insertion, drag |
+| 8. Uncertainty | 09, 25, 37 | Monte Carlo batches: mass, orbit insertion, drag; requirements, statistics and sensitivity |
 | 9. Navigation | 30, 31 | Estimating an orbit around Mars from camera images of the planet; flying around asteroid Eros with its shape's gravity and navigating from its landmarks |
 | 10. The spacecraft as designed | 28, 32 | A 3D model with its equipment mounted: fields of view, a plume, the mass budget and the launcher envelope checked without a run; the disturbance torques and the arrays' shading in a run |
 | 11. Operations | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
@@ -1830,7 +1830,9 @@ CPU is used), and add one or more **dispersions** (which quantity varies, and by
 then set the run mode beside **Run** to **Monte Carlo** and press
 **Run**. While Monte Carlo is off, the Run page says so, with **Enable
 Monte Carlo**, which turns it on and opens this page. This is a more advanced feature; most people won't need it
-for a first mission. Templates 09 and 25 are ready-made batches.
+for a first mission. Templates 09 and 25 are ready-made batches;
+template 37 adds a batch seed, two requirements, the statistics and the
+sensitivity (30 runs, about a minute in one process).
 
 **Batch seed.** Left at **Not set**, every run draws what Basilisk's own
 seeding gives it, the run's number times 10: two batches of the same
@@ -1876,8 +1878,60 @@ whenever the scenario has Monte Carlo on, or a batch is open):
   drawn value goes with the largest offset or the lowest altitude;
   **Export table CSV...** saves it. **Run This Case** runs the picked
   run again on its own (below).
+* **Statistics:** every outcome of the batch (where each run ended
+  against the mean, and its Overview figures) with N (the runs that
+  recorded it; a crashed run has none), the minimum, the percentiles
+  (P1, P5, P50, P95, P99) and the maximum, each in the unit of its row.
+  Pick a row to plot its empirical distribution: the fraction of runs at
+  or below each value, a step plot that ends at 1. The percentiles are
+  NumPy's default (linear interpolation, Hyndman and Fan's definition 7);
+  which ones are shown is the project parameter `monte_carlo.percentiles`
+  (1, 5, 50, 95 and 99 % until the owner names others).
+* **Sensitivity:** how each drawn value goes with each outcome:
+  Spearman's rank correlation over the runs that recorded both (N, per
+  pair). +1: the outcome always grows with the value; -1: it always
+  falls; near 0: they are unrelated. The strongest come first, whatever
+  the sign; "—" where a value does not vary (template 09's mass changes
+  no outcome of its drag-free orbit). Pick a row for the scatter plot of
+  the runs (the run's number on hover). A correlation is not a cause.
+  A project file can choose Pearson's correlation instead
+  (`monte_carlo.sensitivity_measure`). Both tabs work their numbers out
+  in the background the first time one of them is shown for a batch
+  ([Monte Carlo statistics](docs/models/monte-carlo-statistics.md)).
 * **Requirements:** each requirement of the scenario judged on the runs
   (below). With none, the tab says where to add them.
+
+**Export report...** (beside **Open results...**) writes the batch
+report: Markdown (`.md`) to read, or JSON (`.json`) for a script. It has
+the settings (runs asked for and done, processes, the batch seed, any
+command-line override), the dispersions, the spread at the end, each
+requirement with its estimate, bound and verdict, the outcome statistics
+with their percentile method, the sensitivity with its measure, the
+crashed runs with what they drew, and the provenance: the scenario's
+SHA-256, each data file's SHA-256 and the versions. Its numbers are the
+ones the view shows, from the same code. The report is written in the
+background and a message says where it is; Reports › Exports lists it.
+A batch made by 2.14.1 or earlier did not keep its processes and
+dispersions, and its report says so.
+
+A thermal or an operations batch plots the mean of the runs with a band
+labelled "mean - 3 standard deviations (not a probability bound)" and
+"mean + 3 standard deviations (not a probability bound)": three standard
+deviations of the runs on each side of the mean, at each step. It
+assumes no distribution, so it says nothing about how likely a value
+is; for that, use the Statistics tab, a requirement or the Node limits
+tab.
+
+**Checks that the batch is the one you mean.** A dispersion of the dry
+mass, the drag coefficient or the SRP coefficient keeps its own numbers:
+if you edit the spacecraft afterwards, the batch still draws around the
+old value. While Monte Carlo is on, the Problems panel warns when such a
+dispersion's bounds do not contain the spacecraft's value, or when its
+mean (a normal one) is not that value; double-click the warning to go to
+the spacecraft's field. And when a batch is opened (or finishes) while
+the scenario open is not the one it was run with, a warning under the
+view's title says so, with the scenario's SHA-256 now and at the batch:
+the batch's numbers are those of its own scenario.
 
 **Requirements.** Under the dispersions on the **Monte Carlo** page,
 **Requirements** lists limits on one outcome of every run, e.g. "the
@@ -1907,9 +1961,24 @@ an estimate of 0, but at a confidence of 0.95 they show only that the
 probability of failure is below 0.139. More runs lower the bound. The
 **Runs** table's **Meets all requirements** says, per run, yes, no or
 not evaluated. On the command line, `spacemissionstudio monte-carlo`
-prints each outcome's lowest and highest value over the runs and the
-requirements table, and exits with status 5 when a requirement with an
+prints each outcome's lowest and highest value over the runs, the
+requirements table, the outcome statistics and the ten strongest
+correlations, and exits with status 5 when a requirement with an
 allowed probability is not shown met (3 when a run failed comes first).
+
+**On the command line.** `spacemissionstudio monte-carlo scenario.json
+--archive-dir mc_results` runs the batch. Add `--report report.md` (or
+`.json`) for the report, and `--csv runs.csv` for the Runs table (the
+first spacecraft's, with `runs.csv.provenance.json` beside it).
+`--runs 200` and `--processes 8` change the number of runs and of
+processes for this batch only: the scenario file is not changed, and the
+batch's `archive.provenance.json` records the file's value and the one
+used (`monte_carlo_settings`). `spacemissionstudio monte-carlo
+--summarize mc_results` runs nothing: it prints an earlier batch as
+above and writes its Runs table to `monte_carlo_runs.csv` (or the
+`--csv` file), and with `--report` its report; nothing in the folder
+changes. It exits with 5 when a requirement is not shown met, as after
+the batch, and with 1 for a folder without a batch.
 
 **Run one case again.** Pick one run in the **Runs** table and choose
 **Run This Case** (the button under the table, the right-click menu,
@@ -2195,7 +2264,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-six built-in templates teaches, in
+  describes what each of the thirty-seven built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

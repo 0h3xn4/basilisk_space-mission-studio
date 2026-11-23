@@ -356,10 +356,18 @@ def _page_and_label(path: Path, scenario: Scenario) -> tuple[str, str, str, str,
         page = "Monte Carlo"
         if len(path) > 2 and path[1] == "dispersions":
             dispersion = scenario.monte_carlo.dispersions[path[2]]
-            group = f"Dispersion: {dispersion.spacecraft} {dispersion.quantity}"
+            quantity = _DISPERSION_TITLES.get(dispersion.quantity, dispersion.quantity.replace("_", " "))
+            group = f"Dispersion: {dispersion.spacecraft} {quantity}"
     else:
         page = "Environment & simulation"
     return page, group, label, units.suffix(suffix) if suffix.strip() else "", help_text
+
+
+# A dispersion's quantity as its group heading says it (UI audit B4: labels, not identifiers).
+_DISPERSION_TITLES = {"dry_mass_kg": "dry mass", "attitude_sigma_bn": "starting attitude",
+                      "orbit_elements": "orbit elements", "inertia_kg_m2": "inertia",
+                      "angular_rate_bn_b": "starting body rate", "drag_coeff": "drag coefficient",
+                      "srp_coeff": "SRP coefficient"}
 
 
 # The unit tokens a schema field name ends with ("record_interval_s"), and

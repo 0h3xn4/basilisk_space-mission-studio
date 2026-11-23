@@ -205,6 +205,7 @@ def monte_carlo(prepared, config: thermal_schema.ThermalMonteCarloConfig,
     from ..config import registry
     from ..engine import monte_carlo_requirements as mcreq
     from ..engine import monte_carlo_results as mcr
+    from ..engine import monte_carlo_statistics
 
     case = next((c for c in cases.cases_of(prepared.spacecraft.thermal) if c.name == config.case), None)
     if case is None:
@@ -246,4 +247,4 @@ def monte_carlo(prepared, config: thermal_schema.ThermalMonteCarloConfig,
         getattr(prepared.scenario, "epoch_utc", "") or "", kind="thermal",
         temperatures_c={name: np.array(rows) for name, rows in temperatures.items()}, case=case.name,
         failed_drawn={run: dict(draws[run]) for run in failed}, probability_bound=bound,
-        node_limits=[row.to_dict() for row in judged])
+        node_limits=[row.to_dict() for row in judged], **monte_carlo_statistics.choices(prepared.scenario))
