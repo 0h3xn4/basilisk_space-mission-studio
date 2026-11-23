@@ -36,6 +36,7 @@ B3 and B2): their worker, their plots and their tables' rows.
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from pathlib import Path
 
@@ -48,6 +49,8 @@ from ..engine import monte_carlo_report
 from ..engine import monte_carlo_statistics as mcs
 from .theme import SERIES_COLORS, TOKENS, on_change, set_role
 from .theme import plotly_template as pt
+
+logger = logging.getLogger(__name__)
 
 # Above this many points a plot draws with WebGL (Scattergl): SVG markers of 100 000 runs are slow to draw.
 WEBGL_POINTS = 5000
@@ -237,13 +240,53 @@ def scatter_figure(x: mcs.Column, y: mcs.Column, runs, title: str, subtitle: str
 # -- the plot view ------------------------------------------------------------------------------
 
 
+def write_page(figure: dict, plotly_js: str, style: str, page: Path) -> str:
+    """Write the plot page of ``figure`` to ``page``: the work of
+    :class:`InsightPlot` that runs in its worker. Returns an error's text,
+    or "" when the page was written."""
+    from . import plot_page
+
+    try:
+        html = plot_page.build_page([figure_json(figure)], "1x1", 0, [False], plotly_js, style)
+        if not page.parent.is_dir():  # the view was closed and its folder removed
+            return "the plot folder is gone"
+        page.write_text(html, encoding="utf-8")
+    except Exception as exc:  # noqa: BLE001 -- said in the view, never a crash of the window
+        return f"{type(exc).__name__}: {exc}"
+    return ""
+
+
+def _remove(page: str) -> None:
+    """Delete a plot page that is no longer shown; a file the web view still
+    holds open (Windows) stays until its folder is removed."""
+    try:
+        Path(page).unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 class InsightPlot(QWidget):
     """One figure in a web view made when it is first needed. :meth:`show`
     takes a function that builds the figure in the current theme;
-    :meth:`clear` shows ``empty`` instead. A theme change builds it again."""
+    :meth:`clear` shows ``empty`` instead. A theme change builds it again.
+
+    The figure is built on the GUI thread (plotly checks its layout there,
+    as for every other plot); its JSON, the page around it and the page's
+    file, megabytes for a batch of 100 000 runs, are made in one serial
+    worker (:func:`write_page`). On the Windows CI runner that part took
+    50 to 100 ms, above the 50 ms of design rule 6. Only the newest
+    page is shown: a page that an older request wrote is not loaded."""
+
+    _written = Signal(int, str, str)
 
     def __init__(self, empty: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)
+        self._request = 0  # the number of the newest page asked for
+        self.page_error = ""  # the last page's error, for tests and the log
+        self._shown_page = ""  # the file of the page in the web view
+        self._written.connect(self._on_written)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.stack = QStackedWidget()
@@ -264,6 +307,7 @@ class InsightPlot(QWidget):
 
     def clear(self, empty: str | None = None) -> None:
         self._build, self.figure = None, None
+        self._request += 1  # a page still being written is not shown
         if empty is not None:
             self.empty_label.setText(empty)
         self.stack.setCurrentWidget(self.empty_label)
@@ -271,7 +315,6 @@ class InsightPlot(QWidget):
     def _draw(self) -> None:
         if self._build is None:
             return
-        from . import plot_page
         from .results_widget import _page_style, _plotlyjs_path
 
         self.figure = self._build()
@@ -283,14 +326,37 @@ class InsightPlot(QWidget):
             self.web_view = QWebEngineView()
             self.stack.addWidget(self.web_view)
             self._page_dir = temp_folders.temporary_directory(temp_folders.PLOT_PAGE)
-        html = plot_page.build_page([figure_json(self.figure)], "1x1", 0, [False],
-                                    QUrl.fromLocalFile(str(_plotlyjs_path())).toString(), _page_style())
-        page = Path(self._page_dir.name) / "monte_carlo_insight.html"
-        if not page.parent.is_dir():
+        self._request += 1
+        request, figure = self._request, self.figure
+        plotly_js = QUrl.fromLocalFile(str(_plotlyjs_path())).toString()
+        style = _page_style()  # the theme's, read here on the GUI thread
+        page = Path(self._page_dir.name) / f"monte_carlo_insight_{request}.html"
+        self._pool.start(lambda: self._write(request, figure, plotly_js, style, page))
+
+    def _write(self, request: int, figure: dict, plotly_js: str, style: str, page: Path) -> None:
+        error = write_page(figure, plotly_js, style, page)
+        try:
+            self._written.emit(request, str(page), error)
+        except RuntimeError:  # the view was closed meanwhile
+            pass
+
+    def _on_written(self, request: int, page: str, error: str) -> None:
+        if request != self._request or self.web_view is None:
+            _remove(page)  # a newer figure was asked for, or the plot was cleared
             return
-        page.write_text(html, encoding="utf-8")
-        self.web_view.load(QUrl.fromLocalFile(str(page)))
+        self.page_error = error
+        if error:
+            logger.warning("Monte Carlo plot page not written: %s", error)
+            return
+        self.web_view.load(QUrl.fromLocalFile(page))
         self.stack.setCurrentWidget(self.web_view)
+        if self._shown_page and self._shown_page != page:
+            _remove(self._shown_page)  # the page shown before: a few megabytes each
+        self._shown_page = page
+
+    def wait(self) -> None:
+        """Until the page being written is written (tests, closing)."""
+        self._pool.waitForDone()
 
     def _on_theme_changed(self, _mode: str) -> None:
         """Build the figure again in the new theme, after the switch itself has returned."""

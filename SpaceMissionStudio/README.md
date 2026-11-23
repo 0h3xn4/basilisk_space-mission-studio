@@ -1,7 +1,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-![Version 2.14.1](https://img.shields.io/badge/version-2.14.1-blue)
+![Version 2.14.2](https://img.shields.io/badge/version-2.14.2-blue)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -149,11 +149,12 @@ internet needed.
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.14.1 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.1),
-  [changelog](CHANGELOG.md)): fixes for 2.14.0: the first
+- **Version:** 2.14.2 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.14.2),
+  [changelog](CHANGELOG.md)): a fix for 2.14.1: the
+  Budgets area shows at once, also on a slow Windows machine; results
+  and the scenario format are 2.14.1's. 2.14.1 fixed 2.14.0: the first
   Monte Carlo batch or case of a session starts without a pause, and no
-  "Slot '...' not found" error when a window or a list is freed; results
-  and the scenario format are 2.14.0's. 2.14.0 made Monte Carlo
+  "Slot '...' not found" error when a window or a list is freed. 2.14.0 made Monte Carlo
   batches that judge requirements: every run keeps its Overview figures,
   requirements on them with an exact upper bound on the failure rate at
   the confidence you choose (Clopper-Pearson), crashed runs listed with
@@ -223,7 +224,7 @@ internet needed.
   relative-orbital-element formations, optical and landmark navigation,
   asteroid Eros, Mars's gravity field and albedo on the sun sensors; and
   1.0.0 was the first release of the renewed tool.
-- **Platforms:** 2.14.1 has the Linux `.deb`, the Windows setup program
+- **Platforms:** 2.14.2 has the Linux `.deb`, the Windows setup program
   and the wheel. Both installers carry their own Python, Basilisk and
   reference data; each was installed and run offline by the release
   workflow, the `.deb` also by hand in a container
