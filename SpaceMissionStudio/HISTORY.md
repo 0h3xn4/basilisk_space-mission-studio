@@ -20675,3 +20675,67 @@ shared workers. The suite jobs now have the set-up of
 `spacemissionstudio.yml`'s platforms job: `QTWEBENGINE_CHROMIUM_FLAGS`
 (ANGLE on SwiftShader), the ITU-R P.676-13 download, and the 3D View's
 tests in a process of their own.
+
+## Release 2.14.1 prepared (2026-11-22)
+
+A patch release. It fixes bugs and changes no file format. Contents
+since 2.14.0: the 2.14.0 publication record (#309) and the small fixes
+of #310: pandas imported in the batch's or the case's worker (K-48),
+the cause of "Slot '...::' not found" fixed with weak-reference
+connections (K-44), CI downloads tried again, and the SIL stress
+workflow given CI's WebGL set-up. Both are merged into `develop`. The
+branch `release/2.14.1` starts from `develop` at `ed99937`, the merge
+of #310.
+
+Prepared by `docs/developer/releasing.md` sections 2 to 4. The version
+is 2.14.1 in `pyproject.toml`, `__init__.py` and the Inno Setup script.
+No other file or test names the version. The CHANGELOG's Unreleased
+entries are under 2.14.1, with an introduction, Who should update and
+Known limits. The CI entry now also names the SIL stress workflow's
+set-up, which had no entry. SRelD issue 51 records the release: K-48's
+pause is fixed, K-44 is as #310 left it (partly fixed), and K-13 and
+K-45 are extended. The SDP, SRS, ICD, CSD, SUM, limitations and both
+READMEs name 2.14.1. `BACKLOG.md` is unchanged: #310 already moved its
+items. The AppStream metadata is made from the CHANGELOG when the `.deb`
+is built, so no file of it changed.
+
+The CHANGELOG heading is dated 2026-11-23. The tag will be made after
+midnight UTC, and the release check wants the heading's date to equal
+the tag's UTC day.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so a download was tried on 2026-11-22 at 23:16 UTC:
+CelesTrak reset all three connections (`curl` error 35). 2.14.1 so
+carries 2.13.0's file (observations to 2026-11-18, updated 2026-11-19).
+NASA MSFC's page still links the November 2026 prediction, the bundled
+one.
+
+The file format was checked on the code. `git diff 1b4060c` (the 2.14.0
+tag) shows no change in `schema/`, the templates
+(`scenarios/templates/`), the golden files (`tests/golden/`),
+`tests/data/` or `packaging/`. In the package, only `gui/` changed. The
+scenario file is still at schema version 6 (`CURRENT_SCHEMA_VERSION`),
+so 2.14.0 and 2.14.1 save and open the same files.
+
+CI's "Windows (MAX Python)" job still fails the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45). By the owner's decision, the release pull request may be merged
+with that check red, for that framework test only.
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4 -p no:cacheprovider -o faulthandler_timeout=600` as CI
+runs it: 5843 passed, 19 skipped and 1 failed of 5863 (3616 outside
+`tests/gui/` and 2247 in it; 5828 passed at 2.14.0). The tests imported
+the release's worktree (`spacemissionstudio.__file__` checked). The
+failure is
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px), which fails only in this container and on
+`develop` too. The release changed no test, so
+`docs/ui/TEST_CHANGES.md` is unchanged. The release check
+(`packaging/release_check.py --today 2026-11-23`) passed; pip-audit was
+not run, because it needs the network. The release check, release
+notes, metainfo and record tests passed (60), and the AppStream
+metadata for 2.14.1 passed `appstreamcli validate --no-net`
+(`tests/test_metainfo.py`). The four compliance generators changed
+nothing on two runs, and `check_drds.py` found 0 problems. ruff and
+pre-commit passed on the changed files.

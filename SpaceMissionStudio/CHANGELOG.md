@@ -8,7 +8,19 @@ The version follows [semantic versioning](https://semver.org): a major
 version breaks something you rely on, a minor one adds features, a patch
 fixes bugs.
 
-## Unreleased
+## 2.14.1 (2026-11-23)
+
+SpaceMissionStudio 2.14.1 is a small patch on top of 2.14.0. The first
+Monte Carlo batch or case of a session no longer makes the window
+pause: the library that a batch needs now loads in the background,
+where the batch runs, so the start feels instant. Nothing the tool
+computes has changed, and 2.14.0 and 2.14.1 open each other's files.
+
+The other fix removes a rare error message that could appear when a
+window or a form was closed and later tidied away, such as "Slot
+'MainWindow::' not found". Its cause is now found and fixed. The rest
+of the release is for the project itself: its automatic tests try a
+reference data download again when the server has a short outage.
 
 ### Fixed
 
@@ -34,8 +46,57 @@ fixes bugs.
   2026-11-22 the ITU server answered "not found" for the ITU-R P.676-13
   data file for a few minutes, and CI stopped before running a single
   test. Each download step now makes up to four attempts, a minute
-  apart, and still fails if the last one does. The app itself is
+  apart, and still fails if the last one does. The long stress run of
+  the whole suite now uses the same software graphics set-up as CI, so
+  its 3D View and map tests run as they do there. The app itself is
   unchanged.
+
+### Who should update
+
+- **Anyone who runs Monte Carlo batches or runs a case again:** the
+  first start of a session no longer holds the window for about a
+  quarter of a second.
+- **Everyone on 2.14.0:** the update is small and safe. Nothing that a
+  run computes has changed: the 36 templates give 2.14.0's results, and
+  the golden outputs pass unchanged.
+- **Compatibility:** the scenario format is unchanged (schema version
+  6), and so are the templates, the command line, the exported files
+  and the batch folders. 2.14.0 and 2.14.1 open each other's files.
+  2.13.1 and earlier still refuse a file saved at version 6, as they
+  refuse 2.14.0's.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.14.1_amd64.deb` replaces 2.14.0; on Windows, run
+  the 2.14.1 setup over 2.14.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **One rare test fault is still unexplained.** On Windows, the child
+  process of one start-up check once ended with an access violation and
+  no output. It has not come back, could not be reproduced, and has not
+  been reported from use of the app.
+- **Two batches of the same scenario still draw the same values,** as
+  in 2.14.0. A batch seed is planned for the next Monte Carlo phase.
+- **A requirement limits one outcome,** and **Run This Case needs the
+  batch's own scenario and data,** as in 2.14.0.
+- **One CI check of the Basilisk framework is still red on Windows,** as
+  in 2.14.0. The framework test
+  `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+  fails in the "Windows (MAX Python)" job with the MSVC 19.52 compiler.
+  It belongs to the framework, which SpaceMissionStudio never changes,
+  and the installers carry Basilisk 2.12.0 from PyPI.
+- **The bundled space weather is 2.13.0's,** with observations to
+  2026-11-18: CelesTrak reset the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**
+  before a drag study near today's date.
+- **The Budgets area can take 50 ms or more to show on a slow Windows
+  machine,** as in 2.14.0.
+- **The 3D View without a graphics card is slow,** as before: about 15
+  frames a second in software rendering.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.14.0 (2026-11-22)
 
