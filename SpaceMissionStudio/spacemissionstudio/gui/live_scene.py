@@ -46,10 +46,9 @@ from __future__ import annotations
 import copy
 import json
 
-from PySide6.QtCore import QObject, QTimer, Signal
+from PySide6.QtCore import QObject, QThreadPool, QTimer, Signal
 
 from ..engine import live_view, scene3d
-from .background_threads import worker_pool
 
 LIVE_TICK_MS = 50  # [ms] the feed is drained this often (20 times a second)
 LIVE_BATCH = 400  # [-] at most this many samples drained, and frames made, per tick
@@ -93,7 +92,8 @@ class LiveScene(QObject):
         self._scenario, self._base_dir, self._trail_frames = scenario, base_dir, trail_frames
         self._busy = False  # a job is in the worker
         self._stopped = False
-        self._pool = worker_pool(self)  # one job after another: the scene grows in order
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)  # one job after another: the scene grows in order
         self._timer = QTimer(self)
         self._timer.setInterval(LIVE_TICK_MS)
         self._timer.timeout.connect(self.tick)

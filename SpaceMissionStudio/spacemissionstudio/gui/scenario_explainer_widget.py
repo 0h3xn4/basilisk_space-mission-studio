@@ -38,7 +38,7 @@ from __future__ import annotations
 import copy
 import logging
 
-from PySide6.QtCore import QEvent, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -55,7 +55,6 @@ from PySide6.QtWidgets import (
 from ..engine.findings import explanation_lines
 from ..engine.scenario_explainer import ScenarioExplanation, explain, orbit_rows
 from ..schema.scenario import Scenario
-from .background_threads import WorkerThread
 from .flow_layout import FlowLayout
 from .badges import ACCENT, DANGER, MUTED, SUCCESS, WARNING, set_badge
 from .formation_diagram_widget import FormationDiagramWidget
@@ -136,7 +135,7 @@ def _badge_button(text: str, kind: str) -> QPushButton:
     return button
 
 
-class _ExplainWorker(WorkerThread):
+class _ExplainWorker(QThread):
     """``explain(scenario)`` off the GUI thread; ``done`` carries the
     request's number and the explanation, or None when it failed (logged)."""
 

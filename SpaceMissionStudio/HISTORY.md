@@ -21473,11 +21473,19 @@ the same order (the drawing threads at nice -8).
 
 **Fix.** `background_threads.install()` gives the GUI thread the drawing
 threads' priority ("above normal"; nice -8 on Linux where allowed). The
-window's workers start at normal priority (`WorkerThread`,
-`worker_pool`: 24 thread classes and 5 pools changed their base), so a
-run does not take the processors from other programs. The page applies
+workers that it starts take that priority, as before. The page applies
 each new size once (`MV.onResized`), so a move draws one frame instead
 of two.
+
+**A first version dropped.** It also started the window's workers at
+normal priority (a `WorkerThread` base for 24 thread classes, a
+`worker_pool` for 5 pools), so that a run would not outrank other
+programs. Both Windows CI runs with it lost a test process with no
+traceback (`test_display_units.py` in run 45304662719,
+`test_design_rules.py` in run 45314703069), none of the 19 Windows runs
+before did. Under Windows' strict priorities a busy GUI thread can
+starve a worker below it. The cause is not proven; the workers now
+keep the GUI thread's priority, as before.
 
 **After the fix.** On the Windows runner (CI run 45304662719) the move
 test's protocol ran ten times: the slowest of 60 moves of each view took
@@ -21485,5 +21493,6 @@ test's protocol ran ten times: the slowest of 60 moves of each view took
 four busy processes the slowest of 80 moves took 7.5 to 9.3 ms (22.9 to
 35.8 ms before). New tests: no thread that worked while the 3D View
 moved outranks the GUI thread, and the page draws each new size once;
-both fail without the fix. The move test is unchanged. The full suite
+both fail without the fix, and both passed on the Windows runner (run
+45314703069). The move test is unchanged. The full suite
 passed locally except the known `test_a_reported_path_is_not_clipped_in_the_status_bar`.

@@ -2809,6 +2809,7 @@ plain 50 ms limit and reaches the views as before. Added:
   after each of four moves the page's frames, recorded by a wrapper of
   `MV.render`, end at the canvas's size and never repeat a size. It fails
   without the fix (`768x553, 768x553, 989x553, 989x553`).
-- `tests/gui/test_background_threads.py::test_install_raises_the_gui_thread_and_the_window_s_workers_start_at_normal_priority`
-  and `::test_every_worker_of_the_window_starts_at_normal_priority` (no
-  plain `QThread` subclass or `QThreadPool` left in `spacemissionstudio/gui`).
+- `tests/gui/test_background_threads.py::test_install_gives_the_gui_thread_the_priority_of_chromium_s_drawing_threads`:
+  `install()` raises the GUI thread's priority (on Linux its nice value
+  where allowed), a worker started from it takes the same, and
+  `uninstall()` gives back the thread's own.

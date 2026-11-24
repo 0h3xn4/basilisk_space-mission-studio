@@ -48,7 +48,7 @@ from PySide6.QtWidgets import (QFileDialog, QHBoxLayout, QLabel, QMenu, QMessage
 
 from .. import network
 from ..engine import reference_data
-from .background_threads import FIRST_IMPORTS, WorkerThread
+from .background_threads import FIRST_IMPORTS
 from .data_table import DataTable, Row
 
 _logger = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ def _stop_readers() -> None:
         reader.wait()
 
 
-class _SpaceWeatherWarmUp(WorkerThread):
+class _SpaceWeatherWarmUp(QThread):
     """Parses the bundled space-weather file once, in this process (M9):
     checking a scenario's dates needs it, and the first scenario opened
     paid 0.5 s for it once start-up no longer read it here. Plain Python
@@ -127,7 +127,7 @@ class _SpaceWeatherWarmUp(WorkerThread):
         """It ends by itself in under a second."""
 
 
-class _FigureWarmUp(WorkerThread):
+class _FigureWarmUp(QThread):
     """Builds one small figure (``results_widget.warm_up_figures``): plotly
     loads its figure classes and validators on first use, which held the
     first run's end 0.3 s on the GUI thread. Plain Python, as above, and
@@ -146,7 +146,7 @@ class _FigureWarmUp(WorkerThread):
         """It ends by itself in about 0.1 s."""
 
 
-class _InventoryWorker(WorkerThread):
+class _InventoryWorker(QThread):
     """Waits for the reference data inventory read in a child process
     (:mod:`gui.reference_data_process`, UI overhaul M9): on the GUI thread
     it took 1.5 s of start-up, and on a worker thread it still held the
@@ -177,7 +177,7 @@ class _InventoryWorker(WorkerThread):
             self.done.emit(*read)
 
 
-class _TaskWorker(WorkerThread):
+class _TaskWorker(QThread):
     """Runs one download, import or rollback off the GUI thread."""
 
     finished_ok = Signal()

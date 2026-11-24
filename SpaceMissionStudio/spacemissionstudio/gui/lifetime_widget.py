@@ -26,7 +26,7 @@ from __future__ import annotations
 from datetime import timedelta
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QThread, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -41,7 +41,6 @@ from PySide6.QtWidgets import (
 )
 
 from . import export_log
-from .background_threads import WorkerThread
 from .badges import MUTED, SUCCESS, WARNING, set_badge
 from .feedback import report
 from .calculation_panel import Explanation
@@ -55,7 +54,7 @@ _FROM_START = "Start of scenario"
 _FROM_LAST_RUN = "End of last run"
 
 
-class _LifetimeWorker(WorkerThread):
+class _LifetimeWorker(QThread):
     finished_ok = Signal(object)  # engine.lifetime.EndOfLife
     failed = Signal(str)
 

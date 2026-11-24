@@ -70,13 +70,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QObject, QPointF, QRectF, QSettings, QTimer, Qt, Signal
+from PySide6.QtCore import QObject, QPointF, QRectF, QSettings, QThreadPool, QTimer, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QImage, QKeySequence, QPainter, QPainterPath, QPen, QPolygonF, QShortcut
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QMenu, QPushButton, QSizePolicy, QStackedWidget, QToolButton,
                                QVBoxLayout, QWidget)
 
 from ..engine import scene3d
-from .background_threads import worker_pool
 from .theme import SPACE, current_theme, icon, mono_font, on_change, set_role, ui_font
 from .theme.ground_map_style import ground_map_style
 from .widgets import EmptyState
@@ -381,7 +380,8 @@ class MapRenderer(QObject):
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
-        self._pool = worker_pool(self)
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)
         self._cache: dict = {}  # the worker's own: only one job runs at a time
         self._busy = False
         self._pending: MapRequest | None = None

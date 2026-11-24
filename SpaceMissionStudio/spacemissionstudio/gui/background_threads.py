@@ -67,10 +67,12 @@ gives the GUI thread the priority of those threads
 (:data:`GUI_THREAD_PRIORITY`). Linux has nice values instead: a process
 that may lower them (as root) gives the GUI thread Chromium's
 (:data:`GUI_THREAD_NICE`); for others, Chromium cannot lower its own either,
-and nothing changes. A new thread starts at the priority of the thread
-that starts it, so the window's workers go back to normal priority
-(:class:`WorkerThread`, :func:`worker_pool`): a run or a study does not
-take the processors from other programs or from the 3D View's drawing.
+and nothing changes. A worker that the GUI thread starts takes its priority
+(``QThread.start`` with ``InheritPriority``; a nice value on Linux), as
+before: the GUI thread and the window's workers keep their order. Workers
+kept at normal priority were tried and dropped: Windows runs the higher
+priority first, so a busy GUI thread could starve them, and both Windows
+CI runs with them lost a test process (none in the 19 runs before).
 """
 
 from __future__ import annotations
@@ -80,7 +82,7 @@ import os
 import sys
 import threading
 
-from PySide6.QtCore import QCoreApplication, QObject, Qt, QThread, QThreadPool
+from PySide6.QtCore import QCoreApplication, QObject, QThread
 
 # How often the GUI thread checks whether a collection is due. Between two
 # checks the young generation grows past its threshold by what the threads
@@ -93,8 +95,6 @@ COLLECT_INTERVAL_MS = 20  # [ms]
 #: The GUI thread's priority from :func:`install` on: the one of Chromium's
 #: GPU, compositor and IO threads and of the software rasteriser's threads.
 GUI_THREAD_PRIORITY = QThread.Priority.HighPriority
-#: A worker's priority (:class:`WorkerThread`, :func:`worker_pool`).
-WORKER_PRIORITY = QThread.Priority.NormalPriority
 #: Linux has no priorities for normal threads, only nice values: Chromium
 #: gives its display threads this one when the process may (as root), and
 #: the software rasteriser's threads take it from its GPU thread (measured).
@@ -160,51 +160,6 @@ def _set_nice(nice: int) -> None:
         os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), nice)
     except OSError:  # not allowed: the thread keeps its value
         pass
-
-
-def _normal_nice() -> None:
-    """A worker's nice value back to the process's own (Linux)."""
-    if _state["nice"] is not None:
-        _set_nice(_state["nice"])
-
-
-class WorkerThread(QThread):
-    """A thread of the window's own work. It starts at normal priority
-    (:data:`WORKER_PRIORITY`), not at the GUI thread's, which it would
-    take from the thread that starts it."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        if _LINUX:  # a nice value is not a QThread priority: the new thread sets its own
-            self.started.connect(_normal_nice, Qt.ConnectionType.DirectConnection)
-
-    def start(self, priority: QThread.Priority = WORKER_PRIORITY) -> None:
-        super().start(priority)
-
-
-class _WorkerPool(QThreadPool):
-    """The pool of :func:`worker_pool`: each task first gives its thread the
-    process's own nice value back (Linux)."""
-
-    def start(self, task, priority: int = 0) -> None:
-        if callable(task):
-            work = task
-
-            def task() -> None:
-                _normal_nice()
-                work()
-
-        super().start(task, priority)
-
-
-def worker_pool(parent: QObject | None = None, max_threads: int = 1) -> QThreadPool:
-    """A thread pool of the window's own work, with ``max_threads`` threads
-    (one by default: one task after the other) at normal priority, as
-    :class:`WorkerThread`. A task is a callable."""
-    pool = _WorkerPool(parent) if _LINUX else QThreadPool(parent)
-    pool.setMaxThreadCount(max_threads)
-    pool.setThreadPriority(WORKER_PRIORITY)
-    return pool
 
 
 class _Collector(QObject):

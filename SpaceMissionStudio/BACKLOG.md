@@ -24,8 +24,8 @@ owner has answered the plan's open questions.
   processor. After a move the page draws in software (WARP on the
   runner) on every processor, with threads at "above normal" priority,
   and the GUI thread was at "normal". The GUI thread now has their
-  priority, the window's workers keep normal priority, and the page
-  draws each new size once. On the Windows runner the slowest of 60
+  priority (its workers take it from it, as before), and the page draws
+  each new size once. On the Windows runner the slowest of 60
   moves of the 3D View took 13.6 ms (56.2 ms before in 16). Measured:
   HISTORY.md and `docs/DECISIONS.md`, "The GUI thread outranks the 3D
   View's software drawing".

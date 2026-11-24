@@ -41,13 +41,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QObject, QTimer, QUrl, Signal
+from PySide6.QtCore import QObject, QThreadPool, QTimer, QUrl, Signal
 from PySide6.QtWidgets import QLabel, QStackedWidget, QVBoxLayout, QWidget
 
 from .. import temp_folders
 from ..engine import monte_carlo_report
 from ..engine import monte_carlo_statistics as mcs
-from .background_threads import worker_pool
 from .theme import SERIES_COLORS, TOKENS, on_change, set_role
 from .theme import plotly_template as pt
 
@@ -73,7 +72,8 @@ class InsightComputer(QObject):
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._pool = worker_pool(self)
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)
         self.compute: Callable = mcs.insight  # what the worker runs (a test may replace it)
         self.busy = False
         self._pending = None
@@ -125,7 +125,8 @@ class ReportWriter(QObject):
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._pool = worker_pool(self)
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)
         self.write: Callable = monte_carlo_report.write  # what the worker runs (a test may replace it)
         self.pending = 0  # reports asked for and not yet written
         self._done.connect(self._on_done)
@@ -280,7 +281,8 @@ class InsightPlot(QWidget):
 
     def __init__(self, empty: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self._pool = worker_pool(self)
+        self._pool = QThreadPool(self)
+        self._pool.setMaxThreadCount(1)
         self._request = 0  # the number of the newest page asked for
         self.page_error = ""  # the last page's error, for tests and the log
         self._shown_page = ""  # the file of the page in the web view

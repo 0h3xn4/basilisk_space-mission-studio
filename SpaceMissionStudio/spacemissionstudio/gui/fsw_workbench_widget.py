@@ -37,13 +37,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QTimer, QUrl, Signal
+from PySide6.QtCore import QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (QFileDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QMessageBox, QPushButton,
                                QSizePolicy, QVBoxLayout, QWidget)
 
 from . import export_log
-from .background_threads import WorkerThread
 from .badges import ACCENT, DANGER, MUTED, SUCCESS, WARNING, set_badge
 from .field_text import mode_label
 from .run_worker import failure_text
@@ -71,7 +70,7 @@ def exportable_reason(scenario, spacecraft) -> str | None:
     return None
 
 
-class _ExportWorker(WorkerThread):
+class _ExportWorker(QThread):
     finished_ok = Signal(object, object)  # ExportResult, FswExportRecord
     failed = Signal(str)
 

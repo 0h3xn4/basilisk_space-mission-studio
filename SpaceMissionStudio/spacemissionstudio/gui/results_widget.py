@@ -160,7 +160,7 @@ import numpy as np
 
 import plotly.graph_objects as go
 import shiboken6
-from PySide6.QtCore import QElapsedTimer, QSettings, Qt, QTimer, QUrl, Signal
+from PySide6.QtCore import QElapsedTimer, QSettings, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import (
@@ -191,7 +191,7 @@ from ..plot_categories import shown as _shown_in
 from ..plot_categories import parse_access_pair as _parse_access_pair
 from ..plot_categories import plot_group
 from . import plot_page, units
-from .background_threads import WorkerThread, wait_for_pandas
+from .background_threads import wait_for_pandas
 from .flow_layout import FlowLayout
 from .plot_catalog import ACCESS_TIMELINE, PlotCatalog
 from .readout_panel import ReadoutPanel, value_at
@@ -531,7 +531,7 @@ class _ExportCancelled(Exception):
 _exports: set = set()  # the export threads running, kept until each ends (not a widget's child)
 
 
-class _ExportWorker(WorkerThread):
+class _ExportWorker(QThread):
     """Writes an export's files off the GUI thread (audit G2: about 1 s per
     long series, with no progress or cancel). ``job(step)`` writes them,
     calling ``step(written, total)`` before each file; Cancel stops it

@@ -5863,12 +5863,23 @@ window or back took 64.0 and 72.7 ms on the Windows runner (release run
   lower it, which needs root, as for Chromium). **Why:** the GUI thread
   must not wait for the 3D View's drawing ("Never freeze"); equal
   priority is enough (10.4 ms) and does not put the GUI thread above
-  Chromium's own threads, as "highest" would. **Trade-off:** a thread
-  starts at the priority of the thread that starts it, so the window's
-  workers now start at normal priority explicitly (`WorkerThread`,
-  `worker_pool`; on Linux they set their nice value back): a run or a
-  study does not take the processors from other programs. Qt's own
-  thread pool threads that the GUI thread starts take its priority.
+  Chromium's own threads, as "highest" would.
+- **The workers take the GUI thread's priority, as before.** A
+  `QThread` started with `InheritPriority` (the default) gets the
+  priority of the thread that starts it, and on Linux a new thread gets
+  its nice value. **Why:** the GUI thread and the workers keep their
+  order. The first version started the window's workers at normal
+  priority (a `WorkerThread` base for 24 thread classes and a
+  `worker_pool` for 5 pools), so that a run would not outrank other
+  programs. Both Windows CI runs with it lost a test process ("node down:
+  Not properly terminated", no traceback; in `test_display_units.py` in
+  run 45304662719 and in `test_design_rules.py` in run 45314703069),
+  against none in the 19 Windows runs before. Windows runs the higher
+  priority first, so a busy GUI thread could starve a worker below it;
+  a test that waits 10 s for its threads, then deletes one that still
+  runs, ends the process. The cause is not proven, so the change was
+  dropped. **Trade-off:** a run or a study now runs "above normal"
+  beside other programs, like the GUI thread and Chromium's drawing.
 - **Decision: the page draws each new size once.** The window's
   `resize` event and the page's `ResizeObserver` both reported a move's
   new size, and each made a frame of the same size. `MV.onResized` now
@@ -5890,6 +5901,7 @@ window or back took 64.0 and 72.7 ms on the Windows runner (release run
   (22.9 to 35.8 ms before).
 - **Tests:** `test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread`
   and `test_the_3d_view_draws_each_new_size_of_its_page_once`
-  (`tests/gui/test_breakout.py`), and two in
+  (`tests/gui/test_breakout.py`), and one in
   `tests/gui/test_background_threads.py`. The first two fail without the
-  fix. The move test is unchanged: a plain 50 ms per view.
+  fix. The move test is unchanged: a plain 50 ms per view. In CI run
+  45314703069 (Windows) the move test and the two new tests passed.
