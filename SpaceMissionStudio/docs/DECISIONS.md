@@ -5814,3 +5814,94 @@ within 60 min, with a `spawn_main` process and a
   and 20 runs of the cancel test beside them; 10 piped runs with `-s`
   ended in 10 s each. In 12 traced runs the pool started a worker after
   Cancel's list in 2, and the group ended it both times.
+
+## The GUI thread outranks the 3D View's software drawing (SRelD K-40, 2026-11-24)
+
+The item of `BACKLOG.md` "Next release": the 3D View's move into its own
+window or back took 64.0 and 72.7 ms on the Windows runner (release run
+45148067729), against the plain 50 ms limit. Worked on branch
+`fix/3d-view-move` from `develop` at `bb00914`.
+
+- **The cause is not the move's own work.** On Linux the move takes 3 to
+  5 ms of the GUI thread's processor time (detach: `_swap` 0.6 to 1.1 ms,
+  `setWindowFlags` 0.9 to 1.3, `_show` 0.8 to 3.0, the rest under 1;
+  attach: `hide` 0.4 to 1.2, `_swap` 1.2 to 1.9). No native window or
+  render widget host is made again: under the offscreen platform Qt
+  Quick uses its software back end (the platform has no RHI-based
+  rendering, on Windows too), so the web view's `QQuickWidget` gets no
+  `WindowAboutToChangeInternal` or `WindowChangeInternal` event; only the
+  view's own offscreen window is made and closed (one `PlatformSurface`
+  and one `WinIdChange` event per move). Hiding and showing the web view
+  takes 0.1 to 0.2 ms.
+- **The cause is the wait for a processor.** The move's wall time minus
+  its thread time is spent in the run queue (Linux `schedstat`): with
+  four busy processes beside it, one move took 27.6 ms, 5.1 ms on the
+  processor and 23.9 ms waiting, and the slowest of 16 took 75.8 ms with
+  at most 6 ms on the processor. Thermal and Budgets moves do not wait
+  so. After each move the 3D View's page draws its new size in software,
+  on every processor: per move 240 to 255 ms of processor time in the
+  app's process (four `llvmpipe` threads about 40 ms each, the GPU
+  thread 40 ms, the GUI thread 20 to 25 ms) and 30 ms in the page's
+  processes.
+- **On Windows the drawing threads outrank the GUI thread** (a
+  diagnostic test on the Windows runner, CI run 45296869864, thread
+  priorities read with `GetThreadPriority`). The page draws with ANGLE
+  on WARP ("Microsoft Basic Render Driver"), 30.7 ms a frame at reduced
+  quality. In 16 moves four WARP threads used 172 to 250 ms each at
+  "above normal" priority, as did Chromium's GPU, compositor and IO
+  threads; the GUI thread (`CrBrowserMain`) was at "normal". Windows
+  runs a higher priority first, so while the page drew, the GUI thread
+  got no processor: the slowest move took 56.2 ms. In the same process,
+  with the GUI thread at "above normal" the slowest of 16 moves took
+  10.4 ms, at "highest" 7.4 ms; with 400 ms between moves, 10.4 ms; with
+  the globe hidden (map only), 6.2 ms. Linux as root shows the same: the
+  same threads at nice -8 (Chromium may lower them there), the GUI thread
+  at 0.
+- **Decision: the GUI thread gets the drawing threads' priority**
+  (`background_threads.install`: `QThread.Priority.HighPriority`, which is
+  "above normal" on Windows; on Linux nice -8 where the process may
+  lower it, which needs root, as for Chromium). **Why:** the GUI thread
+  must not wait for the 3D View's drawing ("Never freeze"); equal
+  priority is enough (10.4 ms) and does not put the GUI thread above
+  Chromium's own threads, as "highest" would.
+- **The workers take the GUI thread's priority, as before.** A
+  `QThread` started with `InheritPriority` (the default) gets the
+  priority of the thread that starts it, and on Linux a new thread gets
+  its nice value. **Why:** the GUI thread and the workers keep their
+  order. The first version started the window's workers at normal
+  priority (a `WorkerThread` base for 24 thread classes and a
+  `worker_pool` for 5 pools), so that a run would not outrank other
+  programs. Both Windows CI runs with it lost a test process ("node down:
+  Not properly terminated", no traceback; in `test_display_units.py` in
+  run 45304662719 and in `test_design_rules.py` in run 45314703069),
+  against none in the 19 Windows runs before. Windows runs the higher
+  priority first, so a busy GUI thread could starve a worker below it;
+  a test that waits 10 s for its threads, then deletes one that still
+  runs, ends the process. The cause is not proven, so the change was
+  dropped. **Trade-off:** a run or a study now runs "above normal"
+  beside other programs, like the GUI thread and Chromium's drawing.
+- **Decision: the page draws each new size once.** The window's
+  `resize` event and the page's `ResizeObserver` both reported a move's
+  new size, and each made a frame of the same size. `MV.onResized` now
+  applies a size only when it is new. **Why:** the second frame showed
+  nothing new and took the processors for about 30 ms on the Windows
+  runner. Per move the page's processor time fell from 240 to 255 ms to
+  123 to 137 ms (Linux). What the view shows is unchanged: the last
+  frame of each move is drawn at the host's size, as before.
+- **Not done:** no change to how a view moves (its container, its native
+  window, a deferred show). The measurements show no cost there to cut.
+  No Chromium flag either: CI sets `QTWEBENGINE_CHROMIUM_FLAGS` itself,
+  which replaces the app's flags.
+- **After the fix**, on the Windows runner (CI run 45304662719): the
+  move test's protocol ten times in one process, 60 moves of each view:
+  the slowest 3D View move 13.6 ms (5.4 to 13.6 per run), Thermal 3.7 ms,
+  Budgets 8.6 ms; the GUI thread at "above normal", and no thread that
+  worked during the moves above it. On Linux, with four busy processes
+  beside it, the slowest of 80 moves took 7.5 to 9.3 ms in four runs
+  (22.9 to 35.8 ms before).
+- **Tests:** `test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread`
+  and `test_the_3d_view_draws_each_new_size_of_its_page_once`
+  (`tests/gui/test_breakout.py`), and one in
+  `tests/gui/test_background_threads.py`. The first two fail without the
+  fix. The move test is unchanged: a plain 50 ms per view. In CI run
+  45314703069 (Windows) the move test and the two new tests passed.

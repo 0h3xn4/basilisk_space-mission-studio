@@ -42,6 +42,7 @@ pytestmark = pytest.mark.requires_gui
 _GUI_THREAD_MS = 50.0  # [ms] CLAUDE.md "Never freeze": nothing longer on the GUI thread
 _RADIUS_M = 7000e3  # [m]
 _VIEWS = ("3d_view", "thermal", "budgets")
+_WORKED_MS = 50.0  # [ms] a thread that used this much processor time while the 3D View moved worked for it
 
 
 @pytest.fixture(autouse=True)
@@ -697,6 +698,126 @@ def test_showing_an_area_asks_no_hidden_area_its_height(window, qtbot):
     budgets.show()
     QApplication.processEvents()
     assert Probe.asked == 0
+
+
+def _threads() -> dict:
+    """{thread id: (name, priority, processor time in ms)} of this process.
+    The priority is Windows' (``GetThreadPriority``: 0 normal, 1 above
+    normal) or, on Linux, minus the thread's nice value; a higher number
+    runs first. Empty on other systems."""
+    if sys.platform == "win32":
+        return _windows_threads()
+    if sys.platform.startswith("linux"):
+        import os
+
+        tick = os.sysconf("SC_CLK_TCK")
+        threads = {}
+        for tid in os.listdir("/proc/self/task"):
+            try:
+                name = Path(f"/proc/self/task/{tid}/comm").read_text().strip()
+                fields = Path(f"/proc/self/task/{tid}/stat").read_text().rsplit(")", 1)[1].split()
+            except OSError:  # the thread ended meanwhile
+                continue
+            threads[int(tid)] = (name, -int(fields[16]), 1000.0 * (int(fields[11]) + int(fields[12])) / tick)
+        return threads
+    return {}
+
+
+def _windows_threads() -> dict:
+    import ctypes
+    import os
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    kernel32.OpenThread.restype = wintypes.HANDLE
+
+    class ThreadEntry(ctypes.Structure):
+        _fields_ = [("dwSize", wintypes.DWORD), ("cntUsage", wintypes.DWORD), ("th32ThreadID", wintypes.DWORD),
+                    ("th32OwnerProcessID", wintypes.DWORD), ("tpBasePri", wintypes.LONG),
+                    ("tpDeltaPri", wintypes.LONG), ("dwFlags", wintypes.DWORD)]
+
+    def filetime_ms(value) -> float:
+        return ((value.dwHighDateTime << 32) | value.dwLowDateTime) / 1e4  # [ms] from 100 ns
+
+    snapshot = kernel32.CreateToolhelp32Snapshot(0x4, 0)  # TH32CS_SNAPTHREAD
+    entry = ThreadEntry()
+    entry.dwSize = ctypes.sizeof(ThreadEntry)
+    threads = {}
+    more = kernel32.Thread32First(snapshot, ctypes.byref(entry))
+    while more:
+        if entry.th32OwnerProcessID == os.getpid():
+            handle = kernel32.OpenThread(0x0800, False, entry.th32ThreadID)  # THREAD_QUERY_LIMITED_INFORMATION
+            if handle:
+                times = [wintypes.FILETIME() for _ in range(4)]
+                kernel32.GetThreadTimes(wintypes.HANDLE(handle), *(ctypes.byref(t) for t in times))
+                name = ctypes.c_wchar_p()
+                try:
+                    if kernel32.GetThreadDescription(wintypes.HANDLE(handle), ctypes.byref(name)) < 0:
+                        name = ctypes.c_wchar_p()
+                except AttributeError:  # before Windows 10 1607
+                    pass
+                threads[entry.th32ThreadID] = (name.value or "", kernel32.GetThreadPriority(wintypes.HANDLE(handle)),
+                                               filetime_ms(times[2]) + filetime_ms(times[3]))
+                if name.value:
+                    kernel32.LocalFree(name)
+                kernel32.CloseHandle(wintypes.HANDLE(handle))
+        more = kernel32.Thread32Next(snapshot, ctypes.byref(entry))
+    kernel32.CloseHandle(wintypes.HANDLE(snapshot))
+    return threads
+
+
+def test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread(window, qtbot):
+    """SRelD K-40: without a graphics card Chromium draws the 3D View's page
+    in software (on the Windows runner WARP), with one thread per
+    processor, after every move and change of size. Those threads, and
+    Chromium's GPU and compositor threads, ran above normal priority and
+    the GUI thread at normal: while the page drew, Windows gave the GUI
+    thread no processor, and a move took up to 64 ms. Every thread that
+    worked while the view moved (50 ms of processor time or more in twelve
+    moves; the drawing threads use 150 to 350 ms) has at most the GUI
+    thread's priority. A thread that only wakes for a moment is not one
+    of them: Windows has one at "time critical" priority, which used one
+    tick of its clock (15.6 ms) in CI."""
+    import threading
+
+    from PySide6.QtWidgets import QApplication
+
+    if not _threads():
+        pytest.skip("thread priorities are read on Windows and Linux only")
+    _with_run(window, qtbot)
+    before = _threads()
+    for _round in range(6):
+        for move in (window.breakouts.detach, window.breakouts.attach):
+            move("3d_view")
+            QApplication.processEvents()
+            qtbot.wait(150)  # [ms] the page draws its new size
+    after = _threads()
+    gui = after[threading.get_native_id()][1]
+    worked = {tid: (name, priority, round(cpu - before[tid][2], 1)) for tid, (name, priority, cpu) in after.items()
+              if tid in before and cpu - before[tid][2] >= _WORKED_MS}
+    assert len(worked) > 1, f"no thread but the GUI thread worked while the view moved: {worked}"
+    above = {tid: row for tid, row in worked.items() if row[1] > gui}
+    assert not above, f"the GUI thread's priority is {gui}; threads that worked (name, priority, ms): {above}"
+
+
+def test_the_3d_view_draws_each_new_size_of_its_page_once(window, qtbot):
+    """SRelD K-40: the window's 'resize' and the page's ResizeObserver both
+    report a move's new size. The page draws a frame for the first only;
+    the second frame, of the same size, took the processors for nothing
+    (about 30 ms of software drawing on the Windows runner)."""
+    view = _with_run(window, qtbot)
+    _js(qtbot, view, "MV.drawn = []; MV.render0 = MV.render; MV.render = function () { MV.render0(); "
+                     "MV.drawn.push(MV.renderer.domElement.width + 'x' + MV.renderer.domElement.height); }; 1")
+    qtbot.waitUntil(lambda: not _js(qtbot, view, "MV.drawn.splice(0).length"), timeout=10000)  # nothing left to draw
+    for move in (window.breakouts.detach, window.breakouts.attach, window.breakouts.detach,
+                 window.breakouts.attach):
+        move("3d_view")
+        qtbot.wait(500)  # [ms]
+        drawn = json.loads(_js(qtbot, view, "JSON.stringify(MV.drawn.splice(0))"))
+        size = _js(qtbot, view, "MV.renderer.domElement.width + 'x' + MV.renderer.domElement.height")
+        assert drawn and drawn[-1] == size, (move.__name__, drawn, size)
+        assert all(a != b for a, b in zip(drawn, drawn[1:])), (move.__name__, drawn)
 
 
 # -- a live run -------------------------------------------------------------------------------------------

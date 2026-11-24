@@ -49,7 +49,7 @@ const MV = {
             stars: true, groundTrack: true},
   loaded: {earth: '', stars: ''}, textures: {}, playback: {speed: '', playing: false}, live: false,
   crafts: [], stations: [], links: [], rings: [], labels: [], lastRotation: 0, rendererName: '', software: false,
-  temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null, recoverTries: 0,
+  temperatures: null, contextLost: false, recoveries: 0, recoverTimer: null, recoverTries: 0, sizedTo: '',
 };
 // No graphics card: start in reduced quality. Chromium's SwiftShader,
 // Mesa's llvmpipe/softpipe, Windows' WARP ("Microsoft Basic Render Driver").
@@ -100,12 +100,12 @@ MV.init = function () {
     MV.autoReduced = true;
     if (MV.renderer) MV.renderer.setPixelRatio(1);
   }
-  window.addEventListener('resize', MV.resize);
+  window.addEventListener('resize', MV.onResized);
   // The canvas follows its host's size, not only the window's: the host
   // grows by a scroll bar's width once the theme's CSS hides the page's
   // overflow, and no 'resize' comes then (a dark strip on the right).
   if (window.ResizeObserver) {
-    new ResizeObserver(function () { if (MV.camera) MV.resize(); }).observe(document.getElementById('view'));
+    new ResizeObserver(MV.onResized).observe(document.getElementById('view'));
   }
   MV.loadTextures();
   MV.pageReady = true;
@@ -128,12 +128,28 @@ MV.aspect = function () {
   return Math.max(1, host.clientWidth || window.innerWidth) / Math.max(1, host.clientHeight || window.innerHeight);
 };
 
+// The host's size [px], as the canvas takes it.
+MV.hostSize = function () {
+  const host = document.getElementById('view');
+  return (host.clientWidth || window.innerWidth) + 'x' + (host.clientHeight || window.innerHeight);
+};
+
 MV.resize = function () {
   const host = document.getElementById('view');
   if (MV.renderer) MV.renderer.setSize(host.clientWidth || window.innerWidth, host.clientHeight || window.innerHeight);
   MV.camera.aspect = MV.aspect();
   MV.camera.updateProjectionMatrix();
+  MV.sizedTo = MV.hostSize();
   MV.dirty = true;
+};
+
+// The window's 'resize' and the host's ResizeObserver both report one
+// change of size (a move of the view to its own window or back, a drag of
+// the window's edge). Only a size not yet applied makes a new frame: each
+// frame drawn in software takes every processor for tens of milliseconds
+// (SRelD K-40), and the second one, of the same size, showed nothing new.
+MV.onResized = function () {
+  if (MV.camera && MV.hostSize() !== MV.sizedTo) MV.resize();
 };
 
 // three.js's WebGL renderer; it throws where no WebGL context can start.

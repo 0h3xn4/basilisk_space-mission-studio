@@ -16,8 +16,9 @@
 #
 #
 
-"""Two things the window's background threads must not do on their own
-(SRelD K-44): collect garbage, and make the heavy first imports together.
+"""Three things the window's background threads must not do on their own
+(SRelD K-44, K-40): collect garbage, make the heavy first imports
+together, and take the processors from the GUI thread.
 
 **Garbage collection on the GUI thread only.** Python's cyclic garbage
 collector runs in the thread that allocates when a generation passes its
@@ -53,11 +54,31 @@ made module ("partially initialized module 'pandas'", Windows CI,
 2026-10-28). The lock keeps the figure warm-up away from that import; the
 GUI thread cannot hold the lock (it would wait for the warm-ups too), so
 the window's plots call :func:`wait_for_pandas` before plotly runs.
+
+**The GUI thread first.** Without a graphics card, Chromium draws the 3D
+View's WebGL in software (on Windows WARP, "Microsoft Basic Render
+Driver"), with one thread per processor. On the Windows runner those
+threads and Chromium's GPU, compositor and IO threads ran above normal
+priority, and the GUI thread at normal. While the page drew a frame
+(about 30 ms at reduced quality, after each move of the view or change of
+its size), Windows gave the GUI thread no processor, and a move of the 3D
+View into its own window took up to 64 ms (SRelD K-40). :func:`install`
+gives the GUI thread the priority of those threads
+(:data:`GUI_THREAD_PRIORITY`). Linux has nice values instead: a process
+that may lower them (as root) gives the GUI thread Chromium's
+(:data:`GUI_THREAD_NICE`); for others, Chromium cannot lower its own either,
+and nothing changes. A worker that the GUI thread starts takes its priority
+(``QThread.start`` with ``InheritPriority``; a nice value on Linux), as
+before: the GUI thread and the window's workers keep their order. Workers
+kept at normal priority were tried and dropped: Windows runs the higher
+priority first, so a busy GUI thread could starve them, and both Windows
+CI runs with them lost a test process (none in the 19 runs before).
 """
 
 from __future__ import annotations
 
 import gc
+import os
 import sys
 import threading
 
@@ -70,6 +91,14 @@ from PySide6.QtCore import QCoreApplication, QObject, QThread
 # gave at most 29-43 ms (as without this module). A check that finds
 # nothing due costs microseconds.
 COLLECT_INTERVAL_MS = 20  # [ms]
+
+#: The GUI thread's priority from :func:`install` on: the one of Chromium's
+#: GPU, compositor and IO threads and of the software rasteriser's threads.
+GUI_THREAD_PRIORITY = QThread.Priority.HighPriority
+#: Linux has no priorities for normal threads, only nice values: Chromium
+#: gives its display threads this one when the process may (as root), and
+#: the software rasteriser's threads take it from its GPU thread (measured).
+GUI_THREAD_NICE = -8
 
 # Held for a heavy first import made off the GUI thread (the warm-ups, a run's engine, pandas).
 FIRST_IMPORTS = threading.Lock()
@@ -102,7 +131,7 @@ def wait_for_pandas() -> None:
 
 # The collector object, kept so that its Python wrapper lives as long as the
 # application (a child of it: Qt deletes it with the application).
-_state: dict = {"collector": None, "was_enabled": None}
+_state: dict = {"collector": None, "was_enabled": None, "nice": None}
 
 
 def collect_due() -> int | None:
@@ -119,6 +148,18 @@ def collect_due() -> int | None:
             generation = older
     gc.collect(generation)
     return generation
+
+
+_LINUX = sys.platform.startswith("linux")
+
+
+def _set_nice(nice: int) -> None:
+    """The calling thread's nice value on Linux, where the system allows it
+    (a lower value needs root)."""
+    try:
+        os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), nice)
+    except OSError:  # not allowed: the thread keeps its value
+        pass
 
 
 class _Collector(QObject):
@@ -145,9 +186,10 @@ def _live_collector() -> _Collector | None:
 def install(app: QCoreApplication | None = None) -> None:
     """Collect garbage on the GUI thread only, from now on: turn the
     automatic collection off and start the collector, a child of ``app``
-    (the running application by default). Call it on the GUI thread; a
-    second call changes nothing but turns the automatic collection off
-    again if something turned it on."""
+    (the running application by default), and give the GUI thread
+    :data:`GUI_THREAD_PRIORITY`. Call it on the GUI thread; a second call
+    changes nothing but turns the automatic collection off again if
+    something turned it on."""
     app = app or QCoreApplication.instance()
     if app is None:
         raise RuntimeError("install() needs the application")
@@ -158,13 +200,23 @@ def install(app: QCoreApplication | None = None) -> None:
             _state["was_enabled"] = gc.isenabled()
         _state["collector"] = _Collector(app)
     gc.disable()
+    QThread.currentThread().setPriority(GUI_THREAD_PRIORITY)
+    if _LINUX:
+        if _state["nice"] is None:
+            _state["nice"] = os.getpriority(os.PRIO_PROCESS, 0)  # this thread's own on Linux
+        _set_nice(min(GUI_THREAD_NICE, _state["nice"]))
 
 
 def uninstall() -> None:
     """Stop the collector and give the automatic collection back as it was
-    before :func:`install` (the tests' fixture: the tests without a window
-    run with the automatic collection)."""
+    before :func:`install`, and the GUI thread its normal priority (the
+    tests' fixture: the tests without a window run as before)."""
     from shiboken6 import delete
+
+    QThread.currentThread().setPriority(QThread.Priority.NormalPriority)
+    if _state["nice"] is not None:
+        _set_nice(_state["nice"])
+        _state["nice"] = None
 
     collector = _live_collector()
     _state["collector"] = None

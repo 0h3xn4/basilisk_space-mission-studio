@@ -2,20 +2,6 @@
 
 ## Next release
 
-- Make the move of the 3D View into its own window, or back, take under
-  50 ms of the GUI thread on the Windows runner, every time (SRelD K-40,
-  partly met). In the release workflow's run 45148067729, attempt 1, on
-  `452e164` (the 2.14.2 tag), the Windows job failed
-  `tests/gui/test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread`:
-  the 3D View's slowest move took 64.0 ms, and 72.7 ms when the test
-  timed it again. The same test passed on the same commit in CI run
-  45143562273 (Windows runner). So the move sits at the limit. Find the
-  cause of the time in the 3D View's move, and fix it in the app. Do
-  not loosen the test: its limit stays a plain 50 ms. Done when the
-  move test passes on the Windows runner with every view under 50 ms.
-  If the cause is QtWebEngine's own reparenting and no change in the app
-  helps, move this item to `## Needs human` with the measurements.
-
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
@@ -31,6 +17,18 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Make the move of the 3D View into its own window, or back, take under
+  50 ms of the GUI thread on the Windows runner, every time (SRelD K-40),
+  on branch `fix/3d-view-move` (2026-11-24). Not the move's own work (3
+  to 5 ms) and no native window made again: the GUI thread waited for a
+  processor. After a move the page draws in software (WARP on the
+  runner) on every processor, with threads at "above normal" priority,
+  and the GUI thread was at "normal". The GUI thread now has their
+  priority (its workers take it from it, as before), and the page draws
+  each new size once. On the Windows runner the slowest of 60
+  moves of the 3D View took 13.6 ms (56.2 ms before in 16). Measured:
+  HISTORY.md and `docs/DECISIONS.md`, "The GUI thread outranks the 3D
+  View's software drawing".
 - Find and fix the test that sometimes made a local suite run hang
   (2026-11-23), on branch `fix/suite-hang`. The cancel test of a batch
   with 2 processes: Cancel's thread ended the processes in its list, but

@@ -15,9 +15,10 @@
 #
 #
 #
-"""Tests for gui.background_threads (SRelD K-44): garbage is collected on
-the GUI thread only, and the heavy first imports off the GUI thread take
-turns."""
+"""Tests for gui.background_threads (SRelD K-44, K-40): garbage is
+collected on the GUI thread only, the heavy first imports off the GUI
+thread take turns, and no drawing thread of Chromium outranks the GUI
+thread."""
 
 import dataclasses
 import threading
@@ -147,6 +148,48 @@ def test_install_refuses_a_worker_thread(qapp):
     installer.start()
     assert installer.wait(10_000)  # [ms]
     assert errors == ["install() must run on the GUI thread"]
+
+
+def test_install_gives_the_gui_thread_the_priority_of_chromium_s_drawing_threads(qapp):
+    """SRelD K-40: from install() on, the GUI thread has the priority of
+    Chromium's GPU and compositor threads and of the software rasteriser's
+    threads (on Linux their nice value, where the process may lower it),
+    and uninstall() gives it back its own. A worker that it starts takes
+    its priority, so the GUI thread and the workers keep their order."""
+    import os
+    import sys
+
+    from PySide6.QtCore import QThread
+
+    from spacemissionstudio.gui import background_threads
+
+    linux = sys.platform.startswith("linux")
+
+    def nice():
+        """The calling thread's nice value (Linux), else None."""
+        return os.getpriority(os.PRIO_PROCESS, 0) if linux else None
+
+    gui = QThread.currentThread()
+    background_threads.uninstall()
+    own_nice = nice()
+    background_threads.install(qapp)
+    assert gui.priority() == background_threads.GUI_THREAD_PRIORITY == QThread.Priority.HighPriority
+    raised = nice()
+    if linux:  # Chromium's nice value where the process may lower it (root), else the thread's own
+        assert raised in (min(background_threads.GUI_THREAD_NICE, own_nice), own_nice)
+    seen = []
+
+    class Worker(QThread):
+        def run(self):
+            seen.append(nice())
+
+    worker = Worker()
+    worker.start()
+    assert worker.wait(10_000)  # [ms]
+    assert seen == [raised]
+    background_threads.uninstall()
+    assert gui.priority() == QThread.Priority.NormalPriority and nice() == own_nice
+    background_threads.install(qapp)  # as the fixture left it
 
 
 def test_the_window_s_start_collects_on_the_gui_thread_before_any_worker():

@@ -2792,3 +2792,24 @@ fix and passes after.
 No existing test or fixture changed. One test is new:
 `tests/gui/test_run_worker.py::test_a_cancelled_batch_leaves_no_process_that_its_pool_started_late`
 (`docs/DECISIONS.md`, "A cancelled Monte Carlo batch leaves no process").
+
+## The GUI thread outranks the 3D View's software drawing (SRelD K-40, 2026-11-24)
+
+No existing test changed; the move test
+`test_detach_and_attach_take_under_50_ms_on_the_gui_thread` keeps its
+plain 50 ms limit and reaches the views as before. Added:
+- `tests/gui/test_breakout.py::test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread`:
+  twelve moves of the 3D View, with time for the page to draw; every
+  thread of the process that used 50 ms of processor time or more meanwhile
+  has at most the GUI thread's priority (Windows: `GetThreadPriority`;
+  Linux: minus the nice value; skipped elsewhere). It fails without the
+  fix (on Linux as root: the GPU thread and the four `llvmpipe` threads
+  at 8, the GUI thread at 0).
+- `tests/gui/test_breakout.py::test_the_3d_view_draws_each_new_size_of_its_page_once`:
+  after each of four moves the page's frames, recorded by a wrapper of
+  `MV.render`, end at the canvas's size and never repeat a size. It fails
+  without the fix (`768x553, 768x553, 989x553, 989x553`).
+- `tests/gui/test_background_threads.py::test_install_gives_the_gui_thread_the_priority_of_chromium_s_drawing_threads`:
+  `install()` raises the GUI thread's priority (on Linux its nice value
+  where allowed), a worker started from it takes the same, and
+  `uninstall()` gives back the thread's own.
