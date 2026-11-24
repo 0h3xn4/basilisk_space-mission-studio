@@ -5950,12 +5950,13 @@ The owner answered Q6 of [`developer/monte-carlo-plan.md`](developer/monte-carlo
 
 The first dispersion of C1 by the owner's order (MC-36). The spike is
 §6.1 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md).
-The work ran without questions. **The choice of meaning in MC-37 is
-provisional (Q9): the owner may also want F10.7 and Ap.** Schema step 7
-to 8. The golden files of the 37 templates are byte-identical.
+The work ran without questions. The choice of meaning in MC-37 was
+provisional (Q9); **the owner confirmed it on 2026-11-24 ("as per your
+recommendation"): a scale on the density only, no F10.7 and Ap
+dispersion.** Schema step 7 to 8. The golden files of the 37 templates are byte-identical.
 
-- **Decision MC-37 (the meaning is provisional, Q9): a scale on the
-  density that drag reads.**
+- **Decision MC-37 (Q9, confirmed by the owner on 2026-11-24): a scale
+  on the density that drag reads.**
   - The quantity is `density_scale`, a number with no unit: each run's
     drag reads the atmosphere model's density times the drawn scale.
     1 is the model's own density. Kinds: `uniform` (bounds) and
@@ -5967,7 +5968,8 @@ to 8. The golden files of the 37 templates are byte-identical.
     A scale on F10.7 and Ap acts on NRLMSISE-00 only, changes the
     density by no fixed factor, and makes synthetic space weather, which
     the user requirement "real data only" forbids. This is the safer of
-    the two meanings. Q9 asks the owner if F10.7 and Ap are wanted too.
+    the two meanings. Q9 asked the owner if F10.7 and Ap are wanted
+    too; the owner answered "as per your recommendation": not wanted.
   - **How:** a Python `SysModel`, `engine.density_scale.DensityScale`
     (task priority 385), between the model (390) and the drag (100). It
     reads each spacecraft's `AtmoPropsMsg` and writes a copy with the

@@ -55,8 +55,8 @@ owner has answered the plan's open questions.
   it works with the three atmosphere models and with facets. New
   quantity `density_scale` (no spacecraft), scenario schema 8 with a
   version-only migration, the form, the summary, the Runs table, its CSV
-  and the report. Decisions MC-37 to MC-40; MC-37's choice of meaning is
-  provisional (Q9: F10.7 and Ap too?).
+  and the report. Decisions MC-37 to MC-40; the owner confirmed
+  MC-37's meaning on 2026-11-24 (Q9: no F10.7 and Ap dispersion).
 - Make the move of the 3D View into its own window, or back, take under
   50 ms of the GUI thread on the Windows runner, every time (SRelD K-40),
   on branch `fix/3d-view-move` (2026-11-24). Not the move's own work (3
