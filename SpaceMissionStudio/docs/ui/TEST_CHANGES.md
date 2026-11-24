@@ -2845,3 +2845,11 @@ New tests:
   one that would change nothing is refused.
 - `tests/test_migrations.py`: `test_the_step_from_7_to_8_only_sets_the_version`
   and `test_a_version_8_file_is_refused_by_a_build_that_reads_version_7`.
+
+## Monte Carlo workers report through a relay (2026-11-24)
+
+No existing test changed. Added:
+`tests/gui/test_monte_carlo_results_widget.py::test_a_view_deleted_while_its_workers_run_gets_no_late_result`
+(the Statistics plot, the statistics' computer and the report writer
+deleted while their workers run; the late results are dropped). It does
+not reproduce the Windows failure on Linux; see `HISTORY.md`.

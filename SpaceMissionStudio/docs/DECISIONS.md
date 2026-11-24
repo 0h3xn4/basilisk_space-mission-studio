@@ -5560,6 +5560,18 @@ not count.
   thread's part, best of three under 50 ms as before, and checks that
   the worker writes the page (over 1 MB), that it is shown and that the
   older pages are gone (`docs/ui/TEST_CHANGES.md`).
+- **Amended 2026-11-24: the workers report through a relay.** The plot's
+  worker emitted a signal of the plot. The Windows runner raised
+  "TypeError: only accepts 0 argument(s), 3 given" when it did so while
+  the plot was deleted (CI of #322). **Decision:** `InsightPlot`,
+  `InsightComputer` and `ReportWriter` each own a `_Relay` (a parentless
+  `QObject` with one `done` signal). The worker's task gets the relay,
+  never the view, and emits the relay's signal. The view connects a
+  method of its own. **Why:** a worker then never touches a view that
+  may be in its destructor, and Qt ends the connection, and drops a
+  queued result, when the view is deleted. Catching more exception types
+  at the emit was rejected: it would hide the call into a half-deleted
+  object, not prevent it. Details in `HISTORY.md`.
 
 ## Monte Carlo phase B, part 3: batch report, command line, template 37 (2026-11-23)
 
