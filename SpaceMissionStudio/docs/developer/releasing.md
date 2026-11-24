@@ -701,6 +701,19 @@ the UTC day the tag will be made, because the release check wants the
 tag's day. By the owner's decision (SRelD K-45), the release pull
 request may be merged with CI's "Windows (MAX Python)" job red, for the
 Basilisk framework test `LambertInputValidation` only.
+It was published on 2026-11-24 at 00:38 UTC (SRelD issue 56). #318 was
+merged at 20:40 UTC on 2026-11-23 as `5ebbd3b`, after #317. On its head
+only "Windows (MAX Python)" was red, for that framework test (1 of
+842). CI on `5ebbd3b` passed at the first attempt
+([run 45261875723](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45261875723)). The tag workflow
+([run 45294312275](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45294312275)) passed the release check and tagged
+`5ebbd3b` at 00:06:56. The release workflow
+([run 45294483106](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45294483106)) passed at the first attempt, the
+Windows tests too. It built, installed and checked every file, attached
+the eleven and published the release 32 minutes after the tag. It was
+never a public release without files. #319, merged after the tag as
+`bb00914`, is not in 2.15.0; its CHANGELOG entry stays under
+"Unreleased".
 
 ---
 

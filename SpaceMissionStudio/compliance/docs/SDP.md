@@ -66,7 +66,7 @@ B: the batch seed, the thermal node limits, outcome statistics,
 sensitivity, trust checks, the batch report, the `monte-carlo` options
 `--summarize`, `--report`, `--csv`, `--runs` and `--processes`, and
 template 37, with the scenario file at schema version 7, which 2.14.2
-and earlier do not open (prepared 2026-11-23); before it 2.14.2, a
+and earlier do not open (published 2026-11-24); before it 2.14.2, a
 patch release:
 the Budgets area shows quickly (SRelD K-40), with the scenario format
 unchanged (published 2026-11-23); before it 2.14.1, a patch release:
