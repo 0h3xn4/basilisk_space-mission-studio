@@ -2,10 +2,30 @@
 
 ## Next release
 
+- A pointing error budget, scope B
+  (`docs/developer/pointing-error-budget-design.md`, sections 3 and 4;
+  `docs/DECISIONS.md`, "Pointing error budget: design", PE-1 to PE-9
+  and the owner's answers of 2026-11-24). A "Pointing" tab of the
+  Budgets area: requirements and contributors entered by hand, the
+  summation per index and axis, the margins, the budget report and the
+  CLI (option A), and a button that adds the scenario's sensor noises as
+  knowledge contributors with their catalog sources. Per axis and a
+  line-of-sight (half-cone) value by a stated rule; the window share
+  rule for periodic contributors; no default probability level ("TBD").
+  A `BUDGETS_VERSION` step with a migration. Clean room from the public
+  concepts of ECSS-E-ST-60-10C only; every number has a source or is
+  "TBD". About 22 hours.
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
 owner has answered the plan's open questions.
+
+- A pointing error budget, scope C: the absolute, relative and mean
+  performance errors measured from a run's attitude error series over
+  each requirement's windows, next to the budget's value (design
+  section 4; about 12 hours). After scope B. Scope D (over a Monte
+  Carlo batch) follows C.
 
 - Monte Carlo phase C: more dispersions and outcomes
   (`docs/developer/monte-carlo-plan.md` section 6; about 30 hours, each
@@ -109,17 +129,6 @@ owner has answered the plan's open questions.
   template 25: HISTORY.md, "Monte Carlo phase A, part 1".
 
 ## Needs human
-
-- A pointing error budget: the owner's choice of scope (the owner's
-  feedback, 2026-11-18). The design and its provisional decisions are on
-  `develop` at `39da9d7` (2026-11-23):
-  `docs/developer/pointing-error-budget-design.md` and
-  `docs/DECISIONS.md`, PE-1 to PE-9. Clean room from the public concepts
-  of ECSS-E-ST-60-10C; every number has a source or is "TBD"; no code.
-  Needs a human: answer the design's section 7 (scope A, B, C or D, with
-  B recommended; the default probability level; line of sight; periodic
-  contributors; the place in the app). Then the chosen scope can be a
-  "Next release" item.
 
 - The rest of SRelD K-44 (fix/k44-thread-crashes, 2026-11-20). The
   access violation in `_SpaceWeatherWarmUp` and the export test's

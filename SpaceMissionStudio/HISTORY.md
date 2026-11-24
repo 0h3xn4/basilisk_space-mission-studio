@@ -21604,3 +21604,20 @@ is dropped.
 
 **Checks.** Full local suite, generators twice, `check_drds.py`,
 pre-commit: see the PR.
+
+## The owner's answers on the pointing budget and K-40 (2026-11-24)
+
+The owner answered "as per your recommendation" to three open points.
+No code changed.
+
+- **Pointing error budget.** The design's section 7: scope B first, then
+  C as its own item; no default probability level; per axis and a
+  line-of-sight value in the first step; the window share rule for
+  periodic contributors; a tab of the Budgets area. PE-1 to PE-9 are
+  final. `BACKLOG.md`: the item moved from "Needs human" to "Next
+  release" as scope B; scope C is under "Later".
+- **K-40 trade-off.** Runs and studies keep the GUI thread's priority
+  ("above normal" on Windows). `docs/DECISIONS.md` records that the
+  owner kept it.
+- **Q9 of the Monte Carlo plan** (the density dispersion's meaning) is
+  recorded with the density dispersion itself (PR #322).

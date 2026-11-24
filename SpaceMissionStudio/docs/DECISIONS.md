@@ -5293,6 +5293,11 @@ changed.
 - **PE-9. The recommended scope is option B** (the table, plus the
   scenario's sensor noises as knowledge contributors). **Why:** most of
   the value for a third of option C's effort; C is its own item.
+- **The owner's answers (2026-11-24): "as per your recommendation"** to
+  the design's section 7. PE-1 to PE-9 are final: scope B first, then C
+  as its own item; no default probability level (PE-5); per axis and a
+  line-of-sight value in the first step (PE-6); the window share rule
+  for periodic contributors (PE-7); a tab of the Budgets area (PE-1).
 
 ## A hidden area that becomes wider lays the window out again (2.14.2, 2026-11-23)
 
@@ -5892,6 +5897,8 @@ window or back took 64.0 and 72.7 ms on the Windows runner (release run
   runs, ends the process. The cause is not proven, so the change was
   dropped. **Trade-off:** a run or a study now runs "above normal"
   beside other programs, like the GUI thread and Chromium's drawing.
+  **The owner kept this trade-off (2026-11-24, "as per your
+  recommendation").**
 - **Decision: the page draws each new size once.** The window's
   `resize` event and the page's `ResizeObserver` both reported a move's
   new size, and each made a frame of the same size. `MV.onResized` now
