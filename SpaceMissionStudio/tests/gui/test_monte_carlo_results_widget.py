@@ -910,3 +910,50 @@ def test_export_report_asks_for_the_file_and_its_format(qtbot, tmp_path, monkeyp
     assert (tmp_path / "notes.md").read_text(encoding="utf-8").startswith("# Monte Carlo report: Synthetic batch")
     assert [kind for kind, _text in said] == ["success", "success", "error"]
     assert said[2][1].startswith(f"Could not export the Monte Carlo report to {tmp_path / 'missing' / 'report.md'}")
+
+
+def test_a_view_deleted_while_its_workers_run_gets_no_late_result(qtbot, tmp_path, monkeypatch):
+    """The Statistics plot, the statistics' computer and the report writer
+    each report from a worker through a relay of their own, never through
+    the view itself: a view deleted while its worker runs (its window
+    closed) is not touched from the worker, and its late result is dropped.
+    On the Windows CI runner the plot's own signal, emitted from the worker
+    while the plot was deleted, raised "TypeError: only accepts 0
+    argument(s), 3 given" (2026-11-24). The race did not show on Linux;
+    this test makes its order of events: delete first, report after."""
+    import threading
+
+    from shiboken6 import delete
+
+    from spacemissionstudio.gui import monte_carlo_insight as mi
+
+    release = threading.Event()
+
+    def held(work):
+        def run(*args):
+            release.wait(10)
+            return work(*args)
+        return run
+
+    monkeypatch.setattr(mi, "write_page", held(mi.write_page))
+    plot = mi.InsightPlot("empty")
+    plot.show_figure(lambda: {"data": [], "layout": {}})
+    reported = []
+    plot._relay.done.connect(reported.append)  # a receiver that outlives the plot
+    computer = mi.InsightComputer()
+    computer.compute = held(lambda batch: "insight")
+    ready = []
+    computer.ready.connect(lambda *args: ready.append(args))
+    computer.request("batch")
+    writer = mi.ReportWriter()
+    writer.write = held(lambda *args: None)
+    written = []
+    writer.written.connect(lambda *args: written.append(args))
+    writer.request("batch", tmp_path / "report.md", None)
+
+    threading.Timer(0.2, release.set).start()  # the workers finish while the views are being deleted
+    for view in (plot, computer, writer):
+        delete(view)  # waits for its worker
+    qtbot.wait(100)
+    assert [page_error for _, _, page_error in reported] == [""]  # the page was written, and told to the relay only
+    assert ready == [] and written == []  # the deleted views got nothing
