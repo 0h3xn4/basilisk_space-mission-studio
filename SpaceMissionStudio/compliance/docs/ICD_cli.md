@@ -134,7 +134,7 @@ design checks of a spacecraft's 3D model: fields of view, thrusters and plumes, 
 
 ## `budgets`
 
-the static power budget of a spacecraft's budgets section per system mode: loads, margins, source power, per bus (no Basilisk needed)
+the static power budget of a spacecraft's budgets section per system mode: loads, margins, source power, per bus; with --pointing, its pointing error budget (no Basilisk needed)
 
 | Argument | Help |
 |---|---|
@@ -142,6 +142,7 @@ the static power budget of a spacecraft's budgets section per system mode: loads
 | `--spacecraft` | spacecraft name (default: the first) |
 | `--csv` | print the totals of each system mode as CSV |
 | `--explain` | each finding's rule, why, fix and override |
+| `--pointing` | print the pointing error budget instead (budgets.pointing): per requirement the value at its probability, the limit and the margin in arcsec, its status, and the contributors that enter it with their share; with --csv, as CSV |
 
 ## `model-analyses`
 

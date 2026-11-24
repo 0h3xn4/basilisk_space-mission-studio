@@ -29,6 +29,7 @@
   "distribution_loss": "[-] ratio in [0, 1), lost between source and loads",
   "equipment": "list[BudgetEquipmentConfig]",
   "modes": "list[BudgetModeConfig]",
+  "pointing": "the pointing error budget (version 2); absent: none",
   "power_margins": "list[PowerMarginConfig]",
   "system_power_margin_percent": "[%] 0 to 1000, on the sum of the margined loads"
  },
@@ -305,6 +306,33 @@
   "restore_tolerance_fraction": "[-] \"close enough, stop drifting\" threshold, same units",
   "target_separation_km": "[km] one or more along-track distances ahead of the chief",
   "tolerance_fraction": "[-] trigger threshold, as a fraction of the current target separation"
+ },
+ "PointingConfig": {
+  "contributors": "list[PointingContributorConfig]",
+  "line_of_sight": "\"x\", \"y\" or \"z\": the body axis along the line of sight; \"\" not stated",
+  "requirements": "list[PointingRequirementConfig]"
+ },
+ "PointingContributorConfig": {
+  "behaviour": "one of POINTING_BEHAVIOURS",
+  "distribution": "one of POINTING_DISTRIBUTIONS: what spread_arcsec is",
+  "equipment": "the equipment item it comes from (budgets.equipment); \"\" another source",
+  "group": "contributors of one group are correlated: they add linearly; \"\" independent",
+  "kind": "\"performance\", \"knowledge\" or \"both\"",
+  "mean_arcsec": "{axis: SourcedValue} [arcsec], any sign; absent: no mean",
+  "period_s": "[s] above 0, the period of a periodic contributor (needed for it)",
+  "sensor": "the scenario sensor it was made from (Add Scenario Sensors); \"\" none",
+  "spread_arcsec": "{axis: SourcedValue} [arcsec] at least 0; absent: no spread"
+ },
+ "PointingRequirementConfig": {
+  "axis": "\"x\", \"y\", \"z\" or \"line_of_sight\" (a half-cone from the two axes across the line of sight)",
+  "index": "one of POINTING_INDICES",
+  "interpretation": "\"temporal\", \"ensemble\" or \"mixed\": over what the probability holds",
+  "kind": "\"performance\" or \"knowledge\"",
+  "limit_arcsec": "[arcsec] above 0; a placeholder until known",
+  "modes": "list[str], system modes of budgets.modes it applies to",
+  "probability": "[-] in (0, 1), the probability the error stays within the limit; no default",
+  "stability_s": "[s] above 0, at most window_s: the window of a relative index",
+  "window_s": "[s] above 0, the observation period (mean, relative, drift, reproducibility)"
  },
  "PowerConfig": {
   "battery_capacity_wh": "[W*hr]",

@@ -18,7 +18,8 @@ return are the engine's own (`Scenario`, `ResultSet`, `EndOfLife`,
 whose names start with `_` are not.
 
 Without Basilisk, `template`, `load`, `validate`, `assumptions`,
-`compare`, `design_checks` and `power_budget` work; the others need it.
+`compare`, `design_checks`, `power_budget` and `pointing_budget` work;
+the others need it.
 
 ## The functions
 
@@ -39,6 +40,7 @@ Without Basilisk, `template`, `load`, `validate`, `assumptions`,
 | `compare(a_scenario, a_result, b_scenario, b_result)` | `Comparison` | Two runs side by side (Results > Compare) |
 | `design_checks(scenario, spacecraft=None, samples=None, base_dir=None)` | `DesignReport` | The 3D model's design checks: field-of-view obstruction, thruster authority and plumes, mass budget, launcher envelope, and their `findings()` |
 | `power_budget(scenario, spacecraft=None)` | `PowerBudget` | The static power budget of the spacecraft's `budgets` section per system mode: each mode's items, subsystems, buses and totals (load, with margins, at the source; `None` for unknown), the numbers used with their sources, the findings and `duty_cycle_average()` |
+| `pointing_budget(scenario, spacecraft=None)` | `PointingBudget` | The pointing error budget of the spacecraft's `budgets.pointing` section: per requirement the value at its probability, the limit and the margin (radians in `results`, arcsec in `rows()`; `None` for "TBD"), its status, and the contributors that enter it with their share (`term_rows()`) |
 | `model_analyses(scenario, result, spacecraft=None, base_dir=None)` | `RunReport` | A run's model analyses: the disturbance-torque budget, blinding, antenna obstruction, array shading, exposure and brightness; `base_dir` resolves the model's relative mesh paths (default: the scenario file's folder) |
 | `reentry(scenario, spacecraft=None, population_density_per_km2=None, base_dir=None)` | `ReentryEstimate` | The preliminary re-entry casualty estimate from the 3D model |
 | `thermal(scenario, result, spacecraft=None, cases=None, base_dir=None, size_heaters=True)` | `ThermalAnalysis` | The thermal analysis after a run, for a spacecraft with a `thermal` section: per case the node temperatures, heat flows, the summary against the limits, heaters with their sized power, radiators, limit events and the energy balance |

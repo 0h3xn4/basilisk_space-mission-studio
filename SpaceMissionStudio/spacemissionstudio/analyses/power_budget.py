@@ -319,8 +319,12 @@ def _input(name: str, path: str, value, unit: str) -> BudgetInput:
 def _inputs(section, items) -> list:
     """The numbers of the section the budget uses (as SBS's assumptions):
     the margin of each maturity the items use, the system margin, the
-    distribution loss and the efficiency of each bus they use."""
+    distribution loss and the efficiency of each bus they use. None
+    without an item with a power mode: there is no power budget to use
+    them (a section with only a pointing budget, decision PE-16)."""
     found = []
+    if not items:
+        return found
     for maturity in _first_use(item.maturity for item in items if item.maturity):
         margin = section.margin(maturity)
         found.append(_input(f"power margin, maturity {maturity}", f"budgets.power_margins[{maturity}].percent",
