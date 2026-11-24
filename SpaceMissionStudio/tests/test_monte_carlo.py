@@ -763,7 +763,7 @@ def _batch_folder(tmp_path, scenario, digest=None, cases=(0,)):
 
 
 def test_a_case_of_a_changed_scenario_is_refused_with_both_hashes(tmp_path):
-    """Decision MC-17 (the owner's answer to Q3, provisional): a case is not
+    """Decision MC-17 (the owner's answer to Q3, confirmed): a case is not
     run again when the scenario changed since the batch. The message names
     the scenario's hash now and the batch's, says why, and says how to make
     it work: open the batch's own scenario (its file named)."""

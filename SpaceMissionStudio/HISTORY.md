@@ -21706,3 +21706,13 @@ Python) job of the same CI failed only on the framework test
 `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
 (K-45), and Linux (MAX Python) stopped at the build cache's start, before
 any test.
+
+## The owner confirmed Q1 to Q8 and the pointing choices (2026-11-24)
+
+The owner answered "as per your current answer" to Q1 to Q8 of the Monte
+Carlo plan and "as per your recommendations" to the pointing budget's
+open choices. Records only, and one parameter's source text:
+`monte_carlo.percentiles` now gives the owner's answer (Q8, MC-27) as its
+source instead of "TBD"; its value is unchanged. DECISIONS marks MC-11 to
+MC-15, MC-17, MC-27 and MC-34 as confirmed and adds PE-21 (a gyroscope's
+angle error from a time between attitude fixes), which is a backlog item.

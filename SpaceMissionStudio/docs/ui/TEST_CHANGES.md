@@ -2887,3 +2887,10 @@ and the 50 ms limit). Each fails without the change.
 
 New: `test_a_page_the_web_view_still_holds_is_deleted_a_little_later`
 (fails without the retry).
+
+## The owner confirmed Q1 to Q8 (2026-11-24)
+
+Wording only: the docstrings of `test_cli.py::test_monte_carlo_exits_5_when_a_requirement_is_not_shown_met`,
+`test_monte_carlo.py::test_a_case_of_a_changed_scenario_is_refused_with_both_hashes` and
+`test_monte_carlo_requirements.py::test_a_crashed_run_counts_as_not_met_and_is_shown_apart`
+say "confirmed" instead of "provisional". No assertion changed.
