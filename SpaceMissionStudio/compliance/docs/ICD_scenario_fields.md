@@ -91,13 +91,14 @@ A spacecraft's equipment list, system modes and power budget numbers (module doc
 
 | Field | Type | Default | Unit / note |
 |---|---|---|---|
-| `version` | int | `1` |  |
+| `version` | int | `2` |  |
 | `buses` | list | `[]` | list[BudgetBusConfig] |
 | `distribution_loss` | SourcedValue / None | `None` | [-] ratio in [0, 1), lost between source and loads |
 | `power_margins` | list | `[]` | list[PowerMarginConfig] |
 | `system_power_margin_percent` | SourcedValue / None | `None` | [%] 0 to 1000, on the sum of the margined loads |
 | `equipment` | list | `[]` | list[BudgetEquipmentConfig] |
 | `modes` | list | `[]` | list[BudgetModeConfig] |
+| `pointing` | PointingConfig / None | `None` | the pointing error budget (version 2); absent: none |
 
 ## Command
 
@@ -587,6 +588,50 @@ Constellation-wide phasing maintenance: holds this (follower) spacecraft's along
 | `mean_oe_gain` | float | `2500.0` | [m^2/s^3] "mean_oe": diagonal of K per kg of spacecraft |
 | `hill_position_gain` | float | `2e-06` | [1/s^2] "hill_pd": diagonal of K |
 | `hill_velocity_gain` | float | `0.002` | [1/s] "hill_pd": diagonal of P |
+
+## PointingConfig
+
+The pointing error budget of a spacecraft (design note section 3.1): its requirements, its contributors and the body axis along the line of sight, which a half-cone requirement needs.
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `line_of_sight` | str | `''` | "x", "y" or "z": the body axis along the line of sight; "" not stated |
+| `requirements` | list | `[]` | list[PointingRequirementConfig] |
+| `contributors` | list | `[]` | list[PointingContributorConfig] |
+
+## PointingContributorConfig
+
+A source of pointing error: its ``kind`` (the indices of performance, of knowledge, or both), its time ``behaviour`` (which indices it enters and by what share: ``engine.pointing_budget``) and, per body axis, a mean and a spread in arcsec. The spread is a 1-sigma (gaussian), a half-width (uniform) or an amplitude (sinusoidal). An axis left out of ``mean_arcsec`` has no mean; an axis left out of ``spread_arcsec`` has no spread: the contributor does not act on it. A placeholder makes every index it enters "TBD" (decision PE-8). Contributors of one ``group`` are correlated and add linearly (PE-4).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `kind` | str | `'performance'` | "performance", "knowledge" or "both" |
+| `behaviour` | str | `'random'` | one of POINTING_BEHAVIOURS |
+| `distribution` | str | `'gaussian'` | one of POINTING_DISTRIBUTIONS: what spread_arcsec is |
+| `mean_arcsec` | dict | `{}` | {axis: SourcedValue} [arcsec], any sign; absent: no mean |
+| `spread_arcsec` | dict | `{}` | {axis: SourcedValue} [arcsec] at least 0; absent: no spread |
+| `period_s` | SourcedValue / None | `None` | [s] above 0, the period of a periodic contributor (needed for it) |
+| `group` | str | `''` | contributors of one group are correlated: they add linearly; "" independent |
+| `equipment` | str | `''` | the equipment item it comes from (budgets.equipment); "" another source |
+| `sensor` | str | `''` | the scenario sensor it was made from (Add Scenario Sensors); "" none |
+
+## PointingRequirementConfig
+
+A pointing requirement: the error ``index`` of the pointing (or of its knowledge) about one ``axis`` must stay within ``limit_arcsec`` with the ``probability`` given. The windows are the observation period (mean, relative, drift and reproducibility) and, for relative, the shorter stability time. ``modes`` names the system modes it applies to (a record: the budget does not depend on them).
+
+| Field | Type | Default | Unit / note |
+|---|---|---|---|
+| `name` | str | `required` |  |
+| `limit_arcsec` | SourcedValue | `required` | [arcsec] above 0; a placeholder until known |
+| `probability` | SourcedValue | `required` | [-] in (0, 1), the probability the error stays within the limit; no default |
+| `index` | str | `'absolute'` | one of POINTING_INDICES |
+| `kind` | str | `'performance'` | "performance" or "knowledge" |
+| `axis` | str | `'x'` | "x", "y", "z" or "line_of_sight" (a half-cone from the two axes across the line of sight) |
+| `interpretation` | str | `'temporal'` | "temporal", "ensemble" or "mixed": over what the probability holds |
+| `window_s` | SourcedValue / None | `None` | [s] above 0, the observation period (mean, relative, drift, reproducibility) |
+| `stability_s` | SourcedValue / None | `None` | [s] above 0, at most window_s: the window of a relative index |
+| `modes` | list | `[]` | list[str], system modes of budgets.modes it applies to |
 
 ## PowerConfig
 

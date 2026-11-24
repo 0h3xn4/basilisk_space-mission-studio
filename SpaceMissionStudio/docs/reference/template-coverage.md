@@ -112,7 +112,7 @@ set of templates (`BACKLOG.md`, "Templates for every feature, batch B").
 | Design checks: fields of view, plume, mass budget, launcher envelope | Run › Design Checks | 32 |
 | Model analyses in a run: disturbance torques, shading | Results › Model Analyses | 32 |
 | Thermal analysis | Run › Thermal | 33, 34 |
-| Pointing error budget | not on `develop` yet | None yet (batch B) |
+| Pointing error budget | Budgets › Pointing, `budgets --pointing` | None yet (batch B) |
 
 ## Navigation
 
@@ -152,7 +152,7 @@ Batch B adds templates for these, as the owner asked:
 - the other Monte Carlo dispersions: attitude, inertia, body rate, SRP
   coefficient and the atmospheric density scale;
 - plugins and project parameters (a project configuration);
-- the pointing error budget, once it is on `develop`.
+- the pointing error budget (Budgets › Pointing).
 
 These are without a template too, and batch B lists them:
 

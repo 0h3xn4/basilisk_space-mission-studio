@@ -2,28 +2,14 @@
 
 ## Next release
 
-- A pointing error budget, scope B
-  (`docs/developer/pointing-error-budget-design.md`, sections 3 and 4;
-  `docs/DECISIONS.md`, "Pointing error budget: design", PE-1 to PE-9
-  and the owner's answers of 2026-11-24). A "Pointing" tab of the
-  Budgets area: requirements and contributors entered by hand, the
-  summation per index and axis, the margins, the budget report and the
-  CLI (option A), and a button that adds the scenario's sensor noises as
-  knowledge contributors with their catalog sources. Per axis and a
-  line-of-sight (half-cone) value by a stated rule; the window share
-  rule for periodic contributors; no default probability level ("TBD").
-  A `BUDGETS_VERSION` step with a migration. Clean room from the public
-  concepts of ECSS-E-ST-60-10C only; every number has a source or is
-  "TBD". About 22 hours.
-
 - Templates for every feature, batch B (`docs/reference/template-coverage.md`,
   "Still without a template"; batch A is templates 39 to 42, decisions
   TPL-A1 to TPL-A4). One or more templates for: a 3D model from an
   imported `.obj` mesh; an IDM-CIC import from a synthetic file only; the
   other Monte Carlo dispersions (attitude, inertia, body rate, SRP
   coefficient, atmospheric density scale); plugins and project
-  parameters (a project configuration); the pointing error budget, once
-  it is on `develop`. Also without a template: solar activity at the
+  parameters (a project configuration); the pointing error budget
+  (Budgets › Pointing). Also without a template: solar activity at the
   95th or 5th percentile or a local space-weather file; a long run past
   Basilisk's 104 days; Mission Sequence assignment, `if`, `while` and
   script blocks; sensor faults; a 3D model from cylinders and spheres;
@@ -62,6 +48,17 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- A pointing error budget, scope B (the owner's answers of 2026-11-24
+  to `docs/developer/pointing-error-budget-design.md` section 7), on
+  branch `feature/pointing-budget` (2026-11-24). Budgets › Pointing after
+  Mass: requirements and contributors entered by hand, the sum per index
+  and axis, the value at the requirement's probability (no default
+  probability: "TBD"), the margin with its status, a line-of-sight
+  (half-cone) value, the window share for periodic contributors, the
+  scenario's star trackers, gyroscopes and sun sensors as knowledge
+  contributors with their sources, `budgets --pointing` and
+  `api.pointing_budget`. Budgets section version 2 with a migration; no
+  template or golden file changed. Decisions PE-10 to PE-20; SRS-F-32.
 - Monte Carlo phase C, item 1: the atmospheric density dispersion, on
   branch `feature/monte-carlo-density` (2026-11-24). The owner's order
   of the phase C dispersions (Q6) is recorded as MC-36. A spike

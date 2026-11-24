@@ -12,6 +12,26 @@ fixes bugs.
 
 ### Added
 
+- **A pointing error budget.** The Budgets area has a new **Pointing**
+  tab, after Mass. You list your pointing requirements (which error
+  index, about which axis or the line of sight, the limit in arcsec and
+  the probability) and the sources of error (biases, noise, periodic
+  terms, drifts, transients), each with its spread, its mean and where
+  the numbers come from. The tab adds them up per index and axis and
+  shows, for each requirement, the value at its probability, the margin
+  and whether it is met, with the contributors behind it. **Add Scenario
+  Sensors** brings in your star trackers, gyroscopes and sun sensors as
+  knowledge errors, with the catalog or scenario source of their noise.
+  Nothing is guessed: a number you have not given yet reads "TBD", and
+  so does every result that needs it. A new requirement has no
+  probability until you set one. On the command line,
+  `spacemissionstudio budgets scenario.json --pointing` prints the same
+  budget (`--csv` for CSV), and `api.pointing_budget()` returns it. The
+  budgets section's own version is now 2: older files open as before,
+  but SpaceMissionStudio 2.15.0 cannot open a file saved with this
+  version. A budgets section with no powered equipment no longer reports
+  missing power margins and losses.
+
 - **Four new templates show features no template used before.**
   *39 - Orbit inputs* flies three satellites whose orbits are given three
   ways: a TLE (a synthetic one, clearly labelled, not a real satellite),
@@ -30,6 +50,7 @@ fixes bugs.
   Each template has a Customize wizard. A new page,
   `docs/reference/template-coverage.md`, lists every feature with the
   templates that show it, and the ones still to come.
+
 - **A Monte Carlo batch can now vary the atmospheric density.** Pick
   `density_scale` in Scenario › Monte Carlo › Dispersions: each run draws
   one scale (uniform or normal) and the drag of every spacecraft reads
@@ -49,6 +70,11 @@ fixes bugs.
 
 ### Fixed
 
+- **Monte Carlo plot pages no longer pile up in the temporary folder on
+  Windows.** When a statistics plot was drawn again while the previous
+  one was still loading, the old page (a few megabytes) could not be
+  deleted and stayed until you closed the view. It is now tried again a
+  moment later.
 - **Cancelling a Monte Carlo batch that uses several processes no longer
   leaves a process behind.** When you cancelled such a batch, one of its
   worker processes could stay running after the batch had stopped,
