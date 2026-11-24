@@ -2853,3 +2853,9 @@ No existing test changed. Added:
 (the Statistics plot, the statistics' computer and the report writer
 deleted while their workers run; the late results are dropped). It does
 not reproduce the Windows failure on Linux; see `HISTORY.md`.
+
+## A uniform dispersion with equal bounds (MC-41, 2026-11-24)
+
+No existing test changed. Added to `tests/test_monte_carlo.py`:
+`test_a_uniform_dispersion_with_equal_bounds_gives_that_value` (four
+cases) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`.

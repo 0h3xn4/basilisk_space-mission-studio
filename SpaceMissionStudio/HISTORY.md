@@ -21621,3 +21621,26 @@ No code changed.
   owner kept it.
 - **Q9 of the Monte Carlo plan** (the density dispersion's meaning) is
   recorded with the density dispersion itself (PR #322).
+
+## A uniform dispersion with equal bounds (MC-41, 2026-11-24)
+
+The backlog item of "Later" found during the density dispersion. Branch
+`fix/uniform-equal-bounds` from `develop` at `28d9e83`.
+
+**Cause.** Basilisk 2.12.0's `UniformDispersion.generate` computes
+`(value - mid) / (high - mid)` for its note; with equal bounds that is a
+division by zero, raised inside the Controller's case, so the run failed.
+`UniformVectorCartDispersion` (the body rate) does the same per axis.
+
+**Fix.** `engine.monte_carlo._UniformDispersion`: equal bounds return the
+bound after the same one `random.uniform` call. Used by the dry mass (the
+propellant offset class now derives from it), the drag and SRP
+coefficients and the density scale; the uniform body rate has the same
+branch. See DECISIONS MC-41.
+
+**Tests.** `tests/test_monte_carlo.py`:
+`test_a_uniform_dispersion_with_equal_bounds_gives_that_value` (dry mass,
+Cd, Cr, body rate: the value, the same numbers taken from `random`, the
+notes) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`
+(template 25, one run, dry mass [150, 150]). Without the fix five of the
+six cases fail (the sixth is the density scale's own, already fixed).

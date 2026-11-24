@@ -31,6 +31,13 @@ fixes bugs.
 
 ### Fixed
 
+- **A new Monte Carlo dispersion no longer makes every run fail.** When
+  you added a dry-mass, drag-coefficient, SRP-coefficient or body-rate
+  dispersion and ran the batch before widening its range, the new
+  dispersion still had the same lower and upper bound, and every run
+  of the batch failed with a division by zero inside Basilisk. A range
+  with no width is now simply that value, so the batch runs and the
+  other dispersions draw exactly what they drew before.
 - **Cancelling a Monte Carlo batch that uses several processes no longer
   leaves a process behind.** When you cancelled such a batch, one of its
   worker processes could stay running after the batch had stopped,
