@@ -2,6 +2,16 @@
 
 ## Next release
 
+- Pointing budget: a gyroscope's angle error from a time between
+  attitude fixes (decision PE-21, the owner 2026-11-24). A sourced
+  `pointing` value "time between attitude fixes [s]", "TBD" until set;
+  Add Scenario Sensors then gives a gyroscope the random-walk angle its
+  rate noise builds up over that time (the device catalog states
+  `gyro_noise_rad_s` for a 1 s tick from the published angle random
+  walk), with the rule and its source in the contributor's source text.
+  A `BUDGETS_VERSION` step with a migration; tests with a hand case.
+  About 3 hours.
+
 - Templates for every feature, batch B (`docs/reference/template-coverage.md`,
   "Still without a template"; batch A is templates 39 to 42, decisions
   TPL-A1 to TPL-A4). One or more templates for: a 3D model from an

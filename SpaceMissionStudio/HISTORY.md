@@ -21728,6 +21728,16 @@ notes) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`
 (template 25, one run, dry mass [150, 150]). Without the fix five of the
 six cases fail (the sixth is the density scale's own, already fixed).
 
+## The owner confirmed Q1 to Q8 and the pointing choices (2026-11-24)
+
+The owner answered "as per your current answer" to Q1 to Q8 of the Monte
+Carlo plan and "as per your recommendations" to the pointing budget's
+open choices. Records only, and one parameter's source text:
+`monte_carlo.percentiles` now gives the owner's answer (Q8, MC-27) as its
+source instead of "TBD"; its value is unchanged. DECISIONS marks MC-11 to
+MC-15, MC-17, MC-27 and MC-34 as confirmed and adds PE-21 (a gyroscope's
+angle error from a time between attitude fixes), which is a backlog item.
+
 ## Templates for every feature, batch A: templates 39 to 42 (2026-11-24)
 
 The owner wants at least one template for every feature of the tool. On

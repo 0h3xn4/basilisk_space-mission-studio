@@ -134,7 +134,7 @@ def _altitude(name="R-ALT", at_least=400.0, confidence=0.9, max_probability=None
 def test_a_crashed_run_counts_as_not_met_and_is_shown_apart():
     """Decision MC-6: a crashed run has no outcome and counts as not
     meeting every requirement, in N and in k, and the table says how many
-    of the k crashed (owner's answer Q1, provisional)."""
+    of the k crashed (owner's answer Q1, confirmed)."""
     batch = _batch([410.0, 395.0, 405.0, 420.0], failed=[4, 5], requirements=[_altitude()])
     (result,) = req.evaluate(batch)
     assert (result.evaluated, result.not_met, result.crashed, result.not_evaluated) == (6, 3, 2, 0)
