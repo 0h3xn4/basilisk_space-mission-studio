@@ -2,6 +2,31 @@
 
 ## Next release
 
+- Pointing budget: a gyroscope's angle error from a time between
+  attitude fixes (decision PE-21, the owner 2026-11-24). A sourced
+  `pointing` value "time between attitude fixes [s]", "TBD" until set;
+  Add Scenario Sensors then gives a gyroscope the random-walk angle its
+  rate noise builds up over that time (the device catalog states
+  `gyro_noise_rad_s` for a 1 s tick from the published angle random
+  walk), with the rule and its source in the contributor's source text.
+  A `BUDGETS_VERSION` step with a migration; tests with a hand case.
+  About 3 hours.
+
+- Templates for every feature, batch B (`docs/reference/template-coverage.md`,
+  "Still without a template"; batch A is templates 39 to 42, decisions
+  TPL-A1 to TPL-A4). One or more templates for: a 3D model from an
+  imported `.obj` mesh; an IDM-CIC import from a synthetic file only; the
+  other Monte Carlo dispersions (attitude, inertia, body rate, SRP
+  coefficient, atmospheric density scale); plugins and project
+  parameters (a project configuration); the pointing error budget
+  (Budgets › Pointing). Also without a template: solar activity at the
+  95th or 5th percentile or a local space-weather file; a long run past
+  Basilisk's 104 days; Mission Sequence assignment, `if`, `while` and
+  script blocks; sensor faults; a 3D model from cylinders and spheres;
+  the equipment list and power budget, if template 38 does not land.
+  Each new template gets its golden file, its claims test and a row in
+  the coverage page.
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the

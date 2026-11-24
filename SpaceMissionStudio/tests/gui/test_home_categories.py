@@ -24,6 +24,8 @@ the same order (TC-3)."""
 
 import pytest
 
+from spacemissionstudio.scenarios.catalog import CATEGORIES
+
 pytestmark = pytest.mark.requires_gui
 
 
@@ -87,7 +89,8 @@ def test_the_category_and_text_filters_combine(home):
     only their heading shows."""
     home.set_category("attitude")
     category_only = {card.path.name for card in home.grid.visible_cards()}
-    assert {name[:2] for name in category_only} == {"06", "07", "15", "10", "11", "17", "12", "13", "14", "21"}
+    attitude = next(category for category in CATEGORIES if category.key == "attitude")
+    assert category_only == set(attitude.files)
     assert [heading.text() for heading in home.grid.visible_headings()] == ["Attitude and control"]
     home.set_category(None)
     home.filter_edit.setText("wheel")
@@ -98,11 +101,12 @@ def test_the_category_and_text_filters_combine(home):
     assert both == category_only & text_only and both
     assert [card.path.name for card in home.grid.visible_cards()] == [
         card.path.name for card in home.grid.cards if card.path.name in both]  # still in catalog order
-    assert home.templates_count.text() == f"{len(both)} of 37"
+    assert home.templates_count.text() == f"{len(both)} of {len(home.grid.cards)}"
     home.filter_edit.clear()
     assert {card.path.name for card in home.grid.visible_cards()} == category_only
     home.set_category(None)
-    assert len(home.grid.visible_cards()) == 37 and len(home.grid.visible_headings()) == 9
+    assert len(home.grid.visible_cards()) == len(home.grid.cards)
+    assert len(home.grid.visible_headings()) == len(CATEGORIES)
 
 
 def test_the_count_follows_the_templates_folder(home):
@@ -111,7 +115,7 @@ def test_the_count_follows_the_templates_folder(home):
     from spacemissionstudio.gui.load_scenario_widget import TEMPLATES_DIR
 
     files = len(list(TEMPLATES_DIR.glob("*.json")))
-    assert files == 37
+    assert files == sum(len(category.files) for category in CATEGORIES)
     assert home.templates_count.text() == str(files)
     assert len(home.cards) == len(home.grid.cards) == files
     home.set_category("deep-space")
@@ -130,10 +134,10 @@ def test_the_empty_state_shows_when_the_filters_match_nothing(home):
     assert home.grid.empty_label.isVisible()
     assert home.grid.empty_label.text().splitlines()[0] == FILTER_EMPTY[0]
     assert home.grid.empty_label.button.isVisible() and home.grid.empty_label.button.text() == FILTER_EMPTY[2]
-    assert home.templates_count.text() == "0 of 37"
+    assert home.templates_count.text() == f"0 of {len(home.grid.cards)}"
     home.grid.empty_label.button.click()
     assert home.filter_edit.text() == "" and home.category_combo.currentText() == ALL_CATEGORIES
-    assert len(home.grid.visible_cards()) == 37 and not home.grid.empty_label.isVisible()
+    assert len(home.grid.visible_cards()) == len(home.grid.cards) and not home.grid.empty_label.isVisible()
 
 
 def test_opening_a_template_from_a_group_opens_its_file(home, qtbot):

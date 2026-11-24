@@ -96,11 +96,11 @@ Where each piece lives in the app, and which template shows it best:
 | Piece | Where you edit it | Learn it from template |
 |---|---|---|
 | Simulation mode, epoch | Scenario tree > **General** | 01 (orbit only), 06 (attitude) |
-| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18 |
-| A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22 |
-| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14 |
-| Where it points | ... > **Attitude control** | 06, 15, 19 |
-| Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19 |
+| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18, 42 |
+| A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22, 39 |
+| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14, 41 |
+| Where it points | ... > **Attitude control** | 06, 15, 19, 41 |
+| Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19, 40 |
 | Instruments, memory, downlink | ... > **Power / propulsion / link budget** > Data handling | 26 |
 | 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32 |
 | Ground stations | Scenario tree > **Ground stations** > its name | 19, 22 |
@@ -559,9 +559,9 @@ or pick the one you need:
 | Category | Templates, simple to advanced | What you learn |
 |---|---|---|
 | Getting started | 22, 23, 01, 02 | A realistic satellite with drag and a ground station; a complete small satellite with hardware, a radio link and a Mission Sequence; an ideal orbit; what Earth's shape, the Sun and the Moon do to it |
-| Orbits and orbit keeping | 18, 03, 04, 05, 24, 29 | Station keeping against drag (low orbit) and drift (geostationary); a Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
+| Orbits and orbit keeping | 39, 42, 18, 03, 40, 04, 05, 24, 29 | An orbit from a TLE or a state vector; drag from a tabular atmosphere and the lifetime; station keeping against drag (low orbit) and drift (geostationary); continuous low thrust; a Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
 | Maneuvers and Mission Sequence | 08, 16 | Mission Sequences: an impulsive burn, a Lambert transfer |
-| Attitude and control | 06, 07, 15, 10, 11, 17, 12, 13, 14, 21 | Attitude control, ideal and with real hardware; pointing at the Moon; gravity-gradient torque; thrusters for pointing and the propellant they use; unloading wheels with thrusters or torque rods; finding the Sun with sun sensors; surface torques from a facet model |
+| Attitude and control | 06, 07, 41, 15, 10, 11, 17, 12, 13, 14, 21 | Attitude control, ideal and with real hardware; velocity pointing with a magnetometer and navigation errors; pointing at the Moon; gravity-gradient torque; thrusters for pointing and the propellant they use; unloading wheels with thrusters or torque rods; finding the Sun with sun sensors; surface torques from a facet model |
 | Power, communications and data | 19, 26 | Power and a radio link working together; data from instrument to ground |
 | Spacecraft model, thermal and budgets | 28, 32, 27, 20, 33, 34 | A 3D model and the mass properties from its parts; equipment mounted, with fields of view, a plume and the mass budget checked; flexible wings swinging in a turn; thermal sensors; a thermal model in hot, cold and safe-mode cases; flexible arrays in the thermal model |
 | Operations planning | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
@@ -625,7 +625,8 @@ fixed:
   published profiles Basilisk ships (**Atmosphere table**: the US
   Standard Atmosphere 1976 to 86 km, Earth-GRAM 2016's to 200 km,
   NRLMSISE-00's to 499.5 km), with no drag above its top
-  ([Environment data](docs/models/environment-and-data.md)). With a Mission Sequence its steps decide
+  ([Environment data](docs/models/environment-and-data.md); template 42 flies the tabular model and
+  compares it with the others). With a Mission Sequence its steps decide
   how long the run is; a note under **Duration** then says how long
   ("58 min + 2 event or condition stops"), and Overview shows the same. The rkf45 and rkf78 integrators adapt
   their steps inside each dynamics step to a relative error of 1e-10
@@ -661,7 +662,8 @@ fixed:
   the values before and after, converted by Basilisk's own `orbitalMotion`
   at the scenario epoch), or **Use the ... page's values** takes what that
   page already holds. A TLE is never made from the other forms: it holds
-  SGP4 mean elements fitted to tracking data. **Import CCSDS OPM/OMM...**
+  SGP4 mean elements fitted to tracking data. Template 39 flies one orbit
+  of each form. **Import CCSDS OPM/OMM...**
   sets the orbit from an orbit file another tool or an operator wrote
   ([Exchange orbits with other tools](docs/user-manual/orbit-files.md)).
   There are also **Generate Walker constellation...** and **Generate
@@ -701,7 +703,8 @@ fixed:
   A `maneuver` or `lambert_transfer` burn is an
   instant change of velocity only: it uses no propellant and leaves the
   mass unchanged. For propellant, use the **Budgets > Propellant** page (Section 11)
-  or a fuel tank with station-keeping or constant thrust.
+  or a fuel tank with station-keeping or constant thrust (continuous
+  low thrust in the orbit frame; template 40).
 * **Monte Carlo** – see Section 10.
 * **Assumptions** – the rules and margins the analyses use, each with
   its value in effect, unit and source, and the project configuration
@@ -1323,7 +1326,9 @@ steps of the slowest channel (measured with Basilisk's module); the
 Explain (**Overview**) says how long that is for your run. In a Monte Carlo batch Basilisk gives every run
 its own random seed (the scenario's seed is not used there), so the runs see
 different errors. Software in the loop gives the program the same noisy
-navigation as the simulation's own modules.
+navigation as the simulation's own modules. Template 41 flies velocity
+pointing with navigation errors and shows how far they turn the
+spacecraft.
 
 ### Exporting the flight software
 
@@ -2344,7 +2349,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-seven built-in templates teaches, in
+  describes what each of the forty-one built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

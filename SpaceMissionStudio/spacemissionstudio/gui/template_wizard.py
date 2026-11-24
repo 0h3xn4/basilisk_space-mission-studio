@@ -625,6 +625,87 @@ def _duration_page(intro: str, maximum_days: float) -> WizardPageSpec:
     )
 
 
+def _spacecraft(name: str):
+    """A multi-spacecraft template's spacecraft by name ('39', '40')."""
+    return lambda scenario: next(sc for sc in scenario.spacecraft if sc.name == name)
+
+
+def _state_apsides_km(scenario: Scenario) -> tuple[float, float]:
+    """'39''s state-sat: perigee and apogee altitudes [km] of its Cartesian
+    state, from its energy and angular momentum."""
+    import numpy as np
+
+    from .. import constants
+
+    orbit = _spacecraft("state-sat")(scenario).orbit
+    mu = constants.EARTH_GM_M3_S2 / 1e9  # [km^3/s^2]
+    r, v = np.array(orbit.position_km, float), np.array(orbit.velocity_km_s, float)
+    a = 1.0 / (2.0 / np.linalg.norm(r) - v @ v / mu)  # [km]
+    e = float(np.linalg.norm(np.cross(v, np.cross(r, v)) / mu - r / np.linalg.norm(r)))
+    radius = constants.EARTH_EQUATORIAL_RADIUS_M / 1e3  # [km]
+    return a * (1.0 - e) - radius, a * (1.0 + e) - radius
+
+
+def _state_apsis(index: int):
+    """Get/set for '39''s state-sat perigee (0) or apogee (1) altitude [km]:
+    the new state is the perigee of that orbit, in the direction of the
+    present position and in the present plane (vis-viva speed)."""
+    def get(scenario: Scenario) -> float:
+        return float(_state_apsides_km(scenario)[index])
+
+    def set_(scenario: Scenario, value: float) -> None:
+        import numpy as np
+
+        from .. import constants
+
+        apsides = list(_state_apsides_km(scenario))
+        apsides[index] = value
+        perigee_km, apogee_km = min(apsides), max(apsides)
+        orbit = _spacecraft("state-sat")(scenario).orbit
+        r, v = np.array(orbit.position_km, float), np.array(orbit.velocity_km_s, float)
+        radial = r / np.linalg.norm(r)
+        normal = np.cross(r, v) / np.linalg.norm(np.cross(r, v))
+        radius = constants.EARTH_EQUATORIAL_RADIUS_M / 1e3  # [km]
+        mu = constants.EARTH_GM_M3_S2 / 1e9  # [km^3/s^2]
+        r_p, a = radius + perigee_km, radius + (perigee_km + apogee_km) / 2.0  # [km]
+        speed = np.sqrt(mu * (2.0 / r_p - 1.0 / a))  # [km/s]
+        orbit.position_km = [round(float(x), 3) for x in r_p * radial]
+        orbit.velocity_km_s = [round(float(x), 6) for x in speed * np.cross(normal, radial)]
+
+    return get, set_
+
+
+def _navigation_bound(attribute: str):
+    """Get/set for one bound of '41''s navigation error; its step stays
+    a tenth of the bound or less, as the template's."""
+    def get(scenario: Scenario) -> float:
+        return float(getattr(_sc(scenario).navigation_error, attribute))
+
+    def set_(scenario: Scenario, value: float) -> None:
+        errors = _sc(scenario).navigation_error
+        setattr(errors, attribute, value)
+        step = attribute.replace("_bound_", "_step_")
+        setattr(errors, step, min(getattr(errors, step), value / 10.0))
+
+    return get, set_
+
+
+def _short_duration_page(intro: str) -> WizardPageSpec:
+    """A simulation length for a run under the usual page's 0.1 day ('41')."""
+    return WizardPageSpec(
+        title="Simulation length",
+        intro=intro,
+        fields=[
+            WizardField(
+                "Duration", "Total simulated time.",
+                lambda s: s.sim_settings.duration_days,
+                lambda s, v: setattr(s.sim_settings, "duration_days", v),
+                0.01, 1.0, decimals=3, step=0.01, suffix=" days", hint="Total simulated time",
+            ),
+        ],
+    )
+
+
 _SPECS: dict[str, TemplateWizardSpec] = {
     "03_geo_station_keeping.json": TemplateWizardSpec(
         template_filename="03_geo_station_keeping.json",
@@ -2104,6 +2185,98 @@ _SPECS: dict[str, TemplateWizardSpec] = {
             ),
             _duration_page("One orbit takes 17 hours; about 2 minutes of computing per simulated day.",
                            SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "39_orbit_inputs_tle_and_state_vector.json": TemplateWizardSpec(
+        template_filename="39_orbit_inputs_tle_and_state_vector.json",
+        pages=[
+            WizardPageSpec(
+                title="State vector",
+                intro="state-sat's position and velocity are made again for these altitudes, at its perigee.",
+                fields=[
+                    WizardField(
+                        "Perigee altitude", "state-sat's lowest altitude above the equatorial radius.",
+                        *_state_apsis(0), 200.0, 5000.0, decimals=3, step=10.0, suffix=" km",
+                        hint="Lowest point of state-sat's orbit",
+                    ),
+                    WizardField(
+                        "Apogee altitude", "state-sat's highest altitude above the equatorial radius.",
+                        *_state_apsis(1), 200.0, 40000.0, decimals=3, step=10.0, suffix=" km",
+                        hint="Highest point of state-sat's orbit",
+                    ),
+                ],
+            ),
+            _duration_page("The three orbits are compared over this time.", SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "40_continuous_low_thrust.json": TemplateWizardSpec(
+        template_filename="40_continuous_low_thrust.json",
+        pages=[
+            WizardPageSpec(
+                title="Thruster",
+                intro="ep-sat's electric thruster fires along the velocity for the whole run.",
+                fields=[
+                    WizardField(
+                        "Thrust", "The thruster's constant force.",
+                        lambda s: _spacecraft("ep-sat")(s).constant_thrust.thrust_n * 1e3,
+                        lambda s, v: setattr(_spacecraft("ep-sat")(s).constant_thrust, "thrust_n", v / 1e3),
+                        0.01, 100.0, decimals=2, step=0.1, suffix=" mN", hint="More thrust = faster rise",
+                    ),
+                    WizardField(
+                        "Specific impulse", "Thrust per propellant flow, in seconds.",
+                        lambda s: _spacecraft("ep-sat")(s).constant_thrust.isp_s,
+                        lambda s, v: setattr(_spacecraft("ep-sat")(s).constant_thrust, "isp_s", v),
+                        100.0, 10000.0, decimals=0, step=100.0, suffix=" s", hint="Higher = less propellant used",
+                    ),
+                    WizardField(
+                        "Propellant", "Propellant on board at the start.",
+                        lambda s: _spacecraft("ep-sat")(s).constant_thrust.propellant_kg,
+                        lambda s, v: setattr(_spacecraft("ep-sat")(s).constant_thrust, "propellant_kg", v),
+                        0.0, 50.0, decimals=2, step=0.1, suffix=" kg", hint="The thrust stops when it is used up",
+                    ),
+                ],
+            ),
+            _duration_page("The orbits of the two spacecraft separate with time.", SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "41_velocity_pointing_with_navigation_errors.json": TemplateWizardSpec(
+        template_filename="41_velocity_pointing_with_navigation_errors.json",
+        pages=[
+            WizardPageSpec(
+                title="Navigation error",
+                intro="The bounds of the errors on what the flight software is told.",
+                fields=[
+                    WizardField(
+                        "Attitude bound", "The largest attitude error, per axis.",
+                        *_navigation_bound("attitude_bound_deg"), 0.0001, 10.0, decimals=4, step=0.01,
+                        suffix=" deg", hint="Per axis",
+                    ),
+                    WizardField(
+                        "Rate bound", "The largest body-rate error, per axis.",
+                        *_navigation_bound("rate_bound_deg_s"), 0.00001, 1.0, decimals=5, step=0.001,
+                        suffix=" deg/s", hint="Per axis; the largest effect on pointing",
+                    ),
+                ],
+            ),
+            _short_duration_page("One orbit is about 0.07 days."),
+        ],
+    ),
+    "42_tabular_atmosphere_and_lifetime.json": TemplateWizardSpec(
+        template_filename="42_tabular_atmosphere_and_lifetime.json",
+        pages=[
+            _sun_synchronous_orbit_page("Lower orbits feel more drag; the table stops at 499.5 km."),
+            WizardPageSpec(
+                title="Spacecraft",
+                intro="Mass and size set how strongly drag slows the satellite.",
+                fields=[
+                    WizardField(
+                        "Drag area", "Cross-sectional area facing the flow.",
+                        lambda s: _sc(s).drag_area_m2, lambda s, v: setattr(_sc(s), "drag_area_m2", v),
+                        0.01, 100.0, decimals=2, step=0.1, suffix=" m^2", hint="Bigger = more drag",
+                    ),
+                ],
+            ),
+            _duration_page("Longer runs show more decay.", SimSettings._MAX_SINGLE_RUN_DAYS),
         ],
     ),
 }

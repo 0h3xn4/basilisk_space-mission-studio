@@ -16,7 +16,7 @@ On the spacecraft's **Attitude control** page, pick an **FSW mode**:
 | (none) | Nowhere: it coasts under the torques that are on |
 | `inertial3D` | At one fixed attitude relative to the stars |
 | `hillPoint` | Along the orbit frame (nadir pointing) |
-| `velocityPoint` | Along the velocity direction |
+| `velocityPoint` | Along the velocity direction (body y along the velocity, z along the orbit normal; template **41**) |
 | `sunSafePoint` | A body axis at the Sun |
 | `locationPointing` | A body axis at a ground station or a celestial body |
 
@@ -84,12 +84,15 @@ Wheels slowly fill up with momentum. Two ways to unload them, both on
 
 By default the flight software is told the true state. Tick **Navigation
 error** on **Attitude control** to add a bounded random-walk error to the
-attitude, rate, Sun heading, position and velocity it is told.
+attitude, rate, Sun heading, position and velocity it is told. Template
+**41** shows how far the errors turn the spacecraft: a rate error turns it
+more than an attitude error of the same size.
 
 ## Templates to learn from
 
 06 (ideal pointing), 07 (the same with real hardware), 11 (thrusters),
-14 (finding the Sun with sun sensors), 15 (pointing at the Moon).
+14 (finding the Sun with sun sensors), 15 (pointing at the Moon), 41
+(velocity pointing, a magnetometer and navigation errors).
 
 **More detail:** User Manual section 6,
 [Navigation error](../../USER_MANUAL.md#navigation-error) and

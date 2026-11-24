@@ -31,6 +31,26 @@ fixes bugs.
   but SpaceMissionStudio 2.15.0 cannot open a file saved with this
   version. A budgets section with no powered equipment no longer reports
   missing power margins and losses.
+
+- **Four new templates show features no template used before.**
+  *39 - Orbit inputs* flies three satellites whose orbits are given three
+  ways: a TLE (a synthetic one, clearly labelled, not a real satellite),
+  a position and velocity, and classical elements; its description also
+  shows how to import a CCSDS OPM or OMM. *40 - Continuous low thrust*
+  puts a 1 mN electric thruster (the ENPULSION MICRO R3 from the device
+  catalogue) on one of two satellites at 400 km: it climbs about 2.8 km
+  in three days while its twin sinks under drag, and the run shows the
+  8.8 g of propellant it used. *41 - Velocity pointing* flies a
+  microsatellite along its velocity with a magnetometer and navigation
+  errors, and shows that a small rate error turns the spacecraft more
+  than an attitude error of the same size. *42 - Atmosphere models*
+  takes drag from a published density table and compares it, in its
+  "Try changing", with NRLMSISE-00 near the 2024 solar maximum and with
+  the exponential model; the End of Life estimate reads the same table.
+  Each template has a Customize wizard. A new page,
+  `docs/reference/template-coverage.md`, lists every feature with the
+  templates that show it, and the ones still to come.
+
 - **A Monte Carlo batch can now vary the atmospheric density.** Pick
   `density_scale` in Scenario › Monte Carlo › Dispersions: each run draws
   one scale (uniform or normal) and the drag of every spacecraft reads
@@ -49,6 +69,12 @@ fixes bugs.
   version 8 file.
 
 ### Changed
+
+- **The Monte Carlo choices that 2.15.0 called provisional are now
+  final.** The percentiles the Statistics tab shows (1, 5, 50, 95 and
+  99 %), template 37, and the answers behind the requirements (a crashed
+  run counts against them, a confidence level for each, exit status 5)
+  stay exactly as they were; they are simply no longer marked as open.
 
 - **Home now shows the templates in groups by category.** The cards used
   to come in the order of their numbers, 01 to 37, which only tells in

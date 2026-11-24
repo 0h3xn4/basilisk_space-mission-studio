@@ -4798,18 +4798,18 @@ of the owner to the plan's questions Q1 to Q5 replaces them.
 
 Items A1, A4 and A2 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
 built as the plan says. The owner answered Q1, Q2, Q4, Q5 and Q8 for this
-work. **MC-11 to MC-15 are provisional: the owner may change them.** They
+work. MC-11 to MC-15 were provisional; **the owner confirmed them on 2026-11-24.** They
 confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
 
-- **Decision MC-11 (provisional, the owner may change it; Q1):** a
+- **Decision MC-11 (confirmed by the owner on 2026-11-24; Q1):** a
   crashed run counts as not meeting every requirement and is shown
   apart: it is in N and in k, and the Requirements table has the column
   "Of which crashed". **Why:** the owner's answer; it is MC-6, the
   conservative reading.
-- **Decision MC-12 (provisional, the owner may change it; Q2):** the
+- **Decision MC-12 (confirmed by the owner on 2026-11-24; Q2):** the
   batch seed goes to phase B. Schema version 6 holds the requirements
   only. **Why:** the owner's answer; it is MC-8.
-- **Decision MC-13 (provisional, the owner may change it; Q4):** the
+- **Decision MC-13 (confirmed by the owner on 2026-11-24; Q4):** the
   confidence is required per requirement, with no default in the code
   or in the editor. The limit has no default either. A new requirement
   in the editor starts with both "Not set"; the list and the draft
@@ -4820,7 +4820,7 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
   requirements too. **Why:** the owner's answer, and a number without a
   source is not allowed (MC-9). A form that refused every edit until the
   confidence was set would force one order of typing.
-- **Decision MC-14 (provisional, the owner may change it; Q5):**
+- **Decision MC-14 (confirmed by the owner on 2026-11-24; Q5):**
   `monte-carlo` exits with 5 when a requirement with an allowed
   probability is not shown met; 3 (a run failed) comes first. Checked
   before use: ICD-02 and `cli.py` give 5 (`EXIT_CHECK_FAILED`) to "the
@@ -4828,7 +4828,7 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
   `sil --max-error`, `reproduce`), and no command gives 5 another
   meaning. So 5 is free for this use and fits the scheme. **Why:** the
   owner's answer; it is MC-10.
-- **Decision MC-15 (provisional, the owner may change it; Q8):** the
+- **Decision MC-15 (confirmed by the owner on 2026-11-24; Q8):** the
   thermal and operations batches keep their "mean - 3 sigma" and "mean +
   3 sigma" lines for now. Percentiles are phase B (B3). **Why:** the
   owner's answer.
@@ -4895,10 +4895,10 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
 ## Monte Carlo phase A, part 2: run one case again (2026-11-21)
 
 Item A3 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
-built as the plan says. The owner answered Q3 for this work. **MC-17 is
-provisional: the owner may change it.** It confirms MC-7.
+built as the plan says. The owner answered Q3 for this work. MC-17 was
+provisional; **the owner confirmed it on 2026-11-24.** It confirms MC-7.
 
-- **Decision MC-17 (provisional, the owner may change it; Q3):** a case
+- **Decision MC-17 (confirmed by the owner on 2026-11-24; Q3):** a case
   is not run again when the scenario changed since the batch. The check
   compares the SHA-256 of the scenario as it is now
   (`output_provenance.scenario_sha256`: its canonical JSON, the
@@ -5416,12 +5416,13 @@ byte-identical.
     sign (the column's sort key is the absolute value), the pairs
     without a value last. One signed column, no second "size" column.
     **Why:** the plan's "sorted by its size"; a click sorts again.
-- **Decision MC-27 (provisional, the owner may change it; Q8): the
+- **Decision MC-27 (confirmed by the owner on 2026-11-24; Q8): the
   percentiles shown and the band of the thermal and operations
   batches.**
   - The percentiles shown are the parameter `monte_carlo.percentiles`
     ([%], a list), default 1, 5, 50, 95 and 99 %. Its source is "TBD:
-    the owner has not named them". **Why:** the plan makes it a project
+    the owner has not named them" (since 2026-11-24: the owner's confirmed
+    answer). **Why:** the plan makes it a project
     parameter with the owner's value; until then the median, the 5th
     and 95th and, as the tails, the 1st and 99th.
   - The "mean - 3 sigma" and "mean + 3 sigma" lines stay (MC-15 left
@@ -5699,7 +5700,7 @@ existing templates are byte-identical; template 37 has its own.
     `--summarize` with `--case`, `--out-dir`, `--runs`, `--processes`,
     `--overwrite` or `--allow-scripts` are usage errors (2), said before
     anything is read. **Why:** each would be silently ignored otherwise.
-- **Decision MC-34 (provisional, the owner may change it; Q7): template
+- **Decision MC-34 (confirmed by the owner on 2026-11-24; Q7): template
   37.** A new template, "37 - Monte Carlo: requirements, statistics and
   sensitivity"; template 25 is unchanged, so no golden file changes.
   - Template 25's 150 kg satellite at 400 km (its gravity, Sun, Moon,
@@ -6237,6 +6238,149 @@ run, dry mass uniform [150, 150]: run 0 failed).
   deviation of 0 is already handled by Basilisk). No scenario field
   changed: no schema step. No template has equal bounds (each would have
   failed), so every golden file is unchanged.
+
+## The owner confirmed the Monte Carlo answers and the pointing choices (2026-11-24)
+
+The owner answered "as per your current answer" to each of Q1 to Q8 of
+[`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md), and "as
+per your recommendations" to the open choices of the pointing error
+budget (scope B). No code changed except the source text of one
+parameter.
+
+- **Monte Carlo: MC-11 to MC-15, MC-17, MC-27 and MC-34 are final.**
+  Q1: a crashed run counts as not meeting every requirement (MC-11).
+  Q2: the requirements and the seed in separate schema steps (MC-12).
+  Q3: a case is not run again after the scenario changed (MC-17). Q4: the
+  confidence per requirement, no default (MC-13). Q5: exit status 5
+  (MC-14). Q6: the order of the phase C dispersions (MC-36, already
+  final). Q7: template 37 (MC-34). Q8: the percentiles 1, 5, 50, 95 and
+  99 % and the labelled "mean +/- 3 standard deviations" lines (MC-15,
+  MC-27). The parameter `monte_carlo.percentiles` now names the owner's
+  answer as its source instead of "TBD"; its value is unchanged.
+- **Pointing budget: PE-12, PE-13 and PE-15 are confirmed:** drift and
+  reproducibility at twice the mean share, the sinusoidal distribution,
+  and the sun sensor's 45 deg rule.
+- **PE-14 stays as it is:** the statistical interpretation is recorded
+  and does not change the sum, until scope C (indices measured from a
+  run) gives a reason to use it.
+- **PE-21: a gyroscope's angle error from a time between attitude
+  fixes.** The owner chose the recommendation: the pointing budget gets
+  a sourced "time between attitude fixes [s]" with no default ("TBD"
+  until set). With it, Add Scenario Sensors gives a gyroscope the angle
+  error its rate noise builds up over that time, instead of "TBD". The
+  rule (random walk of the device catalog's noise, which is stated for a
+  1 s tick) and the field are built as a backlog item of "Next release".
+
+## Templates for every feature, batch A: templates 39 to 42 (2026-11-24)
+
+The owner wants at least one template for every feature of the tool. The
+37 templates on `develop` give every orbit as classical elements and use
+only NRLMSISE-00. None uses `constant_thrust`, `navigation_error`, the
+`velocityPoint` mode or a `magnetometer` sensor. Batch A adds four
+templates for these gaps. Number 38 is kept for the Budgets template (a
+separate change). No scenario field changed, so there is no schema step.
+The golden files of templates 01 to 37 are byte-identical; each new
+template has its own, recorded with `scripts/update_golden_outputs.py
+39_ 40_ 41_ 42_ --write`.
+
+- **Decision TPL-A1: what the four templates show, and how their values
+  are sourced.** The rule: a value comes from a named source in the app,
+  or it is labelled illustrative or synthetic in the generator and in
+  the description. No source is invented.
+  - **39, orbit inputs.** Three 150 kg satellites, orbit only, no drag.
+    - tle-sat: a **synthetic** TLE (catalogue number 99999, no
+      international designator, no drag terms, epoch the scenario's,
+      51.64 deg, e 0.0004, 15.5 revolutions a day). The generator builds
+      each line field by field and computes the checksum
+      (`_tle_line`). **Why synthetic:** a real TLE needs a fixed
+      historical record that we can cite, the repository holds none,
+      and the template must not fetch anything. A TLE more than 3 days
+      from the scenario epoch also gets a warning. A synthetic set at
+      the epoch avoids both, and it is labelled synthetic.
+    - state-sat: an **illustrative** Cartesian state, the perigee of a
+      500 x 1500 km orbit at 63.4 deg, with the speed from the vis-viva
+      equation and Basilisk's Earth constants
+      (`spacemissionstudio.constants`), rounded to 1 m and 1 mm/s.
+      **Why:** it is consistent by construction, and the critical
+      inclination gives a check (the perigee holds).
+    - elements-sat: template 22's 550 km Sun-synchronous orbit.
+    - The description points to `ccsds-import` and **Import CCSDS
+      OPM/OMM...** for an orbit file.
+  - **40, continuous low thrust.** Two 150 kg satellites at 400 km with
+    drag from the bundled space weather (2030), three days. ep-sat has
+    `constant_thrust` along the velocity (VNB [1, 0, 0]); twin-sat has
+    none. The thruster values are the **device catalogue's ENPULSION
+    MICRO R3** (`engine/device_catalog.py`: 1 mN, Isp 3000 s, 1.3 kg).
+    **Why a twin:** the claim "the thrust raises the orbit" is then a
+    comparison in one run. The fuel use shows in the run's
+    `constant_thrust.propellant_remaining` and `delta_v` series and in
+    the command line's run summary.
+  - **41, velocity pointing and navigation errors.** Template 07's
+    microsatellite on three wheels in `velocityPoint`, with a star
+    tracker, an IMU and a magnetometer (the **device catalogue's MM200**
+    noise), for 0.07 day in March 2027. **Why 2027:** the World Magnetic
+    Model 2025 is valid from 2025.0 to 2030.0, and the 2030 epoch of the
+    other templates is at its end. The navigation errors are
+    **illustrative** (attitude 0.002 deg a step within 0.02 deg, rate
+    0.0001 deg/s within 0.001 deg/s, position 1 m within 10 m, velocity
+    0.01 m/s within 0.1 m/s, seed 41), of the order a star tracker, a
+    gyro and a GNSS receiver give. A first draft had the rate bound at
+    0.005 deg/s (the values of `tests/test_navigation_error.py`): the
+    pointing error was then 0.25 deg, and other draws moved the wheel
+    speeds by 0.84 % of their scale (see TPL-A3). With 0.001 deg/s the
+    error is about 0.07 deg and other draws move them by 0.22 %.
+  - **42, other atmosphere models.** One 150 kg satellite at 350 km, two
+    days from 1 October 2024, drag from the **tabular** model with
+    NRLMSISE-00's nominal profile (`engine/atmosphere_tables.py`, a
+    table Basilisk ships). **Why this table:** the US Standard
+    Atmosphere stops at 86 km and Earth-GRAM 2016's profile at 200 km.
+    **Why October 2024:** near the maximum of solar cycle 25, so
+    NRLMSISE-00 with the observed space weather ("Try changing") gives
+    about seven times the decay of the fixed profile; in January 2030,
+    at 320 km, the two differed by about 15 %. The exponential model shows in "Try
+    changing" only: at 350 km it gives no drag. The End of Life
+    estimate reads the same table (re-entry after about 350 days at
+    Cd 2.2).
+  - Every spacecraft is 150 kg, the class the app is for
+    (`tests/test_scenario_templates.py`).
+- **Decision TPL-A2: the claims tests.** `tests/test_template_claims.py`
+  has one test per template. Each checks what the description says:
+  39, the TLE spacecraft's mean semi-major axis against SGP4's (0.5 km)
+  and its inclination in TEME of date (0.01 deg), the state vector's
+  apsides and its fixed perigee; 40, the rise and the fall, the gap
+  against Gauss's equation (2 %) and the propellant against F t / (Isp
+  g0); 41, the true pointing error against the bound the errors imply
+  (the attitude bound as a rotation, plus 4 x P/K x the rate bound, plus
+  0.01 deg), and below 0.01 deg without errors; 42, the tabular decay
+  against NRLMSISE-00's and the exponential model's, and the two
+  lifetimes. **Why bounds for 41:** another C++ standard library draws
+  other errors (TPL-A3). Eight seeds gave 0.064 to 0.076 deg, against
+  the implied 0.104 deg.
+- **Decision TPL-A3: a navigation error is noise in the golden
+  comparison.** `simpleNav` draws its errors with Basilisk's
+  GaussMarkov, from `std::normal_distribution`, as the sensors do. So
+  on another standard library (Windows) template 41 draws other errors.
+  `tests/golden_capture.py` now treats a `navigation_error.` series like
+  a `sensor.` one: compared value by value only on the library that
+  recorded it, elsewhere by its count. The attitude, rates, wheels and
+  torques that the errors steer are still compared, to the other
+  library's 1 %. Measured here with six other seeds as a stand-in for
+  another library: at most 0.22 % of scale (wheel speeds). No existing
+  template has a navigation error, so no existing comparison changes.
+  A new test in `tests/test_golden_outputs.py` checks the rule.
+- **Decision TPL-A4: the records.** Each template has a Customize wizard
+  (39: state-sat's perigee and apogee, the state made again at the
+  perigee; 40: thrust, specific impulse, propellant; 41: the attitude
+  and rate bounds, the step kept at a tenth of the bound or less, and a
+  duration page from 0.01 day; 42: the orbit, the drag area, the
+  duration), a row in the templates' README, a place in the learning
+  path, and `tests/data/scenario_hashes.json` gained its two hashes. A
+  new page, `docs/reference/template-coverage.md`, lists each feature
+  with its templates and the gaps for batch B (`BACKLOG.md`). Two tests
+  pin the number of templates; only that number changed, from 37 to 41
+  (`docs/ui/TEST_CHANGES.md`). The repository's root `README.md`
+  (outside `SpaceMissionStudio/`) still says 36 templates: it is part of
+  the Basilisk framework's tree, which this work does not change.
 
 ## Templates in categories (2026-11-24)
 
