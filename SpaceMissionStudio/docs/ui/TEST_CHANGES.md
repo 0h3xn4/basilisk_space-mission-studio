@@ -2853,3 +2853,26 @@ No existing test changed. Added:
 (the Statistics plot, the statistics' computer and the report writer
 deleted while their workers run; the late results are dropped). It does
 not reproduce the Windows failure on Linux; see `HISTORY.md`.
+
+## Template 38: the Budgets area (2026-11-24)
+
+Decision TB-8. Three tests pin the number of templates. Each changes only
+that count; no GUI test reaches a widget another way.
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_home.py::test_every_template_has_a_card_with_its_type_orbit_and_first_sentence` | `len(files) == 37` | `== 38` | template 38 is new |
+| `tests/gui/test_home.py::test_the_filter_narrows_the_cards_and_says_how_many` | "4 of 37"; 37 cards and "37" | "4 of 38"; 38 cards and "38" | template 38 is new; its text does not match "monte carlo", so the filter still shows 4 |
+| `tests/test_monte_carlo_statistics.py::test_no_template_has_a_false_finding` | `len(paths) == 37` | `== 38` | template 38 is new |
+
+New tests:
+- `tests/test_template_claims.py`:
+  `test_38_the_power_and_mass_budgets_are_complete` (every number of the
+  section has its example source and no placeholder; the power per
+  system mode, the duty-cycle average and the mass totals, with the
+  functions of the Power and Mass pages and the `budgets` command) and
+  `test_38_the_propellant_budget_fits_the_tank` (slow: the propellant
+  total, with the function of the Propellant page and the `budget`
+  command).
+- Template 38 joins every test that walks the templates (the golden
+  file, the hashes, the wizard, the forms, the descriptions).

@@ -340,7 +340,7 @@ def test_no_template_has_a_false_finding():
     """Every template, with Monte Carlo on as it is saved: no dispersion
     is reported against its spacecraft's value."""
     paths = sorted(_TEMPLATES.glob("[0-9][0-9]_*.json"))
-    assert len(paths) == 37
+    assert len(paths) == 38
     for path in paths:
         scenario = load_scenario(path)
         assert _findings(scenario) == [], path.name

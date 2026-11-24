@@ -2193,6 +2193,189 @@ def build_36_constellation_operations() -> Scenario:
     return _with_operations(scenario, section)
 
 
+# -- Template 38: the Budgets area (decisions TB-1 to TB-8) -----------------
+# Every number of the budgets section is an example: none comes from a data
+# sheet, a standard or another tool. Each says so in its source, with the
+# words of the budgets test data (tests/data/budgets). The mass growth
+# allowances are not entered: the mass budget takes them from AIAA
+# S-120-2006 (config.materials).
+_T38_SOURCE = "Synthetic example value; not from a data sheet or a standard."
+_T38_SIZE_M = (0.8, 0.8, 1.0)  # [m] the bus box, the Microsatellite (150 kg) preset's
+# name: (subsystem, S-120 column, maturity, mass [kg], bus, power modes, model part)
+# power modes: (name, average [W], peak [W] or None, duty cycle [-])
+# model part: (shape, dimensions [m], position [m], visible, material); None: the two array parts
+_T38_EQUIPMENT = {
+    "structure": ("structure", "structure", "layout", 40.0, "", (),
+                  ("box", {"x": 0.8, "y": 0.8, "z": 1.0}, [0.0, 0.0, 0.0], True, "aluminium_6061_t6")),
+    "solar arrays": ("power", "solar_array", "pre_release", 12.0, "", (), None),  # the two array parts
+    "battery": ("power", "battery", "existing", 10.0, "", (),
+                ("box", {"x": 0.3, "y": 0.2, "z": 0.2}, [0.15, 0.15, -0.3], False, "stainless_steel")),
+    "PCDU": ("power", "electronics", "released", 4.0, "platform", (("on", 9.0, 12.0, 1.0),),
+             ("box", {"x": 0.25, "y": 0.2, "z": 0.1}, [-0.15, 0.15, -0.3], False, "aluminium")),
+    "OBC": ("OBC", "electronics", "existing", 2.0, "platform", (("on", 7.0, 9.0, 1.0),),
+            ("box", {"x": 0.2, "y": 0.15, "z": 0.08}, [-0.15, -0.15, -0.3], False, "aluminium")),
+    "reaction wheels": ("ADCS", "mechanisms", "existing", 7.2, "platform",
+                        (("idle", 6.0, 8.0, 1.0), ("slewing", 14.0, 36.0, 1.0)),
+                        ("box", {"x": 0.3, "y": 0.3, "z": 0.15}, [0.0, 0.0, 0.15], False, "aluminium")),
+    "star tracker": ("ADCS", "electronics", "existing", 1.0, "platform", (("off", 0.0, None, 1.0),
+                                                                        ("on", 2.5, 3.5, 1.0)),
+                     ("box", {"x": 0.15, "y": 0.1, "z": 0.1}, [-0.475, 0.2, 0.3], True, "titanium_6al_4v")),
+    "S-band transceiver": ("comms", "electronics", "released", 1.6, "platform",
+                           (("receive", 4.0, 5.0, 1.0), ("transmit", 18.0, 22.0, 1.0)),
+                           ("box", {"x": 0.15, "y": 0.1, "z": 0.05}, [0.15, -0.15, -0.3], False, "aluminium")),
+    "camera": ("payload", "instrumentation", "estimated", 18.0, "payload",
+               (("off", 0.0, None, 1.0), ("standby", 6.0, 7.0, 1.0), ("imaging", 42.0, 50.0, 1.0)),
+               ("box", {"x": 0.25, "y": 0.25, "z": 0.35}, [0.0, 0.0, 0.675], True, "aluminium")),
+    # Thermostats switch the heaters: the duty cycle is the share of the time they are on.
+    "heaters": ("thermal", "thermal", "estimated", 1.5, "platform",
+                (("survival", 20.0, None, 0.6), ("operational", 20.0, None, 0.3)),
+                ("box", {"x": 0.3, "y": 0.2, "z": 0.01}, [0.15, 0.15, -0.195], False, "kapton_h")),  # on the battery
+    "harness": ("harness", "wire_harness", "estimated", 6.5, "", (),
+                ("box", {"x": 0.7, "y": 0.7, "z": 0.02}, [0.0, 0.0, 0.45], False, "copper")),  # its mass, spread
+    "propulsion module": ("propulsion", "propulsion", "pre_release", 6.5, "platform",
+                          (("off", 0.0, None, 1.0), ("standby", 3.0, 4.0, 1.0)),
+                          ("box", {"x": 0.3, "y": 0.3, "z": 0.25}, [0.0, 0.0, -0.1], False, "titanium_6al_4v")),
+}
+# system mode: (duty cycle [-], {item: its power mode}); the duty cycles add up to 1
+_T38_MODES = {
+    "safe": (0.05, {"PCDU": "on", "OBC": "on", "reaction wheels": "idle", "star tracker": "off",
+                    "S-band transceiver": "receive", "camera": "off", "heaters": "survival",
+                    "propulsion module": "off"}),
+    "nominal": (0.65, {"PCDU": "on", "OBC": "on", "reaction wheels": "idle", "star tracker": "on",
+                       "S-band transceiver": "receive", "camera": "standby", "heaters": "operational",
+                       "propulsion module": "standby"}),
+    "imaging": (0.2, {"PCDU": "on", "OBC": "on", "reaction wheels": "slewing", "star tracker": "on",
+                      "S-band transceiver": "receive", "camera": "imaging", "heaters": "operational",
+                      "propulsion module": "standby"}),
+    "downlink": (0.1, {"PCDU": "on", "OBC": "on", "reaction wheels": "slewing", "star tracker": "on",
+                       "S-band transceiver": "transmit", "camera": "standby", "heaters": "operational",
+                       "propulsion module": "standby"}),
+}
+_T38_BUSES = {"platform": 0.92, "payload": 0.88}  # [-] converter efficiency
+_T38_POWER_MARGINS = {"estimated": 25.0, "layout": 20.0, "pre_release": 15.0, "released": 8.0,
+                      "existing": 4.0, "measured": 2.0}  # [%] per maturity category
+
+
+def _t38_budgets():
+    """Template 38's budgets section: the equipment list, the system modes
+    and the numbers of the power budget, each with its source."""
+    from spacemissionstudio.schema.budgets import (BudgetBusConfig, BudgetEquipmentConfig, BudgetModeConfig,
+                                                   BudgetPowerModeConfig, BudgetsConfig, PowerMarginConfig,
+                                                   SourcedValue)
+
+    def sourced(value):
+        return SourcedValue(value, _T38_SOURCE)
+
+    equipment = []
+    for name, (subsystem, column, maturity, mass, bus, modes, _part) in _T38_EQUIPMENT.items():
+        equipment.append(BudgetEquipmentConfig(
+            name=name, subsystem=subsystem, mass_column=column, bus=bus, maturity=maturity,
+            mass_kg=sourced(mass), mass_in_model=True,
+            power_modes=[BudgetPowerModeConfig(mode, sourced(average), None if peak is None else sourced(peak),
+                                               duty)
+                         for mode, average, peak, duty in modes]))
+    return BudgetsConfig(
+        buses=[BudgetBusConfig(name, sourced(efficiency)) for name, efficiency in _T38_BUSES.items()],
+        distribution_loss=sourced(0.02),  # [-]
+        power_margins=[PowerMarginConfig(maturity, sourced(percent))
+                       for maturity, percent in _T38_POWER_MARGINS.items()],
+        system_power_margin_percent=sourced(12.0),  # [%]
+        equipment=equipment,
+        modes=[BudgetModeConfig(name, duty, dict(units)) for name, (duty, units) in _T38_MODES.items()],
+    )
+
+
+def _t38_model():
+    """Template 38's 3D model: the bus structure, two deployed arrays, the
+    camera and the star tracker outside, and the other items of the
+    equipment list inside (hidden), each with the mass, S-120 column and
+    maturity of its equipment-list item, so the model holds every item and
+    the run flies the whole dry mass; the arrays folded against the bus
+    when stowed; an illustrative launcher envelope and mass limit."""
+    from spacemissionstudio.schema.scenario import (LauncherConfig, MassBudgetConfig, ModelPartConfig,
+                                                    PartPoseConfig, SpacecraftModelConfig)
+
+    common = dict(drag_coeff=OPERATIONS_DRAG_COEFF)
+    parts = []
+    for name, (_subsystem, column, maturity, mass, _bus, _modes, part) in _T38_EQUIPMENT.items():
+        if part is None:
+            continue
+        shape, dimensions, position, visible, material = part
+        extra = common if visible else dict(in_surface_model=False)
+        if name == "star tracker":
+            extra = dict(common, excluded_faces=["+x"])  # +x sits on the bus
+        parts.append(ModelPartConfig(name=name, shape=shape, dimensions_m=dimensions, position_b_m=position,
+                                     color=[0.85, 0.7, 0.25] if name == "structure" else [0.3, 0.3, 0.3],
+                                     visible=visible, mass_kg=mass, material=material, subsystem=column,
+                                     maturity=maturity, **extra))
+    width, length, thickness = 0.8, 0.9, 0.025  # [m] each array
+    array_y = _T38_SIZE_M[1] / 2.0 + 0.05 + length / 2.0  # [m] 5 cm from the bus
+    _subsystem, column, maturity, arrays_mass, *_rest = _T38_EQUIPMENT["solar arrays"]
+    parts += [ModelPartConfig(name=f"array {side}", shape="panel",
+                              dimensions_m={"width": width, "length": length, "thickness": thickness},
+                              position_b_m=[0.0, sign * array_y, 0.0], color=[0.15, 0.2, 0.45],
+                              mass_kg=arrays_mass / 2.0, specular_coeff=0.05, diffuse_coeff=0.1, material="cfrp",
+                              subsystem=column, maturity=maturity, **common)  # [kg]
+              for side, sign in (("+y", 1.0), ("-y", -1.0))]
+    return SpacecraftModelConfig(
+        parts=parts,
+        stowed=[PartPoseConfig(f"array {side}", [0.0, sign * (_T38_SIZE_M[1] / 2.0 + thickness / 2.0 + 0.005), 0.0],
+                               [90.0, 0.0, 0.0])  # [m], [deg] folded flat against the bus's side
+                for side, sign in (("+y", 1.0), ("-y", -1.0))],
+        mass_budget=MassBudgetConfig(policy="aiaa_s120_2006", mass_limit_kg=150.0,  # [kg]
+                                     limit_source="an illustrative limit for this template, not a launcher's"),
+        launcher=LauncherConfig(envelope="custom", shape="cylinder", diameter_m=1.3, height_m=1.5,  # [m]
+                                origin_b_m=[0.0, 0.0, -_T38_SIZE_M[2] / 2.0],  # [m] the bus's bottom face
+                                source="an illustrative envelope for this template, not a launcher's"),
+    )
+
+
+def build_38_budgets_equipment_power_mass_propellant() -> Scenario:
+    # The Budgets area on one small LEO imager (decisions TB-1 to TB-8): template
+    # 22's orbit, environment and ground station; an equipment list of 12
+    # items with four system modes whose duty cycles add up to 1; a 3D
+    # model that holds every item, with the S-120 mass budget and a
+    # launcher envelope; and a propellant budget with a tank and a specific
+    # impulse. Orbit only, so a day runs in seconds. A station keeper with
+    # a 15 km deadband (as template 32) gives the propellant budget its
+    # orbit control from the drag without a run; it does not fire in a day.
+    # The station keeper's and the propellant budget's numbers are examples
+    # too (these fields have no source; decision TB-5).
+    from spacemissionstudio.model3d import model as model3d
+    from spacemissionstudio.schema.scenario import PropellantBudgetConfig
+
+    spacecraft = SpacecraftConfig(
+        name="eo-sat",
+        orbit=_starter_orbit(),
+        enable_drag=True, drag_coeff=OPERATIONS_DRAG_COEFF, drag_area_m2=0.8,  # [-], [m^2]
+        enable_srp=True, srp_coeff=1.3, srp_area_m2=1.5,  # [-], [m^2]
+        station_keeping=StationKeepingConfig(target_altitude_km=550.0, deadband_km=15.0, thrust_n=1.0,  # [km], [N]
+                                             isp_s=220.0, propellant_kg=6.0),  # [s], [kg]
+        propellant_budget=PropellantBudgetConfig(mission_years=5.0,  # [year]
+                                                 tank_capacity_kg=8.0, isp_s=220.0,  # [kg], [s]
+                                                 injection_sma_error_km=10.0,  # [km]
+                                                 injection_inclination_error_deg=0.05,  # [deg]
+                                                 collision_avoidance_count=3.0),  # [-]
+        model=_t38_model(),
+    )
+    spacecraft.budgets = _t38_budgets()
+    derived = model3d.derive(spacecraft.model)
+    if derived.errors:
+        raise ValueError(f"template 38's model: {derived.errors}")
+    model3d.apply(spacecraft, derived, orbit_only=True)
+    return Scenario(
+        name="38 - Budgets: equipment list, power, mass and propellant",
+        description=DESCRIPTIONS["38"],
+        epoch_utc=_STARTER_EPOCH_UTC,
+        simulation_mode="orbit_only",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=1.0, dynamics_task_rate_s=30.0, integrator="rkf78"),
+        space_weather=_real_space_weather(),
+        ground_stations=[_berlin_ground_station()],
+        spacecraft=[spacecraft],
+    )
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     _save(build_01_two_body_circular_orbit(), "01_two_body_circular_orbit.json")
@@ -2233,6 +2416,7 @@ def main() -> None:
     _save(build_35_eo_operations_week(), "35_eo_operations_week.json")
     _save(build_36_constellation_operations(), "36_constellation_operations.json")
     _save(build_37_monte_carlo_requirements_and_sensitivity(), "37_monte_carlo_requirements_and_sensitivity.json")
+    _save(build_38_budgets_equipment_power_mass_propellant(), "38_budgets_equipment_power_mass_propellant.json")
 
 
 if __name__ == "__main__":

@@ -724,3 +724,66 @@ def test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_dr
     assert report["settings"]["seed"] == 37 and report["settings"]["processes"] == 1
     assert [r["verdict"] for r in report["requirements"]["results"]] == ["met", None]
     assert len(report["dispersions"]) == 3
+
+
+def test_38_the_power_and_mass_budgets_are_complete():
+    """Template 38's Budgets area (SRS-F-31), with the functions its Power and Mass
+    pages and the ``budgets`` command use: every number of the power
+    budget is known, with no finding; the four system modes' duty cycles
+    add up to 1, so the duty-cycle average is 54.2 W of load and 77.1 W at
+    the source with margins; the mass budget is 110.3 kg basic with
+    22.9 kg of AIAA S-120 growth and 6 kg of propellant, 139.2 kg against
+    the 150 kg limit, with no unknown line. The 3D model holds every item,
+    so the run flies the same 110.3 kg. Each number of the section is an
+    example, and its source says so."""
+    from spacemissionstudio.analyses.mass_budget import mass_budget
+    from spacemissionstudio.analyses.power_budget import power_budget
+
+    sc = _template("38").spacecraft[0]
+    section = sc.budgets
+    values = [bus.converter_efficiency for bus in section.buses] + [m.percent for m in section.power_margins]
+    values += [section.distribution_loss, section.system_power_margin_percent]
+    for item in section.equipment:
+        values += [item.mass_kg] + [v for mode in item.power_modes for v in (mode.average_w, mode.peak_w)
+                                    if v is not None]
+    assert {v.source for v in values} == {"Synthetic example value; not from a data sheet or a standard."}
+    assert not any(v.placeholder for v in values)
+    assert len(section.equipment) == 12
+
+    power = power_budget(sc)
+    assert power.complete and power.findings == []
+    assert [m.mode for m in power.modes] == ["safe", "nominal", "imaging", "downlink"]
+    loads = {m.mode: m.average.load_w for m in power.modes}  # [W]
+    assert loads == pytest.approx({"safe": 38.0, "nominal": 43.5, "imaging": 87.5, "downlink": 65.5})
+    imaging = power.mode("imaging")
+    assert [b.bus for b in imaging.buses] == ["platform", "payload"]
+    assert imaging.average.source_margined_w == pytest.approx(129.586, abs=1e-3)  # [W]
+    assert imaging.peak.load_w == pytest.approx(139.5)  # [W]
+    average = power.duty_cycle_average()
+    assert average is not None and average.complete
+    assert average.load_w == pytest.approx(54.225) and average.source_margined_w == pytest.approx(77.079, abs=1e-3)
+
+    mass = mass_budget(sc)
+    assert mass.unknown == []
+    assert all(item.mass_in_model for item in section.equipment)
+    assert {line.kind for line in mass.lines} == {"part"} and len(mass.lines) == 13
+    assert mass.basic_dry_kg == pytest.approx(110.3) and mass.growth_kg == pytest.approx(22.866)  # [kg]
+    assert mass.propellant_kg == pytest.approx(6.0) and mass.launch_mass_kg == pytest.approx(139.166)  # [kg]
+    assert mass.mass_limit_kg == 150.0 and mass.headroom_kg == pytest.approx(10.834)  # [kg]
+    assert sc.dry_mass_kg == pytest.approx(mass.basic_dry_kg)  # [kg] the run's and the propellant budget's
+
+
+@pytest.mark.slow
+def test_38_the_propellant_budget_fits_the_tank():
+    """Template 38's Propellant page, with the function it and the
+    ``budget`` command use, without a run: the station keeper's orbit
+    control is estimated from the drag, the disposal is solved, and five
+    years take 83.0 m/s and 5.23 kg at 220 s, inside the 8 kg tank."""
+    from spacemissionstudio.engine import propellant_budget
+
+    budget = propellant_budget.compute_budget(_template("38"), "eo-sat")
+    assert budget.isp_s == 220.0 and budget.dry_mass_kg == pytest.approx(110.3 * 1.15)  # [s], [kg]
+    assert budget.total_delta_v_m_s == pytest.approx(83.0, abs=0.1)  # [m/s]
+    assert budget.total_propellant_kg == pytest.approx(5.23, abs=0.01)  # [kg]
+    assert all(row.propellant_kg is not None for row in budget.rows)
+    assert not any("exceeds the tank" in note for note in budget.notes)
