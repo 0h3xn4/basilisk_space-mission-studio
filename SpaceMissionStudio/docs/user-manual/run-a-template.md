@@ -1,6 +1,6 @@
 # Run a template
 
-How to run one of the 32 ready-made missions and look at what it did.
+How to run one of the ready-made missions (the templates) and look at what it did.
 
 ## In the app
 
@@ -10,8 +10,10 @@ How to run one of the 32 ready-made missions and look at what it did.
    scenario** and **Open a scenario file...**. The other areas wait for
    a scenario until you open one.
 2. Click a template, for example **22 - Starter: your first LEO
-   satellite**. Its description appears on the right: what it shows
-   and what to look at.
+   satellite**, the first card under **Getting started**. The cards are
+   in groups by category, each group from simple to advanced; the
+   category list and the filter above them narrow the cards. Its
+   description appears on the right: what it shows and what to look at.
 3. Click **Open template**. The **Scenario** area shows the
    mission; **Scenario > Overview** (the first node of its tree)
    summarises it.
@@ -41,8 +43,10 @@ You should see `Wrote 20 result file(s) to out:` followed by the files.
 ## Which template?
 
 The [template catalog](../../spacemissionstudio/scenarios/templates/README.md)
-lists all 33 with what each one teaches and a suggested order. Start with
-01 (the simplest orbit), then 22.
+lists them by category, in the order Home shows them, with what each one
+teaches. Start with 22, then 01 (the simplest orbit). The numbers are
+identifiers, not an order: they only tell in which order the templates
+were added.
 
 **More detail:** User Manual section 4,
 [Your first simulation](../../USER_MANUAL.md#4-your-first-simulation-in-five-minutes).

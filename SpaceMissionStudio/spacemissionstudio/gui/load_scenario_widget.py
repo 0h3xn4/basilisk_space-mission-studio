@@ -29,8 +29,11 @@ three columns:
   (``spacemissionstudio/scenarios/templates/``) with its mission type,
   orbit summary and one line, all three read from the template file
   itself (:func:`mission_type`, :func:`orbit_summary`,
-  :func:`first_sentence`); no metadata is added for them. Text only, no
-  thumbnails (plan §9, Q4). A filter narrows the cards.
+  :func:`first_sentence`). Text only, no thumbnails (plan §9, Q4). The
+  cards are in groups under the headings of their categories, in the
+  order of ``scenarios/catalog.py`` (decision TC-1): the template numbers
+  are identifiers, not an order. Two filters narrow the cards: the
+  category and the text; a card must pass both.
 * **Details**: the selected template's whole description, with Open
   template and Customize and open....
 
@@ -46,8 +49,9 @@ so the lower third of each card was blank, and they repeated the details'
 buttons. Customize and open... does something else: a short wizard over
 the template's key settings first, then the result opens as a new,
 unsaved scenario. The keyboard: Tab reaches the cards once, the arrow
-keys move between them, Enter opens one; the details' buttons are the
-next Tab stops.
+keys move between them (Left and Right in reading order, Up and Down by a
+row on the screen, across the headings), Enter opens one; the details'
+buttons are the next Tab stops. A heading is not a Tab stop.
 
 The recent scenarios are the files opened or saved (decision B12-2 in
 ``docs/DECISIONS.md``): a template opens unsaved, so it is listed once it
@@ -65,6 +69,7 @@ from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QTextLayout
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -86,6 +91,7 @@ import spacemissionstudio
 
 from ..engine import small_bodies
 from ..engine.scenario_explainer import _BODY_RADIUS_KM, _EARTH_REQUATOR_KM, _is_sun_synchronous, _mode_name
+from ..scenarios import catalog
 from ..schema import load_scenario
 from . import recent_files
 from .feedback import report
@@ -107,6 +113,11 @@ _logger = logging.getLogger(__name__)
 # <install>/spacemissionstudio/__init__.py either way (a checkout or a real
 # install), so this resolves correctly in both.
 TEMPLATES_DIR = Path(spacemissionstudio.__file__).resolve().parent / "scenarios" / "templates"
+ALL_CATEGORIES = "All categories"  # the category filter's first entry: no category filter
+# The cards' empty state: what the two filters ask for, and the action that clears them.
+FILTER_EMPTY = ("No template matches the filters",
+                "A template must be in the category picked, and every word must be in its name, its mode, "
+                "its orbit or its description.", "Show all templates")
 
 _FILE_FILTER = "SpaceMissionStudio scenario (*.json)"
 
@@ -328,12 +339,14 @@ class TemplateCard(QFrame):
     selected = Signal(object)  # this card, when clicked or focused
     open_requested = Signal(object)  # Path
 
-    def __init__(self, scenario, path: Path, customizable: bool, parent: QWidget | None = None):
+    def __init__(self, scenario, path: Path, customizable: bool, parent: QWidget | None = None,
+                 category: catalog.Category | None = None):
         super().__init__(parent)
         self.setObjectName("templateCard")
         set_role(self, role="card")
         self.name = scenario.name
         self.path = path
+        self.category = category if category is not None else catalog.category_of(path.name)
         self.description = scenario.description or ""
         self.setAccessibleName(scenario.name)
         self.setAccessibleDescription(first_sentence(self.description))
@@ -391,9 +404,77 @@ class TemplateCard(QFrame):
         super().keyPressEvent(event)
 
 
+class _LineText(QWidget):
+    """One line of plain text in one colour token, painted directly and
+    elided with "..." when the width is short (the whole text is then the
+    tooltip). Its height is the font's line, whatever the width: no
+    height-for-width, so it adds nothing to the grid's layout passes."""
+
+    def __init__(self, text: str, token: str, font, parent: QWidget | None = None):
+        super().__init__(parent)
+        self._text = text
+        self._token = token
+        self.setFont(font)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+
+    def text(self) -> str:
+        return self._text
+
+    def sizeHint(self) -> QSize:
+        return QSize(self.fontMetrics().horizontalAdvance(self._text), self.fontMetrics().height())
+
+    def minimumSizeHint(self) -> QSize:
+        return QSize(0, self.fontMetrics().height())
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self.setToolTip(self._text if self.fontMetrics().horizontalAdvance(self._text) > self.width() else "")
+
+    def paintEvent(self, _event) -> None:
+        painter = QPainter(self)
+        painter.setPen(QColor(TOKENS[self._token]))  # read at each paint: a theme switch needs nothing else
+        shown = self.fontMetrics().elidedText(self._text, Qt.TextElideMode.ElideRight, self.width())
+        painter.drawText(self.rect(), int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter), shown)
+
+
+class CategoryHeading(QWidget):
+    """A category's heading above its cards: its title and its one line
+    (``scenarios/catalog.py``). Text only: not a Tab stop, no frame; the
+    title is a heading for a screen reader. Both lines are painted single
+    lines (:class:`_LineText`), so nine headings add no word-wrap layout
+    to Home's first show."""
+
+    def __init__(self, category: catalog.Category, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.category = category
+        self.setObjectName("templateCategory")
+        self.setAccessibleName(category.title)
+        self.setAccessibleDescription(category.description)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(SPACE["xs"])
+        # Below the column's title (15 px) in rank: the body size, semibold, and its line in the small size.
+        self.title_label = _LineText(category.title, "text.primary", ui_font("body", "semibold"))
+        self.title_label.setProperty("role", "heading")  # what it is, as a QLabel would say
+        self.description_label = _LineText(category.description, "text.secondary", ui_font("small"))
+        layout.addWidget(self.title_label)
+        layout.addWidget(self.description_label)
+
+    def set_first(self, first: bool) -> None:
+        """The first heading shown sits at the top; each later one has a
+        gap above it, so a group reads apart from the cards before it."""
+        self.layout().setContentsMargins(0, 0 if first else SPACE["lg"], 0, 0)
+
+    def text(self) -> str:
+        return self.category.title
+
+
 class TemplateGrid(QWidget):
-    """The cards in as many columns as the width holds. One Tab stop: the
-    current card; the arrow keys, Home and End move between cards."""
+    """The cards in groups, one per category, each under its heading
+    (:class:`CategoryHeading`), in as many columns as the width holds.
+    One Tab stop: the current card; the arrow keys, Home and End move
+    between cards. :attr:`cards` is in the order shown."""
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -405,21 +486,40 @@ class TemplateGrid(QWidget):
         self._grid.setContentsMargins(0, 0, 0, 0)
         self._grid.setSpacing(SPACE["md"])
         self.cards: list[TemplateCard] = []
+        self.headings: list[CategoryHeading] = []
+        self._group_of: dict[TemplateCard, CategoryHeading] = {}
+        self._places: dict[TemplateCard, tuple[int, int]] = {}  # (grid row, column) of each card shown
         self._columns = 0
         self._current: TemplateCard | None = None
-        self.empty_label = EmptyState("No template matches the filter", "Every word must be in the template's name, "
-                                      "its mode, its orbit or its description.", compact=True)
+        self.empty_label = EmptyState(*FILTER_EMPTY, compact=True)
+        self.empty_label.layout().setContentsMargins(0, 0, 0, 0)  # at the column's inset, as the headings
         self.empty_label.setVisible(False)
 
+    def add_group(self, category: catalog.Category) -> CategoryHeading:
+        """Start the group of ``category``: the cards :meth:`add` gets next go under its heading."""
+        heading = CategoryHeading(category, self)
+        self.headings.append(heading)
+        return heading
+
     def add(self, card: TemplateCard) -> None:
+        if not self.headings or self.headings[-1].category != card.category:
+            self.add_group(card.category)
         card.setParent(self)
         card.installEventFilter(self)
         self.cards.append(card)
+        self._group_of[card] = self.headings[-1]
         if self._current is None:
             self.set_current(card)
 
     def visible_cards(self) -> list[TemplateCard]:
         return [card for card in self.cards if not card.isHidden()]
+
+    def visible_headings(self) -> list[CategoryHeading]:
+        """The headings of the groups with a card shown, in order."""
+        return [heading for heading in self.headings if not heading.isHidden()]
+
+    def heading_of(self, card: TemplateCard) -> CategoryHeading:
+        return self._group_of[card]
 
     def columns(self) -> int:
         return self._columns
@@ -433,10 +533,13 @@ class TemplateGrid(QWidget):
     def current(self) -> TemplateCard | None:
         return self._current
 
-    def apply_filter(self, text: str) -> None:
+    def apply_filter(self, text: str, category: str | None = None) -> None:
+        """Show the cards whose text has every word of ``text`` and, unless
+        ``category`` (a category key) is None, that are in that category."""
         words = text.casefold().split()
         for card in self.cards:
-            card.setVisible(all(word in card.text_for_filter() for word in words))
+            in_category = category is None or card.category.key == category
+            card.setVisible(in_category and all(word in card.text_for_filter() for word in words))
         shown = self.visible_cards()
         if self._current not in shown:
             self.set_current(shown[0] if shown else None)
@@ -450,15 +553,31 @@ class TemplateGrid(QWidget):
         self._columns = columns
         while self._grid.count():
             self._grid.takeAt(0)
+        for row in range(self._grid.rowCount()):
+            self._grid.setRowStretch(row, 0)  # a row that held the stretch before may hold cards now
+        self._places.clear()
         shown = self.visible_cards()
-        for index, card in enumerate(shown):
-            self._grid.addWidget(card, index // columns, index % columns)
+        row = 0
+        for heading in self.headings:
+            group = [card for card in shown if self._group_of[card] is heading]
+            heading.setVisible(bool(group))
+            if not group:
+                continue
+            heading.set_first(row == 0)
+            self._grid.addWidget(heading, row, 0, 1, columns)
+            row += 1
+            for index, card in enumerate(group):
+                place = (row + index // columns, index % columns)
+                self._grid.addWidget(card, *place)
+                self._places[card] = place
+            row += (len(group) + columns - 1) // columns
         for column in range(self._grid.columnCount()):
             self._grid.setColumnStretch(column, 1 if column < columns else 0)
         if not shown:
             self._grid.addWidget(self.empty_label, 0, 0, 1, columns)
+            row = 1
         self.empty_label.setVisible(not shown)
-        self._grid.setRowStretch(self._grid.rowCount(), 1)
+        self._grid.setRowStretch(row, 1)
         self._grid.activate()
         self._fit_height()
 
@@ -481,14 +600,31 @@ class TemplateGrid(QWidget):
         super().showEvent(event)
         self.relayout()
 
+    def place(self, card: TemplateCard) -> tuple[int, int] | None:
+        """The (row, column) of ``card`` in the grid, a heading counting as
+        a row; None when it is not shown."""
+        return self._places.get(card)
+
     def move(self, card: TemplateCard, key: int) -> TemplateCard | None:
-        """The card ``key`` (an arrow, Home or End) leads to from ``card``."""
+        """The card ``key`` (an arrow, Home or End) leads to from ``card``:
+        Left and Right the card before or after it in reading order, Up and
+        Down the card in the row of cards above or below it on the screen
+        (in another group too), in the same column or, when that row is
+        shorter, its last card."""
         shown = self.visible_cards()
-        if card not in shown:
+        if card not in shown or card not in self._places:
             return None
-        index, columns = shown.index(card), max(1, self._columns)
-        target = {Qt.Key.Key_Left: index - 1, Qt.Key.Key_Right: index + 1, Qt.Key.Key_Up: index - columns,
-                  Qt.Key.Key_Down: index + columns, Qt.Key.Key_Home: 0, Qt.Key.Key_End: len(shown) - 1}.get(key)
+        index = shown.index(card)
+        if key in (Qt.Key.Key_Up, Qt.Key.Key_Down):
+            row, column = self._places[card]
+            rows = sorted({place[0] for place in self._places.values()})
+            next_row = rows.index(row) + (1 if key == Qt.Key.Key_Down else -1)
+            if not 0 <= next_row < len(rows):
+                return None
+            in_row = sorted((place[1], other) for other, place in self._places.items() if place[0] == rows[next_row])
+            return [other for col, other in in_row if col <= column][-1]
+        target = {Qt.Key.Key_Left: index - 1, Qt.Key.Key_Right: index + 1,
+                  Qt.Key.Key_Home: 0, Qt.Key.Key_End: len(shown) - 1}.get(key)
         if target is None or not 0 <= target < len(shown):
             return None
         return shown[target]
@@ -517,7 +653,8 @@ class LoadScenarioWidget(QWidget):
         super().__init__(parent)
         self._template_paths: dict[str, Path] = {}
         self._specs: dict[str, object] = {}
-        self.cards: list[TemplateCard] = []
+        self._template_files: list[Path] = []
+        self.cards: list[TemplateCard] = []  # in file order; grid.cards in the order shown
         self._selected: TemplateCard | None = None
 
         layout = QVBoxLayout(self)
@@ -682,15 +819,26 @@ class LoadScenarioWidget(QWidget):
         header.addWidget(self.templates_title)
         self.templates_count = set_role(QLabel(), tone="secondary")
         header.addWidget(self.templates_count, 1)
+        # The category filter beside the text filter (decision TC-2): a
+        # card shows when it passes both. Filled by _populate_templates.
+        self.category_combo = QComboBox()
+        self.category_combo.setAccessibleName("Template category")
+        self.category_combo.setToolTip("Show the templates of one category")
+        # As wide as its longest category, so the one picked is never cut short.
+        self.category_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.category_combo.currentIndexChanged.connect(self._on_category_changed)
+        header.addWidget(self.category_combo)
         self.filter_edit = QLineEdit()
         self.filter_edit.setPlaceholderText("Filter templates")
         self.filter_edit.setAccessibleName("Filter templates")
         self.filter_edit.setClearButtonEnabled(True)
+        self.filter_edit.setMinimumWidth(160)  # [px]
         self.filter_edit.setMaximumWidth(240)  # [px]
         self.filter_edit.textChanged.connect(self._on_filter_changed)
         header.addWidget(self.filter_edit)
         column.addLayout(header)
         self.grid = TemplateGrid()
+        self.grid.empty_label.button.clicked.connect(self.clear_filters)
         self.grid_scroll = QScrollArea()
         self.grid_scroll.setObjectName("homeTemplates")
         self.grid_scroll.setWidgetResizable(True)
@@ -707,32 +855,63 @@ class LoadScenarioWidget(QWidget):
         return holder
 
     def _populate_templates(self) -> None:
-        if not TEMPLATES_DIR.is_dir():
-            self._update_count()
-            return
-        for path in sorted(TEMPLATES_DIR.glob("*.json")):
-            try:
-                scenario = load_scenario(path)
-            except Exception:  # noqa: BLE001 -- a malformed bundled template must never crash the GUI on open
-                _logger.exception("Skipping malformed bundled template %s", path)
-                continue
-            spec = get_wizard_spec(path.name)
-            self._template_paths[scenario.name] = path
-            self._specs[scenario.name] = spec
-            card = TemplateCard(scenario, path, spec is not None)
-            card.selected.connect(self._select_card)
-            card.open_requested.connect(self.path_chosen)
-            self.grid.add(card)
-            self.cards.append(card)
+        """A card per template file, in groups by category in catalog
+        order (``scenarios/catalog.py``); :attr:`cards` stays in file
+        order, the index :meth:`select` takes."""
+        self._template_files = catalog.template_files(TEMPLATES_DIR)
+        self.category_combo.blockSignals(True)
+        self.category_combo.addItem(ALL_CATEGORIES, None)
+        for category, paths in catalog.grouped(self._template_files):
+            self.category_combo.addItem(category.title, category.key)
+            for path in paths:
+                try:
+                    scenario = load_scenario(path)
+                except Exception:  # noqa: BLE001 -- a malformed bundled template must never crash the GUI on open
+                    _logger.exception("Skipping malformed bundled template %s", path)
+                    continue
+                spec = get_wizard_spec(path.name)
+                self._template_paths[scenario.name] = path
+                self._specs[scenario.name] = spec
+                card = TemplateCard(scenario, path, spec is not None, category=category)
+                card.selected.connect(self._select_card)
+                card.open_requested.connect(self.path_chosen)
+                self.grid.add(card)
+                self.cards.append(card)
+        self.category_combo.blockSignals(False)
+        self.cards.sort(key=lambda card: card.path.name)
         self._update_count()
 
     def _update_count(self) -> None:
+        """How many templates the folder holds; "n of N" while a filter hides some."""
         shown = len(self.grid.visible_cards())
-        total = len(self.cards)
+        total = len(self._template_files)
         self.templates_count.setText(f"{total}" if shown == total else f"{shown} of {total}")
+        self.templates_count.setAccessibleName(f"{shown} of {total} templates shown")
 
-    def _on_filter_changed(self, text: str) -> None:
-        self.grid.apply_filter(text)
+    def selected_category(self) -> str | None:
+        """The key of the category the filter shows, None for all."""
+        return self.category_combo.currentData()
+
+    def set_category(self, key: str | None) -> None:
+        """Show the templates of the category ``key`` only (None: all)."""
+        self.category_combo.setCurrentIndex(max(0, self.category_combo.findData(key)))
+
+    def clear_filters(self) -> None:
+        """Both filters off: every template shown (the empty state's action)."""
+        self.category_combo.blockSignals(True)
+        self.category_combo.setCurrentIndex(0)
+        self.category_combo.blockSignals(False)
+        self.filter_edit.clear()
+        self._apply_filters()
+
+    def _on_filter_changed(self, _text: str) -> None:
+        self._apply_filters()
+
+    def _on_category_changed(self, _index: int) -> None:
+        self._apply_filters()
+
+    def _apply_filters(self) -> None:
+        self.grid.apply_filter(self.filter_edit.text(), self.selected_category())
         self._update_count()
 
     def card(self, name: str) -> TemplateCard:
@@ -740,7 +919,8 @@ class LoadScenarioWidget(QWidget):
         return next(card for card in self.cards if card.name == name)
 
     def select(self, index_or_name) -> TemplateCard:
-        """Select a card by its index in file order or its template name."""
+        """Select a card by its index in file order (:attr:`cards`; the
+        order shown is ``grid.cards``) or its template name."""
         card = self.cards[index_or_name] if isinstance(index_or_name, int) else self.card(index_or_name)
         self._select_card(card)
         return card

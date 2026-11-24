@@ -6046,3 +6046,130 @@ dispersion.** Schema step 7 to 8. The golden files of the 37 templates are byte-
   current version, as the step from 5 to 6 already did). No GUI test reaches a widget another way.
   `docs/ui/TEST_CHANGES.md` lists the new tests. **Why:** CLAUDE.md: a
   pinned version moves with the schema; no check is weakened.
+
+## Templates in categories (2026-11-24)
+
+The owner: Home shows the templates by number (01 to 37), and that is
+chaotic, because the numbers only tell in which order the templates were
+added. Now the templates are in categories, and in each category from
+simple to advanced. The owner made TC-1 and the list of TC-2; the work
+made the three changes to that list and the other decisions. No schema
+change; the golden files are byte-identical.
+
+- **Decision TC-1 (the owner): the numbers stay, and one module holds
+  the order.**
+  - The template numbers, the file names, the golden files and every
+    "template 22" in the documentation stay. The numbers are
+    identifiers, not an order.
+  - `spacemissionstudio/scenarios/catalog.py` holds the categories in
+    order, each with a title and a one-line description, and for each
+    template file its category and its place in the category.
+  - No field in the template files: it would need a schema step and
+    change their hashes. No other `.json` file in the templates folder:
+    the loaders read every `*.json` file there as a template.
+  - `tests/test_template_catalog.py` fails when a template file has no
+    entry (the message says to add it to `catalog.py`), has two, or when
+    an entry names a file that is not there. Until it has an entry, Home
+    shows such a file last, under "Other templates".
+  - Places of the templates that other changes add: 38 (budgets) in
+    "Spacecraft model, thermal and budgets"; 39 (orbit inputs: TLE,
+    state vector), 40 (continuous low thrust) and 42 (other atmosphere
+    models) in "Orbits and orbit keeping"; 41 (velocity pointing,
+    magnetometer, navigation error) in "Attitude and control". The
+    templates of batch B (43 and up) are not numbered yet. None of them
+    was on `develop` when this work started.
+- **Decision TC-2: the categories.** The owner's list, with three
+  changes made after a read of each template's description:
+
+  | Category | Templates, simple to advanced |
+  |---|---|
+  | Getting started | 22, 23, 01, 02 |
+  | Orbits and orbit keeping | 18, 03, 04, 05, 24, 29 |
+  | Maneuvers and Mission Sequence | 08, 16 |
+  | Attitude and control | 06, 07, 15, 10, 11, 17, 12, 13, 14, 21 |
+  | Power, communications and data | 19, 26 |
+  | Spacecraft model, thermal and budgets | 28, 32, 27, 20, 33, 34 |
+  | Operations planning | 35, 36 |
+  | Uncertainty (Monte Carlo) | 09, 25, 37 |
+  | Deep space and navigation | 30, 31 |
+
+  1. **17 moves from "Maneuvers and Mission Sequence" to "Attitude and
+     control", after 11.** Its description starts "Template 11's
+     eight-thruster attitude control with a real fuel tank". It has no
+     maneuver and no Mission Sequence: it shows the propellant that
+     attitude thrusters use.
+  2. **18 comes before 03 in "Orbits and orbit keeping".** 18 holds one
+     value (the altitude) with one deadband against drag. 03 holds the
+     longitude and the inclination with two kinds of burns against the
+     Sun, the Moon, solar pressure and the gravity field. Simple to
+     advanced puts 18 first, as the old learning path did.
+  3. **15 comes after 07 in "Attitude and control" (it was after 14).**
+     15 is the pointing of 06 with a moving target, the Moon: no
+     hardware, a two-line description. The category now goes from
+     pointing (06, 07, 15) to disturbance torques, thrusters and
+     propellant, wheel momentum and estimation (10, 11, 17, 12, 13, 14),
+     and ends with the facet model of 21.
+
+  The other places stay as the owner gave them. 02 stays in "Getting
+  started"; 34 stays in "Spacecraft model, thermal and budgets" although
+  it has a thermal Monte Carlo, because its subject is the thermal model.
+- **Decision TC-3: Home.**
+  - One grid for all groups. A heading spans the columns; the cards of
+    its category follow, from the left, and the next category starts on
+    a new row. The heading is the category's title (body size,
+    semibold) and its line (small, secondary), both painted as one line
+    each, elided with a tooltip when the column is narrow. They add no
+    word-wrap layout. 16 px above each heading after the first, 12 px
+    (the grid's spacing) under it, 4 px between its two lines.
+  - A heading is not a Tab stop. This fits Home's pattern: only the
+    current card is a Tab stop, and the arrow keys move between cards.
+    Left and Right go in reading order, also into the next group. Up and
+    Down go one row up or down on the screen, across a heading, to the
+    card in the same column, or to the last card of a shorter row.
+  - The category filter is a combo box, "All categories" and then the
+    categories, beside the text filter. A card shows when it passes
+    both. Chips would add ten buttons, ten Tab stops and a row of
+    their own. The combo box is as wide as its longest category, so the
+    category picked is never cut short.
+  - When the filters match nothing, the empty state says so, with
+    **Show all templates**, which clears both filters.
+  - The count is the number of template files in the folder, "n of N"
+    while a filter hides some. The app counted the cards it built, so on
+    `develop` it said 37; the "Templates 36" the owner saw is most likely
+    `docs/images/load_scenario_tab.png`, taken before template 37 came.
+    The image is taken again (its first shot of
+    `scripts/capture_screenshots.py`; the status bar shows this
+    container's reference data). A template file that does not load
+    still counts; the log names it.
+  - `LoadScenarioWidget.cards` stays in file order: `select(0)` is still
+    template 01, as its callers expect. `grid.cards` is the order shown.
+  - Measured offscreen at 1600 x 900 on this machine, with other test
+    runs on it: Home's first show 49-75 ms (43-55 ms before), a filter
+    change 2-13 ms, a resize 12-17 ms. The first show was over the 50 ms
+    of design rule 6 before this change; it is part of start-up (M3,
+    "Home: template cards"). Headings whose lines wrap took 10-20 ms
+    more in the same runs, so they are painted single lines.
+- **Decision TC-4: the other lists.**
+  - The command palette lists the templates in catalog order, each as
+    "Open template > 22 starter first leo satellite (Getting started)".
+    The category comes after the name, so the entry still starts with
+    the number and the name, which is what a user types.
+  - The Customize dialog shows one template and lists none; it does not
+    change. No command of the command line lists the templates, so none
+    changes (a new command is a change to the command line with its own
+    records, and nobody asked for it).
+  - The catalog in `scenarios/templates/README.md` has a heading per
+    category, its line and a table of its templates, the numbers kept.
+    A test reads it and compares it with `catalog.py`, as
+    `tests/test_examples.py` reads `examples/README.md`. A generator
+    would have to hold each template's long hand-written row too. The
+    README's "A learning path" listed the templates in another order;
+    the catalog takes its place.
+  - The User Manual's "Which template next?" table lists the categories
+    in order with their templates and what they teach; the same test
+    checks it.
+- **Decision TC-5: `spacemissionstudio/scenarios/` is a package now**
+  (an `__init__.py`). `packages.find()` takes only folders with an
+  `__init__.py`, so `catalog.py` was not in the wheel without it. A
+  wheel built from this branch holds `catalog.py`, the `__init__.py`,
+  the README and the 38 scenario files.

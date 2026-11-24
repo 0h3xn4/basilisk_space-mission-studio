@@ -1803,10 +1803,13 @@ class MainWindow(QMainWindow):
         for section, label in self.settings_page.sections():
             entries.append(PaletteEntry(f"Settings > {label}",
                                         lambda section=section: self.show_settings(section)))
+        from ..scenarios import catalog
         from .load_scenario_widget import TEMPLATES_DIR
 
-        for path in sorted(TEMPLATES_DIR.glob("*.json")):
-            entries.append(PaletteEntry(f"Open template > {path.stem.replace('_', ' ')}",
+        # In catalog order, each with its category, as Home shows them (decision TC-3).
+        for path in catalog.ordered(catalog.template_files(TEMPLATES_DIR)):
+            category = catalog.category_of(path.name).title
+            entries.append(PaletteEntry(f"Open template > {path.stem.replace('_', ' ')} ({category})",
                                         lambda path=path: self._on_load_scenario_path_chosen(path)))
         result = self.results_widget._result if self._scenario_open else None
         for name in sorted(result.series) if result is not None else []:

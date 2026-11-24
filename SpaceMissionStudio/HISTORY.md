@@ -21621,3 +21621,50 @@ No code changed.
   owner kept it.
 - **Q9 of the Monte Carlo plan** (the density dispersion's meaning) is
   recorded with the density dispersion itself (PR #322).
+
+## Templates in categories (2026-11-24)
+
+The owner found Home's template list chaotic: 37 cards in the order of
+their numbers, and the numbers only tell in which order the templates
+were added. The owner set the frame (decision TC-1 in
+`docs/DECISIONS.md`): the numbers and file names stay, and one Python
+module holds the categories and the order. The owner also proposed the
+nine categories and their templates.
+
+**The catalog.** `spacemissionstudio/scenarios/catalog.py` has the
+categories in order, each with a title, a line and its template files
+from simple to advanced. A read of each template's description changed
+three places of the proposal (TC-2): 17 moves to "Attitude and control"
+(it is template 11's attitude thrusters with a fuel tank, with no
+maneuver), 18 comes before 03 (one deadband against drag before a GEO
+box held in two axes), and 15 comes after 07 (06's pointing with a
+moving target). The folder `scenarios/` needed an `__init__.py`: without
+it, setuptools leaves `catalog.py` out of the wheel. A wheel built from
+the branch has it.
+
+**Home.** The grid lays out each category's heading across the columns
+and its cards under it; a new category starts a new row. A category
+list beside the text filter shows one group; a card must pass both
+filters. The empty state names both filters and clears them. The arrow
+keys go across the headings: Up and Down by a row on the screen, Left
+and Right in reading order. The headings are painted single lines: a
+first version with lines that wrap made Home's first show 10-20 ms
+slower. The app counted its cards and said 37 on `develop`; the
+"Templates 36" the owner saw is most likely the User Manual's
+screenshot, taken before template 37 came. The count now reads the
+folder, and the screenshot is new.
+
+**The other lists.** The command palette lists the templates in catalog
+order with their category. The template README's catalog has a section
+per category, and its "learning path" (another order) gave way to it;
+the User Manual's "Which template next?" table lists the categories. A
+test compares both with `catalog.py`. The Customize dialog shows one
+template and the command line lists none, so they did not change.
+
+**Tests.** `tests/test_template_catalog.py` (the folder against the
+catalog, the README, the manual) and `tests/gui/test_home_categories.py`
+(the headings in order, the filters together, the count, the empty
+state, a template opened from a group, Up and Down across a heading, the
+palette). One existing test changed how it reaches the cards
+(`docs/ui/TEST_CHANGES.md`): the keyboard test takes the cards in the
+order shown. The golden files are byte-identical; no schema change.

@@ -47,6 +47,15 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Templates in categories, on branch `feature/template-categories`
+  (2026-11-24). `spacemissionstudio/scenarios/catalog.py` holds nine
+  categories and each template's place, from simple to advanced; the
+  numbers and file names stay. Home groups the cards under the category
+  headings, with a category filter beside the text filter, an empty
+  state and a count that reads the folder. The command palette, the
+  template README and the User Manual follow the catalog; tests check
+  the folder, the README and the manual against it. Decisions TC-1 to
+  TC-5; three changes to the owner's list (17, 18, 15).
 - Monte Carlo phase C, item 1: the atmospheric density dispersion, on
   branch `feature/monte-carlo-density` (2026-11-24). The owner's order
   of the phase C dispersions (Q6) is recorded as MC-36. A spike
