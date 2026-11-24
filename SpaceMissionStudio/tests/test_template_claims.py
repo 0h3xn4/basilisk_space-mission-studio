@@ -1242,10 +1242,17 @@ def test_47_each_faulty_sensor_reports_its_fault_and_the_attitude_is_the_same():
 
     healthy_mag, faulty_mag = reading("healthy", "mag-1").data, reading("faulty", "mag-1").data  # [T]
     assert faulty_mag[:, :2] == pytest.approx(healthy_mag[:, :2], abs=1e-6)  # [T] noise only
-    ratio = faulty_mag[:, 2] / healthy_mag[:, 2]
-    spikes = np.abs(ratio - 3.0) < 0.1
-    assert 0.003 < spikes.mean() < 0.03
-    assert (np.abs(ratio[~spikes] - 1.0) < 0.1)[np.abs(healthy_mag[~spikes, 2]) > 5e-6].all()
+    # z: each reading is the field, or three times it (a spike). The two
+    # spacecraft draw their own noise (1e-7 T, another seed each, and other
+    # draws on another C++ library), so each is compared within 1 uT, 7 sigma
+    # of the difference (3 uT for a spike: three times the noise), where the
+    # field is strong enough (10 uT) that the two cases cannot be confused.
+    healthy_z, faulty_z = healthy_mag[:, 2], faulty_mag[:, 2]  # [T]
+    strong = np.abs(healthy_z) > 10e-6  # [T]
+    plain = np.abs(faulty_z - healthy_z) < 1e-6  # [T]
+    spiked = np.abs(faulty_z - 3.0 * healthy_z) < 3e-6  # [T]
+    assert strong.mean() > 0.5 and (plain | spiked)[strong].all()
+    assert 0.003 < spiked[strong].mean() < 0.03
 
     healthy_temp, faulty_temp = reading("healthy", "therm-1"), reading("faulty", "therm-1")  # [C]
     assert (faulty_temp.data == 20.0).all()
