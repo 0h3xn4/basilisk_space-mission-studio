@@ -715,6 +715,31 @@ never a public release without files. #319, merged after the tag as
 `bb00914`, is not in 2.15.0; its CHANGELOG entry stays under
 "Unreleased".
 
+2.16.0 was prepared on 2026-11-24 by this checklist, on
+`release/2.16.0` from `develop` at `4819c82`: the pull requests since
+the 2.15.0 tag, #319 to #330 (a cancelled batch leaves no process, the
+2.15.0 publication record, the 3D View's drawing priority, the
+atmospheric density dispersion, the insight workers' relay, the
+pointing error budget, equal dispersion bounds, the owner's answers,
+templates 38 to 42 and Home's template categories; no #324 is in the
+range); a minor release because it adds features and a scenario schema
+step. The scenario file moves to schema version 8, so 2.15.0 and
+earlier refuse every file 2.16.0 saves, by its version (checked with
+2.15.0's code, the tag on `5ebbd3b`, on the 42 templates as 2.16.0
+saves them: all refused); 2.16.0 opens the files 2.15.0 saves. `git
+diff spacemissionstudio-v2.15.0` shows the step in `schema/` with the
+budgets section's version 2, the scenario hashes recorded again,
+templates 38 to 42 and their golden files new, and the 37 earlier
+templates changed only on their version line; the 37 earlier golden
+files are byte-identical. The space weather was not refreshed:
+CelesTrak reset the one connection tried, so 2.16.0 carries 2.13.0's
+file (observations to 2026-11-18). The CHANGELOG heading carries
+2026-11-24, the UTC day of preparation; if the tag is made on a later
+day, the heading moves to that day first, because the release check
+wants the tag's day. By the owner's decision (SRelD K-45), the release
+pull request may be merged with CI's "Windows (MAX Python)" job red,
+for the Basilisk framework test `LambertInputValidation` only.
+
 ---
 
 **Next:** [Syncing with upstream Basilisk](upstream-sync.md) ·

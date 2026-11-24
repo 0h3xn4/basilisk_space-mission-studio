@@ -61,7 +61,11 @@ The objectives, in order:
 
 No project master schedule exists. Development is continuous and driven by
 the user's requests. Releases are made when the user decides, tagged, not
-signed (decision 11). The current release is 2.15.0, Monte Carlo phase
+signed (decision 11). The current release is 2.16.0: the pointing error
+budget, the Monte Carlo atmospheric density dispersion, templates 38 to
+42 and Home's templates in nine categories, with the scenario file at
+schema version 8, which 2.15.0 and earlier do not open (prepared
+2026-11-24); before it 2.15.0, Monte Carlo phase
 B: the batch seed, the thermal node limits, outcome statistics,
 sensitivity, trust checks, the batch report, the `monte-carlo` options
 `--summarize`, `--report`, `--csv`, `--runs` and `--processes`, and
@@ -197,7 +201,7 @@ Incremental development on the `develop` line.
 - **Versioning:** semantic version (`MAJOR.MINOR.PATCH`) in
   `spacemissionstudio/__init__.py`, `pyproject.toml` and the Inno Setup
   script, set at release (`docs/developer/releasing.md`); the current
-  release is 2.15.0, and the code is at 2.15.0.
+  release is 2.16.0, and the code is at 2.16.0.
 - **Processes covered:**
   - requirements: SRS;
   - design: SDD;
