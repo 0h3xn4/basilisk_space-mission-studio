@@ -1,0 +1,2974 @@
+{
+ "budget": {
+  "faulty-sat": {
+   "refused": "BudgetError: faulty-sat: set propellant_budget.isp_s, or give it an orbit thruster"
+  },
+  "healthy-sat": {
+   "refused": "BudgetError: healthy-sat: set propellant_budget.isp_s, or give it an orbit thruster"
+  }
+ },
+ "explain": {
+  "explanation": {
+   "formation_diagrams": [],
+   "headline": "47 - Sensor faults: stuck and spiking readings",
+   "roe_diagrams": [],
+   "sections": [
+    {
+     "badges": [
+      {
+       "kind": "accent",
+       "label": "Sun pointing",
+       "spacecraft": ""
+      }
+     ],
+     "notes": [],
+     "title": "Attitude control"
+    }
+   ],
+   "spacecraft_table": [
+    {
+     "facts": {
+      "Control": "Sun pointing",
+      "Orbit": "Classical 45 deg, 550 km alt",
+      "Propellant": "-"
+     },
+     "name": "healthy-sat, faulty-sat"
+    }
+   ],
+   "stat_tiles": [
+    {
+     "label": "Spacecraft",
+     "value": "2"
+    },
+    {
+     "label": "Duration",
+     "value": "57.6 min"
+    },
+    {
+     "label": "Gravity",
+     "value": "Point-mass Earth + Sun"
+    }
+   ]
+  },
+  "passes": [],
+  "plausibility": [],
+  "warnings": []
+ },
+ "lifetime": {},
+ "mission_output": null,
+ "rng_library": "libstdc++",
+ "run": {
+  "events": [
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 3456.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "faulty-sat",
+    "start_s": 1500.0
+   },
+   {
+    "detail": "lowest sunlight 0%",
+    "end_s": 3456.0,
+    "kind": "eclipse",
+    "label": "eclipse (umbra)",
+    "note": "",
+    "other": "",
+    "quantities": [
+     [
+      "lowest_sunlight",
+      0.0
+     ]
+    ],
+    "spacecraft": "healthy-sat",
+    "start_s": 1500.0
+   }
+  ],
+  "provenance": {
+   "basilisk_qualified": true,
+   "central_body": "earth",
+   "central_body_mu_m3_s2": 398600436000000.0,
+   "configuration": {
+    "file": null,
+    "overrides": {}
+   },
+   "device_parameters": {
+    "spacecraft[faulty-sat].actuators[rw-1]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[faulty-sat].actuators[rw-2]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[faulty-sat].actuators[rw-3]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[healthy-sat].actuators[rw-1]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[healthy-sat].actuators[rw-2]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    },
+    "spacecraft[healthy-sat].actuators[rw-3]": {
+     "Jg": 0.00477464829275686,
+     "Js": 0.00954929658551372,
+     "Jt": 0.00477464829275686,
+     "Omega_max": 628.3185307179587,
+     "P_max": -1.0,
+     "RWModel": 0,
+     "U_d": 0.0,
+     "U_s": 0.0,
+     "betaStatic": -1.0,
+     "cViscous": 0.0,
+     "fCoulomb": 0.0,
+     "fStatic": 0.0,
+     "mass": 1.0,
+     "u_max": 0.05,
+     "u_min": 0.0
+    }
+   },
+   "dynamics_task_rate_s": 1.0,
+   "effective_config_note": "effective_defaults: each key the engine read that the file does not give, with the value it used; null: the engine set nothing, so the Basilisk module keeps its own value or the option is off. device_parameters: the values Basilisk's factories gave each wheel and thruster, in Basilisk's SI units (kg, kg*m^2, rad/s, N*m, N, s, W)",
+   "effective_defaults": {
+    "spacecraft[faulty-sat].control_params": {
+     "K": 0.07388888888888889,
+     "Ki": -1.0,
+     "P": 0.6333333333333333,
+     "integral_limit": 0.0
+    },
+    "spacecraft[faulty-sat].fsw_params": {
+     "min_unit_mag": 0.1,
+     "sun_axis_spin_rate_rad_s": 0.0,
+     "target_body": null,
+     "use_css_estimation": null
+    },
+    "spacecraft[faulty-sat].sensors[css-1].params": {
+     "bias": 0.0,
+     "fault_mode": "none",
+     "noise_std": 0.0
+    },
+    "spacecraft[faulty-sat].sensors[css-2].params": {
+     "bias": 0.0,
+     "noise_std": 0.0
+    },
+    "spacecraft[faulty-sat].sensors[mag-1].params": {
+     "bias_tesla": null
+    },
+    "spacecraft[faulty-sat].sensors[therm-1].params": {
+     "measurement_bias_c": null,
+     "measurement_noise_std_c": null,
+     "measurement_walk_bound_c": null
+    },
+    "spacecraft[healthy-sat].control_params": {
+     "K": 0.07388888888888889,
+     "Ki": -1.0,
+     "P": 0.6333333333333333,
+     "integral_limit": 0.0
+    },
+    "spacecraft[healthy-sat].fsw_params": {
+     "min_unit_mag": 0.1,
+     "sun_axis_spin_rate_rad_s": 0.0,
+     "target_body": null,
+     "use_css_estimation": null
+    },
+    "spacecraft[healthy-sat].sensors[css-1].params": {
+     "bias": 0.0,
+     "fault_mode": "none",
+     "noise_std": 0.0
+    },
+    "spacecraft[healthy-sat].sensors[css-2].params": {
+     "bias": 0.0,
+     "fault_mode": "none",
+     "noise_std": 0.0
+    },
+    "spacecraft[healthy-sat].sensors[mag-1].params": {
+     "bias_tesla": null,
+     "fault_axis": 0,
+     "fault_mode": "none"
+    },
+    "spacecraft[healthy-sat].sensors[therm-1].params": {
+     "measurement_bias_c": null,
+     "measurement_fault_mode": "none",
+     "measurement_noise_std_c": null,
+     "measurement_walk_bound_c": null
+    }
+   },
+   "frames": {
+    "B": {
+     "axes": "fixed to the spacecraft structure, as given by inertia_kg_m2 and device axes",
+     "epoch": "-",
+     "mnemonic": "B",
+     "name": "Spacecraft body",
+     "origin": "spacecraft body point B (Basilisk hub frame origin)",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "H": {
+     "axes": "x radial out, z orbit normal, y completes (along-track)",
+     "epoch": "-",
+     "mnemonic": "H",
+     "name": "Hill (orbit)",
+     "origin": "spacecraft",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "L": {
+     "axes": "South-East-Zenith; elevation/azimuth from the geodetic horizon, azimuth from North to East",
+     "epoch": "-",
+     "mnemonic": "L",
+     "name": "Topocentric (ground station)",
+     "origin": "ground station site (WGS-84 geodetic, engine.geodesy)",
+     "realisation": "-",
+     "time_scale": "-"
+    },
+    "N": {
+     "axes": "Earth mean equator and equinox of J2000 (SPICE J2000, treated as ICRF-aligned by SPICE)",
+     "epoch": "J2000.0 = 2000-01-01T12:00:00 TT",
+     "mnemonic": "N",
+     "name": "Inertial (EME2000 / SPICE J2000)",
+     "origin": "Earth centre of mass",
+     "realisation": "SPICE with DE430",
+     "time_scale": "TDB (ephemerides, propagation)"
+    },
+    "P": {
+     "axes": "IAU_EARTH: Earth-fixed, z = rotation pole, x = prime meridian",
+     "epoch": "-",
+     "mnemonic": "P",
+     "name": "Earth-fixed",
+     "origin": "Earth centre of mass",
+     "realisation": "SPICE PCK (engine.earth_orientation for Earth)",
+     "time_scale": "TDB"
+    },
+    "TEME": {
+     "axes": "SGP4 output frame, converted to N at the scenario epoch (engine.tle)",
+     "epoch": "-",
+     "mnemonic": "TEME",
+     "name": "True equator, mean equinox of date (TLE input only)",
+     "origin": "Earth centre of mass",
+     "realisation": "-",
+     "time_scale": "UTC"
+    }
+   },
+   "integrator": "rkf78",
+   "integrator_absolute_tolerance": 1e-08,
+   "integrator_relative_tolerance": 1e-10,
+   "rng_seed": 47,
+   "rng_seed_note": "each model's RNGSeed is derived from the scenario's seed (sim_settings.seed) and the model's name (SHA-256); a navigation error's own seed is kept, and a Monte Carlo run disperses them per run",
+   "rng_seeds": {
+    "Rec:CSSRawDataMsg": 3310243763,
+    "Rec:CSSRawDataMsg#2": 2337727706,
+    "Rec:CSSRawDataMsg#3": 1755203756,
+    "Rec:CSSRawDataMsg#4": 4260270691,
+    "Rec:CmdTorqueBodyMsg": 105951411,
+    "Rec:CmdTorqueBodyMsg#2": 362826405,
+    "Rec:EclipseMsg": 2193350359,
+    "Rec:EclipseMsg#2": 1350264757,
+    "Rec:NavAttMsg": 3347270433,
+    "Rec:NavAttMsg#2": 291161196,
+    "Rec:RWSpeedMsg": 3542151337,
+    "Rec:RWSpeedMsg#2": 2734188172,
+    "Rec:SCStatesMsg": 1233279948,
+    "Rec:SCStatesMsg#2": 860606998,
+    "Rec:TAMSensorMsg": 1940200013,
+    "Rec:TAMSensorMsg#2": 3732604419,
+    "Rec:TemperatureMsg": 1411553216,
+    "Rec:TemperatureMsg#2": 3059221449,
+    "SpiceInterfaceData": 3044177000,
+    "eclipse": 2750344940,
+    "faulty-sat": 3790781090,
+    "faulty-sat_css-1": 4118464351,
+    "faulty-sat_css-2": 2175767422,
+    "faulty-sat_mag-1": 4020336695,
+    "faulty-sat_mrpFeedback": 1856023148,
+    "faulty-sat_reactionWheels": 93271934,
+    "faulty-sat_rwMotorTorque": 2775773591,
+    "faulty-sat_simpleNav": 812092904,
+    "faulty-sat_sunSafePoint": 1198770665,
+    "faulty-sat_therm-1": 3631311124,
+    "faulty-sat_therm-1_measurement": 1251311429,
+    "healthy-sat": 900466625,
+    "healthy-sat_css-1": 2178153728,
+    "healthy-sat_css-2": 2099024636,
+    "healthy-sat_mag-1": 4129098289,
+    "healthy-sat_mrpFeedback": 4288907147,
+    "healthy-sat_reactionWheels": 3313795583,
+    "healthy-sat_rwMotorTorque": 1820610417,
+    "healthy-sat_simpleNav": 3120565602,
+    "healthy-sat_sunSafePoint": 873158321,
+    "healthy-sat_therm-1": 4190538960,
+    "magneticFieldWMM": 1181762574,
+    "midStepOrientation_earth": 3929961371,
+    "midStepOrientation_sun": 4063153274
+   },
+   "scenario_file": "",
+   "scenario_file_migrations": [],
+   "scenario_file_sha256": "",
+   "series_frames": {
+    "faulty-sat.attitude_sigma_BN": "B relative to N",
+    "faulty-sat.body_rate_omega_BN_B": "B",
+    "faulty-sat.orbit_elements.arg_periapsis": "N",
+    "faulty-sat.orbit_elements.eccentricity": "N",
+    "faulty-sat.orbit_elements.inclination": "N",
+    "faulty-sat.orbit_elements.raan": "N",
+    "faulty-sat.orbit_elements.semi_major_axis": "N",
+    "faulty-sat.orbit_elements.true_anomaly": "N",
+    "faulty-sat.position_N": "N",
+    "faulty-sat.sun_heading_body": "B",
+    "faulty-sat.velocity_N": "N",
+    "healthy-sat.attitude_sigma_BN": "B relative to N",
+    "healthy-sat.body_rate_omega_BN_B": "B",
+    "healthy-sat.orbit_elements.arg_periapsis": "N",
+    "healthy-sat.orbit_elements.eccentricity": "N",
+    "healthy-sat.orbit_elements.inclination": "N",
+    "healthy-sat.orbit_elements.raan": "N",
+    "healthy-sat.orbit_elements.semi_major_axis": "N",
+    "healthy-sat.orbit_elements.true_anomaly": "N",
+    "healthy-sat.position_N": "N",
+    "healthy-sat.sun_heading_body": "B",
+    "healthy-sat.velocity_N": "N"
+   },
+   "time_system": {
+    "conversions": "ERFA (SOFA): dat, utctai, taitt, dtdb",
+    "epoch_tdb_seconds_past_j2000": 857131269.1853606,
+    "epoch_utc": "2027-03-01T00:00:00",
+    "last_leap_second_utc": "2017-01-01",
+    "tai_minus_utc_s": 37.0,
+    "tdb_minus_tt_s": 0.0013606713303452355,
+    "time_variable": "TDB seconds since the scenario epoch",
+    "tt_minus_tai_s": 32.184
+   },
+   "transformations": {
+    "N -> B": "dcm_BN from the spacecraft MRP sigma_BN (integrated by Basilisk)",
+    "N -> H": "dcm_HN from r_BN_N, v_BN_N (Basilisk hillFrame convention)",
+    "N -> P": "dcm_PN = J20002Pfix from SPICE pxform(J2000, P frame, ET) each step; time dependent; SPICE evaluates the PCK Chebyshev/rotation model at ET (no further interpolation)",
+    "P -> L": "dcm_LP from the site's geodetic latitude and longitude (engine.geodesy)",
+    "TEME -> N": "P^T N^T R3(-Eq) at the scenario epoch, IAU 1976/1980 (engine.tle)"
+   }
+  },
+  "series": {
+   "faulty-sat.attitude_sigma_BN": {
+    "columns": [
+     "s1",
+     "s2",
+     "s3"
+    ],
+    "data": [
+     {
+      "first": 0.1,
+      "last": 0.08110116974115991,
+      "max": 0.10101574278513947,
+      "mean": 0.08135497583297917,
+      "min": 0.07415351961297104,
+      "non_finite": 0,
+      "samples": [
+       0.1,
+       0.0810167793209406,
+       0.08123756249925067,
+       0.08122252139062867,
+       0.08120720197434417,
+       0.08119062206530564,
+       0.08117304907308742,
+       0.08115490115139079,
+       0.0811365259433489,
+       0.08111850537387356,
+       0.08110116974115991
+      ]
+     },
+     {
+      "first": 0.2,
+      "last": 0.44979719552316044,
+      "max": 0.49054009977182056,
+      "mean": 0.44728154957133426,
+      "min": 0.1997654662888663,
+      "non_finite": 0,
+      "samples": [
+       0.2,
+       0.45061266327860083,
+       0.4498608258915367,
+       0.4498562787941665,
+       0.44985028930299725,
+       0.4498430396504068,
+       0.4498346802966856,
+       0.44982551755202393,
+       0.44981589397226096,
+       0.44980632050246455,
+       0.44979719552316044
+      ]
+     },
+     {
+      "first": -0.15,
+      "last": -0.05819030020804625,
+      "max": -0.039502735975854346,
+      "mean": -0.059171279235645434,
+      "min": -0.15,
+      "non_finite": 0,
+      "samples": [
+       -0.15,
+       -0.0578666845216252,
+       -0.05831342961687011,
+       -0.05829906483531991,
+       -0.058284917665603696,
+       -0.05826982180148278,
+       -0.05825401304101361,
+       -0.058237838160059306,
+       -0.05822156062266496,
+       -0.05820563825372675,
+       -0.05819030020804625
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "faulty-sat.body_rate_omega_BN_B": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.001,
+      "last": -2.099358012842016e-07,
+      "max": 0.00107801373127138,
+      "mean": -0.00010536144859195278,
+      "min": -0.00620602858042765,
+      "non_finite": 0,
+      "samples": [
+       0.001,
+       -2.6419945950354406e-05,
+       1.304574512575584e-07,
+       -1.9113729571844658e-07,
+       -2.033208992174117e-07,
+       -2.1600721316492636e-07,
+       -2.2502478507124336e-07,
+       -2.2910632546833447e-07,
+       -2.2769697870909038e-07,
+       -2.2100349162350343e-07,
+       -2.099358012842016e-07
+      ]
+     },
+     {
+      "first": -0.001,
+      "last": -9.424377976782308e-08,
+      "max": 0.01430957746417971,
+      "mean": 0.0002518811805891166,
+      "min": -0.0021606522700997133,
+      "non_finite": 0,
+      "samples": [
+       -0.001,
+       6.479374354889329e-05,
+       -5.826383483004129e-07,
+       -5.80178546850065e-08,
+       -7.345505239523572e-08,
+       -8.565644395074413e-08,
+       -9.57144254595685e-08,
+       -1.0217968246550063e-07,
+       -1.0417302993686091e-07,
+       -1.0140218002346968e-07,
+       -9.424377976782308e-08
+      ]
+     },
+     {
+      "first": 0.0005,
+      "last": -9.843742665899126e-09,
+      "max": 0.0005,
+      "mean": 6.055705172983507e-06,
+      "min": -1.599423143576372e-06,
+      "non_finite": 0,
+      "samples": [
+       0.0005,
+       -7.20066501836545e-07,
+       1.4883949941837503e-09,
+       -8.447559338813049e-09,
+       -9.15253562674678e-09,
+       -9.856246009737944e-09,
+       -1.038743032840142e-08,
+       -1.067081239140415e-08,
+       -1.0667890937949978e-08,
+       -1.0379108138584633e-08,
+       -9.843742665899126e-09
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "faulty-sat.control_torque": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -0.007732928652879698,
+      "last": -7.403907118685421e-10,
+      "max": 0.0022397574905209713,
+      "mean": -2.883080671991075e-06,
+      "min": -0.007732928652879698,
+      "non_finite": 0,
+      "samples": [
+       -0.007732928652879698,
+       4.854253489914636e-05,
+       -2.864887223571769e-07,
+       -5.438416287226066e-10,
+       -2.0343437959331738e-09,
+       -2.0421618882553287e-09,
+       -1.9280884367956646e-09,
+       -1.7048035555645966e-09,
+       -1.4027712259346228e-09,
+       -1.0660995557250615e-09,
+       -7.403907118685421e-10
+      ]
+     },
+     {
+      "first": 0.016931537376401344,
+      "last": 3.2227914528358554e-09,
+      "max": 0.016931537376401344,
+      "mean": 7.2523301316538715e-06,
+      "min": -0.0047366101666440515,
+      "non_finite": 0,
+      "samples": [
+       0.016931537376401344,
+       -8.618346022118547e-05,
+       3.551419700152411e-07,
+       6.920760440932612e-10,
+       1.855483041743065e-09,
+       2.0940142944955514e-09,
+       2.3819207943534094e-09,
+       2.676972835676018e-09,
+       2.9389613985249798e-09,
+       3.1295240991568228e-09,
+       3.2227914528358554e-09
+      ]
+     },
+     {
+      "first": -0.00031666666666666665,
+      "last": 6.234370355069446e-09,
+      "max": 1.0129679909317022e-06,
+      "mean": -3.835279942889554e-06,
+      "min": -0.00031666666666666665,
+      "non_finite": 0,
+      "samples": [
+       -0.00031666666666666665,
+       4.560421178298118e-07,
+       -9.426501629830417e-10,
+       5.350120914581597e-09,
+       5.796605896939627e-09,
+       6.2422891395006975e-09,
+       6.5787058746542326e-09,
+       6.7581811812226286e-09,
+       6.756330927368319e-09,
+       6.573435154436934e-09,
+       6.234370355069446e-09
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "N*m"
+   },
+   "faulty-sat.eclipse.illumination_factor": {
+    "columns": [
+     "illumination_factor"
+    ],
+    "data": [
+     {
+      "first": 1.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.4352446273406244,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "faulty-sat.orbit_elements.arg_periapsis": {
+    "columns": [
+     "argp"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.968712218475082,
+      "max": 3.8781027939460335,
+      "mean": 3.1596158441131736,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       3.7901280361870695,
+       3.7742032485836683,
+       3.7417665704289385,
+       3.6036223151677405,
+       3.3000507580857885,
+       2.956677642180997,
+       2.719706050642276,
+       2.523157765087526,
+       2.2658103366078626,
+       1.968712218475082
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "faulty-sat.orbit_elements.eccentricity": {
+    "columns": [
+     "e"
+    ],
+    "data": [
+     {
+      "first": 1.8338263308055602e-16,
+      "last": 1.2898361675971576e-07,
+      "max": 1.3072948763025694e-07,
+      "mean": 9.654421868772536e-08,
+      "min": 1.8338263308055602e-16,
+      "non_finite": 0,
+      "samples": [
+       1.8338263308055602e-16,
+       3.59113932235087e-08,
+       7.227028213189048e-08,
+       9.51764756025994e-08,
+       1.000901017513883e-07,
+       1.0030184013984694e-07,
+       1.1193949145509089e-07,
+       1.2680098277899776e-07,
+       1.3040526690078883e-07,
+       1.262496360521208e-07,
+       1.2898361675971576e-07
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "faulty-sat.orbit_elements.inclination": {
+    "columns": [
+     "i"
+    ],
+    "data": [
+     {
+      "first": 0.7853981633974483,
+      "last": 0.7853981885447556,
+      "max": 0.7853981885447556,
+      "mean": 0.7853981742729276,
+      "min": 0.7853981633974483,
+      "non_finite": 0,
+      "samples": [
+       0.7853981633974483,
+       0.7853981675046978,
+       0.7853981700504385,
+       0.7853981709133797,
+       0.7853981708715918,
+       0.7853981712037927,
+       0.7853981729859465,
+       0.7853981764888205,
+       0.7853981810704301,
+       0.7853981854636194,
+       0.7853981885447556
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "faulty-sat.orbit_elements.raan": {
+    "columns": [
+     "raan"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 6.283185307179586,
+      "max": 6.283185307179586,
+      "mean": 2.946208673109086,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       6.283185307179586,
+       6.283185307179586,
+       6.283185307179586,
+       6.283185307179586,
+       6.283185307179586
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "faulty-sat.orbit_elements.semi_major_axis": {
+    "columns": [
+     "a"
+    ],
+    "data": [
+     {
+      "first": 6927999.999999999,
+      "last": 6927999.598691429,
+      "max": 6928000.072970604,
+      "mean": 6927999.739813783,
+      "min": 6927999.37731545,
+      "non_finite": 0,
+      "samples": [
+       6927999.999999999,
+       6927999.778340015,
+       6927999.528223546,
+       6927999.385062355,
+       6927999.427503043,
+       6927999.63256047,
+       6927999.888247652,
+       6928000.054491804,
+       6928000.041297656,
+       6927999.855912287,
+       6927999.598691429
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "m"
+   },
+   "faulty-sat.orbit_elements.true_anomaly": {
+    "columns": [
+     "true_anomaly"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.815111000180201,
+      "max": 6.283176437032611,
+      "mean": 3.207043213613573,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       2.8718774980351336,
+       3.2655276469201797,
+       3.676784540390289,
+       4.192654168747653,
+       4.875045984607709,
+       5.5972393943186916,
+       6.211936448532313,
+       0.5041197491287207,
+       1.1391926213312458,
+       1.815111000180201
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "faulty-sat.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 6928000.0,
+      "last": -5547676.792422482,
+      "max": 6928000.0,
+      "mean": -1096191.7471033894,
+      "min": -6927998.605844526,
+      "non_finite": 0,
+      "samples": [
+       6928000.0,
+       6436815.838236505,
+       5038121.276223773,
+       2922235.837333299,
+       399559.4115258524,
+       -2186648.9227962065,
+       -4462797.366900775,
+       -6102548.1126510855,
+       -6882781.141991802,
+       -6689036.429704259,
+       -5547676.792422482
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2934319.5599285383,
+      "max": 4898835.30254992,
+      "mean": 2330308.914383875,
+      "min": -2934319.5599285383,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1811709.977762769,
+       3362626.812784873,
+       4441718.168800926,
+       4890681.568946157,
+       4648426.784240883,
+       3747039.7224569367,
+       2319060.053692421,
+       558792.1844339736,
+       -1275532.885515801,
+       -2934319.5599285383
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2934319.7442561737,
+      "max": 4898835.375727873,
+      "mean": 2330308.9210507143,
+      "min": -2934319.7442561737,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1811709.98574348,
+       3362626.840937733,
+       4441718.221391462,
+       4890681.640340983,
+       4648426.8596495725,
+       3747039.7805121457,
+       2319060.0712115997,
+       558792.1414687098,
+       -1275532.9998685808,
+       -2934319.7442561737
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "m"
+   },
+   "faulty-sat.rw_speeds": {
+    "columns": [
+     "wheel_0",
+     "wheel_1",
+     "wheel_2"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.0447220226818914,
+      "max": 15.018295858595643,
+      "mean": 1.2819186896721921,
+      "min": -1.3767744950538776,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.0971896817410354,
+       1.043586735635492,
+       1.0443096121465292,
+       1.044375843790109,
+       1.0444500422379426,
+       1.0445223464407782,
+       1.0445882756897595,
+       1.0446447631351543,
+       1.0446894029647193,
+       1.0447220226818914
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2.626460516160657,
+      "max": 1.967023344795807,
+      "mean": -3.1620323053676045,
+      "min": -33.06319983624625,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -2.767279283539321,
+       -2.6246141659335156,
+       -2.6258318148622037,
+       -2.625889622289227,
+       -2.625960960296937,
+       -2.6260419366912604,
+       -2.626133339705581,
+       -2.6262352286519524,
+       -2.6263451055772316,
+       -2.626460516160657
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 1.3889341084403608,
+      "max": 1.396946603242587,
+      "mean": 1.3739917728167366,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.3900993859899913,
+       1.390726743683436,
+       1.390546379640526,
+       1.3903457066663916,
+       1.3901273842130177,
+       1.3898947187312078,
+       1.3896532882462767,
+       1.3894078881462748,
+       1.389166568369814,
+       1.3889341084403608
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "faulty-sat.sensor.css-1": {
+    "columns": [
+     "output"
+    ],
+    "data": [
+     {
+      "first": 0.5973645523072952,
+      "last": 0.0,
+      "max": 1.0190315805546502,
+      "mean": 0.43916234733668463,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.5973645523072952,
+       1.0190200191827596,
+       1.0189948120186973,
+       1.0189587397980178,
+       1.0189213614660617,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "faulty-sat.sensor.css-2": {
+    "columns": [
+     "output"
+    ],
+    "data": [
+     {
+      "first": 1.0,
+      "last": 1.0,
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "non_finite": 0,
+      "samples": [
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "faulty-sat.sensor.mag-1": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -1.9897541464656528e-05,
+      "last": -4.784583810259752e-07,
+      "max": 1.5048476378196461e-05,
+      "mean": -6.665192024145536e-06,
+      "min": -2.490113058587419e-05,
+      "non_finite": 0,
+      "samples": [
+       -1.9897541464656528e-05,
+       -1.5111129211597361e-05,
+       -1.7384216756139243e-06,
+       1.1258179694295535e-05,
+       1.444438222805533e-05,
+       4.5588731395105e-06,
+       -1.0506786843487438e-05,
+       -2.2413340178469988e-05,
+       -2.3140775848943862e-05,
+       -1.1185474275471774e-05,
+       -4.784583810259752e-07
+      ]
+     },
+     {
+      "first": 5.820063958973848e-06,
+      "last": -1.4730989890795733e-05,
+      "max": 5.853548140452113e-06,
+      "mean": -1.4458853907852215e-05,
+      "min": -3.8235370568209984e-05,
+      "non_finite": 0,
+      "samples": [
+       5.820063958973848e-06,
+       -7.391350640092553e-06,
+       -2.3084118142630093e-05,
+       -3.623288011737265e-05,
+       -3.5563929320638054e-05,
+       -2.2650048419606796e-05,
+       -8.216726305183874e-06,
+       1.2746844333379981e-06,
+       3.317093205136699e-07,
+       -8.360266119525425e-06,
+       -1.4730989890795733e-05
+      ]
+     },
+     {
+      "first": 1.3528337561024948e-05,
+      "last": -2.007407557441722e-05,
+      "max": 9.137081416060447e-05,
+      "mean": -6.912263466453121e-07,
+      "min": -7.078484074313885e-05,
+      "non_finite": 0,
+      "samples": [
+       1.3528337561024948e-05,
+       -2.0201719242486077e-05,
+       -2.2939251935880617e-05,
+       -9.86941838140714e-06,
+       1.3784020225045968e-05,
+       2.879427141919351e-05,
+       2.8414554678574606e-05,
+       1.3866215367271821e-05,
+       -7.967958398284384e-06,
+       -1.8898974277795455e-05,
+       -2.007407557441722e-05
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "T"
+   },
+   "faulty-sat.sensor.therm-1": {
+    "columns": [
+     "temperature"
+    ],
+    "data": [
+     {
+      "first": 20.0,
+      "last": 20.0,
+      "max": 20.0,
+      "mean": 20.0,
+      "min": 20.0,
+      "non_finite": 0,
+      "samples": [
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0,
+       20.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "C"
+   },
+   "faulty-sat.sun_heading_body": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.7427549961757103,
+      "last": -3.056748658497588e-06,
+      "max": 0.7432771600642736,
+      "mean": 0.007903660499644586,
+      "min": -0.13223756595889868,
+      "non_finite": 0,
+      "samples": [
+       0.7427549961757103,
+       -0.0024440669037072704,
+       -7.504417151027454e-07,
+       -1.951717839565603e-06,
+       -2.418016331801054e-06,
+       -2.8234305901875256e-06,
+       -3.1526916649537995e-06,
+       -3.358386325924556e-06,
+       -3.41254436381222e-06,
+       -3.307225679177739e-06,
+       -3.056748658497588e-06
+      ]
+     },
+     {
+      "first": 0.32354852598999007,
+      "last": 7.237880813508284e-06,
+      "max": 0.32365965370336064,
+      "mean": 0.003281426018820066,
+      "min": -0.06439531743944038,
+      "non_finite": 0,
+      "samples": [
+       0.32354852598999007,
+       -0.0017220369464228955,
+       1.1036344090134716e-05,
+       6.582719832337602e-06,
+       7.08114560441734e-06,
+       7.5165104554937925e-06,
+       7.819513973803677e-06,
+       7.947368291891244e-06,
+       7.882691417138675e-06,
+       7.634970119118137e-06,
+       7.237880813508284e-06
+      ]
+     },
+     {
+      "first": 0.586200790673064,
+      "last": 0.9999999999691347,
+      "max": 0.9999999999842646,
+      "mean": 0.9957359737162058,
+      "min": 0.585502179200881,
+      "non_finite": 0,
+      "samples": [
+       0.586200790673064,
+       0.9999955305528749,
+       0.9999999999388177,
+       0.9999999999764293,
+       0.9999999999720054,
+       0.9999999999677653,
+       0.9999999999644577,
+       0.9999999999627799,
+       0.9999999999631091,
+       0.9999999999653851,
+       0.9999999999691347
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "faulty-sat.velocity_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 4543.383790317219,
+      "max": 4543.383790317219,
+      "mean": -3608.1584768009097,
+      "min": -7585.163070503342,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -2805.179919971941,
+       -5206.5581549831195,
+       -6877.380640837905,
+       -7572.538097734706,
+       -7197.440723814417,
+       -5801.768881103549,
+       -3590.7416418818425,
+       -865.2123384134693,
+       1974.9841664627604,
+       4543.383790317219
+      ]
+     },
+     {
+      "first": 5363.520530647663,
+      "last": -4294.902027103032,
+      "max": 5363.520530647663,
+      "mean": -848.6505517964089,
+      "min": -5363.520421096342,
+      "non_finite": 0,
+      "samples": [
+       5363.520530647663,
+       4983.255361803849,
+       3900.413585196479,
+       2262.336830347839,
+       309.33051506347454,
+       -1692.8610183895692,
+       -3455.010356662947,
+       -4724.473098609,
+       -5328.514017980454,
+       -5178.520425371353,
+       -4294.902027103032
+      ]
+     },
+     {
+      "first": 5363.520530647662,
+      "last": -4294.9022130186395,
+      "max": 5363.520530647662,
+      "mean": -848.6506051434086,
+      "min": -5363.520625761215,
+      "non_finite": 0,
+      "samples": [
+       5363.520530647662,
+       4983.255405746521,
+       3900.413654240145,
+       2262.336897719495,
+       309.3305521428575,
+       -1692.8610354906448,
+       -3455.010440862365,
+       -4724.473247727675,
+       -5328.514214205787,
+       -5178.520636768822,
+       -4294.9022130186395
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "m/s"
+   },
+   "healthy-sat.attitude_sigma_BN": {
+    "columns": [
+     "s1",
+     "s2",
+     "s3"
+    ],
+    "data": [
+     {
+      "first": 0.1,
+      "last": 0.08110116974115991,
+      "max": 0.10101574278513947,
+      "mean": 0.08135497583297917,
+      "min": 0.07415351961297104,
+      "non_finite": 0,
+      "samples": [
+       0.1,
+       0.0810167793209406,
+       0.08123756249925067,
+       0.08122252139062867,
+       0.08120720197434417,
+       0.08119062206530564,
+       0.08117304907308742,
+       0.08115490115139079,
+       0.0811365259433489,
+       0.08111850537387356,
+       0.08110116974115991
+      ]
+     },
+     {
+      "first": 0.2,
+      "last": 0.44979719552316044,
+      "max": 0.49054009977182056,
+      "mean": 0.44728154957133426,
+      "min": 0.1997654662888663,
+      "non_finite": 0,
+      "samples": [
+       0.2,
+       0.45061266327860083,
+       0.4498608258915367,
+       0.4498562787941665,
+       0.44985028930299725,
+       0.4498430396504068,
+       0.4498346802966856,
+       0.44982551755202393,
+       0.44981589397226096,
+       0.44980632050246455,
+       0.44979719552316044
+      ]
+     },
+     {
+      "first": -0.15,
+      "last": -0.05819030020804625,
+      "max": -0.039502735975854346,
+      "mean": -0.059171279235645434,
+      "min": -0.15,
+      "non_finite": 0,
+      "samples": [
+       -0.15,
+       -0.0578666845216252,
+       -0.05831342961687011,
+       -0.05829906483531991,
+       -0.058284917665603696,
+       -0.05826982180148278,
+       -0.05825401304101361,
+       -0.058237838160059306,
+       -0.05822156062266496,
+       -0.05820563825372675,
+       -0.05819030020804625
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "healthy-sat.body_rate_omega_BN_B": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.001,
+      "last": -2.099358012842016e-07,
+      "max": 0.00107801373127138,
+      "mean": -0.00010536144859195278,
+      "min": -0.00620602858042765,
+      "non_finite": 0,
+      "samples": [
+       0.001,
+       -2.6419945950354406e-05,
+       1.304574512575584e-07,
+       -1.9113729571844658e-07,
+       -2.033208992174117e-07,
+       -2.1600721316492636e-07,
+       -2.2502478507124336e-07,
+       -2.2910632546833447e-07,
+       -2.2769697870909038e-07,
+       -2.2100349162350343e-07,
+       -2.099358012842016e-07
+      ]
+     },
+     {
+      "first": -0.001,
+      "last": -9.424377976782308e-08,
+      "max": 0.01430957746417971,
+      "mean": 0.0002518811805891166,
+      "min": -0.0021606522700997133,
+      "non_finite": 0,
+      "samples": [
+       -0.001,
+       6.479374354889329e-05,
+       -5.826383483004129e-07,
+       -5.80178546850065e-08,
+       -7.345505239523572e-08,
+       -8.565644395074413e-08,
+       -9.57144254595685e-08,
+       -1.0217968246550063e-07,
+       -1.0417302993686091e-07,
+       -1.0140218002346968e-07,
+       -9.424377976782308e-08
+      ]
+     },
+     {
+      "first": 0.0005,
+      "last": -9.843742665899126e-09,
+      "max": 0.0005,
+      "mean": 6.055705172983507e-06,
+      "min": -1.599423143576372e-06,
+      "non_finite": 0,
+      "samples": [
+       0.0005,
+       -7.20066501836545e-07,
+       1.4883949941837503e-09,
+       -8.447559338813049e-09,
+       -9.15253562674678e-09,
+       -9.856246009737944e-09,
+       -1.038743032840142e-08,
+       -1.067081239140415e-08,
+       -1.0667890937949978e-08,
+       -1.0379108138584633e-08,
+       -9.843742665899126e-09
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "healthy-sat.control_torque": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -0.007732928652879698,
+      "last": -7.403907118685421e-10,
+      "max": 0.0022397574905209713,
+      "mean": -2.883080671991075e-06,
+      "min": -0.007732928652879698,
+      "non_finite": 0,
+      "samples": [
+       -0.007732928652879698,
+       4.854253489914636e-05,
+       -2.864887223571769e-07,
+       -5.438416287226066e-10,
+       -2.0343437959331738e-09,
+       -2.0421618882553287e-09,
+       -1.9280884367956646e-09,
+       -1.7048035555645966e-09,
+       -1.4027712259346228e-09,
+       -1.0660995557250615e-09,
+       -7.403907118685421e-10
+      ]
+     },
+     {
+      "first": 0.016931537376401344,
+      "last": 3.2227914528358554e-09,
+      "max": 0.016931537376401344,
+      "mean": 7.2523301316538715e-06,
+      "min": -0.0047366101666440515,
+      "non_finite": 0,
+      "samples": [
+       0.016931537376401344,
+       -8.618346022118547e-05,
+       3.551419700152411e-07,
+       6.920760440932612e-10,
+       1.855483041743065e-09,
+       2.0940142944955514e-09,
+       2.3819207943534094e-09,
+       2.676972835676018e-09,
+       2.9389613985249798e-09,
+       3.1295240991568228e-09,
+       3.2227914528358554e-09
+      ]
+     },
+     {
+      "first": -0.00031666666666666665,
+      "last": 6.234370355069446e-09,
+      "max": 1.0129679909317022e-06,
+      "mean": -3.835279942889554e-06,
+      "min": -0.00031666666666666665,
+      "non_finite": 0,
+      "samples": [
+       -0.00031666666666666665,
+       4.560421178298118e-07,
+       -9.426501629830417e-10,
+       5.350120914581597e-09,
+       5.796605896939627e-09,
+       6.2422891395006975e-09,
+       6.5787058746542326e-09,
+       6.7581811812226286e-09,
+       6.756330927368319e-09,
+       6.573435154436934e-09,
+       6.234370355069446e-09
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "N*m"
+   },
+   "healthy-sat.eclipse.illumination_factor": {
+    "columns": [
+     "illumination_factor"
+    ],
+    "data": [
+     {
+      "first": 1.0,
+      "last": 0.0,
+      "max": 1.0,
+      "mean": 0.4352446273406244,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "healthy-sat.orbit_elements.arg_periapsis": {
+    "columns": [
+     "argp"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.968712218475082,
+      "max": 3.8781027939460335,
+      "mean": 3.1596158441131736,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       3.7901280361870695,
+       3.7742032485836683,
+       3.7417665704289385,
+       3.6036223151677405,
+       3.3000507580857885,
+       2.956677642180997,
+       2.719706050642276,
+       2.523157765087526,
+       2.2658103366078626,
+       1.968712218475082
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "healthy-sat.orbit_elements.eccentricity": {
+    "columns": [
+     "e"
+    ],
+    "data": [
+     {
+      "first": 1.8338263308055602e-16,
+      "last": 1.2898361675971576e-07,
+      "max": 1.3072948763025694e-07,
+      "mean": 9.654421868772536e-08,
+      "min": 1.8338263308055602e-16,
+      "non_finite": 0,
+      "samples": [
+       1.8338263308055602e-16,
+       3.59113932235087e-08,
+       7.227028213189048e-08,
+       9.51764756025994e-08,
+       1.000901017513883e-07,
+       1.0030184013984694e-07,
+       1.1193949145509089e-07,
+       1.2680098277899776e-07,
+       1.3040526690078883e-07,
+       1.262496360521208e-07,
+       1.2898361675971576e-07
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "healthy-sat.orbit_elements.inclination": {
+    "columns": [
+     "i"
+    ],
+    "data": [
+     {
+      "first": 0.7853981633974483,
+      "last": 0.7853981885447556,
+      "max": 0.7853981885447556,
+      "mean": 0.7853981742729276,
+      "min": 0.7853981633974483,
+      "non_finite": 0,
+      "samples": [
+       0.7853981633974483,
+       0.7853981675046978,
+       0.7853981700504385,
+       0.7853981709133797,
+       0.7853981708715918,
+       0.7853981712037927,
+       0.7853981729859465,
+       0.7853981764888205,
+       0.7853981810704301,
+       0.7853981854636194,
+       0.7853981885447556
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "healthy-sat.orbit_elements.raan": {
+    "columns": [
+     "raan"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 6.283185307179586,
+      "max": 6.283185307179586,
+      "mean": 2.946208673109086,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       6.283185307179586,
+       6.283185307179586,
+       6.283185307179586,
+       6.283185307179586,
+       6.283185307179586
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "healthy-sat.orbit_elements.semi_major_axis": {
+    "columns": [
+     "a"
+    ],
+    "data": [
+     {
+      "first": 6927999.999999999,
+      "last": 6927999.598691429,
+      "max": 6928000.072970604,
+      "mean": 6927999.739813783,
+      "min": 6927999.37731545,
+      "non_finite": 0,
+      "samples": [
+       6927999.999999999,
+       6927999.778340015,
+       6927999.528223546,
+       6927999.385062355,
+       6927999.427503043,
+       6927999.63256047,
+       6927999.888247652,
+       6928000.054491804,
+       6928000.041297656,
+       6927999.855912287,
+       6927999.598691429
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "m"
+   },
+   "healthy-sat.orbit_elements.true_anomaly": {
+    "columns": [
+     "true_anomaly"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.815111000180201,
+      "max": 6.283176437032611,
+      "mean": 3.207043213613573,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       2.8718774980351336,
+       3.2655276469201797,
+       3.676784540390289,
+       4.192654168747653,
+       4.875045984607709,
+       5.5972393943186916,
+       6.211936448532313,
+       0.5041197491287207,
+       1.1391926213312458,
+       1.815111000180201
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad"
+   },
+   "healthy-sat.position_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 6928000.0,
+      "last": -5547676.792422482,
+      "max": 6928000.0,
+      "mean": -1096191.7471033894,
+      "min": -6927998.605844526,
+      "non_finite": 0,
+      "samples": [
+       6928000.0,
+       6436815.838236505,
+       5038121.276223773,
+       2922235.837333299,
+       399559.4115258524,
+       -2186648.9227962065,
+       -4462797.366900775,
+       -6102548.1126510855,
+       -6882781.141991802,
+       -6689036.429704259,
+       -5547676.792422482
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2934319.5599285383,
+      "max": 4898835.30254992,
+      "mean": 2330308.914383875,
+      "min": -2934319.5599285383,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1811709.977762769,
+       3362626.812784873,
+       4441718.168800926,
+       4890681.568946157,
+       4648426.784240883,
+       3747039.7224569367,
+       2319060.053692421,
+       558792.1844339736,
+       -1275532.885515801,
+       -2934319.5599285383
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2934319.7442561737,
+      "max": 4898835.375727873,
+      "mean": 2330308.9210507143,
+      "min": -2934319.7442561737,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1811709.98574348,
+       3362626.840937733,
+       4441718.221391462,
+       4890681.640340983,
+       4648426.8596495725,
+       3747039.7805121457,
+       2319060.0712115997,
+       558792.1414687098,
+       -1275532.9998685808,
+       -2934319.7442561737
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "m"
+   },
+   "healthy-sat.rw_speeds": {
+    "columns": [
+     "wheel_0",
+     "wheel_1",
+     "wheel_2"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.0447220226818914,
+      "max": 15.018295858595643,
+      "mean": 1.2819186896721921,
+      "min": -1.3767744950538776,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.0971896817410354,
+       1.043586735635492,
+       1.0443096121465292,
+       1.044375843790109,
+       1.0444500422379426,
+       1.0445223464407782,
+       1.0445882756897595,
+       1.0446447631351543,
+       1.0446894029647193,
+       1.0447220226818914
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": -2.626460516160657,
+      "max": 1.967023344795807,
+      "mean": -3.1620323053676045,
+      "min": -33.06319983624625,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -2.767279283539321,
+       -2.6246141659335156,
+       -2.6258318148622037,
+       -2.625889622289227,
+       -2.625960960296937,
+       -2.6260419366912604,
+       -2.626133339705581,
+       -2.6262352286519524,
+       -2.6263451055772316,
+       -2.626460516160657
+      ]
+     },
+     {
+      "first": 0.0,
+      "last": 1.3889341084403608,
+      "max": 1.396946603242587,
+      "mean": 1.3739917728167366,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       1.3900993859899913,
+       1.390726743683436,
+       1.390546379640526,
+       1.3903457066663916,
+       1.3901273842130177,
+       1.3898947187312078,
+       1.3896532882462767,
+       1.3894078881462748,
+       1.389166568369814,
+       1.3889341084403608
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "rad/s"
+   },
+   "healthy-sat.sensor.css-1": {
+    "columns": [
+     "output"
+    ],
+    "data": [
+     {
+      "first": 0.5973645523072952,
+      "last": 0.0,
+      "max": 1.0190315805546502,
+      "mean": 0.43916234733668463,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.5973645523072952,
+       1.0190200191827596,
+       1.0189948120186973,
+       1.0189587397980178,
+       1.0189213614660617,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "healthy-sat.sensor.css-2": {
+    "columns": [
+     "output"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "healthy-sat.sensor.mag-1": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": -1.9912288506605977e-05,
+      "last": -3.4201239230574477e-07,
+      "max": 1.5051684026991204e-05,
+      "mean": -6.666152210913593e-06,
+      "min": -2.497899587441699e-05,
+      "non_finite": 0,
+      "samples": [
+       -1.9912288506605977e-05,
+       -1.4925200429246715e-05,
+       -1.673086387722654e-06,
+       1.126985575433945e-05,
+       1.4376885756491566e-05,
+       4.508374216118602e-06,
+       -1.0508884730324702e-05,
+       -2.2604632834781993e-05,
+       -2.3031254021331114e-05,
+       -1.1243186242171964e-05,
+       -3.4201239230574477e-07
+      ]
+     },
+     {
+      "first": 5.666167705393144e-06,
+      "last": -1.430544953803305e-05,
+      "max": 5.78247280220263e-06,
+      "mean": -1.4459432348886669e-05,
+      "min": -3.833116419831043e-05,
+      "non_finite": 0,
+      "samples": [
+       5.666167705393144e-06,
+       -7.453881726926675e-06,
+       -2.302418552691273e-05,
+       -3.608779723480531e-05,
+       -3.563026002535893e-05,
+       -2.2586514577924234e-05,
+       -8.099629976113459e-06,
+       1.4714312627555222e-06,
+       2.933675960425014e-07,
+       -8.279726734220086e-06,
+       -1.430544953803305e-05
+      ]
+     },
+     {
+      "first": 1.3582268649176999e-05,
+      "last": -1.990222594632126e-05,
+      "max": 3.052696285851913e-05,
+      "mean": -7.514879785403441e-07,
+      "min": -2.3771336129915338e-05,
+      "non_finite": 0,
+      "samples": [
+       1.3582268649176999e-05,
+       -2.0387178679008855e-05,
+       -2.301143415196586e-05,
+       -9.817362022389645e-06,
+       1.3432252227485283e-05,
+       2.8495757378513188e-05,
+       2.8433773624071366e-05,
+       1.3866515576697862e-05,
+       -7.6129781046987225e-06,
+       -1.9163299753527717e-05,
+       -1.990222594632126e-05
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "T"
+   },
+   "healthy-sat.sensor.therm-1": {
+    "columns": [
+     "temperature"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 1.265081380110751,
+      "max": 53.48248784686706,
+      "mean": 26.270517321665192,
+      "min": 0.0,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       14.482257026192412,
+       28.139028122331197,
+       40.09137844297889,
+       50.31803729616262,
+       45.19850692918959,
+       33.91353722372942,
+       24.17971753806282,
+       15.620607146963007,
+       8.054664922310216,
+       1.265081380110751
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "C"
+   },
+   "healthy-sat.sun_heading_body": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.7427549961757103,
+      "last": -3.056748658497588e-06,
+      "max": 0.7432771600642736,
+      "mean": 0.007903660499644586,
+      "min": -0.13223756595889868,
+      "non_finite": 0,
+      "samples": [
+       0.7427549961757103,
+       -0.0024440669037072704,
+       -7.504417151027454e-07,
+       -1.951717839565603e-06,
+       -2.418016331801054e-06,
+       -2.8234305901875256e-06,
+       -3.1526916649537995e-06,
+       -3.358386325924556e-06,
+       -3.41254436381222e-06,
+       -3.307225679177739e-06,
+       -3.056748658497588e-06
+      ]
+     },
+     {
+      "first": 0.32354852598999007,
+      "last": 7.237880813508284e-06,
+      "max": 0.32365965370336064,
+      "mean": 0.003281426018820066,
+      "min": -0.06439531743944038,
+      "non_finite": 0,
+      "samples": [
+       0.32354852598999007,
+       -0.0017220369464228955,
+       1.1036344090134716e-05,
+       6.582719832337602e-06,
+       7.08114560441734e-06,
+       7.5165104554937925e-06,
+       7.819513973803677e-06,
+       7.947368291891244e-06,
+       7.882691417138675e-06,
+       7.634970119118137e-06,
+       7.237880813508284e-06
+      ]
+     },
+     {
+      "first": 0.586200790673064,
+      "last": 0.9999999999691347,
+      "max": 0.9999999999842646,
+      "mean": 0.9957359737162058,
+      "min": 0.585502179200881,
+      "non_finite": 0,
+      "samples": [
+       0.586200790673064,
+       0.9999955305528749,
+       0.9999999999388177,
+       0.9999999999764293,
+       0.9999999999720054,
+       0.9999999999677653,
+       0.9999999999644577,
+       0.9999999999627799,
+       0.9999999999631091,
+       0.9999999999653851,
+       0.9999999999691347
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "-"
+   },
+   "healthy-sat.velocity_N": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "data": [
+     {
+      "first": 0.0,
+      "last": 4543.383790317219,
+      "max": 4543.383790317219,
+      "mean": -3608.1584768009097,
+      "min": -7585.163070503342,
+      "non_finite": 0,
+      "samples": [
+       0.0,
+       -2805.179919971941,
+       -5206.5581549831195,
+       -6877.380640837905,
+       -7572.538097734706,
+       -7197.440723814417,
+       -5801.768881103549,
+       -3590.7416418818425,
+       -865.2123384134693,
+       1974.9841664627604,
+       4543.383790317219
+      ]
+     },
+     {
+      "first": 5363.520530647663,
+      "last": -4294.902027103032,
+      "max": 5363.520530647663,
+      "mean": -848.6505517964089,
+      "min": -5363.520421096342,
+      "non_finite": 0,
+      "samples": [
+       5363.520530647663,
+       4983.255361803849,
+       3900.413585196479,
+       2262.336830347839,
+       309.33051506347454,
+       -1692.8610183895692,
+       -3455.010356662947,
+       -4724.473098609,
+       -5328.514017980454,
+       -5178.520425371353,
+       -4294.902027103032
+      ]
+     },
+     {
+      "first": 5363.520530647662,
+      "last": -4294.9022130186395,
+      "max": 5363.520530647662,
+      "mean": -848.6506051434086,
+      "min": -5363.520625761215,
+      "non_finite": 0,
+      "samples": [
+       5363.520530647662,
+       4983.255405746521,
+       3900.413654240145,
+       2262.336897719495,
+       309.3305521428575,
+       -1692.8610354906448,
+       -3455.010440862365,
+       -4724.473247727675,
+       -5328.514214205787,
+       -5178.520636768822,
+       -4294.9022130186395
+      ]
+     }
+    ],
+    "time_s": {
+     "first": 0.0,
+     "last": 3456.0,
+     "max": 3456.0,
+     "mean": 1728.0,
+     "min": 0.0,
+     "non_finite": 0,
+     "samples": [
+      0.0,
+      346.0,
+      691.0,
+      1037.0,
+      1382.0,
+      1728.0,
+      2074.0,
+      2419.0,
+      2765.0,
+      3110.0,
+      3456.0
+     ]
+    },
+    "units": "m/s"
+   }
+  },
+  "summary": [
+   {
+    "decimals": 2,
+    "key": "run_length",
+    "label": "Run length",
+    "unit": "h",
+    "value": 0.96
+   },
+   {
+    "decimals": 0,
+    "key": "faulty-sat.eclipses",
+    "label": "faulty-sat: Eclipses",
+    "unit": "-",
+    "value": 1.0
+   },
+   {
+    "decimals": 1,
+    "key": "faulty-sat.eclipse_time",
+    "label": "faulty-sat: Eclipse time",
+    "unit": "min",
+    "value": 32.6
+   },
+   {
+    "decimals": 0,
+    "key": "healthy-sat.eclipses",
+    "label": "healthy-sat: Eclipses",
+    "unit": "-",
+    "value": 1.0
+   },
+   {
+    "decimals": 1,
+    "key": "healthy-sat.eclipse_time",
+    "label": "healthy-sat: Eclipse time",
+    "unit": "min",
+    "value": 32.6
+   }
+  ],
+  "warnings": [
+   "Earth orientation: IAU rotation model, no IERS data installed"
+  ]
+ },
+ "span_days": 0.04,
+ "template": "47_sensor_faults.json"
+}

@@ -78,6 +78,10 @@ have read.
 - Template **16**: a Lambert transfer to a target position.
 - Template **23**: propagate to the start of a Berlin pass, report,
   propagate to its end, report.
+- Template **46**: assignments switch a thruster off and on, a `while`
+  fires 0.05 day at a time until the altitude is 420 km, an `if` checks
+  it, and a script block adds the semi-major axis and the period to
+  Results › Output. The run asks before the script block.
 - [`examples/hohmann_transfer.py`](../../examples/hohmann_transfer.py)
   builds a two-burn Hohmann transfer in Python. It prints, for example,
   `Final orbit: altitude 699.69 to 700.31 km (target 700 km)`.

@@ -1,0 +1,244 @@
+{
+  "name": "46 - Mission Sequence: assignment, if, while and a script block",
+  "epoch_utc": "2030-01-01T00:00:00",
+  "simulation_mode": "orbit_only",
+  "gravity": {
+    "central_body": "earth",
+    "central_body_degree": 0,
+    "third_body_perturbers": [],
+    "polyhedral_gravity": false,
+    "albedo": false
+  },
+  "spacecraft": [
+    {
+      "name": "raise-sat",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6778.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.03,
+        "raan_deg": 259.03,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "enable_drag": false,
+      "drag_coeff": 2.2,
+      "drag_area_m2": 1.0,
+      "enable_srp": false,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.0,
+      "facets": [],
+      "enable_gravity_gradient": false,
+      "sensors": [],
+      "actuators": [],
+      "fsw_mode": null,
+      "fsw_params": {},
+      "control_params": {},
+      "power": null,
+      "rf_link": null,
+      "comms_pointing": null,
+      "data_handling": null,
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": {
+        "frame": "VNB",
+        "direction": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "thrust_n": 0.02,
+        "isp_s": 1500.0,
+        "propellant_kg": 5.0
+      },
+      "momentum_dumping": null,
+      "magnetic_momentum_management": null,
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    }
+  ],
+  "ground_stations": [],
+  "space_weather": {
+    "source": "bundled",
+    "local_file_path": null,
+    "cache_dir": null,
+    "atmosphere_model": "nrlmsise00",
+    "forecast_percentile": 50.0,
+    "msfc_file_path": null
+  },
+  "sim_settings": {
+    "duration_days": 2.0,
+    "dynamics_task_rate_s": 30.0,
+    "integrator": "rkf78",
+    "record_interval_s": 0.0,
+    "seed": 0
+  },
+  "monte_carlo": {
+    "enabled": false,
+    "num_runs": 10,
+    "thread_count": 1,
+    "verbose": false,
+    "dispersions": []
+  },
+  "mission_sequence": [
+    {
+      "kind": "assignment",
+      "label": "Thruster off",
+      "params": {
+        "target": "raise-sat.constant_thrust.thrust_n",
+        "value": 0.0
+      },
+      "children": []
+    },
+    {
+      "kind": "propagate",
+      "label": "Coast at 400 km",
+      "params": {
+        "stop_condition": "duration",
+        "duration_days": 0.25
+      },
+      "children": []
+    },
+    {
+      "kind": "report",
+      "label": "Before the raise",
+      "params": {
+        "series": [
+          "raise-sat.orbit_elements.semi_major_axis",
+          "raise-sat.constant_thrust.delta_v",
+          "raise-sat.constant_thrust.propellant_remaining"
+        ]
+      },
+      "children": []
+    },
+    {
+      "kind": "assignment",
+      "label": "Thruster on",
+      "params": {
+        "target": "raise-sat.constant_thrust.thrust_n",
+        "value": 0.02
+      },
+      "children": []
+    },
+    {
+      "kind": "while",
+      "label": "Fire until 420 km",
+      "params": {
+        "condition": "spacecraft['raise-sat']['altitude_m'] < 420000.0"
+      },
+      "children": [
+        {
+          "kind": "propagate",
+          "label": "Fire for 0.05 day",
+          "params": {
+            "stop_condition": "duration",
+            "duration_days": 0.05
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "kind": "assignment",
+      "label": "Thruster off again",
+      "params": {
+        "target": "raise-sat.constant_thrust.thrust_n",
+        "value": 0.0
+      },
+      "children": []
+    },
+    {
+      "kind": "if",
+      "label": "Check the altitude",
+      "params": {
+        "condition": "spacecraft['raise-sat']['altitude_m'] >= 420000.0"
+      },
+      "children": [
+        {
+          "kind": "report",
+          "label": "Raised",
+          "params": {
+            "series": [
+              "raise-sat.orbit_elements.semi_major_axis",
+              "raise-sat.constant_thrust.delta_v",
+              "raise-sat.constant_thrust.propellant_remaining"
+            ]
+          },
+          "children": []
+        }
+      ]
+    },
+    {
+      "kind": "script_block",
+      "label": "Semi-major axis and period",
+      "params": {
+        "code": "# Semi-major axis and period from the state now (vis-viva), as a row of Results > Output.\nimport math\nfrom spacemissionstudio.engine.results import ReportEntry\n\nstate = spacecraft[\"raise-sat\"]\nr_m = math.sqrt(sum(x * x for x in state[\"r_BN_N\"]))\nv2_m2_s2 = sum(v * v for v in state[\"v_BN_N\"])\nmu_m3_s2 = 3.986004415e14  # Earth's GM [m^3/s^2]\na_m = 1.0 / (2.0 / r_m - v2_m2_s2 / mu_m3_s2)\nsummary.reports.append(ReportEntry(label=\"Script: semi-major axis and period\", t_s=t_s, values={\n    \"raise-sat.script.semi_major_axis_km\": a_m / 1000.0,\n    \"raise-sat.script.period_min\": 2.0 * math.pi * math.sqrt(a_m ** 3 / mu_m3_s2) / 60.0,\n}))\n"
+      },
+      "children": []
+    },
+    {
+      "kind": "propagate",
+      "label": "Coast at the new height",
+      "params": {
+        "stop_condition": "duration",
+        "duration_days": 0.25
+      },
+      "children": []
+    },
+    {
+      "kind": "report",
+      "label": "End",
+      "params": {
+        "series": [
+          "raise-sat.orbit_elements.semi_major_axis",
+          "raise-sat.constant_thrust.delta_v",
+          "raise-sat.constant_thrust.propellant_remaining"
+        ]
+      },
+      "children": []
+    }
+  ],
+  "fsw_exports": [],
+  "description": "Mission Sequence control: assignments, a while loop, an if and a script block raise a 150 kg satellite from 400 to 420 km with a 20 mN electric thruster (illustrative values). Two-body gravity and no drag: only the thrust changes the orbit.\n\nWhat to look at:\n- Mission sequence: \"Thruster off\" (an assignment sets the thrust to 0), a coast, then \"Thruster on\".\n- \"Fire until 420 km\": a while loop that propagates 0.05 day at a time while the altitude is below 420 km.\n- The loop runs 21 times, so the thruster stops at day 1.3. \"Thruster off again\" sets it to 0.\n- \"Check the altitude\": an if that takes the \"Raised\" snapshot only when the altitude is 420 km or more.\n- The script block adds a row to Results > Output: the semi-major axis (6798.7 km) and the period (93.0 min), from the position and velocity.\n- 11.7 m/s of delta-V and 123 g of propellant for the 20 km.\n- Before it runs the script block, the run asks you. Read its code first (Mission sequence > Semi-major axis and period). On the command line, run needs --allow-scripts.\n\nTry changing:\n- The while condition's 420000.0 to 450000.0: the loop runs about 30 more times.\n- The value of \"Thruster on\" to 0.01: half the thrust, and the loop runs about twice as often.\n- Disable the script block: the run then does not ask.\n\nNote:\n- In a condition, altitude_m is the distance from Earth's center less the equatorial radius.",
+  "schema_version": 8
+}

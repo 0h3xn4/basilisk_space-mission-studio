@@ -2603,6 +2603,346 @@ def build_42_tabular_atmosphere_and_lifetime() -> Scenario:
     )
 
 
+
+# -- Templates for every feature, batch B (43-47) -----------------------------
+# Each shows a feature no earlier template uses: a 3D model from cylinders,
+# spheres and an imported .obj mesh (43), the Monte Carlo dispersions of the
+# attitude, inertia, body rate, SRP coefficient and atmospheric density (44),
+# solar activity at MSFC's 95th percentile over a run chained past
+# Basilisk's 104 days (45), the Mission Sequence's assignment, if, while and
+# script block (46), and sensor faults (47). Decisions TPL-B1 to TPL-B6
+# record the sources and the choices.
+
+# Template 43's imported mesh: a SYNTHETIC camera, written here (not taken
+# from any product or file) in millimetres, as many CAD tools export, with
+# two groups: "camera_body", a closed 300 x 300 x 400 mm box (a solid part),
+# and "camera_hood", an open square funnel 150 mm long from a 260 mm to a
+# 340 mm opening (a shell part). +z is up; the camera looks along -z.
+T43_MESH_FILE = "meshes/43_synthetic_camera.obj"  # relative to the template's folder
+_T43_BODY_MM = (300.0, 300.0, 400.0)  # [mm] x, y, z
+_T43_HOOD_MM = (260.0, 340.0, 150.0)  # [mm] inner opening, outer opening, length
+
+
+def _t43_camera_obj() -> str:
+    """The text of template 43's synthetic ``.obj`` file (see above)."""
+    hx, hy, bz = _T43_BODY_MM[0] / 2.0, _T43_BODY_MM[1] / 2.0, _T43_BODY_MM[2]  # [mm]
+    inner, outer, length = _T43_HOOD_MM[0] / 2.0, _T43_HOOD_MM[1] / 2.0, _T43_HOOD_MM[2]  # [mm]
+    lines = ["# A synthetic camera for SpaceMissionStudio's template 43: not a real product.",
+             "# Written by scripts/_generate_templates.py. Units: mm. +z up; the camera looks along -z.",
+             "o camera_body"]
+    corners = [(sx * hx, sy * hy, z) for z in (-bz, 0.0) for sy in (-1, 1) for sx in (-1, 1)]
+    lines += [f"v {x:g} {y:g} {z:g}" for x, y, z in corners]
+    # Outward winding: bottom (-z), top (+z), then the four sides.
+    lines += ["f 1 3 4 2", "f 5 6 8 7", "f 1 2 6 5", "f 3 7 8 4", "f 1 5 7 3", "f 2 4 8 6"]
+    lines.append("o camera_hood")
+    ring = [(-1, -1), (1, -1), (1, 1), (-1, 1)]
+    top = [(sx * inner, sy * inner, -bz) for sx, sy in ring]
+    bottom = [(sx * outer, sy * outer, -bz - length) for sx, sy in ring]
+    lines += [f"v {x:g} {y:g} {z:g}" for x, y, z in top + bottom]
+    base = 8
+    for k in range(4):  # four trapezoids, open at both ends, normals outward
+        a, b = base + 1 + k, base + 1 + (k + 1) % 4
+        lines.append(f"f {a} {a + 4} {b + 4} {b}")
+    return "\n".join(lines) + "\n"
+
+
+def _t43_model(mesh_sha256: str):
+    """Template 43's model: a cylindrical bus with a spherical tank inside,
+    a cylindrical boom with a spherical magnetometer at its tip, and the
+    imported camera under the bus. Masses are illustrative."""
+    from spacemissionstudio.schema.scenario import ModelMeshConfig, ModelPartConfig, SpacecraftModelConfig
+
+    common = dict(drag_coeff=OPERATIONS_DRAG_COEFF)
+    bus_radius_m, bus_height_m = 0.45, 1.0  # [m]
+    boom_length_m = 1.0  # [m]
+    return SpacecraftModelConfig(
+        meshes=[ModelMeshConfig(path=T43_MESH_FILE, sha256=mesh_sha256, units="mm", up_axis="z")],
+        parts=[
+            ModelPartConfig(name="bus", shape="cylinder", dimensions_m={"diameter": 2 * bus_radius_m,
+                                                                          "height": bus_height_m},
+                            segments=24, color=[0.8, 0.65, 0.2], mass_kg=127.5, **common),  # [kg]
+            ModelPartConfig(name="tank", shape="sphere", dimensions_m={"diameter": 0.4},  # [m]
+                            position_b_m=[0.0, 0.0, 0.1], color=[0.6, 0.6, 0.65], visible=False,  # [m]
+                            mass_kg=12.0, in_surface_model=False),  # [kg] tank and propellant, inside the bus
+            ModelPartConfig(name="boom", shape="cylinder", dimensions_m={"diameter": 0.03, "height": boom_length_m},
+                            position_b_m=[bus_radius_m + boom_length_m / 2.0, 0.0, 0.3],  # [m]
+                            rotation_deg=[0.0, 90.0, 0.0], color=[0.3, 0.3, 0.3], mass_kg=1.0,  # [deg], [kg]
+                            distribution="shell", excluded_faces=["-z"], **common),  # -z end sits on the bus
+            ModelPartConfig(name="magnetometer", shape="sphere", dimensions_m={"diameter": 0.1},  # [m]
+                            position_b_m=[bus_radius_m + boom_length_m + 0.05, 0.0, 0.3],  # [m]
+                            color=[0.9, 0.9, 0.9], mass_kg=0.5, **common),  # [kg]
+            ModelPartConfig(name="camera body", shape="mesh", mesh_index=0, mesh_group="camera_body",
+                            position_b_m=[0.15, 0.0, -bus_height_m / 2.0], color=[0.2, 0.2, 0.25],  # [m]
+                            mass_kg=8.0, **common),  # [kg]
+            ModelPartConfig(name="camera hood", shape="mesh", mesh_index=0, mesh_group="camera_hood",
+                            position_b_m=[0.15, 0.0, -bus_height_m / 2.0], color=[0.1, 0.1, 0.1],  # [m]
+                            mass_kg=1.0, distribution="shell", **common),  # [kg]
+        ],
+    )
+
+
+def build_43_3d_model_cylinders_spheres_and_mesh() -> Scenario:
+    # A 150 kg microsatellite whose 3D model uses the shapes no other
+    # template uses: cylinders (the bus, the boom), spheres (the tank, the
+    # magnetometer) and two groups of an imported .obj mesh (the camera).
+    # The run flies the mass, center of mass, inertia and facets derived
+    # from them. Uncontrolled, so the small torques of drag, sunlight and
+    # gravity on the offset center of mass show in the body rates.
+    from spacemissionstudio.model3d import model as model3d
+
+    mesh_path = OUT_DIR / T43_MESH_FILE
+    mesh_path.parent.mkdir(parents=True, exist_ok=True)
+    mesh_path.write_text(_t43_camera_obj(), encoding="utf-8", newline="\n")
+    spacecraft = SpacecraftConfig(
+        name="cyl-sat",
+        orbit=_starter_orbit(),
+        enable_drag=True, enable_srp=True,
+        sigma_bn_init=[0.0, 0.0, 0.0],
+        omega_bn_b_init_rad_s=[0.0, 0.0, 0.0],
+        model=_t43_model(model3d.file_sha256(mesh_path)),
+    )
+    derived = model3d.derive(spacecraft.model, OUT_DIR)
+    if derived.errors or derived.warnings:
+        raise ValueError(f"template 43's model: {derived.errors + derived.warnings}")
+    model3d.apply(spacecraft, derived)
+    return Scenario(
+        name="43 - 3D model: cylinders, spheres and an imported mesh",
+        description=DESCRIPTIONS["43"],
+        epoch_utc=_STARTER_EPOCH_UTC,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=0.1, dynamics_task_rate_s=1.0, integrator="rkf78",
+                                 record_interval_s=10.0),  # [day], [s], [s]
+        space_weather=_real_space_weather(),
+        spacecraft=[spacecraft],
+    )
+
+
+def build_44_monte_carlo_attitude_inertia_rate_srp_density() -> Scenario:
+    # The five dispersions no other template draws, in one small batch:
+    # template 07's 150 kg microsatellite on three wheels in Sun-safe
+    # pointing at 350 km, with drag and sunlight pressure; each run draws its
+    # initial attitude (any), its body rate, its inertia, its SRP
+    # coefficient and the atmosphere's density scale. Every spread is
+    # illustrative. Half an orbit: enough for the wheels to turn every run
+    # onto the Sun and for the density to separate the decays.
+    epoch_utc = "2030-01-01T00:00:00"
+    deg = math.pi / 180.0
+    return Scenario(
+        name="44 - Monte Carlo: attitude, inertia, body rate, SRP and density",
+        description=DESCRIPTIONS["44"],
+        epoch_utc=epoch_utc,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=0.03, dynamics_task_rate_s=1.0, integrator="rkf78",
+                                 record_interval_s=10.0),  # [day], [s], [s]
+        space_weather=_real_space_weather(),
+        spacecraft=[
+            SpacecraftConfig(
+                name="sat-1",
+                orbit=_starter_orbit(6378.0 + 350.0, epoch_utc),
+                dry_mass_kg=_MICROSAT_MASS_KG,
+                inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+                enable_drag=True, drag_coeff=OPERATIONS_DRAG_COEFF, drag_area_m2=0.8,  # [-], [m^2]
+                enable_srp=True, srp_coeff=1.5, srp_area_m2=0.8,  # [-], [m^2]
+                sigma_bn_init=[0.1, 0.2, -0.15],
+                omega_bn_b_init_rad_s=[0.001, -0.001, 0.0005],  # [rad/s]
+                actuators=[
+                    ActuatorConfig(kind="reaction_wheel", name=f"rw-{k + 1}", params={"gsHat_B": axis, **_MICROSAT_WHEEL})
+                    for k, axis in enumerate(([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]))
+                ],
+                fsw_mode="sunSafePoint",
+                fsw_params={"sHatBdyCmd": [0.0, 0.0, 1.0]},
+            ),
+        ],
+        monte_carlo=MonteCarloConfig(
+            enabled=True, num_runs=12, thread_count=1, seed=44,
+            dispersions=[
+                DispersionConfig(spacecraft="sat-1", quantity="attitude_sigma_bn", kind="uniform_euler_mrp",
+                                 bounds=[-180.0 * deg, 180.0 * deg]),  # [rad] any attitude
+                DispersionConfig(spacecraft="sat-1", quantity="angular_rate_bn_b", kind="normal",
+                                 std_deviation=0.2),  # [deg/s] 1-sigma, each axis
+                DispersionConfig(spacecraft="sat-1", quantity="inertia_kg_m2", kind="normal",
+                                 std_deviation=1.0, angle_std_deg=2.0),  # [kg*m^2], [deg]
+                DispersionConfig(spacecraft="sat-1", quantity="srp_coeff", kind="uniform",
+                                 bounds=[1.2, 1.8]),  # [-]
+                DispersionConfig(spacecraft="", quantity="density_scale", kind="uniform",
+                                 bounds=[0.7, 1.3]),  # [-]
+            ],
+        ),
+    )
+
+
+def build_45_solar_activity_past_104_days() -> Scenario:
+    # A 150 kg satellite at 400 km for 110 days, longer than one Basilisk
+    # simulation can hold (about 104 days): the run is chained, 90 days and
+    # then 20. The Sun of those days is MSFC's prediction at its 95th
+    # percentile (ESA AD10's conservative case for operations). Orbit only
+    # at Basilisk's long-step limit (60 s) with J2 alone, so the 110 days
+    # take seconds.
+    epoch_utc = "2030-01-01T00:00:00"
+    return Scenario(
+        name="45 - Solar activity at the 95th percentile, past 104 days",
+        description=DESCRIPTIONS["45"],
+        epoch_utc=epoch_utc,
+        simulation_mode="orbit_only",
+        gravity=GravityConfig(central_body="earth", central_body_degree=2),
+        sim_settings=SimSettings(duration_days=110.0, dynamics_task_rate_s=60.0, integrator="rkf78",
+                                 record_interval_s=600.0),  # [day], [s], [s]
+        space_weather=SpaceWeatherConfig(source="bundled", atmosphere_model="nrlmsise00", forecast_percentile=95.0),
+        spacecraft=[
+            SpacecraftConfig(
+                name="sat-1",
+                orbit=_starter_orbit(6378.0 + 400.0, epoch_utc),
+                dry_mass_kg=_MICROSAT_MASS_KG,
+                inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+                enable_drag=True, drag_coeff=OPERATIONS_DRAG_COEFF, drag_area_m2=0.8,  # [-], [m^2]
+            ),
+        ],
+    )
+
+
+# Template 46's script block: plain Python that the run executes only after
+# the user agrees. It reads the state the Mission Sequence gives every
+# script (spacecraft, t_s) and adds a row to Results > Output.
+T46_SCRIPT = """\
+# Semi-major axis and period from the state now (vis-viva), as a row of Results > Output.
+import math
+from spacemissionstudio.engine.results import ReportEntry
+
+state = spacecraft["raise-sat"]
+r_m = math.sqrt(sum(x * x for x in state["r_BN_N"]))
+v2_m2_s2 = sum(v * v for v in state["v_BN_N"])
+mu_m3_s2 = 3.986004415e14  # Earth's GM [m^3/s^2]
+a_m = 1.0 / (2.0 / r_m - v2_m2_s2 / mu_m3_s2)
+summary.reports.append(ReportEntry(label="Script: semi-major axis and period", t_s=t_s, values={
+    "raise-sat.script.semi_major_axis_km": a_m / 1000.0,
+    "raise-sat.script.period_min": 2.0 * math.pi * math.sqrt(a_m ** 3 / mu_m3_s2) / 60.0,
+}))
+"""
+
+_T46_TARGET_ALTITUDE_M = 420.0e3  # [m] above the equatorial radius
+_T46_THRUST_N = 0.02  # [N] illustrative: a small electric thruster
+_T46_ISP_S = 1500.0  # [s] illustrative
+_T46_PROPELLANT_KG = 5.0  # [kg] illustrative
+
+
+def build_46_mission_sequence_control_flow() -> Scenario:
+    # The four Mission Sequence commands no other template uses, on one
+    # orbit raise: assignments switch a 20 mN thruster (constant_thrust)
+    # off and on, a while loop fires in short steps until the altitude is
+    # 420 km, an if checks it and takes a snapshot, and a script block works
+    # out the new semi-major axis and period. Two-body gravity, no drag:
+    # only the thrust changes the orbit, so the altitude the conditions read
+    # is that of a slowly widening circle.
+    from spacemissionstudio.schema.command import Command
+
+    epoch_utc = "2030-01-01T00:00:00"
+    target = "raise-sat.constant_thrust.thrust_n"
+    altitude = "spacecraft['raise-sat']['altitude_m']"
+    snapshot = ["raise-sat.orbit_elements.semi_major_axis", "raise-sat.constant_thrust.delta_v",
+                "raise-sat.constant_thrust.propellant_remaining"]
+    return Scenario(
+        name="46 - Mission Sequence: assignment, if, while and a script block",
+        description=DESCRIPTIONS["46"],
+        epoch_utc=epoch_utc,
+        simulation_mode="orbit_only",
+        gravity=GravityConfig(central_body="earth", central_body_degree=0),
+        sim_settings=SimSettings(duration_days=2.0, dynamics_task_rate_s=30.0, integrator="rkf78"),  # [day], [s]
+        spacecraft=[
+            SpacecraftConfig(
+                name="raise-sat",
+                orbit=_starter_orbit(6378.0 + 400.0, epoch_utc),
+                dry_mass_kg=_MICROSAT_MASS_KG,
+                inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+                constant_thrust=ConstantThrustConfig(frame="VNB", direction=[1.0, 0.0, 0.0], thrust_n=_T46_THRUST_N,
+                                                     isp_s=_T46_ISP_S, propellant_kg=_T46_PROPELLANT_KG),
+            ),
+        ],
+        mission_sequence=[
+            Command(kind="assignment", label="Thruster off", params={"target": target, "value": 0.0}),
+            Command(kind="propagate", label="Coast at 400 km",
+                    params={"stop_condition": "duration", "duration_days": 0.25}),
+            Command(kind="report", label="Before the raise", params={"series": snapshot}),
+            Command(kind="assignment", label="Thruster on", params={"target": target, "value": _T46_THRUST_N}),
+            Command(kind="while", label="Fire until 420 km",
+                    params={"condition": f"{altitude} < {_T46_TARGET_ALTITUDE_M:.1f}"},
+                    children=[Command(kind="propagate", label="Fire for 0.05 day",
+                                      params={"stop_condition": "duration", "duration_days": 0.05})]),
+            Command(kind="assignment", label="Thruster off again", params={"target": target, "value": 0.0}),
+            Command(kind="if", label="Check the altitude",
+                    params={"condition": f"{altitude} >= {_T46_TARGET_ALTITUDE_M:.1f}"},
+                    children=[Command(kind="report", label="Raised", params={"series": snapshot})]),
+            Command(kind="script_block", label="Semi-major axis and period", params={"code": T46_SCRIPT}),
+            Command(kind="propagate", label="Coast at the new height",
+                    params={"stop_condition": "duration", "duration_days": 0.25}),
+            Command(kind="report", label="End", params={"series": snapshot}),
+        ],
+    )
+
+
+# Template 47's thermal sensor: template 20's (a 0.05 m^2 plate on the
+# Sun-facing +z face), without measurement noise so the fault stands out.
+_T47_THERMAL = {"nHat_B": [0.0, 0.0, 1.0], "area_m2": 0.05, "absorptivity": 0.25, "emissivity": 0.34,  # [m^2]
+                "mass_kg": 0.3, "specific_heat_j_kg_k": 890.0, "initial_temp_c": 0.0,  # [kg], [J/(kg*K)], [C]
+                "power_draw_w": 0.5}  # [W]
+_T47_STUCK_TEMPERATURE_C = 20.0  # [C] illustrative
+
+
+def build_47_sensor_faults() -> Scenario:
+    # Two of template 14's microsatellites side by side in Sun-safe pointing
+    # (from the true Sun direction), each with two coarse sun sensors (+z
+    # toward the Sun, -z away), a magnetometer and a thermal sensor.
+    # faulty-sat has three of the fault modes Basilisk models: css-2 (the
+    # one facing away from the Sun) stuck at its largest output, the
+    # magnetometer's z axis spiking (now and then a reading times 3) and the
+    # thermal sensor's reading stuck at 20 C. healthy-sat has none. The
+    # faults change what the sensors report; the flight software here reads
+    # the true state, so both spacecraft fly the same attitude.
+    epoch_utc = "2027-03-01T00:00:00"  # inside the World Magnetic Model 2025's five years (as 41)
+
+    def spacecraft(name: str, faulty: bool) -> SpacecraftConfig:
+        css_plus = {"nHat_B": [0.0, 0.0, 1.0], "fov_deg": 160.0}
+        css_minus = {"nHat_B": [0.0, 0.0, -1.0], "fov_deg": 160.0}
+        mag = {"noise_std_tesla": [1.0e-7, 1.0e-7, 1.0e-7]}  # [T] illustrative
+        thermal = dict(_T47_THERMAL)
+        if faulty:
+            css_minus["fault_mode"] = "stuck_max"
+            mag.update(fault_mode="spiking", fault_axis=2, spike_probability=0.01, spike_amount=3.0)  # [-]
+            thermal.update(measurement_fault_mode="stuck_value", measurement_stuck_value_c=_T47_STUCK_TEMPERATURE_C)
+        return SpacecraftConfig(
+            name=name,
+            orbit=OrbitIC(type="classical_elements", semi_major_axis_km=6928.0, eccentricity=0.0,
+                          inclination_deg=45.0, raan_deg=0.0, arg_periapsis_deg=0.0, true_anomaly_deg=0.0),
+            dry_mass_kg=_MICROSAT_MASS_KG,
+            inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+            sigma_bn_init=[0.1, 0.2, -0.15],
+            omega_bn_b_init_rad_s=[0.001, -0.001, 0.0005],  # [rad/s]
+            sensors=[
+                SensorConfig(kind="coarse_sun_sensor", name="css-1", params=css_plus),
+                SensorConfig(kind="coarse_sun_sensor", name="css-2", params=css_minus),
+                SensorConfig(kind="magnetometer", name="mag-1", params=mag),
+                SensorConfig(kind="thermal", name="therm-1", params=thermal),
+            ],
+            actuators=[
+                ActuatorConfig(kind="reaction_wheel", name=f"rw-{k + 1}", params={"gsHat_B": axis, **_MICROSAT_WHEEL})
+                for k, axis in enumerate(([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]))
+            ],
+            fsw_mode="sunSafePoint",
+            fsw_params={"sHatBdyCmd": [0.0, 0.0, 1.0]},
+        )
+
+    return Scenario(
+        name="47 - Sensor faults: stuck and spiking readings",
+        description=DESCRIPTIONS["47"],
+        epoch_utc=epoch_utc,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=0, third_body_perturbers=["sun"]),
+        sim_settings=SimSettings(duration_days=0.04, dynamics_task_rate_s=1.0, integrator="rkf78",
+                                 seed=47),  # [day], [s]
+        spacecraft=[spacecraft("healthy-sat", False), spacecraft("faulty-sat", True)],
+    )
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     _save(build_01_two_body_circular_orbit(), "01_two_body_circular_orbit.json")
@@ -2648,6 +2988,12 @@ def main() -> None:
     _save(build_40_continuous_low_thrust(), "40_continuous_low_thrust.json")
     _save(build_41_velocity_pointing_with_navigation_errors(), "41_velocity_pointing_with_navigation_errors.json")
     _save(build_42_tabular_atmosphere_and_lifetime(), "42_tabular_atmosphere_and_lifetime.json")
+    _save(build_43_3d_model_cylinders_spheres_and_mesh(), "43_3d_model_cylinders_spheres_and_mesh.json")
+    _save(build_44_monte_carlo_attitude_inertia_rate_srp_density(),
+          "44_monte_carlo_attitude_inertia_rate_srp_density.json")
+    _save(build_45_solar_activity_past_104_days(), "45_solar_activity_past_104_days.json")
+    _save(build_46_mission_sequence_control_flow(), "46_mission_sequence_control_flow.json")
+    _save(build_47_sensor_faults(), "47_sensor_faults.json")
 
 
 if __name__ == "__main__":
