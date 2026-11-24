@@ -46,6 +46,7 @@ from spacemissionstudio.engine.orbit_design import (
 )
 from spacemissionstudio.schema.scenario import (
     CommsPointingConfig,
+    ConstantThrustConfig,
     DataHandlingConfig,
     DispersionConfig,
     FuelTankConfig,
@@ -57,6 +58,7 @@ from spacemissionstudio.schema.scenario import (
     MomentumDumpingConfig,
     MonteCarloConfig,
     MonteCarloRequirementConfig,
+    NavigationErrorConfig,
     LandmarkNavigationConfig,
     OpticalNavigationConfig,
     OrbitIC,
@@ -2409,6 +2411,198 @@ def build_38_budgets_equipment_power_mass_propellant() -> Scenario:
     )
 
 
+# -- Templates for every feature, batch A (39-42) -----------------------------
+# Each shows a feature no earlier template uses: the TLE and Cartesian orbit
+# inputs (39), continuous low thrust (40), velocity pointing with a
+# magnetometer and navigation errors (41), and the tabular atmosphere with
+# the lifetime estimate (42). Decisions TPL-A1 to TPL-A4 record the sources.
+
+
+def _tle_line(body: str) -> str:
+    """A TLE line: its 68 columns and the modulo-10 checksum the format
+    puts in column 69 (digits count as their value, a minus sign as 1)."""
+    assert len(body) == 68, (len(body), body)
+    return body + str(sum(int(c) if c.isdigit() else 1 if c == "-" else 0 for c in body) % 10)
+
+
+# A SYNTHETIC TLE (not a real satellite): catalogue number 99999 (the
+# analysts' number), no international designator, epoch the template's
+# epoch (2030 day 1.35416667 = 08:30 UTC), no drag terms (B* 0: the run
+# models drag from its own settings, never from the TLE), and mean elements
+# chosen for a 51.64 deg orbit of about 420 km: e 0.0004, 15.5 revolutions
+# a day. Built field by field in the TLE column layout.
+_SYNTHETIC_TLE = (
+    _tle_line("1 99999U          30001.35416667  .00000000  00000-0  00000-0 0    1"),
+    _tle_line("2 99999  51.6400 120.0000 0004000  90.0000 270.0000 15.50000000    1"),
+)
+
+# An ILLUSTRATIVE state vector: the perigee of a 500 x 1500 km orbit
+# inclined 63.4 deg, its node and perigee on the J2000 x axis. Position
+# [r_p, 0, 0]; speed from the vis-viva equation, v_p = sqrt(mu (2/r_p -
+# 1/a)), with Basilisk's Earth (spacemissionstudio.constants), turned by
+# the inclination about x. Rounded to 1 m and 1 mm/s.
+_STATE_PERIGEE_KM = 500.0  # [km] altitude above the equatorial radius
+_STATE_APOGEE_KM = 1500.0  # [km]
+_STATE_INCLINATION_DEG = 63.4  # [deg]
+
+
+def _illustrative_state_vector() -> tuple[list, list]:
+    from spacemissionstudio import constants
+
+    radius_km = constants.EARTH_EQUATORIAL_RADIUS_M / 1000.0  # [km]
+    mu_km3_s2 = constants.EARTH_GM_M3_S2 / 1e9  # [km^3/s^2]
+    r_p = radius_km + _STATE_PERIGEE_KM  # [km]
+    a = radius_km + (_STATE_PERIGEE_KM + _STATE_APOGEE_KM) / 2.0  # [km]
+    v_p = math.sqrt(mu_km3_s2 * (2.0 / r_p - 1.0 / a))  # [km/s]
+    inc = math.radians(_STATE_INCLINATION_DEG)
+    return ([round(r_p, 3), 0.0, 0.0],
+            [0.0, round(v_p * math.cos(inc), 6), round(v_p * math.sin(inc), 6)])
+
+
+def build_39_orbit_inputs_tle_and_state_vector() -> Scenario:
+    # Three 150 kg satellites, each orbit given in another form the schema
+    # takes: a TLE (synthetic, above), a Cartesian state (illustrative,
+    # above) and classical elements (the starter orbit of 22). Orbit only,
+    # no drag: the lesson is the input, so each orbit keeps its size.
+    position_km, velocity_km_s = _illustrative_state_vector()
+
+    def spacecraft(name: str, orbit: OrbitIC) -> SpacecraftConfig:
+        return SpacecraftConfig(name=name, orbit=orbit, dry_mass_kg=_MICROSAT_MASS_KG,
+                                inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M))
+
+    return Scenario(
+        name="39 - Orbit inputs: TLE, state vector and elements",
+        description=DESCRIPTIONS["39"],
+        epoch_utc=_STARTER_EPOCH_UTC,
+        simulation_mode="orbit_only",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=1.0, dynamics_task_rate_s=30.0, integrator="rkf78"),
+        spacecraft=[
+            spacecraft("tle-sat", OrbitIC(type="tle", tle_line1=_SYNTHETIC_TLE[0], tle_line2=_SYNTHETIC_TLE[1])),
+            spacecraft("state-sat", OrbitIC(type="cartesian", position_km=position_km, velocity_km_s=velocity_km_s)),
+            spacecraft("elements-sat", _starter_orbit()),
+        ],
+    )
+
+
+# The ENPULSION MICRO R3 of the device catalogue (engine/device_catalog.py,
+# its datasheet values): an indium FEEP thruster, 1 mN, Isp 3000 s (the
+# catalogue's choice in the published 1500 to 4500 s), 1.3 kg of propellant.
+_FEEP_THRUST_N = 1.0e-3  # [N]
+_FEEP_ISP_S = 3000.0  # [s]
+_FEEP_PROPELLANT_KG = 1.3  # [kg]
+
+
+def build_40_continuous_low_thrust() -> Scenario:
+    # Two of 22's 150 kg satellites side by side at 400 km, one with an
+    # electric thruster firing along the velocity the whole run (the
+    # constant_thrust controller, VNB frame), one without. Drag from real
+    # space weather: the twin decays, the thruster more than makes up for it.
+    epoch_utc = "2030-01-01T00:00:00"
+    semi_major_axis_km = 6378.0 + 400.0  # [km] as 25
+
+    def spacecraft(name: str, thrust: bool) -> SpacecraftConfig:
+        sc = SpacecraftConfig(
+            name=name, orbit=_starter_orbit(semi_major_axis_km, epoch_utc),
+            dry_mass_kg=_MICROSAT_MASS_KG, inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+            enable_drag=True, drag_coeff=OPERATIONS_DRAG_COEFF, drag_area_m2=0.8,  # [-], [m^2]
+        )
+        if thrust:
+            sc.constant_thrust = ConstantThrustConfig(frame="VNB", direction=[1.0, 0.0, 0.0], thrust_n=_FEEP_THRUST_N,
+                                                      isp_s=_FEEP_ISP_S, propellant_kg=_FEEP_PROPELLANT_KG)
+        return sc
+
+    return Scenario(
+        name="40 - Continuous low thrust: electric propulsion against drag",
+        description=DESCRIPTIONS["40"],
+        epoch_utc=epoch_utc,
+        simulation_mode="orbit_only",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=3.0, dynamics_task_rate_s=30.0, integrator="rkf78"),
+        space_weather=_real_space_weather(),
+        spacecraft=[spacecraft("ep-sat", True), spacecraft("twin-sat", False)],
+    )
+
+
+# Navigation errors (Basilisk's simpleNav random walk), ILLUSTRATIVE values
+# of the order a star tracker, a gyro and a GNSS receiver give: attitude
+# 0.002 deg a step within 0.02 deg per axis, rate 0.0001 deg/s within
+# 0.001 deg/s, position 1 m within 10 m, velocity 1 cm/s within 0.1 m/s. No
+# Sun-heading error: velocity pointing does not use the Sun.
+_NAV_ERRORS = dict(attitude_step_deg=0.002, attitude_bound_deg=0.02, rate_step_deg_s=0.0001,  # [deg], [deg/s]
+                   rate_bound_deg_s=0.001, position_step_m=1.0, position_bound_m=10.0,  # [deg/s], [m]
+                   velocity_step_m_s=0.01, velocity_bound_m_s=0.1, seed=41)  # [m/s]
+
+
+def build_41_velocity_pointing_with_navigation_errors() -> Scenario:
+    # 07's 150 kg microsatellite, wheels and star tracker, turned to fly its
+    # body y axis along the velocity (velocityPoint: y along v, z along the
+    # orbit normal, x completing the frame), with a magnetometer (the MM200 of
+    # the device catalogue) and errors on what the flight software is told.
+    # 2027: inside the World Magnetic Model 2025's five years.
+    epoch_utc = "2027-03-01T00:00:00"
+    from spacemissionstudio.engine.device_catalog import CATALOG
+
+    mm200 = next(entry for entry in CATALOG if entry.product_name == "MM200")
+    return Scenario(
+        name="41 - Velocity pointing with a magnetometer and navigation errors",
+        description=DESCRIPTIONS["41"],
+        epoch_utc=epoch_utc,
+        simulation_mode="full_attitude",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=0.07, dynamics_task_rate_s=1.0, integrator="rkf78"),
+        spacecraft=[
+            SpacecraftConfig(
+                name="sat-1",
+                orbit=_starter_orbit(epoch_utc=epoch_utc),
+                dry_mass_kg=_MICROSAT_MASS_KG,
+                inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+                sigma_bn_init=[0.1, 0.2, -0.15],
+                omega_bn_b_init_rad_s=[0.001, -0.001, 0.0005],
+                sensors=[
+                    SensorConfig(kind="star_tracker", name="st-1", params={"noise_arcsec": 5.0}),
+                    SensorConfig(kind="imu", name="imu-1", params={"gyro_noise_rad_s": 1e-5}),
+                    SensorConfig(kind="magnetometer", name="mag-1", params=dict(mm200.params)),
+                ],
+                actuators=[
+                    ActuatorConfig(kind="reaction_wheel", name=f"rw-{k + 1}",
+                                   params={"gsHat_B": axis, **_MICROSAT_WHEEL})
+                    for k, axis in enumerate(([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]))
+                ],
+                fsw_mode="velocityPoint",
+                navigation_error=NavigationErrorConfig(**_NAV_ERRORS),
+            ),
+        ],
+    )
+
+
+def build_42_tabular_atmosphere_and_lifetime() -> Scenario:
+    # One of 22's 150 kg satellites low enough to come down within the
+    # lifetime estimate's year: 320 km. Drag reads NRLMSISE-00's nominal
+    # profile, one of the tables Basilisk ships (engine.atmosphere_tables):
+    # density by altitude only, with no solar activity, day or night.
+    epoch_utc = "2024-10-01T00:00:00"
+    return Scenario(
+        name="42 - Atmosphere models: a tabular profile and the lifetime",
+        description=DESCRIPTIONS["42"],
+        epoch_utc=epoch_utc,
+        simulation_mode="orbit_only",
+        gravity=GravityConfig(central_body="earth", central_body_degree=10, third_body_perturbers=["sun", "moon"]),
+        sim_settings=SimSettings(duration_days=2.0, dynamics_task_rate_s=30.0, integrator="rkf78"),
+        space_weather=SpaceWeatherConfig(source="bundled", atmosphere_model="tabular",
+                                         atmosphere_table="nrlmsise00_nominal", forecast_percentile=50.0),
+        spacecraft=[
+            SpacecraftConfig(
+                name="low-sat",
+                orbit=_starter_orbit(6378.0 + 350.0, epoch_utc),
+                dry_mass_kg=_MICROSAT_MASS_KG,
+                inertia_kg_m2=_box_inertia(_MICROSAT_MASS_KG, _MICROSAT_SIZE_M),
+                enable_drag=True, drag_coeff=OPERATIONS_DRAG_COEFF, drag_area_m2=0.8,  # [-], [m^2]
+            ),
+        ],
+    )
+
+
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     _save(build_01_two_body_circular_orbit(), "01_two_body_circular_orbit.json")
@@ -2450,6 +2644,10 @@ def main() -> None:
     _save(build_36_constellation_operations(), "36_constellation_operations.json")
     _save(build_37_monte_carlo_requirements_and_sensitivity(), "37_monte_carlo_requirements_and_sensitivity.json")
     _save(build_38_budgets_equipment_power_mass_propellant(), "38_budgets_equipment_power_mass_propellant.json")
+    _save(build_39_orbit_inputs_tle_and_state_vector(), "39_orbit_inputs_tle_and_state_vector.json")
+    _save(build_40_continuous_low_thrust(), "40_continuous_low_thrust.json")
+    _save(build_41_velocity_pointing_with_navigation_errors(), "41_velocity_pointing_with_navigation_errors.json")
+    _save(build_42_tabular_atmosphere_and_lifetime(), "42_tabular_atmosphere_and_lifetime.json")
 
 
 if __name__ == "__main__":

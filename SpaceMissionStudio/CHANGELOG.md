@@ -32,6 +32,25 @@ fixes bugs.
   version. A budgets section with no powered equipment no longer reports
   missing power margins and losses.
 
+- **Four new templates show features no template used before.**
+  *39 - Orbit inputs* flies three satellites whose orbits are given three
+  ways: a TLE (a synthetic one, clearly labelled, not a real satellite),
+  a position and velocity, and classical elements; its description also
+  shows how to import a CCSDS OPM or OMM. *40 - Continuous low thrust*
+  puts a 1 mN electric thruster (the ENPULSION MICRO R3 from the device
+  catalogue) on one of two satellites at 400 km: it climbs about 2.8 km
+  in three days while its twin sinks under drag, and the run shows the
+  8.8 g of propellant it used. *41 - Velocity pointing* flies a
+  microsatellite along its velocity with a magnetometer and navigation
+  errors, and shows that a small rate error turns the spacecraft more
+  than an attitude error of the same size. *42 - Atmosphere models*
+  takes drag from a published density table and compares it, in its
+  "Try changing", with NRLMSISE-00 near the 2024 solar maximum and with
+  the exponential model; the End of Life estimate reads the same table.
+  Each template has a Customize wizard. A new page,
+  `docs/reference/template-coverage.md`, lists every feature with the
+  templates that show it, and the ones still to come.
+
 - **A new template shows the Budgets area: 38, "Budgets: equipment list,
   power, mass and propellant".** Until now no template had an equipment
   list, so the Budgets area opened empty on every one of them. Template

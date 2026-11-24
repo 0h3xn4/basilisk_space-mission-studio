@@ -1,6 +1,6 @@
 # Template missions
 
-Thirty-eight ready-to-run scenario files, for learning the tool and the
+Forty-two ready-to-run scenario files, for learning the tool and the
 orbital mechanics it simulates, and as starting points for your own
 missions (copy one, edit it, save it under a new name):
 
@@ -21,15 +21,17 @@ missions (copy one, edit it, save it under a new name):
   planet's disk, around asteroid Eros from its landmarks.
 * **32** mounts a small satellite's equipment on its 3D model and checks
   the design: a star tracker and a nozzle plume that see an array.
-* **33 and 34** put a thermal model on a microsatellite's 3D model; 34
-  adds flexible wings and a thermal Monte Carlo study.
-* **35 and 36** plan a week of operations: one imager, then three that
-  share two stations.
-* **37** adds requirements, statistics and sensitivity to a Monte Carlo
-  batch.
+* **33-37** add thermal models, a week of planned operations, three
+  spacecraft sharing two stations, and a Monte Carlo batch with
+  requirements.
 * **38** fills a spacecraft's budgets: an equipment list, system modes,
-  and the power, mass, pointing and
-  propellant budgets in the Budgets area.
+  and the power, mass, pointing and propellant budgets in the Budgets
+  area.
+* **39-42** each show a feature no other template uses: an orbit given as
+  a TLE or a state vector, continuous low thrust, velocity pointing with
+  a magnetometer and navigation errors, and a tabular atmosphere with the
+  lifetime estimate. [Template coverage](../../../docs/reference/template-coverage.md)
+  lists each feature with the templates that show it.
 
 **New here?** Run 01, then 22, then follow the learning path at the end
 of this file. To start your own mission, open 22 or 23 and Save As.
@@ -116,14 +118,18 @@ before it, but none of them depend on running an earlier one first.
 | 36 | `36_constellation_operations.json` | Three of template 35's imagers in Sun-synchronous planes 30 deg of RAAN apart, at the same point of their orbits, sharing Svalbard and Berlin (one spacecraft at a time) for two days; ten targets that any of them may take; equal contact priorities. Measured (`tests/test_template_claims.py`): 33 passes are wanted by two or three spacecraft; the plan gives each spacecraft 11 contacts; no station serves two at once; more than 20 passes are lost to a busy station. |
 | 37 | `37_monte_carlo_requirements_and_sensitivity.json` | The Monte Carlo tools of phases A and B in one small batch: template 25's 150 kg satellite at 400 km for half a day, 30 runs with the batch seed 37, each drawing its orbit (1-sigma: 0.5 km in semi-major axis, 0.02 deg in inclination, 0.05 deg along track), a drag coefficient between 2.2 and 3.0 and a dry mass of 150 kg +/- 7.5 kg; two requirements at 90 % confidence, R-ALT-01 (lowest altitude at least 389 km, allowed probability 0.1) and R-DECAY-01 (mean semi-major axis change at least -19 m, no allowed probability). Measured (`tests/test_template_claims.py`, 53 s in one process): R-ALT-01 is met, no run below and the bound 0.074; R-DECAY-01 has 2 of 30 runs not meeting it, estimate 0.067, bound 0.17; the drag coefficient's rank correlation with the decay is about -0.9 and the dry mass's about +0.3. Template 25 is unchanged. |
 | 38 | `38_budgets_equipment_power_mass_propellant.json` | The Budgets area on one small imager (template 22's 550 km Sun-synchronous orbit, environment and Berlin station; orbit only, a day in seconds; see [Equipment list and power budget](../../../docs/user-manual/budgets.md)): a `budgets` section with 12 items (structure, power, ADCS, OBC, comms, payload, thermal, harness, propulsion), each with a mass, an S-120 column and a maturity, power modes for 8 of them, two buses (platform 0.92, payload 0.88), a 2 % distribution loss, a 12 % system margin and a power margin for each maturity; four system modes, safe, nominal, imaging and downlink, whose duty cycles (0.05, 0.65, 0.2, 0.1) add up to 1; a 3D model that holds every item (the units, the heaters and the harness hidden inside the bus), so the run flies the list's 110.3 kg, with the AIAA S-120 policy, an illustrative 150 kg limit and an illustrative 1.3 x 1.5 m cylinder; a pointing part with the line of sight along body z, three requirements (the line of sight's absolute error 60 arcsec, the relative error about x 15 arcsec over 1 s in 60 s, the knowledge about x 15 arcsec, each at 0.95) and five contributors; a 1 N, 220 s station keeper with 6 kg of propellant and a propellant budget with an 8 kg tank. Every number of the section has the source "Synthetic example value; not from a data sheet or a standard.". Measured (`tests/test_template_claims.py`): the power budget is complete, loads of 38.0, 43.5, 87.5 and 65.5 W, the duty-cycle average 54.2 W of load and 77.1 W at the source with margins; the mass budget 110.3 kg basic, 22.9 kg of growth and 139.2 kg with the propellant; the three pointing requirements met (22.1, 12.4 and 3.9 arcsec); the propellant budget 83.0 m/s and 5.23 kg for five years (about a minute: it solves the re-entry). |
+| 39 | `39_orbit_inputs_tle_and_state_vector.json` | Three 150 kg satellites, orbit only and without drag, each orbit given in another form the schema takes. tle-sat: a synthetic TLE (catalogue number 99999, not a real satellite; 51.64 deg, e 0.0004, 15.5 revolutions a day, its epoch the scenario's, no drag terms), with valid checksums. state-sat: an illustrative Cartesian state, the perigee of a 500 x 1500 km orbit at 63.4 deg, its speed from the vis-viva equation. elements-sat: 22's 550 km Sun-synchronous orbit in classical elements. Measured (`tests/test_template_claims.py`): tle-sat's mean semi-major axis stays within 0.5 km of SGP4's 6795.4 km and its inclination in TEME of date is 51.64 deg; state-sat starts at a = 7378.138 km, its perigee holds (critical inclination) and its node regresses 2.7 deg a day. A CCSDS OPM or OMM can set an orbit too (`ccsds-import`, see [orbit files](../../../docs/user-manual/orbit-files.md)). |
+| 40 | `40_continuous_low_thrust.json` | Continuous low thrust (`constant_thrust`): two 150 kg satellites at 400 km with drag from real space weather for three days; ep-sat fires 1 mN along its velocity (VNB frame) all the time, twin-sat has no thruster. The thruster is the ENPULSION MICRO R3 of the device catalogue (1 mN, Isp 3000 s, 1.3 kg of indium). Measured (`tests/test_template_claims.py`): ep-sat's mean semi-major axis rises 2.8 km while twin-sat's sinks 0.3 km, the gap as Gauss's equation gives for 1.7 m/s of delta-V; 8.8 g of propellant used, thrust x time / (Isp x g0), about 15 months of firing for the tank. |
+| 41 | `41_velocity_pointing_with_navigation_errors.json` | Template 07's 150 kg microsatellite on three wheels in velocity pointing (`velocityPoint`: body y along the velocity, z along the orbit normal), with a star tracker, a gyro, a magnetometer (the MM200 of the device catalogue) and navigation errors (illustrative: attitude 0.02 deg, rate 0.001 deg/s, position 10 m, velocity 0.1 m/s bounds, seed 41), for about one orbit in 2027, inside the World Magnetic Model's validity. Measured (`tests/test_template_claims.py`): after 10 minutes the true attitude stays within about 0.07 deg of the velocity frame, under the 0.10 deg the error bounds imply (the attitude bound plus 4 x P/K times the rate bound); without errors, within 0.01 deg; the magnetometer reads 19 to 50 uT. |
+| 42 | `42_tabular_atmosphere_and_lifetime.json` | Drag from the tabular atmosphere: one 150 kg satellite at 350 km for two days from 1 October 2024, reading the NRLMSISE-00 nominal profile that Basilisk ships (`engine/atmosphere_tables.py`). Measured (`tests/test_template_claims.py`): the mean semi-major axis falls about 0.4 km; with NRLMSISE-00 and October 2024's real space weather (near the solar maximum) about seven times as far; with the exponential model no more than without drag. The lifetime estimate reads the same table: re-entry after about 350 days at Cd 2.2, against under two months with NRLMSISE-00. |
 
 ## A learning path
 
 | Step | Templates | What you learn |
 |---|---|---|
-| 1. Orbits | 01, 02, 22 | An ideal orbit; what Earth's shape, the Sun and the Moon do to it; a realistic satellite with drag and a ground station |
-| 2. Keeping an orbit | 18, 03, 17 | Station keeping against drag (LEO) and drift (GEO); how propellant runs down |
-| 3. Pointing | 06, 07, 15, 14, 27 | Attitude control, ideal and with real hardware; pointing at the Moon; finding the Sun with sun sensors; flexible wings swinging in a turn |
+| 1. Orbits | 01, 02, 22, 39, 42 | An ideal orbit; what Earth's shape, the Sun and the Moon do to it; a realistic satellite with drag and a ground station; an orbit from a TLE or a state vector; another atmosphere model and the lifetime |
+| 2. Keeping an orbit | 18, 03, 17, 40 | Station keeping against drag (LEO) and drift (GEO); how propellant runs down; continuous low thrust |
+| 3. Pointing | 06, 07, 15, 14, 27, 41 | Attitude control, ideal and with real hardware; pointing at the Moon; finding the Sun with sun sensors; flexible wings swinging in a turn; velocity pointing with navigation errors |
 | 4. Disturbances and momentum | 10, 21, 28, 12, 13, 11 | Gravity-gradient and surface torques; a center of mass off the body origin; unloading wheels with thrusters or torque rods; thrusters for pointing |
 | 5. Missions in steps | 08, 16, 23 | Mission Sequences: burns, a Lambert transfer, stopping on a ground pass |
 | 6. Several spacecraft | 04, 05, 24, 29 | A Walker constellation; a formation held by two different control laws; a formation in relative orbital elements, made passively safe |

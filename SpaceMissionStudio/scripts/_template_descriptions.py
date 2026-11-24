@@ -669,4 +669,70 @@ Try changing:
 
 Note:
 - The 3D model holds every item (Mass in model): the run flies the same 110.3 kg.""",
+    "39": """\
+Three ways to give an orbit. Three 150 kg satellites, orbit only and without drag: tle-sat from a TLE, \
+state-sat from a position and a velocity, elements-sat from classical elements (550 km, Sun-synchronous).
+
+What to look at:
+- tle-sat's Orbit page: a synthetic TLE, not a real satellite: 51.64 deg, about 420 km, its epoch the scenario's.
+- A TLE holds SGP4 mean elements. The run converts them at the epoch: the mean semi-major axis stays at SGP4's 6795.4 km.
+- state-sat: an illustrative state at the perigee of a 500 x 1500 km orbit, its speed from the vis-viva equation.
+- At 63.4 deg, state-sat's perigee does not drift; its node moves about 2.7 deg a day.
+- Overview names each orbit's type; Results compares the three orbits.
+
+Try changing:
+- A real satellite's TLE: paste both lines. An epoch more than 3 days from the scenario's gets a warning.
+- An orbit's type: Convert and switch keeps the same orbit in the other form.
+- Import CCSDS OPM/OMM... on the Orbit page, or spacemissionstudio ccsds-import file.opm scenario.json --spacecraft state-sat.
+
+Note:
+- The run does not use the TLE's drag term (B*): drag, when on, comes from the spacecraft's own settings.""",
+    "40": """\
+Continuous low thrust against drag. Two 150 kg satellites at 400 km for three days, orbit only: ep-sat fires \
+a 1 mN electric thruster along its velocity all the time, twin-sat has none.
+
+What to look at:
+- Mean semi-major axis: ep-sat rises about 2.8 km, twin-sat sinks about 0.3 km under drag.
+- ep-sat's constant thrust plots: 1.7 m/s of delta-V and 8.8 g of propellant used, thrust x time / (Isp x g0).
+- The thruster is the ENPULSION MICRO R3 of the device catalogue: 1 mN, Isp 3000 s, 1.3 kg of indium, about 15 months of firing.
+- The VNB frame (velocity, orbit normal, binormal) turns with the orbit, so no attitude model is needed.
+- The command line's run prints the delta-V and the propellant used.
+
+Try changing:
+- Direction [0, 1, 0], the orbit normal: the same delta-V turns the plane, and the orbit keeps its size.
+- Direction [-1, 0, 0]: a slow descent.
+- A lower thrust, to find the level that only holds ep-sat's height against drag.""",
+    "41": """\
+Velocity pointing with navigation errors. A 150 kg microsatellite on wheels keeps its body y axis along \
+the velocity and z along the orbit normal; it has a star tracker, a gyro and a magnetometer.
+
+What to look at:
+- It starts tipped; the wheels turn it onto the velocity within about 10 minutes.
+- Navigation Error plots: each error random-walks within its bound (attitude 0.02 deg, rate 0.001 deg/s per axis).
+- The attitude plots show the truth: within about 0.07 deg of the velocity frame, more from the rate error than the attitude error.
+- The controller damps a rate that is not there: a rate error of w turns it by about 4 x P/K x w.
+- mag-1 (the MM200 of the device catalogue) reads the Earth's field, 19 to 50 uT over the orbit.
+
+Try changing:
+- Untick Navigation error: the pointing error drops below 0.01 deg.
+- Rate step 0.0005 and bound 0.005 deg/s: the pointing error grows to about 0.25 deg.
+- Eccentricity 0.05: velocity pointing then leaves the local vertical by the flight-path angle.
+
+Note:
+- The errors are illustrative, of the order a star tracker, a gyro and a GNSS receiver give; seed 41 repeats them.""",
+    "42": """\
+Drag from a tabular atmosphere. A 150 kg satellite at 350 km reads NRLMSISE-00's nominal profile, a table of \
+density by altitude that Basilisk ships: no solar cycle, no day or night. Two days from 1 October 2024.
+
+What to look at:
+- Mean semi-major axis: it falls about 0.4 km in two days.
+- The run's provenance names the table's file, with its SHA-256.
+- End of Life: Estimate lifetime reads the same table, re-entry after about 350 days at its default drag coefficient, 2.2.
+- The estimate warns that a table has no solar activity: use NRLMSISE-00 for a lifetime.
+
+Try changing:
+- Atmosphere model NRLMSISE-00: the real space weather of October 2024, near the solar maximum. \
+The orbit falls about seven times as far, and re-entry comes within about two months.
+- Exponential: almost no drag. Its 8.5 km scale height from sea level is far too thin at this height.
+- Atmosphere table Earth-GRAM 2016: it stops at 200 km, so no drag at 350 km, and the run says so.""",
 }

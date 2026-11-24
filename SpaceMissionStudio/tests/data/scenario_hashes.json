@@ -150,5 +150,21 @@
  "38_budgets_equipment_power_mass_propellant": {
   "saved_text_sha256": "ad33a05e6ab88554a0ec32d17c184d48b3a3d53d3054e352bb7d2965dda0165b",
   "scenario_sha256": "a77b619e29d3762bce7df1e05dfe2217159a6af712688428ae886cd70f4a5950"
+ },
+ "39_orbit_inputs_tle_and_state_vector": {
+  "saved_text_sha256": "fd574ab1eb2a1fff9363d3eb7ab7d72c7ee519266802ee90e7d1dad1c546ac48",
+  "scenario_sha256": "25066d7f576323fdf735176c65f7d421904a1faa93f43d9b0b64c82540d24fcd"
+ },
+ "40_continuous_low_thrust": {
+  "saved_text_sha256": "3a5142deb657a92dadc05c09dbd852dbb1852dd8dee7466187974d2834b7eec5",
+  "scenario_sha256": "bb8649b5d12e4323fa745d2c9077962b6a844dab1fff767a2f156e1dde787994"
+ },
+ "41_velocity_pointing_with_navigation_errors": {
+  "saved_text_sha256": "33152d01f5c833dc5e3f2617a60e365299a5ffcdc92b5ccb194d1a321198a64c",
+  "scenario_sha256": "79f86050199a7ceadae5f7d274fb7a4fdbcd33f62dd12550afc9f485caf2ba72"
+ },
+ "42_tabular_atmosphere_and_lifetime": {
+  "saved_text_sha256": "28ab50e6c52c7b69947ddca608be4bfb8fb98d87b2a69c276decd37c17b2d051",
+  "scenario_sha256": "5e4300b058d6a8fc6fff0f9f8f5c1293457a443b9695c6c132137535dd8e42d4"
  }
 }
