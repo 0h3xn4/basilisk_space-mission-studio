@@ -111,7 +111,8 @@ def test_the_budgets_area_follows_results_with_its_four_pages(window):
     assert window.shell.rail.buttons["budgets"].toolTip() == "Budgets (Ctrl+5)"
     assert window.shell.page("budgets").content is window.budgets_views
     views = window.budgets_views
-    assert [views.tabText(i) for i in range(views.count())] == ["Equipment", "Power", "Mass", "Propellant"]
+    assert [views.tabText(i) for i in range(views.count())] == ["Equipment", "Power", "Mass", "Pointing",
+                                                                "Propellant"]
     assert "Budget" not in [window.run_views.tabText(i) for i in range(window.run_views.count())]
     assert window.commands["analyses.budget"].area == "budgets"
     window.commands.action("analyses.budget").trigger()

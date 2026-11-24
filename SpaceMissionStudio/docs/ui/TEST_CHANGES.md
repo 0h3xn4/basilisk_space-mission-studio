@@ -352,7 +352,6 @@ dispersions are edited in a form under their list instead of a dialog.
   per scenario, an empty folder falling back to the picker, and a SIL run
   without a confirmed program not starting and saying where to choose it.
 
-
 ## M6a The Overview and the plot view
 
 ### Changed: how a test reaches the widget
@@ -2374,7 +2373,6 @@ New in the second round: `test_breakout.py::test_the_3d_view_tries_again_while_n
 | `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` (release 2.12.0 CI) | the moves timed with every earlier object in the collector's full collections | the objects that exist before the moves leave the full collections first (`app.freeze_start_up_objects`, as the app does after start-up), and come back after the test (`gc.unfreeze`); the limits are unchanged | in the Linux job of the 2.12.0 release PR one attach of Budgets took 60 ms: a full collection fell in it. In the test process a full collection walks the objects of every earlier test (45 to 70 ms on this machine); the app moves its start-up objects out of them (UI overhaul M6a), so the test now measures the move as the app has it |
 | `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` (UI audit B5 CI) | a view failed when one of its six moves reached its limit | a view that reaches its limit is timed once more (its show and its six moves) and fails only when it reaches the limit again; the failure message gives both timings. The limits are unchanged | CI runs the suite on as many workers as the runner has processors, and the wall clock also counts the time another worker holds the processor. In the Windows job of #287 one Budgets attach took 54.5 ms (limit 50) and, in the same run, one 3D View move took 47.8 ms while its other five took 5 to 9 ms. B5 did not change the Budgets area's moves. A move that is slow in itself is slow both times |
 
-
 ### PR-3: ground tracks, stations and the live map (decision "Ground tracks, stations and the live map")
 
 Results › 3D View gets a **Globe | Map | Both** control and the 2D map
@@ -2853,6 +2851,46 @@ No existing test changed. Added:
 (the Statistics plot, the statistics' computer and the report writer
 deleted while their workers run; the late results are dropped). It does
 not reproduce the Windows failure on Linux; see `HISTORY.md`.
+
+## The pointing error budget, scope B (2026-11-24)
+
+The budgets section's own version steps from 1 to 2 (PE-17), and the
+Budgets area gains a Pointing tab after Mass (PE-1, the owner's answer
+5). Three existing tests and one fixture follow; no assertion is
+weakened:
+
+| Test or fixture | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_budgets_area.py::test_the_budgets_area_follows_results_with_its_four_pages` | tabs `Equipment, Power, Mass, Propellant` | tabs `Equipment, Power, Mass, Pointing, Propellant` | the owner's place for the new tab; the test still checks the whole list and its order |
+| `tests/test_budgets_schema.py::test_a_minimal_section_is_only_its_version` | `{"version": 1}` saves as itself | `{"version": 2}` saves as itself | the current version; a version 1 section is now migrated (tested in `tests/test_pointing_budget_schema.py`) |
+| `tests/test_budgets_schema.py::test_each_rule_refuses_bad_input_and_names_it` (the version case) | version 2 refused | version 3 refused | 2 is now the version read; the next one is refused by name, as before |
+| `tests/budgets_fixtures.py` (`SECTION`) | `"version": 1` | `"version": 2` | the fixture is a current section, so its round trip stays byte for byte; `tests/data/budgets/sbs_microsat_250kg_clean.json` stays at version 1 and is now also a migration case |
+
+New: `tests/test_pointing_budget.py` (the selection table cell by cell
+with hand cases, the sum, the probability factor and the margin, the
+line of sight, the window shares against a direct search, "TBD", the
+unit conversion, the scenario's sensors, the command line and the API),
+`tests/test_pointing_budget_schema.py` (round trip, the migration, each
+validation rule, a section with only a pointing budget) and
+`tests/gui/test_budgets_pointing.py` (the tab, its empty states, edits
+into the scenario with save and undo, the result's status icons and
+words, Add Scenario Sensors, Copy as CSV, names, both themes, 1280 x 720
+and the 50 ms limit). Each fails without the change.
+
+## A Monte Carlo plot page that Windows holds is deleted later (2026-11-24)
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_monte_carlo_results_widget.py::test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread` | the older pages gone at once after the newest is shown | waits up to 10 s until only the newest page is left | on Windows the web view can still hold the page shown before; it is now deleted on a retry (`docs/DECISIONS.md`, same title). The assertion (only the newest page left) is unchanged |
+
+New: `test_a_page_the_web_view_still_holds_is_deleted_a_little_later`
+(fails without the retry).
+
+## A uniform dispersion with equal bounds (MC-41, 2026-11-24)
+
+No existing test changed. Added to `tests/test_monte_carlo.py`:
+`test_a_uniform_dispersion_with_equal_bounds_gives_that_value` (four
+cases) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`.
 
 ## Template 38: the Budgets area (2026-11-24)
 

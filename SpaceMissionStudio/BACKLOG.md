@@ -2,20 +2,6 @@
 
 ## Next release
 
-- A pointing error budget, scope B
-  (`docs/developer/pointing-error-budget-design.md`, sections 3 and 4;
-  `docs/DECISIONS.md`, "Pointing error budget: design", PE-1 to PE-9
-  and the owner's answers of 2026-11-24). A "Pointing" tab of the
-  Budgets area: requirements and contributors entered by hand, the
-  summation per index and axis, the margins, the budget report and the
-  CLI (option A), and a button that adds the scenario's sensor noises as
-  knowledge contributors with their catalog sources. Per axis and a
-  line-of-sight (half-cone) value by a stated rule; the window share
-  rule for periodic contributors; no default probability level ("TBD").
-  A `BUDGETS_VERSION` step with a migration. Clean room from the public
-  concepts of ECSS-E-ST-60-10C only; every number has a source or is
-  "TBD". About 22 hours.
-
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
@@ -40,15 +26,6 @@ owner has answered the plan's open questions.
   centre of mass (the atmospheric density is done); then outcomes from
   any recorded series; convergence and adding cases to a batch;
   percentile bands over time; other sampling designs.
-- A uniform dispersion of the dry mass, the drag coefficient or the SRP
-  coefficient with equal bounds fails every run of the batch
-  (`ZeroDivisionError` in Basilisk 2.12.0's `UniformDispersion.generate`,
-  which divides by the half-width). The form starts a new dispersion at
-  [nominal, nominal], so an untouched new one crashes the batch. Found
-  while building the density scale, which has its own fix
-  (`engine.monte_carlo._UniformDensityScale`, MC-38); the same subclass
-  idea fits the other three. Reproduced on template 25 (0.001 day, one
-  run, dry mass uniform [150, 150]: run 0 failed).
 
 ## Done
 
@@ -62,6 +39,23 @@ owner has answered the plan's open questions.
   has the source "Synthetic example value; not from a data sheet or a
   standard.". Claims tests, a golden file, a wizard and the docs.
   Decisions TB-1 to TB-8. The pointing example waits for #325 (Later).
+- A pointing error budget, scope B (the owner's answers of 2026-11-24
+  to `docs/developer/pointing-error-budget-design.md` section 7), on
+  branch `feature/pointing-budget` (2026-11-24). Budgets › Pointing after
+  Mass: requirements and contributors entered by hand, the sum per index
+  and axis, the value at the requirement's probability (no default
+  probability: "TBD"), the margin with its status, a line-of-sight
+  (half-cone) value, the window share for periodic contributors, the
+  scenario's star trackers, gyroscopes and sun sensors as knowledge
+  contributors with their sources, `budgets --pointing` and
+  `api.pointing_budget`. Budgets section version 2 with a migration; no
+  template or golden file changed. Decisions PE-10 to PE-20; SRS-F-32.
+
+- A uniform dispersion with equal bounds (dry mass, drag or SRP
+  coefficient, body rate) failed every run of the batch, as a new
+  dispersion starts at [nominal, nominal]; branch
+  `fix/uniform-equal-bounds` (2026-11-24, decision MC-41).
+
 - Monte Carlo phase C, item 1: the atmospheric density dispersion, on
   branch `feature/monte-carlo-density` (2026-11-24). The owner's order
   of the phase C dispersions (Q6) is recorded as MC-36. A spike

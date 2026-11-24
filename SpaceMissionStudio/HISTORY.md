@@ -5329,7 +5329,6 @@ release (a published release's tag shouldn't move retroactively), this
 version bump gets its own fresh tag/release instead, so `v1.1.0` stays
 an honest, immutable snapshot of exactly what it was when published.
 
-
 ---
 
 ## Template 19: automatic Sun-pointing / ground-station-pointing comms link, with live power + RF telemetry
@@ -13594,7 +13593,6 @@ not installed here and the validation references are generated with it.
 (300 s, within 50 m; 384.1 m before the change) and
 `test_a_long_dynamics_step_is_flagged` (120 s flagged, 60 s not).
 
-
 ## Random seeds (2026-10-28)
 
 The user: "Continue as per your recommendations". The audit's E5. Branch
@@ -21621,6 +21619,114 @@ No code changed.
   owner kept it.
 - **Q9 of the Monte Carlo plan** (the density dispersion's meaning) is
   recorded with the density dispersion itself (PR #322).
+
+## The pointing error budget, scope B (2026-11-24)
+
+The owner answered the questions of
+`docs/developer/pointing-error-budget-design.md` section 7 on
+2026-11-24: scope B; no default probability; per axis plus a
+line-of-sight value by a stated rule; the window share rule for
+periodic contributors; a Pointing tab after Mass. This step builds it,
+on branch `feature/pointing-budget` from `develop` at `07f28ab`. The
+decisions are PE-10 to PE-20 in `docs/DECISIONS.md`; the requirement is
+SRS-F-32.
+
+**Clean room.** Only the public concepts of ECSS-E-ST-60-10C are used
+(the error indices, the windows, the statistical interpretations, the
+classes of contributors, the summation per index), written in our own
+words. No other tool, its names, screens, files or numbers, and no text
+or table of the standard.
+
+**What was built.**
+- `schema/budgets.py`: `budgets.pointing` with its requirements and
+  contributors; every number is a `SourcedValue`. The section's own
+  version goes from 1 to 2; `migrate_section` reads a version 1 section
+  as version 2 in every loader. This step does not change the
+  scenario's schema version (8 since the density dispersion, #322, an
+  independent step), so no template changes.
+- `engine/pointing_budget.py`: the selection table, the periodic window
+  shares, the sum, the value at the probability, the margin, the
+  line-of-sight rule and "TBD", in radians; `inputs()` is the one place
+  where arcsec become radians, and the rows turn them back. It also
+  makes the contributors of the scenario's sensors (option B).
+- `gui/budgets_area.py`: `PointingPage`, the tab after Mass:
+  requirements and contributors as `EditableTable`s, the result as a
+  `DataTable` with each status as an icon and a word, the contributors
+  of the result picked, Add Scenario Sensors, the line-of-sight axis and
+  Copy as CSV. The Equipment page carries a rename or a removal of a
+  system mode or an item into the pointing budget. The tables are filled
+  in one event and the result is computed in the next: in one step, 12
+  requirements and 30 contributors took 25 to 33 ms on the development
+  machine; in two, about 15 and 12 ms.
+- `cli.py`: `budgets --pointing` (with `--csv`); `api.pointing_budget`.
+- `analyses/power_budget.py`: a section with no powered item lists no
+  power input and gives no finding (PE-16).
+
+**Checked by hand.** Each cell of the selection table has a case: a
+contributor of mean 2 and spread 6 arcsec gives `s (2 + 1.959964 x 6)`
+in an index it enters by share `s`. The periodic shares at half a period
+are `2 / pi` (mean), `sqrt(1 + 4 / pi^2)` (relative, found by a direct
+search too) and `4 / pi` (drift and reproducibility). The sum of four
+contributors with a correlated pair gives `sqrt(34)`, and `sqrt(30)`
+without the group. The line of sight across z, with means 3 and 4 and
+deviations 2 and 1, gives `5 + 2 x 2.447747` at 0.95. The cone factor
+holds its probability exactly for a circular Gaussian.
+
+**The sensors.** Template 32's spacecraft gives three contributors:
+st-1 at 5 arcsec from the scenario, imu-1 "TBD" (its noise is a rate,
+1e-5 rad/s; the angle depends on the time between attitude fixes, which
+the scenario does not state), css-1 "TBD" (no noise given). A sun
+sensor named after the SS200 at the catalog's 0.004 gives 1166.81 arcsec
+(0.004 / sin 45 deg, the catalog's own reference angle), with the
+catalog as its source.
+
+**The golden files.** No template has a budgets section, so every
+template saves byte for byte as its file, and the golden outputs and
+recorded hashes do not change.
+
+**Tests.** Three new files (145 tests). Three existing tests and the
+budgets fixture changed for the version step and the new tab
+(`docs/ui/TEST_CHANGES.md`); none is weakened.
+
+## A Monte Carlo plot page that Windows holds is deleted later (2026-11-24)
+
+CI on PR #325 (`8b24d50`) failed one test on the Windows runner in the
+push run: `test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread`
+found the page shown before (`monte_carlo_insight_4.html`) still beside
+the newest. The pull request's run on the same commit passed, and so did
+`develop`. The plot deletes the previous page as soon as it loads the
+next; the web view can still be reading the previous one, Windows then
+refuses the delete, and the error was ignored. A page that cannot be
+deleted is now tried again every 250 ms for up to 10 s (`docs/DECISIONS.md`).
+The batch test waits for the folder to hold only the newest page; a new
+test makes the first delete fail and checks the retry. The Windows (MAX
+Python) job of the same CI failed only on the framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45), and Linux (MAX Python) stopped at the build cache's start, before
+any test.
+
+## A uniform dispersion with equal bounds (MC-41, 2026-11-24)
+
+The backlog item of "Later" found during the density dispersion. Branch
+`fix/uniform-equal-bounds` from `develop` at `28d9e83`.
+
+**Cause.** Basilisk 2.12.0's `UniformDispersion.generate` computes
+`(value - mid) / (high - mid)` for its note; with equal bounds that is a
+division by zero, raised inside the Controller's case, so the run failed.
+`UniformVectorCartDispersion` (the body rate) does the same per axis.
+
+**Fix.** `engine.monte_carlo._UniformDispersion`: equal bounds return the
+bound after the same one `random.uniform` call. Used by the dry mass (the
+propellant offset class now derives from it), the drag and SRP
+coefficients and the density scale; the uniform body rate has the same
+branch. See DECISIONS MC-41.
+
+**Tests.** `tests/test_monte_carlo.py`:
+`test_a_uniform_dispersion_with_equal_bounds_gives_that_value` (dry mass,
+Cd, Cr, body rate: the value, the same numbers taken from `random`, the
+notes) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`
+(template 25, one run, dry mass [150, 150]). Without the fix five of the
+six cases fail (the sixth is the density scale's own, already fixed).
 
 ## Template 38: the Budgets area (2026-11-24)
 

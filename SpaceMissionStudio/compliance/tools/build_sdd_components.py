@@ -138,6 +138,8 @@ SRS_TO_COMPONENTS = {
                  "analyses/mass_budget", "analyses/records", "engine/findings", "engine/scenario_checks", "idm/power",
                  "idm_import", "cli", "api", "gui/spacecraft_editor", "gui/design_checks_widget", "gui/budgets_area",
                  "gui/scenario_editor"],
+    "SRS-F-32": ["schema/budgets", "schema/fields", "engine/pointing_budget", "engine/device_catalog", "idm_devices",
+                 "analyses/power_budget", "cli", "api", "gui/budgets_area"],
     "SRS-P-01": ["engine/service"],
     "SRS-P-02": ["engine/service", "engine/planet_rotation", "engine/earth_orientation"],
     "SRS-P-03": ["engine/service"],
