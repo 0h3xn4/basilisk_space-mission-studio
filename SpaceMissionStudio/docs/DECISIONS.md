@@ -5905,3 +5905,138 @@ window or back took 64.0 and 72.7 ms on the Windows runner (release run
   `tests/gui/test_background_threads.py`. The first two fail without the
   fix. The move test is unchanged: a plain 50 ms per view. In CI run
   45314703069 (Windows) the move test and the two new tests passed.
+
+## Pointing error budget: scope B built (2026-11-24)
+
+The owner answered the design's section 7 on 2026-11-24
+(`docs/developer/pointing-error-budget-design.md`): scope B; no default
+probability level ("TBD"); per axis plus a line-of-sight (half-cone)
+value from two axes by a stated rule, in this step; the window share
+rule for periodic contributors (PE-7); a "Pointing" tab of the Budgets
+area, after Mass. **PE-1 to PE-9 are final** with these answers. This
+step builds scope B on branch `feature/pointing-budget`. The choices
+below go beyond PE-1 to PE-9; each has its reason. Clean room as PE-3:
+only the public concepts of ECSS-E-ST-60-10C, in our words; no other
+tool's name, user interface, file format, text or numbers.
+
+- **PE-10. The line-of-sight rule.** About one axis the value at
+  probability P is `|mean| + k std`, with `k` the two-sided normal factor
+  (`P(|X| <= k) = P`). About the line of sight (a half-cone) it is
+  `sqrt(mean_a^2 + mean_b^2) + max(std_a, std_b) sqrt(-2 ln(1 - P))`
+  from the two body axes across it. **Why:** the radius that holds P of
+  a circular two-axis Gaussian is `std sqrt(-2 ln(1 - P))`; with the
+  larger deviation for both axes the radius is not smaller than the true
+  one, and the mean adds by the triangle inequality. The rule is exact
+  for equal deviations and no mean, and conservative otherwise. The
+  root-sum-square of the two per-axis values is not used: below about
+  P = 0.8 it is smaller than the true radius (at one sigma it holds 63 %,
+  not 68 %). The body axis of the line of sight is `pointing.line_of_sight`
+  (`x`, `y` or `z`); without it a half-cone value is "TBD".
+- **PE-11. The mean share of a periodic contributor is a bound.** For a
+  sinusoid of period T and a window t, `r = t / T`, the share is 1 while
+  `pi r <= 1`, else `1 / (pi r)`. **Why:** the exact largest window mean,
+  `|sin(pi r)| / (pi r)`, falls to zero at whole periods, so a period
+  that is not exactly known could make a real term vanish. The bound is
+  never below the exact value.
+- **PE-12. The relative share is exact; drift and reproducibility take
+  twice the mean share.** Relative: the largest distance between a
+  sinusoid and its window mean, over every phase and instant:
+  `1 + |sin(pi r)| / (pi r)` from one period on, and below it the largest
+  over 720 phases refined by a golden-section search (half a period:
+  `sqrt(1 + 4 / pi^2)`). The window is the stability time when it is
+  given, else the observation period. Drift and reproducibility: the
+  change of the window mean between two windows is at most `2 s_mean`,
+  whatever their distance. **Why:** the relative share does not fall to
+  zero, so the exact value is safe; the bound for drift needs no new
+  field (the distance between the windows), and it is conservative.
+- **PE-13. Three distributions: gaussian, uniform and sinusoidal.** The
+  spread is a 1-sigma, a half-width or an amplitude; its standard
+  deviation is the spread times 1, `1 / sqrt(3)` or `1 / sqrt(2)`.
+  **Why:** the design's "another bounded shape"; a periodic error is
+  usually given by its amplitude, and entering it as a uniform half-width
+  would understate it by 18 %.
+- **PE-14. The statistical interpretation is recorded, not used.** The
+  sum is the same for temporal, ensemble and mixed. **Why:** the design
+  gives no rule that depends on it in scope B; a rule invented here
+  could claim more than is known. The tooltip and the manual say so.
+- **PE-15. The scenario's sensors (option B).** Add Scenario Sensors
+  adds each star tracker, gyroscope and sun sensor of the spacecraft
+  that the list does not hold yet (by the sensor's name), as a knowledge
+  contributor, random, gaussian, the same about each axis:
+  - star tracker: its 1-sigma `noise_arcsec`;
+  - sun sensor: its output noise as an angle, `noise_std / sin(45 deg)`
+    in radians, then arcsec. 45 deg is the angle at which the device
+    catalog derives its sun sensors' output noise from their angular
+    accuracy, so this undoes that step;
+  - gyroscope: "TBD", with its rate noise in the source text. **Why:**
+    `gyro_noise_rad_s` is a rate; the angle error it gives depends on
+    the time between attitude fixes, which the scenario does not state.
+    A time chosen here would be an invented number.
+
+  The source is the catalog product (its name and address) when the
+  sensor's name names a product (`idm_devices.catalog_product`) and the
+  value is that product's; else the value's place in the scenario
+  (`scenario: sat.sensors[st-1].params.noise_arcsec`). A sensor without
+  its noise parameter gives "TBD" (the run models no noise for it).
+  **Why:** a value is attributed to the catalog only when both its name
+  and its value say so; matching by value alone could name the wrong
+  product (several star trackers share 10 arcsec).
+- **PE-16. A pointing budget alone.** Add Pointing Budget on a
+  spacecraft without a budgets section makes a section with the pointing
+  budget and nothing else (no bus, no placeholder power numbers). The
+  power budget then lists no input and gives no finding when no item has
+  a power mode (`analyses.power_budget._inputs`). **Why:** before, such a
+  section gave two findings ("the distribution loss is not given...")
+  about a power budget that does not exist. A section with a powered item
+  is unchanged.
+- **PE-17. The format step.** The budgets section's own version goes
+  from 1 to 2 (`BUDGETS_VERSION`); the scenario's schema version stays 7.
+  `schema.budgets.migrate_section` steps a version 1 section to 2 when
+  any loader reads it (`budgets.from_dict`, so the file loader and
+  `Scenario.from_dict` both do); the step only sets the version, as the
+  scenario's steps 4 to 5 and later did. A newer version is refused by
+  name. **Why:** the section has its own version for this; the templates
+  have no budgets section, so no template, golden file or recorded hash
+  changes (checked: every template saves byte for byte as its file).
+  2.15.0 refuses a version 2 section with its usual message.
+- **PE-18. The selection table, completed.** The design names bias,
+  random, periodic and drift; this step fixes every cell
+  (`engine.pointing_budget.SELECTION`): bias: absolute and mean; random:
+  absolute and relative; periodic: absolute in full, the others by its
+  share; drift: absolute, mean, drift and reproducibility; transient:
+  absolute, mean and relative. The share scales the contributor's mean
+  and its deviation alike. An axis left out of a contributor's means or
+  spreads means "it does not act about this axis"; a placeholder is
+  "TBD". **Why:** a slow drift is in the error at any instant and in a
+  window's mean; a short transient moves the instant, the window's mean
+  and the jitter, but not the mean of a later window. One share for both
+  parts keeps one rule per cell; a noise with a constant offset is two
+  contributors (a bias and a random term).
+- **PE-19. The report and the command line.** `spacemissionstudio
+  budgets SCENARIO --pointing` prints the result table, then per
+  requirement each contributor that enters it with its share and rule,
+  and why a value is "TBD"; with `--csv`, the result rows and the term
+  rows as CSV. Copy as CSV on the tab gives the same CSV with the
+  scenario's provenance. `api.pointing_budget(scenario)` returns the
+  budget. **Why:** as the power budget (`budgets`, `--csv`,
+  `api.power_budget`); one more flag, not a new command. The "budget
+  report" of the merge plan's phase 5 does not exist yet, so the tab's
+  CSV and the command are the report for now.
+- **PE-20. The tab.** Requirements and contributors are `EditableTable`s;
+  the result is a `DataTable` with each status an icon and a word
+  (met, not met, TBD, no contributor), and picking a result row shows
+  its contributors with their share and the reasons for "TBD". A
+  contributor has one Source column for all its values (an edit sets
+  each value's source; "several" when they differ). The result is
+  computed on the GUI thread, in the event after the tables are filled:
+  for 12 requirements and 30 contributors the tables take about 15 ms
+  and the result about 12 ms on the development machine (25 to 33 ms in
+  one step, so two steps leave room on a slower runner); the test's
+  limit is 50 ms for each step. **Why:** the owner's design rules; one
+  source per contributor keeps 15 columns readable, and the computation
+  is too small for a worker.
+
+**Tests changed** (`docs/ui/TEST_CHANGES.md`): the Budgets area's tab
+list gains Pointing; two version pins of `tests/test_budgets_schema.py`
+and the fixture section's version follow the version step. No assertion
+is weakened.

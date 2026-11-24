@@ -17,6 +17,17 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- A pointing error budget, scope B (the owner's answers of 2026-11-24
+  to `docs/developer/pointing-error-budget-design.md` section 7), on
+  branch `feature/pointing-budget` (2026-11-24). Budgets › Pointing after
+  Mass: requirements and contributors entered by hand, the sum per index
+  and axis, the value at the requirement's probability (no default
+  probability: "TBD"), the margin with its status, a line-of-sight
+  (half-cone) value, the window share for periodic contributors, the
+  scenario's star trackers, gyroscopes and sun sensors as knowledge
+  contributors with their sources, `budgets --pointing` and
+  `api.pointing_budget`. Budgets section version 2 with a migration; no
+  template or golden file changed. Decisions PE-10 to PE-20; SRS-F-32.
 - Make the move of the 3D View into its own window, or back, take under
   50 ms of the GUI thread on the Windows runner, every time (SRelD K-40),
   on branch `fix/3d-view-move` (2026-11-24). Not the move's own work (3
@@ -89,17 +100,6 @@ owner has answered the plan's open questions.
   template 25: HISTORY.md, "Monte Carlo phase A, part 1".
 
 ## Needs human
-
-- A pointing error budget: the owner's choice of scope (the owner's
-  feedback, 2026-11-18). The design and its provisional decisions are on
-  `develop` at `39da9d7` (2026-11-23):
-  `docs/developer/pointing-error-budget-design.md` and
-  `docs/DECISIONS.md`, PE-1 to PE-9. Clean room from the public concepts
-  of ECSS-E-ST-60-10C; every number has a source or is "TBD"; no code.
-  Needs a human: answer the design's section 7 (scope A, B, C or D, with
-  B recommended; the default probability level; line of sight; periodic
-  contributors; the place in the app). Then the chosen scope can be a
-  "Next release" item.
 
 - The rest of SRelD K-44 (fix/k44-thread-crashes, 2026-11-20). The
   access violation in `_SpaceWeatherWarmUp` and the export test's

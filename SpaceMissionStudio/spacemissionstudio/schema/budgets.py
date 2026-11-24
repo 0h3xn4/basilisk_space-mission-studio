@@ -33,6 +33,12 @@ The section has its own ``version``. It is optional and written only when
 set, so a scenario without it saves and hashes as before (apart from the
 scenario's schema version, 5 since this section: decision B-01). Without
 numpy, Basilisk or the GUI, like the rest of the schema.
+
+Version 2 adds the optional ``pointing`` subsection: the pointing error
+budget's requirements and contributors
+(``docs/developer/pointing-error-budget-design.md``, decisions PE-1 to
+PE-20). A version 1 section has none; :func:`migrate_section` reads it as
+version 2 and changes nothing else.
 """
 
 from __future__ import annotations
@@ -42,7 +48,7 @@ from dataclasses import MISSING, dataclass, field, fields
 
 from ..config.materials import S120_SUBSYSTEMS
 
-BUDGETS_VERSION = 1
+BUDGETS_VERSION = 2
 #: The S-120 columns an item's mass can take its growth allowance from
 #: ("" takes the largest of the row, as for a part without a column).
 MASS_COLUMNS = ("",) + S120_SUBSYSTEMS
@@ -244,6 +250,151 @@ class BudgetModeConfig:
                      f"{here}: units: {item!r} has no power mode {mode!r} ({', '.join(names) or 'it has none'})")
 
 
+# -- the pointing error budget (version 2; decisions PE-1 to PE-20) -------------------------------------------
+
+#: The error indices of a pointing requirement (design note, section 2).
+POINTING_INDICES = ("absolute", "mean", "relative", "drift", "reproducibility")
+#: What a requirement is on: the error of the pointing, or of the knowledge of it.
+POINTING_KINDS = ("performance", "knowledge")
+#: What a contributor enters: performance, knowledge or both.
+POINTING_CONTRIBUTOR_KINDS = ("performance", "knowledge", "both")
+#: The body axes a value is given about.
+POINTING_AXES = ("x", "y", "z")
+#: The axis of a requirement: a body axis, or the line of sight (a half-cone, from the two axes across it).
+LINE_OF_SIGHT = "line_of_sight"
+POINTING_REQUIREMENT_AXES = POINTING_AXES + (LINE_OF_SIGHT,)
+#: Over what population a requirement's probability holds.
+POINTING_INTERPRETATIONS = ("temporal", "ensemble", "mixed")
+#: The time behaviour of a contributor: it decides the indices it enters (engine.pointing_budget).
+POINTING_BEHAVIOURS = ("bias", "random", "periodic", "drift", "transient")
+#: The shape of a contributor's spread: its 1-sigma (gaussian), half-width (uniform) or amplitude (sinusoidal).
+POINTING_DISTRIBUTIONS = ("gaussian", "uniform", "sinusoidal")
+
+
+def _choice(value, choices, where: str, what: str) -> None:
+    _require(value in choices, f"{where}: {what} {value!r} must be one of {list(choices)}")
+
+
+@dataclass
+class PointingRequirementConfig:
+    """A pointing requirement: the error ``index`` of the pointing (or of
+    its knowledge) about one ``axis`` must stay within ``limit_arcsec`` with
+    the ``probability`` given. The windows are the observation period (mean,
+    relative, drift and reproducibility) and, for relative, the shorter
+    stability time. ``modes`` names the system modes it applies to (a
+    record: the budget does not depend on them)."""
+
+    name: str
+    limit_arcsec: SourcedValue  # [arcsec] above 0; a placeholder until known
+    probability: SourcedValue  # [-] in (0, 1), the probability the error stays within the limit; no default
+    index: str = "absolute"  # one of POINTING_INDICES
+    kind: str = "performance"  # "performance" or "knowledge"
+    axis: str = "x"  # "x", "y", "z" or "line_of_sight" (a half-cone from the two axes across the line of sight)
+    interpretation: str = "temporal"  # "temporal", "ensemble" or "mixed": over what the probability holds
+    window_s: SourcedValue | None = None  # [s] above 0, the observation period (mean, relative, drift, reproducibility)
+    stability_s: SourcedValue | None = None  # [s] above 0, at most window_s: the window of a relative index
+    modes: list = field(default_factory=list)  # list[str], system modes of budgets.modes it applies to
+
+    def validate(self, where: str, modes: set) -> None:
+        _name(self.name, where, "pointing requirement")
+        here = f"{where}: pointing requirement {self.name!r}"
+        _choice(self.index, POINTING_INDICES, here, "index")
+        _choice(self.kind, POINTING_KINDS, here, "kind")
+        _choice(self.axis, POINTING_REQUIREMENT_AXES, here, "axis")
+        _choice(self.interpretation, POINTING_INTERPRETATIONS, here, "interpretation")
+        _sourced(self.limit_arcsec, f"{here}: limit_arcsec", low=0.0, low_open=True)
+        _sourced(self.probability, f"{here}: probability", low=0.0, high=1.0, low_open=True, high_open=True)
+        for key in ("window_s", "stability_s"):
+            if getattr(self, key) is not None:
+                _sourced(getattr(self, key), f"{here}: {key}", low=0.0, low_open=True)
+        window = self.window_s.known if self.window_s is not None else None
+        stability = self.stability_s.known if self.stability_s is not None else None
+        _require(window is None or stability is None or stability <= window,
+                 f"{here}: stability_s must be at most window_s")
+        _require(isinstance(self.modes, list) and all(isinstance(m, str) for m in self.modes),
+                 f"{here}: modes must be a list of system mode names")
+        for mode in self.modes:
+            _require(mode in modes, f"{here}: modes: {mode!r} is not a system mode of budgets.modes")
+        _unique(list(self.modes), here, "mode")
+
+
+@dataclass
+class PointingContributorConfig:
+    """A source of pointing error: its ``kind`` (the indices of performance,
+    of knowledge, or both), its time ``behaviour`` (which indices it enters
+    and by what share: ``engine.pointing_budget``) and, per body axis, a
+    mean and a spread in arcsec. The spread is a 1-sigma (gaussian), a
+    half-width (uniform) or an amplitude (sinusoidal). An axis left out of
+    ``mean_arcsec`` has no mean; an axis left out of ``spread_arcsec`` has
+    no spread: the contributor does not act on it. A placeholder makes
+    every index it enters "TBD" (decision PE-8). Contributors of one
+    ``group`` are correlated and add linearly (PE-4)."""
+
+    name: str
+    kind: str = "performance"  # "performance", "knowledge" or "both"
+    behaviour: str = "random"  # one of POINTING_BEHAVIOURS
+    distribution: str = "gaussian"  # one of POINTING_DISTRIBUTIONS: what spread_arcsec is
+    mean_arcsec: dict = field(default_factory=dict)  # {axis: SourcedValue} [arcsec], any sign; absent: no mean
+    spread_arcsec: dict = field(default_factory=dict)  # {axis: SourcedValue} [arcsec] at least 0; absent: no spread
+    period_s: SourcedValue | None = None  # [s] above 0, the period of a periodic contributor (needed for it)
+    group: str = ""  # contributors of one group are correlated: they add linearly; "" independent
+    equipment: str = ""  # the equipment item it comes from (budgets.equipment); "" another source
+    sensor: str = ""  # the scenario sensor it was made from (Add Scenario Sensors); "" none
+
+    def validate(self, where: str, items: set) -> None:
+        _name(self.name, where, "pointing contributor")
+        here = f"{where}: pointing contributor {self.name!r}"
+        _choice(self.kind, POINTING_CONTRIBUTOR_KINDS, here, "kind")
+        _choice(self.behaviour, POINTING_BEHAVIOURS, here, "behaviour")
+        _choice(self.distribution, POINTING_DISTRIBUTIONS, here, "distribution")
+        for key in ("group", "equipment", "sensor"):
+            _require(isinstance(getattr(self, key), str), f"{here}: {key} must be text")
+        for key, low in (("mean_arcsec", None), ("spread_arcsec", 0.0)):
+            values = getattr(self, key)
+            _require(isinstance(values, dict), f"{here}: {key} must be an object {{\"x\": ..., \"y\": ..., \"z\": ...}}")
+            for axis, value in values.items():
+                _require(axis in POINTING_AXES, f"{here}: {key}: axis {axis!r} must be one of {list(POINTING_AXES)}")
+                _sourced(value, f"{here}: {key}.{axis}", low=low)
+        if self.period_s is not None:
+            _sourced(self.period_s, f"{here}: period_s", low=0.0, low_open=True)
+        _require(self.behaviour != "periodic" or self.period_s is not None,
+                 f"{here}: a periodic contributor needs period_s (a placeholder if it is not known)")
+        _require(self.equipment == "" or self.equipment in items,
+                 f"{here}: equipment {self.equipment!r} is not an item of budgets.equipment")
+
+
+@dataclass
+class PointingConfig:
+    """The pointing error budget of a spacecraft (design note section 3.1):
+    its requirements, its contributors and the body axis along the line of
+    sight, which a half-cone requirement needs."""
+
+    line_of_sight: str = ""  # "x", "y" or "z": the body axis along the line of sight; "" not stated
+    requirements: list = field(default_factory=list)  # list[PointingRequirementConfig]
+    contributors: list = field(default_factory=list)  # list[PointingContributorConfig]
+
+    def requirement(self, name: str) -> PointingRequirementConfig | None:
+        return next((r for r in self.requirements if r.name == name), None)
+
+    def contributor(self, name: str) -> PointingContributorConfig | None:
+        return next((c for c in self.contributors if c.name == name), None)
+
+    def validate(self, where: str, modes: set, items: set) -> None:
+        where = f"{where}.pointing"
+        _require(self.line_of_sight == "" or self.line_of_sight in POINTING_AXES,
+                 f"{where}: line_of_sight {self.line_of_sight!r} must be \"\" or one of {list(POINTING_AXES)}")
+        for group, cls in (("requirements", PointingRequirementConfig), ("contributors", PointingContributorConfig)):
+            _require(isinstance(getattr(self, group), list)
+                     and all(isinstance(item, cls) for item in getattr(self, group)),
+                     f"{where}: each entry of {group} must be an object")
+        for requirement in self.requirements:
+            requirement.validate(where, modes)
+        _unique([r.name for r in self.requirements], where, "pointing requirement")
+        for contributor in self.contributors:
+            contributor.validate(where, items)
+        _unique([c.name for c in self.contributors], where, "pointing contributor")
+
+
 @dataclass
 class BudgetsConfig:
     """A spacecraft's equipment list, system modes and power budget numbers
@@ -256,6 +407,7 @@ class BudgetsConfig:
     system_power_margin_percent: SourcedValue | None = None  # [%] 0 to 1000, on the sum of the margined loads
     equipment: list = field(default_factory=list)  # list[BudgetEquipmentConfig]
     modes: list = field(default_factory=list)  # list[BudgetModeConfig]
+    pointing: PointingConfig | None = None  # the pointing error budget (version 2); absent: none
 
     def item(self, name: str) -> BudgetEquipmentConfig | None:
         return next((item for item in self.equipment if item.name == name), None)
@@ -295,6 +447,9 @@ class BudgetsConfig:
         for mode in self.modes:
             mode.validate(where, items)
         _unique([mode.name for mode in self.modes], where, "mode")
+        if self.pointing is not None:
+            _require(isinstance(self.pointing, PointingConfig), f"{where}: pointing must be an object")
+            self.pointing.validate(where, {mode.name for mode in self.modes}, set(items))
 
 
 def mass_policy_of(spacecraft):
@@ -319,10 +474,65 @@ def _sourced_from(data, where: str, record):
     return None if data is None else record(SourcedValue, data, where)
 
 
+def _migrate_1_to_2(data: dict) -> dict:
+    """Section version 1 -> 2: a section can hold ``pointing`` (the pointing
+    error budget). The subsection is new and optional, so a version 1
+    section has none, and nothing else changes: the step only sets the
+    version. Version 2 marks the sections that 2.15.0 and earlier cannot
+    read."""
+    data["version"] = 2
+    return data
+
+
+#: The steps of the section's own version, {old version: step}, as ``schema.migrations.MIGRATIONS``.
+SECTION_MIGRATIONS = {1: _migrate_1_to_2}
+
+
+def migrate_section(data: dict) -> dict:
+    """``data``, a section's JSON object, brought up to
+    :data:`BUDGETS_VERSION` one step at a time. Another version (newer, or
+    not a number) is left as it is: validation then names it."""
+    version = data.get("version", BUDGETS_VERSION)
+    while isinstance(version, int) and not isinstance(version, bool) and version in SECTION_MIGRATIONS:
+        data = SECTION_MIGRATIONS[version](data)
+        version = data["version"]
+    return data
+
+
+def _sourced_axes(data, where: str, record, fields_of) -> dict:
+    """``{axis: SourcedValue}`` from its JSON object."""
+    return {axis: record(SourcedValue, value, f"{where}.{axis}") for axis, value in fields_of(data, where).items()}
+
+
+def _pointing_from(data, where: str, record, fields_of) -> PointingConfig:
+    data = fields_of(data, where)
+    requirements = []
+    for k, item in enumerate(_list(data.pop("requirements", []), f"{where}.requirements")):
+        here = f"{where}.requirements[{k}]"
+        item = fields_of(item, here)
+        for key in ("limit_arcsec", "probability"):
+            if key in item:
+                item[key] = record(SourcedValue, item[key], f"{here}.{key}")
+        for key in ("window_s", "stability_s"):
+            item[key] = _sourced_from(item.get(key), f"{here}.{key}", record)
+        requirements.append(record(PointingRequirementConfig, item, here))
+    contributors = []
+    for k, item in enumerate(_list(data.pop("contributors", []), f"{where}.contributors")):
+        here = f"{where}.contributors[{k}]"
+        item = fields_of(item, here)
+        for key in ("mean_arcsec", "spread_arcsec"):
+            item[key] = _sourced_axes(item.get(key, {}), f"{here}.{key}", record, fields_of)
+        item["period_s"] = _sourced_from(item.get("period_s"), f"{here}.period_s", record)
+        contributors.append(record(PointingContributorConfig, item, here))
+    data.update(requirements=requirements, contributors=contributors)
+    return record(PointingConfig, data, where)
+
+
 def from_dict(data, where: str, record, records, fields_of) -> BudgetsConfig:
     """The section read from its JSON object, with the scenario loader's
-    record builders (so every structural error reads the same)."""
-    data = fields_of(data, where)
+    record builders (so every structural error reads the same). An older
+    version is migrated first (:func:`migrate_section`)."""
+    data = migrate_section(fields_of(data, where))
     buses = []
     for k, bus in enumerate(_list(data.pop("buses", []), f"{where}.buses")):
         bus = fields_of(bus, f"{where}.buses[{k}]")
@@ -352,6 +562,8 @@ def from_dict(data, where: str, record, records, fields_of) -> BudgetsConfig:
     data["modes"] = records(BudgetModeConfig, data.pop("modes", []), f"{where}.modes")
     for name in ("distribution_loss", "system_power_margin_percent"):
         data[name] = _sourced_from(data.get(name), f"{where}.{name}", record)
+    if data.get("pointing") is not None:
+        data["pointing"] = _pointing_from(data["pointing"], f"{where}.pointing", record, fields_of)
     data.update(buses=buses, power_margins=margins, equipment=equipment)
     return record(BudgetsConfig, data, where)
 
@@ -404,7 +616,29 @@ def compact(section: dict) -> dict:
         out["equipment"] = items
     if section.get("modes"):
         out["modes"] = [_compact_record(mode, BudgetModeConfig) for mode in section["modes"]]
+    if section.get("pointing") is not None:
+        out["pointing"] = _compact_pointing(section["pointing"])
     return out
+
+
+def _compact_pointing(pointing: dict) -> dict:
+    """The saved form of the ``pointing`` subsection: as :func:`compact`,
+    absent values, empty lists and fields at their default left out."""
+    out: dict = {}
+    if pointing.get("line_of_sight"):
+        out["line_of_sight"] = pointing["line_of_sight"]
+    if pointing.get("requirements"):
+        out["requirements"] = [_compact_record(_without_none(item), PointingRequirementConfig)
+                               for item in pointing["requirements"]]
+    if pointing.get("contributors"):
+        out["contributors"] = [_compact_record(_without_none(item), PointingContributorConfig)
+                               for item in pointing["contributors"]]
+    return out
+
+
+def _without_none(entry: dict) -> dict:
+    """``entry`` without its absent optional values (a ``None`` sourced value)."""
+    return {key: value for key, value in entry.items() if value is not None}
 
 
 def import_values(spacecraft) -> dict:

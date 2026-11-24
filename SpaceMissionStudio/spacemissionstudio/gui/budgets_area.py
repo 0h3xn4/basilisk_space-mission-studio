@@ -21,15 +21,19 @@ spacecraft's equipment list, its static power budget per system mode, its
 mass budget and, moved from Run › Budget, the delta-V and propellant
 budget.
 
-* :class:`BudgetsViews` -- the area's tabs (Equipment, Power, Mass and,
-  added by the window, Propellant) and the spacecraft picker of the
+* :class:`BudgetsViews` -- the area's tabs (Equipment, Power, Mass,
+  Pointing and, added by the window, Propellant) and the spacecraft picker of the
   area's header;
 * :class:`EquipmentPage` -- the ``budgets`` section as editable tables:
   the items, the power modes of the item picked, the system modes and the
   power settings (buses, distribution loss, margins);
 * :class:`PowerPage` -- ``analyses.power_budget`` of the spacecraft;
 * :class:`MassPage` -- ``analyses.mass_budget`` of the spacecraft (the
-  Mass budget group of Run › Design Checks, with the equipment list).
+  Mass budget group of Run › Design Checks, with the equipment list);
+* :class:`PointingPage` -- the ``budgets.pointing`` subsection as editable
+  tables (requirements, contributors) and ``engine.pointing_budget`` of
+  it, each margin's status an icon and a word
+  (``docs/developer/pointing-error-budget-design.md``, PE-1 to PE-20).
 
 The editable tables are a model/view grid (:class:`GridModel`, a
 ``QAbstractTableModel`` with ``ItemIsEditable``; decision B-12). An edit
@@ -63,7 +67,7 @@ from .. import output_provenance
 from ..schema.budgets import (MASS_COLUMNS, BudgetBusConfig, BudgetEquipmentConfig, BudgetModeConfig,
                               BudgetPowerModeConfig, BudgetsConfig, PowerMarginConfig, SourcedValue, mass_policy_of,
                               powered)
-from .badges import SUCCESS, WARNING, set_badge
+from .badges import DANGER, SUCCESS, WARNING, set_badge
 from .data_table import DataTable, Row, fit_widths, text_elided
 from .feedback import show_toast
 from .theme import SPACE, icon, numeric_font, set_role
@@ -803,6 +807,17 @@ class EquipmentPage(QWidget):
         for mode in self.section.modes:
             if old in mode.units:
                 mode.units = {(name if key == old else key): value for key, value in mode.units.items()}
+        for contributor in self._pointing_contributors():
+            if contributor.equipment == old:
+                contributor.equipment = name  # the pointing contributor keeps its item
+
+    def _pointing_contributors(self) -> list:
+        pointing = self.section.pointing if self.section is not None else None
+        return pointing.contributors if pointing is not None else []
+
+    def _pointing_requirements(self) -> list:
+        pointing = self.section.pointing if self.section is not None else None
+        return pointing.requirements if pointing is not None else []
 
     def _mode_columns(self) -> list[Column]:
         def put_average(mode, number):
@@ -871,9 +886,11 @@ class EquipmentPage(QWidget):
             units.pop(item, None)
         mode.units = units
 
-    @staticmethod
-    def _rename_system_mode(mode, name: str) -> None:
+    def _rename_system_mode(self, mode, name: str) -> None:
+        old = mode.name
         mode.name = name
+        for requirement in self._pointing_requirements():  # a pointing requirement keeps its mode
+            requirement.modes = [name if entry == old else entry for entry in requirement.modes]
 
     def _settings_rows(self) -> list[_Setting]:
         section = self.section
@@ -972,6 +989,9 @@ class EquipmentPage(QWidget):
         del self.section.equipment[row]
         for mode in self.section.modes:
             mode.units = {key: value for key, value in mode.units.items() if key != item.name}
+        for contributor in self._pointing_contributors():
+            if contributor.equipment == item.name:
+                contributor.equipment = ""
         self._reload()
         if self.section.equipment:
             self.items_table.select_row(min(row, len(self.section.equipment) - 1))
@@ -1015,7 +1035,9 @@ class EquipmentPage(QWidget):
         row = self.system_modes_table.current_row()
         if self.section is None or row is None or row >= len(self.section.modes):
             return
-        del self.section.modes[row]
+        removed = self.section.modes.pop(row).name
+        for requirement in self._pointing_requirements():
+            requirement.modes = [entry for entry in requirement.modes if entry != removed]
         self._reload_system_modes()
         self._commit()
 
@@ -1405,12 +1427,590 @@ class MassPage(QWidget):
         return _csv_text(rows, self._scenario)
 
 
+# -- the Pointing page ----------------------------------------------------------------------------------------------
+
+#: A requirement's status in the result table: its icon, the icon's ink and the word's ink (design rule 1: the
+#: word says it too, never the colour alone).
+_POINTING_MARKS = {
+    "met": ("circle-check", "status.normal", "status.normal.text"),
+    "not met": ("octagon-alert", "status.critical", "status.critical.text"),
+    "TBD": ("triangle-alert", "status.caution", "status.caution.text"),
+    "no contributor": ("triangle-alert", "status.caution", "status.caution.text"),
+}
+_AXIS_TEXT = {"": "not stated", "x": "x", "y": "y", "z": "z"}
+_POINTING_SIZED_ROWS = 8  # [-] rows the requirement and contributor columns are measured from (15 columns each)
+
+
+def _axis_values(contributor) -> list:
+    """Every sourced value of a contributor: its spreads, means and period."""
+    values = list(contributor.spread_arcsec.values()) + list(contributor.mean_arcsec.values())
+    return values + ([contributor.period_s] if contributor.period_s is not None else [])
+
+
+def contributor_source(contributor) -> str:
+    """The source the contributor's values share; "" when they have none or
+    differ (the Source column then says "several")."""
+    sources = list(dict.fromkeys(value.source for value in _axis_values(contributor)))
+    return sources[0] if len(sources) == 1 else ""
+
+
+def _new_value(contributor, number: float) -> SourcedValue:
+    """A new value of ``contributor``: with the source its values share, else "TBD"."""
+    return SourcedValue(number, contributor_source(contributor) or _NEW_SOURCE)
+
+
+class PointingPage(QWidget):
+    """The pointing error budget of one spacecraft (``budgets.pointing``;
+    ``engine.pointing_budget``): its requirements and contributors as
+    editable tables, the body axis of the line of sight, and the result per
+    requirement with each margin's status and the contributors that enter
+    it. :attr:`edited` carries a copy of the whole section after each edit,
+    as the Equipment page's. The result is computed from the section on
+    the GUI thread, in the event after the tables are filled, so neither
+    step takes long (PE-20)."""
+
+    edited = Signal(object)  # schema.budgets.BudgetsConfig (a copy)
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.spacecraft_name = ""
+        self.section: BudgetsConfig | None = None  # the page's copy of the spacecraft's section
+        self.budget = None  # engine.pointing_budget.PointingBudget of the section, None while not computed
+        self._sc = None
+        self._scenario = None
+        self._invalid = False
+        self._computed_for: tuple = (object(), None, None)  # (name, section, invalid) of the result shown
+        self._compute_timer = QTimer(self)
+        self._compute_timer.setSingleShot(True)
+        self._compute_timer.setInterval(0)
+        self._compute_timer.timeout.connect(self._compute)
+        self._items: tuple = ()  # the equipment items' names (the Equipment column's choices)
+        self._modes: tuple = ()  # the system modes' names
+        self.copy_action: QAction | None = None
+        self.add_pointing_action = self._action("Add Pointing Budget", "file-plus", self.add_pointing)
+        self.add_requirement_action = self._action("Add Requirement", "file-plus", self.add_requirement)
+        self.remove_requirement_action = self._action("Remove Requirement", "circle-minus", self.remove_requirement)
+        self.add_contributor_action = self._action("Add Contributor", "file-plus", self.add_contributor)
+        self.remove_contributor_action = self._action("Remove Contributor", "circle-minus", self.remove_contributor)
+        self.add_sensors_action = self._action("Add Scenario Sensors", "activity", self.add_sensors)
+        self.add_sensors_action.setToolTip("Add the star trackers, gyroscopes and sun sensors of the spacecraft as "
+                                           "knowledge contributors, with their noise and its source")
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self.stack = QStackedWidget()
+        outer.addWidget(self.stack)
+        self.empty_state = EmptyState("No pointing budget")  # its button secondary: Run is the one accent (UI-03)
+        self.empty_state.button.clicked.connect(self.add_pointing_action.trigger)
+        self.stack.addWidget(self.empty_state)
+
+        body = QWidget()
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(0, 0, 0, 0)  # the area insets the page (UI audit UI-16)
+        layout.setSpacing(SPACE["sm"])
+        self.top_row = QHBoxLayout()
+        self.top_row.setSpacing(SPACE["sm"])
+        self.title_label = set_role(QLabel("Pointing budget"), role="section-title")
+        self.top_row.addWidget(self.title_label)
+        self.status_badge = _status_badge()
+        self.top_row.addWidget(self.status_badge)
+        self.top_row.addStretch(1)
+        self.top_row.addWidget(set_role(QLabel("Line of sight along"), tone="secondary"))
+        self.line_of_sight_combo = ComboBox()
+        self.line_of_sight_combo.setAccessibleName("Line of sight along")
+        self.line_of_sight_combo.setToolTip("The body axis along the line of sight: a half-cone requirement adds the "
+                                            "errors about the two axes across it")
+        for axis, text in _AXIS_TEXT.items():
+            self.line_of_sight_combo.addItem(text, axis)
+        self.line_of_sight_combo.currentIndexChanged.connect(self._on_line_of_sight)
+        self.top_row.addWidget(self.line_of_sight_combo)
+        layout.addLayout(self.top_row)
+
+        self.requirements_table = EditableTable(
+            "Requirements", "No pointing requirement yet",
+            "Add one for each error the mission limits: its index, axis, limit and probability.",
+            self.add_requirement_action, (self.add_requirement_action, self.remove_requirement_action),
+            icon_only=False)
+        self.requirements_table.empty.button.setText("Add Requirement")
+        self.requirements_table.model.edited.connect(self._on_edited)
+        self.requirements_table.view.selectionModel().currentRowChanged.connect(self._on_requirement_picked)
+        self.contributors_table = EditableTable(
+            "Contributors", "No contributor yet",
+            "Add each source of pointing error with its behaviour and spread, or the scenario's sensors.",
+            self.add_contributor_action,
+            (self.add_contributor_action, self.remove_contributor_action, self.add_sensors_action), icon_only=False)
+        self.contributors_table.empty.button.setText("Add Contributor")
+        self.contributors_table.empty.add_action("Add Scenario Sensors").clicked.connect(
+            self.add_sensors_action.trigger)
+        self.contributors_table.model.edited.connect(self._on_edited)
+        for table in (self.requirements_table, self.contributors_table):
+            table.view.horizontalHeader().setResizeContentsPrecision(_POINTING_SIZED_ROWS)
+
+        results = QWidget()
+        results_layout = QVBoxLayout(results)
+        results_layout.setContentsMargins(0, 0, 0, 0)
+        results_layout.setSpacing(SPACE["xs"])
+        results_layout.addWidget(set_role(QLabel("Result per requirement"), role="heading"))
+        self.results_table = DataTable("No requirement: add one above.", "Add Requirement")
+        self.results_table.action_requested.connect(self.add_requirement_action.trigger)
+        self.results_table.view.setAccessibleName("Pointing budget per requirement")
+        self.results_table.set_fit_width()
+        self.results_table.set_single_pick()
+        self.results_table.row_chosen.connect(self._on_result_chosen)
+        results_layout.addWidget(self.results_table, 3)
+        self.terms_label = set_role(QLabel("Contributors that enter it"), role="heading")
+        results_layout.addWidget(self.terms_label)
+        self.terms_table = DataTable("No contributor enters this requirement.", "Add Contributor")
+        self.terms_table.action_requested.connect(self.add_contributor_action.trigger)
+        self.terms_table.view.setAccessibleName("Contributors that enter the requirement")
+        self.terms_table.set_fit_width()
+        results_layout.addWidget(self.terms_table, 2)
+        self.notes = NoteList("note")
+        results_layout.addWidget(self.notes)
+
+        self.splitter = QSplitter(Qt.Orientation.Vertical)
+        self.splitter.setChildrenCollapsible(False)
+        for widget in (self.requirements_table, self.contributors_table, results):
+            self.splitter.addWidget(widget)
+        for index, stretch in enumerate((2, 3, 4)):
+            self.splitter.setStretchFactor(index, stretch)
+        self.splitter.setSizes([180, 240, 400])  # [px] the result the tallest, until the user drags a divider
+        layout.addWidget(self.splitter, 1)
+        self.rule_label = set_role(QLabel(
+            "Per index and axis the means add linearly; correlated groups add linearly, then root-sum-square with "
+            "the independent contributors. The value is |mean| + k std at the probability; the line of sight's is "
+            "|mean| + std max sqrt(-2 ln(1 - P)) from the two axes across it. Angles in arcsec."), role="caption")
+        self.rule_label.setWordWrap(True)
+        layout.addWidget(self.rule_label)
+        body.setMinimumHeight(880)  # [px] the three tables at a useful height; the page scrolls below it
+        self.stack.addWidget(_scroll(body))
+        self.body = body
+        self._show_state()
+
+    def _action(self, text: str, icon_name: str, handler) -> QAction:
+        action = QAction(icon(icon_name, "text.secondary"), text, self)
+        action.setToolTip(text)
+        action.triggered.connect(handler)
+        return action
+
+    def set_copy_action(self, action: QAction) -> None:
+        self.copy_action = action
+        self.top_row.addWidget(_text_button(action))
+
+    @property
+    def pointing(self):
+        return self.section.pointing if self.section is not None else None
+
+    # -- what is shown --------------------------------------------------------------------------------------------
+    def set_spacecraft(self, sc, scenario=None, invalid: bool = False) -> None:
+        """Show ``sc``'s pointing budget (``sc`` as edited, valid or not;
+        ``invalid``: the scenario does not validate, so no result is
+        computed). The page's own copy stays when it equals the
+        spacecraft's (the edit just made), so the tables keep their place."""
+        self._sc, self._scenario = sc, scenario
+        name = sc.name if sc is not None else ""
+        section = sc.budgets if sc is not None else None
+        if (name, section) != (self.spacecraft_name, self.section):
+            self.spacecraft_name = name
+            self.section = clone(section)
+            self._items = tuple(item.name for item in section.equipment) if section is not None else ()
+            self._modes = tuple(mode.name for mode in section.modes) if section is not None else ()
+            self._show_state()
+            if self.pointing is not None:
+                self._reload()
+        if (name, section, invalid) != self._computed_for:
+            self._computed_for = (name, clone(section), invalid)
+            self._invalid = invalid
+            self.budget = None
+            self._compute_timer.start()  # the result in the next event: each step stays well under 50 ms
+
+    def _show_state(self) -> None:
+        if not self.spacecraft_name:
+            self.empty_state.set_text("No spacecraft", "The scenario has no spacecraft. Add one in Scenario › "
+                                                       "Spacecraft, then give it a pointing budget here.")
+            self.stack.setCurrentWidget(self.empty_state)
+        elif self.pointing is None:
+            self.empty_state.set_text(
+                "No pointing budget", f"{self.spacecraft_name} has no pointing budget: no pointing requirement or "
+                "error contributor. Every number it holds has a source or is TBD.", "Add Pointing Budget")
+            self.stack.setCurrentWidget(self.empty_state)
+        else:
+            self.stack.setCurrentIndex(1)
+
+    def _reload(self) -> None:
+        pointing = self.pointing
+        self.requirements_table.set_rows(pointing.requirements, self._requirement_columns())
+        self.requirements_table.title_label.setText(f"Requirements ({len(pointing.requirements)})")
+        self.contributors_table.set_rows(pointing.contributors, self._contributor_columns())
+        self.contributors_table.title_label.setText(f"Contributors ({len(pointing.contributors)})")
+        self.line_of_sight_combo.blockSignals(True)
+        self.line_of_sight_combo.setCurrentIndex(max(self.line_of_sight_combo.findData(pointing.line_of_sight), 0))
+        self.line_of_sight_combo.blockSignals(False)
+        if pointing.requirements and self.requirements_table.current_row() is None:
+            self.requirements_table.select_row(0)
+
+    def _compute(self) -> None:
+        """The result from the page's section (nothing while the scenario
+        does not validate: its problems are in the Problems panel)."""
+        from ..engine.pointing_budget import pointing_budget
+
+        self.budget = None
+        if self.pointing is None:
+            return
+        if self._invalid:
+            self.results_table.clear("The scenario has problems. Fix them first: they are listed in the Problems "
+                                     "panel (Ctrl+J).")
+            self.terms_table.clear("")
+            self.notes.set_notes([])
+            self.status_badge.setText("Not computed")
+            set_badge(self.status_badge, WARNING)
+            return
+        self.results_table.set_empty_text("No requirement: add one above.")
+        self.terms_table.set_empty_text("No contributor enters this requirement.")
+        holder = copy.copy(self._sc)
+        holder.budgets = self.section
+        self.budget = budget = pointing_budget(holder)
+        self.title_label.setText(f"Pointing budget of {self.spacecraft_name}")
+        statuses = [result.status for result in budget.results]
+        if "not met" in statuses:
+            self.status_badge.setText(f"Not met: {statuses.count('not met')}")
+            set_badge(self.status_badge, DANGER)
+        elif budget.results and all(status == "met" for status in statuses):
+            self.status_badge.setText("All met")
+            set_badge(self.status_badge, SUCCESS)
+        else:
+            self.status_badge.setText("TBD values" if budget.results else "No requirement")
+            set_badge(self.status_badge, WARNING)
+        from ..engine.pointing_budget import RESULT_HEADER, result_cells
+
+        rows = []
+        for result in budget.results:
+            cells = result_cells(result)
+            tips = {10: "; ".join(result.notes)} if result.notes else {}
+            rows.append(Row(cells, tooltips=tips, plain=frozenset({0, 1, 2, 3, 10}),
+                            marks={10: _POINTING_MARKS[result.status]}))
+        picked = self.results_table.chosen_row()
+        self.results_table.set_table(tuple(_two_lines(h) for h in RESULT_HEADER), rows, numeric=range(4, 10),
+                                     stretch=0)
+        if rows:
+            self.results_table.view.selectRow(min(picked or 0, len(rows) - 1))  # its terms follow (row_chosen)
+        else:
+            self._show_terms()
+
+    def _on_result_chosen(self, row: int) -> None:
+        if row != self.requirements_table.current_row():
+            self.requirements_table.select_row(row)  # the requirement of the result picked
+        self._show_terms()
+
+    def _show_terms(self, *_args) -> None:
+        from ..engine.pointing_budget import number, rad_to_arcsec
+
+        budget = self.budget
+        row = self.results_table.chosen_row()
+        result = budget.results[row] if budget is not None and row is not None and row < len(budget.results) else None
+        self.terms_label.setText(f"Contributors that enter {result.requirement}" if result is not None
+                                 else "Contributors that enter it")
+        terms = result.terms if result is not None else ()
+        self.terms_table.set_table(
+            ("Contributor", "Axis", "Behaviour", "Group", "Share\n[-]", "Mean\n[arcsec]", "Std\n[arcsec]", "Rule"),
+            [Row((t.contributor, t.axis, t.behaviour, t.group, number(t.share), number(rad_to_arcsec(t.mean_rad)),
+                  number(rad_to_arcsec(t.std_rad)), t.rule), plain=frozenset({0, 1, 2, 3, 7})) for t in terms],
+            numeric=range(4, 7), stretch=7)
+        self.notes.set_notes(result.notes if result is not None else ())
+
+    def _on_requirement_picked(self, current, _previous=None) -> None:
+        row = current.row() if current.isValid() else None
+        if row is not None and self.budget is not None and row < self.results_table.row_count() \
+                and row != self.results_table.chosen_row():
+            self.results_table.view.selectRow(row)  # the result of the requirement picked
+
+    # -- the columns ----------------------------------------------------------------------------------------------
+    def _requirement_columns(self) -> list[Column]:
+        from ..schema.budgets import (POINTING_INDICES, POINTING_INTERPRETATIONS, POINTING_KINDS,
+                                      POINTING_REQUIREMENT_AXES)
+
+        def put_number(key):
+            def put(requirement, number):
+                value = with_value(getattr(requirement, key), number)
+                if key in ("limit_arcsec", "probability"):  # required: an empty cell is a placeholder
+                    value = value or SourcedValue(None, _NEW_SOURCE)
+                setattr(requirement, key, value)
+            return put
+
+        def put_source(key):
+            def put(requirement, source):
+                value = with_source(getattr(requirement, key), source)
+                if key in ("limit_arcsec", "probability"):
+                    value = value or SourcedValue(None, "")
+                setattr(requirement, key, value)
+            return put
+
+        def times_source(requirement):
+            values = [v for v in (requirement.window_s, requirement.stability_s) if v is not None]
+            return values[0].source if values else ""
+
+        def put_times_source(requirement, source):
+            for key in ("window_s", "stability_s"):
+                if getattr(requirement, key) is not None:
+                    setattr(requirement, key, with_source(getattr(requirement, key), source))
+
+        def number_of(key):
+            return lambda r: getattr(r, key).value if getattr(r, key) is not None else None
+
+        return [
+            Column("Name", lambda r: r.name, lambda r, v: setattr(r, "name", v), tip="Unique among the requirements"),
+            Column("Index", lambda r: r.index, lambda r, v: setattr(r, "index", v), "choice",
+                   lambda _r: list(POINTING_INDICES),
+                   tip="absolute: at any instant; mean: over the window; relative: about the window's mean; drift "
+                       "and reproducibility: the change of the window mean between two windows"),
+            Column("Kind", lambda r: r.kind, lambda r, v: setattr(r, "kind", v), "choice",
+                   lambda _r: list(POINTING_KINDS), tip="performance: where it points; knowledge: what it believes"),
+            Column("Axis", lambda r: r.axis, lambda r, v: setattr(r, "axis", v), "choice",
+                   lambda _r: list(POINTING_REQUIREMENT_AXES),
+                   display=lambda r: "line of sight" if r.axis == "line_of_sight" else r.axis,
+                   tip="A body axis, or the line of sight (a half-cone from the two axes across it)"),
+            Column("Limit [arcsec]", number_of("limit_arcsec"), put_number("limit_arcsec"), "number",
+                   placeholder=lambda r: r.limit_arcsec.placeholder, heading="Limit\n[arcsec]",
+                   tip="The largest error allowed, above 0"),
+            Column("Limit source", lambda r: r.limit_arcsec.source, put_source("limit_arcsec"),
+                   heading="Limit\nsource", tip='Where the limit comes from; "TBD" marks a placeholder'),
+            Column("Probability [-]", number_of("probability"), put_number("probability"), "number",
+                   placeholder=lambda r: r.probability.placeholder, heading="Probability\n[-]",
+                   tip="The probability that the error stays within the limit, in (0, 1); no default"),
+            Column("Probability source", lambda r: r.probability.source, put_source("probability"),
+                   heading="Probability\nsource", tip="Where the probability comes from"),
+            Column("Interpretation", lambda r: r.interpretation, lambda r, v: setattr(r, "interpretation", v),
+                   "choice", lambda _r: list(POINTING_INTERPRETATIONS),
+                   tip="Over what the probability holds: time (temporal), spacecraft and conditions (ensemble) or "
+                       "both (mixed). Recorded; the sum is the same for each"),
+            Column("Window [s]", number_of("window_s"), put_number("window_s"), "number",
+                   placeholder=lambda r: is_placeholder(r.window_s), empty="none", heading="Window\n[s]",
+                   tip="The observation period of a mean, relative, drift or reproducibility index; a periodic "
+                       "contributor needs it"),
+            Column("Stability [s]", number_of("stability_s"), put_number("stability_s"), "number",
+                   placeholder=lambda r: is_placeholder(r.stability_s), empty="none", heading="Stability\n[s]",
+                   tip="The shorter window of a relative index, at most the window; empty: the window"),
+            Column("Times source", times_source, put_times_source, heading="Times\nsource",
+                   tip="Where the window and the stability time come from"),
+            Column("Modes", lambda r: ", ".join(r.modes), self._put_modes,
+                   tip=f"The system modes it applies to, separated by commas ({', '.join(self._modes) or 'none yet'})"),
+        ]
+
+    @staticmethod
+    def _put_modes(requirement, text: str) -> None:
+        requirement.modes = [name.strip() for name in text.split(",") if name.strip()]
+
+    def _contributor_columns(self) -> list[Column]:
+        from ..engine.pointing_budget import RULES
+        from ..schema.budgets import (POINTING_AXES, POINTING_BEHAVIOURS, POINTING_CONTRIBUTOR_KINDS,
+                                      POINTING_DISTRIBUTIONS)
+
+        def spread(axis):
+            def get(c):
+                value = c.spread_arcsec.get(axis)
+                return value.value if value is not None else None
+
+            def put(c, number):
+                values = dict(c.spread_arcsec)
+                if number is None:
+                    if axis in values:
+                        values[axis] = SourcedValue(None, values[axis].source or _NEW_SOURCE)  # a placeholder
+                else:
+                    values[axis] = SourcedValue(number, values[axis].source) if axis in values \
+                        else _new_value(c, number)
+                c.spread_arcsec = values
+
+            return Column(f"Spread {axis} [arcsec]", get, put, "number",
+                          placeholder=lambda c: is_placeholder(c.spread_arcsec.get(axis)), empty="none",
+                          heading=f"Spread {axis}\n[arcsec]",
+                          tip=f"About {axis}: the 1-sigma (gaussian), half-width (uniform) or amplitude (sinusoidal); "
+                              "none: it does not act about this axis")
+
+        def mean(axis):
+            def get(c):
+                value = c.mean_arcsec.get(axis)
+                return value.value if value is not None else None
+
+            def put(c, number):
+                values = dict(c.mean_arcsec)
+                if number is None:
+                    values.pop(axis, None)
+                else:
+                    values[axis] = SourcedValue(number, values[axis].source) if axis in values \
+                        else _new_value(c, number)
+                c.mean_arcsec = values
+
+            return Column(f"Mean {axis} [arcsec]", get, put, "number",
+                          placeholder=lambda c: is_placeholder(c.mean_arcsec.get(axis)), empty="none",
+                          heading=f"Mean {axis}\n[arcsec]", tip=f"About {axis}: the constant part, any sign; none: no mean")
+
+        def put_period(c, number):
+            if number is None:
+                c.period_s = SourcedValue(None, c.period_s.source if c.period_s else _NEW_SOURCE) \
+                    if c.behaviour == "periodic" else None
+            else:
+                c.period_s = SourcedValue(number, c.period_s.source) if c.period_s is not None \
+                    else _new_value(c, number)
+
+        def put_behaviour(c, behaviour):
+            c.behaviour = behaviour
+            if behaviour == "periodic" and c.period_s is None:
+                c.period_s = SourcedValue(None, _NEW_SOURCE)  # needed: a placeholder until given
+
+        def put_source(c, source):
+            c.spread_arcsec = {axis: SourcedValue(v.value, source) for axis, v in c.spread_arcsec.items()}
+            c.mean_arcsec = {axis: SourcedValue(v.value, source) for axis, v in c.mean_arcsec.items()}
+            if c.period_s is not None:
+                c.period_s = SourcedValue(c.period_s.value, source)
+
+        columns = [
+            Column("Name", lambda c: c.name, self._rename_contributor, tip="Unique among the contributors"),
+            Column("Kind", lambda c: c.kind, lambda c, v: setattr(c, "kind", v), "choice",
+                   lambda _c: list(POINTING_CONTRIBUTOR_KINDS),
+                   tip="The requirements it enters: performance, knowledge or both"),
+            Column("Behaviour", lambda c: c.behaviour, put_behaviour, "choice", lambda _c: list(POINTING_BEHAVIOURS),
+                   tip="Its time behaviour: it decides the indices it enters (the Enters column)"),
+            Column("Distribution", lambda c: c.distribution, lambda c, v: setattr(c, "distribution", v), "choice",
+                   lambda _c: list(POINTING_DISTRIBUTIONS), heading="Distri-\nbution",
+                   tip="What the spread is: a 1-sigma (gaussian), a half-width (uniform) or an amplitude (sinusoidal)"),
+        ]
+        columns += [spread(axis) for axis in POINTING_AXES] + [mean(axis) for axis in POINTING_AXES]
+        columns += [
+            Column("Period [s]", lambda c: c.period_s.value if c.period_s is not None else None, put_period, "number",
+                   placeholder=lambda c: is_placeholder(c.period_s), empty="none", heading="Period\n[s]",
+                   tip="The period of a periodic contributor (needed for it)"),
+            Column("Source", contributor_source, put_source,
+                   display=lambda c: contributor_source(c) or ("several" if _axis_values(c) else ""),
+                   tip='Where its values come from (an edit sets every value\'s source); "TBD" marks placeholders'),
+            Column("Group", lambda c: c.group, lambda c, v: setattr(c, "group", v),
+                   tip="Contributors of one group are correlated: they add linearly; empty: independent"),
+            Column("Equipment", lambda c: c.equipment, lambda c, v: setattr(c, "equipment", v), "choice",
+                   lambda _c: [""] + list(self._items), empty="(other)",
+                   tip="The item of the equipment list it comes from"),
+            Column("Enters", lambda c: RULES[c.behaviour], tip="Which indices it enters, by its behaviour"),
+        ]
+        return columns
+
+    def _rename_contributor(self, contributor, name: str) -> None:
+        contributor.name = name
+
+    # -- edits ------------------------------------------------------------------------------------------------------
+    def _commit(self) -> None:
+        if self.section is not None:
+            self.edited.emit(clone(self.section))
+
+    def _on_edited(self) -> None:
+        self._commit()
+
+    def _on_line_of_sight(self, *_args) -> None:
+        if self.pointing is None:
+            return
+        self.pointing.line_of_sight = self.line_of_sight_combo.currentData() or ""
+        self._commit()
+
+    def add_pointing(self) -> None:
+        """Add Pointing Budget: an empty pointing budget on the spacecraft
+        shown (and a budgets section, without any other number, when it has
+        none)."""
+        from ..schema.budgets import PointingConfig
+
+        if not self.spacecraft_name or self.pointing is not None:
+            return
+        self.section = clone(self.section) if self.section is not None else BudgetsConfig()
+        self.section.pointing = PointingConfig()
+        self._show_state()
+        self._reload()
+        self._commit()
+        show_toast(self.window(), f"Added a pointing budget to {self.spacecraft_name}.")
+
+    def add_requirement(self) -> None:
+        from ..schema.budgets import PointingRequirementConfig
+
+        pointing = self.pointing
+        if pointing is None:
+            return
+        name = unique_name("requirement", [r.name for r in pointing.requirements])
+        pointing.requirements.append(PointingRequirementConfig(
+            name, SourcedValue(None, _NEW_SOURCE), SourcedValue(None, _NEW_SOURCE)))  # no default probability (PE-5)
+        self._reload()
+        self.requirements_table.select_row(len(pointing.requirements) - 1)
+        self.requirements_table.view.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        self._commit()
+
+    def remove_requirement(self) -> None:
+        row = self.requirements_table.current_row()
+        pointing = self.pointing
+        if pointing is None or row is None or row >= len(pointing.requirements):
+            return
+        removed = pointing.requirements.pop(row)
+        self._reload()
+        self._commit()
+        show_toast(self.window(), f"Removed {removed.name}. Undo: Ctrl+Z.")
+
+    def add_contributor(self) -> None:
+        from ..schema.budgets import POINTING_AXES, PointingContributorConfig
+
+        pointing = self.pointing
+        if pointing is None:
+            return
+        name = unique_name("contributor", [c.name for c in pointing.contributors])
+        pointing.contributors.append(PointingContributorConfig(
+            name, spread_arcsec={axis: SourcedValue(None, _NEW_SOURCE) for axis in POINTING_AXES}))
+        self._reload()
+        self.contributors_table.select_row(len(pointing.contributors) - 1)
+        self.contributors_table.view.setFocus(Qt.FocusReason.ShortcutFocusReason)
+        self._commit()
+
+    def remove_contributor(self) -> None:
+        row = self.contributors_table.current_row()
+        pointing = self.pointing
+        if pointing is None or row is None or row >= len(pointing.contributors):
+            return
+        removed = pointing.contributors.pop(row)
+        self._reload()
+        self._commit()
+        show_toast(self.window(), f"Removed {removed.name}. Undo: Ctrl+Z.")
+
+    def add_sensors(self) -> None:
+        """Add Scenario Sensors: each star tracker, gyroscope and sun sensor
+        of the spacecraft not in the list yet, as a knowledge contributor
+        with its noise and the noise's source (PE-15)."""
+        from ..engine.pointing_budget import sensor_contributors
+
+        pointing = self.pointing
+        if pointing is None or self._sc is None:
+            return
+        added = sensor_contributors(self._sc, pointing)
+        if not added:
+            show_toast(self.window(), f"{self.spacecraft_name} has no star tracker, gyroscope or sun sensor that "
+                                      "is not in the list yet.", kind="info")
+            return
+        pointing.contributors.extend(added)
+        self._reload()
+        self._commit()
+        show_toast(self.window(), f"Added {len(added)} sensor contributor(s): "
+                                  + ", ".join(c.name for c in added) + ".")
+
+    # -- copy -------------------------------------------------------------------------------------------------------
+    def csv_text(self) -> str:
+        from ..engine.pointing_budget import csv_rows
+
+        if self.budget is None:
+            return ""
+        return _csv_text(csv_rows(self.budget), self._scenario)
+
+
+def _two_lines(header: str) -> str:
+    """A heading with its unit on a second line ("Value\\n[arcsec]")."""
+    return header.replace(" [", "\n[", 1)
+
+
 # -- the area -------------------------------------------------------------------------------------------------------
 
 class BudgetsViews(TabWidget):
     """The Budgets area's tabs and the spacecraft picker of its header.
     :attr:`budgets_edited` carries (spacecraft name, section) after an edit
-    on the Equipment page; :attr:`spacecraft_changed` the spacecraft
+    on the Equipment or the Pointing page; :attr:`spacecraft_changed` the spacecraft
     picked."""
 
     budgets_edited = Signal(str, object)
@@ -1443,14 +2043,17 @@ class BudgetsViews(TabWidget):
         self.equipment_page.section_added.connect(self.add_section)
         self.power_page = PowerPage()
         self.mass_page = MassPage()
+        self.pointing_page = PointingPage()
+        self.pointing_page.edited.connect(self._on_edited)
         self.addTab(self.equipment_page, "Equipment")
         self.addTab(self.power_page, "Power")
         self.addTab(self.mass_page, "Mass")
+        self.addTab(self.pointing_page, "Pointing")  # after Mass (the owner, 2026-11-24; PE-1)
         # Copy as CSV: the table of the page shown (the window's Budgets › Copy Budget as CSV).
         self.copy_action = QAction(icon("file-output", "text.secondary"), "Copy as CSV", self)
         self.copy_action.setShortcut(QKeySequence("Ctrl+Shift+C"))  # the window's (Budgets › Copy as CSV)
         self.copy_action.triggered.connect(self.copy_csv)
-        for page in (self.equipment_page, self.power_page, self.mass_page):
+        for page in (self.equipment_page, self.power_page, self.mass_page, self.pointing_page):
             page.set_copy_action(self.copy_action)
         self.propellant_widget = None  # BudgetWidget, given by add_propellant
         connect_while_alive(self.currentChanged, self._apply_pending)  # sent when a page is deleted (K-44)
@@ -1524,7 +2127,8 @@ class BudgetsViews(TabWidget):
         invalid = self._scenario is None and self._draft is not None and draft_sc is not None
         self._pending = {self.equipment_page: (draft_sc, self._scenario),
                          self.power_page: (valid_sc, self._scenario, invalid),
-                         self.mass_page: (valid_sc, self._scenario, invalid)}
+                         self.mass_page: (valid_sc, self._scenario, invalid),
+                         self.pointing_page: (draft_sc, self._scenario, invalid)}
         self._apply_pending()
 
     def refresh_if_stale(self, *_args) -> None:
@@ -1559,7 +2163,7 @@ class BudgetsViews(TabWidget):
     # -- copy -------------------------------------------------------------------------------------------------------
     def _current_csv_page(self):
         page = self.currentWidget()
-        return page if page in (self.equipment_page, self.power_page, self.mass_page) else None
+        return page if page in (self.equipment_page, self.power_page, self.mass_page, self.pointing_page) else None
 
     def copy_csv(self) -> str:
         """The table of the page shown, as CSV, to the clipboard (Propellant:

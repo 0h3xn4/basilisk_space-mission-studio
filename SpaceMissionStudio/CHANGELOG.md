@@ -10,6 +10,28 @@ fixes bugs.
 
 ## Unreleased
 
+### Added
+
+- **A pointing error budget.** The Budgets area has a new **Pointing**
+  tab, after Mass. You list your pointing requirements (which error
+  index, about which axis or the line of sight, the limit in arcsec and
+  the probability) and the sources of error (biases, noise, periodic
+  terms, drifts, transients), each with its spread, its mean and where
+  the numbers come from. The tab adds them up per index and axis and
+  shows, for each requirement, the value at its probability, the margin
+  and whether it is met, with the contributors behind it. **Add Scenario
+  Sensors** brings in your star trackers, gyroscopes and sun sensors as
+  knowledge errors, with the catalog or scenario source of their noise.
+  Nothing is guessed: a number you have not given yet reads "TBD", and
+  so does every result that needs it. A new requirement has no
+  probability until you set one. On the command line,
+  `spacemissionstudio budgets scenario.json --pointing` prints the same
+  budget (`--csv` for CSV), and `api.pointing_budget()` returns it. The
+  budgets section's own version is now 2: older files open as before,
+  but SpaceMissionStudio 2.15.0 cannot open a file saved with this
+  version. A budgets section with no powered equipment no longer reports
+  missing power margins and losses.
+
 ### Fixed
 
 - **Cancelling a Monte Carlo batch that uses several processes no longer

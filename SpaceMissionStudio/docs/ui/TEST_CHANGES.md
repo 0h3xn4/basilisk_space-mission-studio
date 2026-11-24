@@ -2813,3 +2813,28 @@ plain 50 ms limit and reaches the views as before. Added:
   `install()` raises the GUI thread's priority (on Linux its nice value
   where allowed), a worker started from it takes the same, and
   `uninstall()` gives back the thread's own.
+
+## The pointing error budget, scope B (2026-11-24)
+
+The budgets section's own version steps from 1 to 2 (PE-17), and the
+Budgets area gains a Pointing tab after Mass (PE-1, the owner's answer
+5). Three existing tests and one fixture follow; no assertion is
+weakened:
+
+| Test or fixture | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_budgets_area.py::test_the_budgets_area_follows_results_with_its_four_pages` | tabs `Equipment, Power, Mass, Propellant` | tabs `Equipment, Power, Mass, Pointing, Propellant` | the owner's place for the new tab; the test still checks the whole list and its order |
+| `tests/test_budgets_schema.py::test_a_minimal_section_is_only_its_version` | `{"version": 1}` saves as itself | `{"version": 2}` saves as itself | the current version; a version 1 section is now migrated (tested in `tests/test_pointing_budget_schema.py`) |
+| `tests/test_budgets_schema.py::test_each_rule_refuses_bad_input_and_names_it` (the version case) | version 2 refused | version 3 refused | 2 is now the version read; the next one is refused by name, as before |
+| `tests/budgets_fixtures.py` (`SECTION`) | `"version": 1` | `"version": 2` | the fixture is a current section, so its round trip stays byte for byte; `tests/data/budgets/sbs_microsat_250kg_clean.json` stays at version 1 and is now also a migration case |
+
+New: `tests/test_pointing_budget.py` (the selection table cell by cell
+with hand cases, the sum, the probability factor and the margin, the
+line of sight, the window shares against a direct search, "TBD", the
+unit conversion, the scenario's sensors, the command line and the API),
+`tests/test_pointing_budget_schema.py` (round trip, the migration, each
+validation rule, a section with only a pointing budget) and
+`tests/gui/test_budgets_pointing.py` (the tab, its empty states, edits
+into the scenario with save and undo, the result's status icons and
+words, Add Scenario Sensors, Copy as CSV, names, both themes, 1280 x 720
+and the 50 ms limit). Each fails without the change.
