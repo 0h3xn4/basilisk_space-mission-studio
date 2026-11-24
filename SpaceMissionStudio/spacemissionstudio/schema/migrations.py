@@ -132,6 +132,17 @@ def _migrate_6_to_7(data: dict) -> dict:
     return data
 
 
+def _migrate_7_to_8(data: dict) -> dict:
+    """v7 -> v8: a Monte Carlo dispersion can be ``density_scale``, a scale
+    on the atmospheric density that drag reads, with an empty
+    ``spacecraft`` (Monte Carlo plan C1, decision MC-37). The quantity is
+    new, so a version 7 file has none, and nothing else changes: the step
+    only sets the version, as the steps to 6 and 7 did. Version 8 marks the
+    files that 2.15.0 and earlier cannot read."""
+    data["schema_version"] = 8
+    return data
+
+
 #: Fields this version no longer has, dropped on load whatever the file's
 #: version (step "retired fields"): a spacecraft's and its 3D model's.
 #: Files without them also open in versions that still had them (they had
@@ -173,6 +184,7 @@ MIGRATIONS: dict[int, Callable[[dict], dict]] = {
     4: _migrate_4_to_5,
     5: _migrate_5_to_6,
     6: _migrate_6_to_7,
+    7: _migrate_7_to_8,
 }
 
 

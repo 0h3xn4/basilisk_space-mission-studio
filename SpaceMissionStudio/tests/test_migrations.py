@@ -312,7 +312,7 @@ def test_the_step_from_6_to_7_only_sets_the_version(tmp_path):
         assert MIGRATIONS[6](json.loads(json.dumps(data)))["schema_version"] == 7
         changes: list = []
         migrated = migrate(json.loads(json.dumps(data)), changes)
-        assert changes == [] and migrated["schema_version"] == 7 == CURRENT_SCHEMA_VERSION
+        assert changes == [] and migrated["schema_version"] == CURRENT_SCHEMA_VERSION  # and the steps after it
         assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
             {k: v for k, v in data.items() if k != "schema_version"}
         path = tmp_path / f"v6_{name}"
@@ -336,3 +336,49 @@ def test_a_version_7_file_is_refused_by_a_build_that_reads_version_6(monkeypatch
     with pytest.raises(ScenarioValidationError, match="schema_version 7, but this build of SpaceMissionStudio only "
                                                       "understands up to version 6"):
         migrations.migrate(data)
+
+
+def test_the_step_from_7_to_8_only_sets_the_version(tmp_path):
+    """Version 8 adds the Monte Carlo dispersion ``density_scale``, a scale
+    on the atmospheric density (decision MC-37). A version 7 file opens as
+    it was: the step sets the version and changes nothing else, so the
+    file's record lists no change and its scenario is the template's."""
+    from spacemissionstudio import output_provenance
+
+    templates = _TESTS.parent / "spacemissionstudio" / "scenarios" / "templates"
+    for name in ("25_monte_carlo_orbit_and_drag_dispersions.json",
+                 "37_monte_carlo_requirements_and_sensitivity.json"):
+        template = templates / name
+        data = json.loads(template.read_text(encoding="utf-8"))
+        data["schema_version"] = 7
+        assert MIGRATIONS[7](json.loads(json.dumps(data)))["schema_version"] == 8
+        changes: list = []
+        migrated = migrate(json.loads(json.dumps(data)), changes)
+        assert changes == [] and migrated["schema_version"] == 8 == CURRENT_SCHEMA_VERSION
+        assert {k: v for k, v in migrated.items() if k != "schema_version"} == \
+            {k: v for k, v in data.items() if k != "schema_version"}
+        path = tmp_path / f"v7_{name}"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        scenario = load_scenario(path)
+        assert scenario.to_dict() == load_scenario(template).to_dict()
+        assert all(d.quantity != "density_scale" for d in scenario.monte_carlo.dispersions)
+        assert output_provenance.scenario_file_record(path)["scenario_file_migrations"] == []
+
+
+def test_a_version_8_file_is_refused_by_a_build_that_reads_version_7(monkeypatch):
+    """A file at version 8 does not open in a build whose newest version is
+    7 (2.15.0 and earlier): the message names both versions. And such a
+    build, given the density scale under version 7, refuses the quantity it
+    does not know, by name."""
+    from spacemissionstudio.schema import migrations
+    from spacemissionstudio.schema import scenario as scenario_module
+    from spacemissionstudio.schema.scenario import DispersionConfig
+
+    monkeypatch.setattr(migrations, "CURRENT_SCHEMA_VERSION", 7)
+    with pytest.raises(ScenarioValidationError, match="schema_version 8, but this build of SpaceMissionStudio only "
+                                                      "understands up to version 7"):
+        migrations.migrate({"schema_version": 8})
+    monkeypatch.setattr(scenario_module, "DISPERSION_QUANTITIES",
+                        tuple(q for q in scenario_module.DISPERSION_QUANTITIES if q != "density_scale"))
+    with pytest.raises(ScenarioValidationError, match="dispersion.quantity 'density_scale' must be one of"):
+        DispersionConfig(spacecraft="", quantity="density_scale", kind="uniform", bounds=[0.8, 1.2]).validate()

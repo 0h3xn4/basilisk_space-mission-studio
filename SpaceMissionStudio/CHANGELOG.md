@@ -10,6 +10,25 @@ fixes bugs.
 
 ## Unreleased
 
+### Added
+
+- **A Monte Carlo batch can now vary the atmospheric density.** Pick
+  `density_scale` in Scenario › Monte Carlo › Dispersions: each run draws
+  one scale (uniform or normal) and the drag of every spacecraft reads
+  the atmosphere model's density times that scale, for the whole run. A
+  scale of 1 is the model's own density; 0.7 to 1.3 is a typical spread.
+  It works with all three atmosphere models (NRLMSISE-00, exponential and
+  tabular) and with faceted spacecraft too, which could not vary their
+  drag before. The scale is the atmosphere's, so it names no spacecraft.
+  The drawn scale shows in the Runs table, its CSV, the statistics, the
+  sensitivity and the report like any other drawn value, so you can see
+  at once how much of the decay spread the density explains. A scenario
+  that could not use the scale (no spacecraft with drag, two scales, a
+  negative bound) is refused with the reason, rather than drawing a
+  number that changes nothing. Scenario files move to schema version 8;
+  every older file still opens, and 2.15.0 and earlier do not open a
+  version 8 file.
+
 ### Fixed
 
 - **Cancelling a Monte Carlo batch that uses several processes no longer

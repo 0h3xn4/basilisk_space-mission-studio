@@ -9,9 +9,10 @@ choices and the questions for the owner. **No code changed in this
 step.** The owner chooses the scope (section 7) before any code.
 
 - **Decisions:** `docs/DECISIONS.md`, section "Pointing error budget:
-  design (2026-11-23)", decisions PE-1 to PE-9. All are provisional until
-  the owner answers section 7.
-- **Backlog:** `BACKLOG.md`, `## Needs human`.
+  design (2026-11-23)", decisions PE-1 to PE-9. The owner answered
+  section 7 on 2026-11-24; the decisions are final.
+- **Backlog:** `BACKLOG.md`, `## Next release` (scope B) and `## Later`
+  (scope C).
 - **Base:** `develop` at `7a9a25f` (release 2.14.1).
 
 **Clean room.** The design uses only the public concepts of the ECSS
@@ -188,3 +189,13 @@ by hand as a number with its source.
    or only "the full amplitude enters every index it can"
    (conservative, simpler)?
 5. **Place:** a tab of the Budgets area (PE-1), or a page of its own?
+
+**The owner's answers (2026-11-24): "as per your recommendation".**
+1. Scope B first; C is its own item after it.
+2. No default probability level: a new requirement has "TBD" (PE-5).
+3. Per axis, and a line-of-sight (half-cone) value from two axes by a
+   stated rule, in the first step (PE-6).
+4. The window share rule for periodic contributors (PE-7).
+5. A tab of the Budgets area (PE-1).
+
+PE-1 to PE-9 are no longer provisional (`docs/DECISIONS.md`).

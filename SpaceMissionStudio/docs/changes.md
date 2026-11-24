@@ -17,6 +17,42 @@ case; and how it was checked.
 
 Newest first.
 
+## 2026-11-24: Scenario schema version 8 (decisions MC-37 and MC-38)
+
+**No computed number changes. The scenario hashes of the templates
+change.** The scenario file is now at schema version 8. Version 8 adds
+the Monte Carlo dispersion `density_scale`, a scale on the atmospheric
+density that drag reads, with an empty `spacecraft` (Monte Carlo plan
+item C1, `docs/developer/monte-carlo-plan.md` §6.1). The migration from
+7 to 8 sets the version and changes nothing else, as the steps to 6 and
+7 did.
+
+The 37 templates are saved at version 8. In each template file, only the
+line `"schema_version": 7` changed to `"schema_version": 8`. No template
+has a density scale. The version is part of the saved text and of the
+scenario's canonical JSON, so both hashes of each template in
+`tests/data/scenario_hashes.json` change (74 values). The file was
+recorded again with the computation of `tests/test_scenario_hashes.py`.
+
+| Template | Hash | Before (version 7) | After (version 8) |
+|---|---|---|---|
+| 01 two-body circular orbit | saved text SHA-256 | `2e5451d7e2df...` | `e9a45e2bec35...` |
+| 01 two-body circular orbit | scenario SHA-256 | `7011c393d4db...` | `6dd3aa840c2a...` |
+| 37 Monte Carlo requirements and sensitivity | saved text SHA-256 | `66ea1b8210c6...` | `366d89316ec8...` |
+| 37 Monte Carlo requirements and sensitivity | scenario SHA-256 | `6b2664e68eed...` | `48200bb3345a...` |
+
+How it was checked: for each of the 37 templates, the saved text at
+version 8 with the version set back to 7 gives the recorded version 7
+hash, and so does the canonical JSON. So the version is the only
+difference. The 37 golden output files (`tests/golden/`) do not change:
+they hold no schema version, a run records no migration for a template,
+and a batch without a density scale builds its runs as before (the
+Monte Carlo golden outputs of templates 09, 25 and 37 are
+byte-identical).
+
+A file saved at version 8 does not open in SpaceMissionStudio 2.15.0 or
+earlier. Every older file still opens.
+
 ## 2026-11-23: Scenario schema version 7 (decisions MC-20 and MC-22)
 
 **No computed number changes. The scenario hashes of the templates

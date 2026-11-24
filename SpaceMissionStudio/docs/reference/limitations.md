@@ -106,8 +106,12 @@ Each item was checked against Basilisk's own source.
   you. Since 2.0.0 the attitude form shows the gains applied, not the
   unscaled reference values.
 * **Monte Carlo dispersions** cover dry mass, starting attitude, orbital
-  elements, inertia, body rate and the drag and SRP coefficients (User
-  Manual section 10). Raw Cartesian position/velocity dispersion is
+  elements, inertia, body rate, the drag and SRP coefficients and a scale
+  on the atmospheric density (User Manual section 10). The density scale
+  is one number per run, constant for the whole run and the same for
+  every spacecraft with drag: a density model's error that changes with
+  time, place or solar activity is not modelled, and F10.7 and Ap are not
+  dispersed (decision MC-37). Raw Cartesian position/velocity dispersion is
   deliberately NOT offered: Basilisk's Cartesian dispersion classes
   replace each component with an absolute random value, not a
   perturbation around the nominal orbit; the orbit varies as orbital

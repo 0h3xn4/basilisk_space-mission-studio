@@ -21497,6 +21497,77 @@ both fail without the fix, and both passed on the Windows runner (run
 45314703069). The move test is unchanged. The full suite
 passed locally except the known `test_a_reported_path_is_not_clipped_in_the_status_bar`.
 
+## Monte Carlo phase C, item 1: the atmospheric density dispersion (2026-11-24)
+
+On branch `feature/monte-carlo-density` from `develop` at `07f28ab`.
+The owner answered Q6 of `docs/developer/monte-carlo-plan.md`: the order
+of the phase C dispersions is density, maneuver execution errors,
+thrusters, reaction wheels, then propellant load and centre of mass,
+each with a spike first (MC-36). This is the first. The work ran
+without questions; `docs/DECISIONS.md` records each choice as MC-37 to
+MC-40. Commits name SRS-F-13.
+
+**The spike** (plan §6.1). The app builds one of three Basilisk
+atmosphere models for every spacecraft with drag: NRLMSISE-00 (fed by
+the real space-weather files), the exponential model and a published
+table. Each writes an `AtmoPropsMsg` per spacecraft, which the sphere
+or the facet drag reads. Basilisk 2.12.0 has no density scale that all
+three take: `MsisAtmosphere` has no density parameter, and the drag
+effector's `densityCorrection` is a state of the dynamics, not a
+parameter. A scale on F10.7 and Ap would act on NRLMSISE-00 only, would
+not scale the density by a fixed factor, and would make synthetic space
+weather. The drag coefficient would be a proxy, not the density. So the
+app now puts its own small module, `engine/density_scale.py`, between
+the model and the drag: it passes the model's message on with the
+density times the scale. It is exact for every model and both drag
+effectors and needs no change to Basilisk.
+
+**What was built.** The dispersion quantity `density_scale` (uniform or
+normal; no unit; 1 is the model's density) belongs to the atmosphere, so
+its `spacecraft` is empty, and one draw per run scales the density for
+every spacecraft with drag. The service builds the module only for a
+Monte Carlo run whose scenario has the quantity; every other run, and
+every golden file, is as before. A scenario that cannot use the scale
+(no spacecraft with drag, not the Earth, two scales, a bound below 0, a
+mean of 0 or below) is refused with the reason. A normal draw is held at
+0 or above. The drawn value is `atmospheric density scale [-]` in the
+summary, the Runs table, its CSV, the statistics, the sensitivity and
+the report. The form hides the spacecraft for it and starts a new scale
+at 1.
+
+**A Basilisk trap found.** `UniformDispersion.generate` divides by the
+half-width of the bounds, so equal bounds fail the run with a
+`ZeroDivisionError`. The form starts a new dispersion at equal bounds.
+The density scale has its own subclass that gives the value and draws
+the same number from `random`. The dry mass and the two coefficients
+have the same trap (reproduced: dry mass uniform [150, 150] fails the
+run); `BACKLOG.md` "Later" has the item.
+
+**Schema 8.** The migration from 7 only sets the version. The 37
+templates change only on their `schema_version` line; the 74 hashes in
+`tests/data/scenario_hashes.json` were recorded again, and each template
+at version 8 with the version set back to 7 gives its recorded version 7
+hashes. `docs/changes.md` says why. Template 37 does not get the
+dispersion: its measured claims (MC-34) stay valid and no golden file
+changes.
+
+**Measured.** On template 25 at 400 km (NRLMSISE-00), over 0.05 day, the
+run at scale 2 is 18.36 m from the run without drag and the run at
+scale 1 is 9.18 m from it: a ratio of 2.00001. For each of the three
+models the density that drag reads is the model's times the scale, to
+the last bit. At scale 1 a run is identical to a run without the module.
+A 0.5-day run took about 0.06 s (8 %) more with the module.
+
+**Tests.** New: 8 tests in `tests/test_monte_carlo.py` (with the three
+models), 10 in `tests/test_scenario_schema.py` (with the parametrized
+cases), 2 in `tests/test_migrations.py` and 2 in
+`tests/gui/test_monte_carlo_editor.py`. Three tests pin the schema
+version; their pins moved to 8 (MC-40, `docs/ui/TEST_CHANGES.md`). The
+full suite, 4 workers: 5973 passed, 19 skipped, 1 failed: the known
+local-only `test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`.
+`ruff check` passes. The compliance generators change nothing on a
+second run, `check_drds.py` finds 0 problems, and pre-commit passes.
+
 ## Monte Carlo workers report through a relay (2026-11-24)
 
 **Found.** CI of PR #322 (the density dispersion), job "platforms
@@ -21533,3 +21604,20 @@ is dropped.
 
 **Checks.** Full local suite, generators twice, `check_drds.py`,
 pre-commit: see the PR.
+
+## The owner's answers on the pointing budget and K-40 (2026-11-24)
+
+The owner answered "as per your recommendation" to three open points.
+No code changed.
+
+- **Pointing error budget.** The design's section 7: scope B first, then
+  C as its own item; no default probability level; per axis and a
+  line-of-sight value in the first step; the window share rule for
+  periodic contributors; a tab of the Budgets area. PE-1 to PE-9 are
+  final. `BACKLOG.md`: the item moved from "Needs human" to "Next
+  release" as scope B; scope C is under "Later".
+- **K-40 trade-off.** Runs and studies keep the GUI thread's priority
+  ("above normal" on Windows). `docs/DECISIONS.md` records that the
+  owner kept it.
+- **Q9 of the Monte Carlo plan** (the density dispersion's meaning) is
+  recorded with the density dispersion itself (PR #322).

@@ -125,7 +125,18 @@ This is a requalification, described in
    from NumPy's freshly seeded state.
    `test_without_a_seed_the_creation_function_leaves_basilisks_seeding_alone`
    and `test_a_batch_seed_gives_other_draws_and_the_same_draws_again` fail
-   if that changes.
+   if that changes. The density scale (decision MC-37) relies on three
+   more points: the atmosphere models write `AtmoPropsMsg`
+   (`neutralDensity`, `localTemp`) and the sphere and facet drag read it
+   through `atmoDensInMsg`, so `engine.density_scale` can sit between
+   them; no model has its own density scale (if a new Basilisk adds one
+   to `AtmosphereBase`, use it and drop the module); and
+   `UniformDispersion.generate` draws `random.uniform(lo, hi)` once and
+   divides by the half-width (`engine.monte_carlo._UniformDensityScale`
+   repeats that draw for equal bounds).
+   `test_the_density_that_drag_reads_is_the_models_times_the_scale` and
+   `test_a_uniform_density_scale_with_equal_bounds_gives_that_scale` fail
+   if they change.
 
 ---
 

@@ -2,21 +2,61 @@
 
 ## Next release
 
+- A pointing error budget, scope B
+  (`docs/developer/pointing-error-budget-design.md`, sections 3 and 4;
+  `docs/DECISIONS.md`, "Pointing error budget: design", PE-1 to PE-9
+  and the owner's answers of 2026-11-24). A "Pointing" tab of the
+  Budgets area: requirements and contributors entered by hand, the
+  summation per index and axis, the margins, the budget report and the
+  CLI (option A), and a button that adds the scenario's sensor noises as
+  knowledge contributors with their catalog sources. Per axis and a
+  line-of-sight (half-cone) value by a stated rule; the window share
+  rule for periodic contributors; no default probability level ("TBD").
+  A `BUDGETS_VERSION` step with a migration. Clean room from the public
+  concepts of ECSS-E-ST-60-10C only; every number has a source or is
+  "TBD". About 22 hours.
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
 owner has answered the plan's open questions.
 
+- A pointing error budget, scope C: the absolute, relative and mean
+  performance errors measured from a run's attitude error series over
+  each requirement's windows, next to the budget's value (design
+  section 4; about 12 hours). After scope B. Scope D (over a Monte
+  Carlo batch) follows C.
+
 - Monte Carlo phase C: more dispersions and outcomes
   (`docs/developer/monte-carlo-plan.md` section 6; about 30 hours, each
-  item with a spike first). Maneuver execution errors, thruster and
-  reaction-wheel errors, propellant load, centre of mass and
-  atmospheric density; outcomes from any recorded series; convergence
-  and adding cases to a batch; percentile bands over time; other
-  sampling designs.
+  item with a spike first). In the owner's order (MC-36): maneuver
+  execution errors of the Mission Sequence's burns, thruster force and
+  misalignment, reaction-wheel friction and bias, propellant load and
+  centre of mass (the atmospheric density is done); then outcomes from
+  any recorded series; convergence and adding cases to a batch;
+  percentile bands over time; other sampling designs.
+- A uniform dispersion of the dry mass, the drag coefficient or the SRP
+  coefficient with equal bounds fails every run of the batch
+  (`ZeroDivisionError` in Basilisk 2.12.0's `UniformDispersion.generate`,
+  which divides by the half-width). The form starts a new dispersion at
+  [nominal, nominal], so an untouched new one crashes the batch. Found
+  while building the density scale, which has its own fix
+  (`engine.monte_carlo._UniformDensityScale`, MC-38); the same subclass
+  idea fits the other three. Reproduced on template 25 (0.001 day, one
+  run, dry mass uniform [150, 150]: run 0 failed).
 
 ## Done
 
+- Monte Carlo phase C, item 1: the atmospheric density dispersion, on
+  branch `feature/monte-carlo-density` (2026-11-24). The owner's order
+  of the phase C dispersions (Q6) is recorded as MC-36. A spike
+  (`docs/developer/monte-carlo-plan.md` §6.1) chose a scale on the
+  density that drag reads, between the atmosphere model and the drag, so
+  it works with the three atmosphere models and with facets. New
+  quantity `density_scale` (no spacecraft), scenario schema 8 with a
+  version-only migration, the form, the summary, the Runs table, its CSV
+  and the report. Decisions MC-37 to MC-40; the owner confirmed
+  MC-37's meaning on 2026-11-24 (Q9: no F10.7 and Ap dispersion).
 - Make the move of the 3D View into its own window, or back, take under
   50 ms of the GUI thread on the Windows runner, every time (SRelD K-40),
   on branch `fix/3d-view-move` (2026-11-24). Not the move's own work (3
@@ -89,17 +129,6 @@ owner has answered the plan's open questions.
   template 25: HISTORY.md, "Monte Carlo phase A, part 1".
 
 ## Needs human
-
-- A pointing error budget: the owner's choice of scope (the owner's
-  feedback, 2026-11-18). The design and its provisional decisions are on
-  `develop` at `39da9d7` (2026-11-23):
-  `docs/developer/pointing-error-budget-design.md` and
-  `docs/DECISIONS.md`, PE-1 to PE-9. Clean room from the public concepts
-  of ECSS-E-ST-60-10C; every number has a source or is "TBD"; no code.
-  Needs a human: answer the design's section 7 (scope A, B, C or D, with
-  B recommended; the default probability level; line of sight; periodic
-  contributors; the place in the app). Then the chosen scope can be a
-  "Next release" item.
 
 - The rest of SRelD K-44 (fix/k44-thread-crashes, 2026-11-20). The
   access violation in `_SpaceWeatherWarmUp` and the export test's

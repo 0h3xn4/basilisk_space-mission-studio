@@ -478,3 +478,62 @@ def test_the_starting_attitude_is_shown_in_degrees_and_saved_in_radians(qtbot):
     other = _DispersionEditorDialog(["sat-1"], item=mass)  # any other quantity: as typed
     qtbot.addWidget(other)
     assert other.bounds_lo_spin.value() == 90.0 and other.to_dataclass().bounds == [90.0, 110.0]
+
+
+# -- The atmospheric density scale (Monte Carlo plan C1, decision MC-37) -----------------------
+
+
+def test_the_density_scale_has_no_spacecraft_and_starts_at_the_models_own_density(qtbot):
+    """The density scale is the atmosphere's: the form hides the spacecraft
+    row, the dispersion keeps an empty spacecraft, and a scale the user picks
+    starts at 1 (the model's own density) with no spread, not at the fields
+    of the quantity shown before (a dry mass of 150 kg)."""
+    from spacemissionstudio.gui.monte_carlo_editor import _DispersionEditorDialog
+
+    dialog = _DispersionEditorDialog(["sat-1", "sat-2"])
+    qtbot.addWidget(dialog)
+    dialog.show()
+    dialog.quantity_combo.setCurrentText("dry_mass_kg")
+    dialog.start_at(150.0)
+    assert dialog.spacecraft_combo.isVisible()
+    dialog.quantity_combo.setCurrentText("density_scale")
+    assert not dialog.spacecraft_combo.isVisible()
+    assert not dialog._form.labelForField(dialog.spacecraft_combo).isVisible()
+    assert "atmospheric density" in dialog.units_label.text()
+    assert dialog.bounds_lo_spin.suffix() == dialog.std_spin.suffix() == ""  # a scale has no unit
+    dialog.kind_combo.setCurrentText("uniform")
+    config = dialog.to_dataclass()
+    assert (config.spacecraft, config.quantity, config.bounds, config.mean) == ("", "density_scale", [1.0, 1.0], None)
+    dialog.bounds_lo_spin.setValue(0.6)
+    dialog.bounds_hi_spin.setValue(1.6)
+    assert dialog.to_dataclass().bounds == [0.6, 1.6]
+    dialog.kind_combo.setCurrentText("normal")
+    dialog.std_spin.setValue(0.2)
+    config = dialog.to_dataclass()
+    assert (config.kind, config.mean, config.std_deviation, config.bounds) == ("normal", 1.0, 0.2, None)
+    dialog.quantity_combo.setCurrentText("drag_coeff")
+    assert dialog.spacecraft_combo.isVisible() and dialog.to_dataclass().spacecraft == "sat-1"
+
+
+def test_a_saved_density_scale_shows_as_saved_and_a_negative_bound_is_refused(qtbot):
+    """A saved density scale opens with its numbers and no "(not found in
+    this scenario)" spacecraft entry; it round-trips through the list as
+    "atmosphere: density_scale"; a bound below 0 is refused by the form."""
+    from spacemissionstudio.gui.monte_carlo_editor import DispersionListWidget, _DispersionEditorDialog
+    from spacemissionstudio.schema.scenario import DispersionConfig
+
+    saved = DispersionConfig(spacecraft="", quantity="density_scale", kind="normal", mean=1.1, std_deviation=0.15)
+    dialog = _DispersionEditorDialog(["sat-1"], item=saved)
+    qtbot.addWidget(dialog)
+    assert dialog.spacecraft_combo.count() == 1  # no stale entry for the empty spacecraft
+    assert dialog.to_dataclass() == saved
+    dialog.mean_spin.setValue(-0.5)
+    with pytest.raises(ValueError, match="mean must be above 0"):
+        dialog.to_dataclass()
+
+    widget = DispersionListWidget()
+    qtbot.addWidget(widget)
+    widget.set_spacecraft_names(["sat-1"])
+    widget.from_list([saved])
+    assert widget.list_widget.item(0).text() == "atmosphere: density_scale (normal)"
+    assert widget.to_list() == [saved]
