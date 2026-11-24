@@ -741,7 +741,7 @@ inside, a cylinder boom with a sphere magnetometer at its tip, and a camera impo
 run flies the mass, center of mass, inertia and surfaces of the model.
 
 What to look at:
-- Spacecraft > Edit... > 3D model: six parts. The camera's two come from meshes/43_synthetic_camera.obj, a \
+- Spacecraft > Edit... > 3D model: six parts. The camera's two come from ../meshes/43_synthetic_camera.obj, a \
 synthetic file in millimetres: a closed box (Solid) and an open hood (Shell).
 - The model gives 150 kg, the center of mass 2.0 cm toward the boom and 3.3 cm toward the camera, and a \
 product of inertia (Ixz 0.38 kg m^2).
@@ -756,8 +756,8 @@ inertia follow.
 - Import .obj... in the editor: each group of your own file becomes a part; give its units and up axis.
 
 Note:
-- The mesh path is relative to the scenario file. After Save As elsewhere, copy the meshes folder next to \
-the file.""",
+- The mesh path is relative to the scenario file. After Save As elsewhere, give the file's full path in the \
+3D model editor, or import it again.""",
     "44": """\
 Five Monte Carlo dispersions no other template draws, in 12 runs: template 07's 150 kg microsatellite on \
 wheels in Sun-safe pointing at 350 km. Each run draws any initial attitude, its body rate, its \

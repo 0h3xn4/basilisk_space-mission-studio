@@ -117,6 +117,20 @@ fixes bugs.
   run counts against them, a confidence level for each, exit status 5)
   stay exactly as they were; they are simply no longer marked as open.
 
+- **Home now shows the templates in groups by category.** The cards used
+  to come in the order of their numbers, 01 to 42, which only tells in
+  which order we added them. Now they sit under nine headings, from
+  **Getting started** to **Deep space and navigation**, each with a line
+  on what its templates show, and in each group they go from simple to
+  advanced. A category list beside the filter shows one group at a
+  time, and the two filters work together; when nothing matches, Home
+  says so and **Show all templates** brings them all back. The count
+  beside **Templates** now always matches the templates folder. The
+  numbers and file names stay as they were, so "template 22" still means
+  the same file. The command palette lists the templates in the same
+  order with their category, and the template catalog in
+  `scenarios/templates/README.md` and the User Manual follow it too.
+
 ### Fixed
 
 - **Monte Carlo plot pages no longer pile up in the temporary folder on

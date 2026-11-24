@@ -80,8 +80,9 @@ include = ["spacemissionstudio*"]
 # see that directory's own README) is a separate glob for the same reason:
 # setuptools package-data globs are not recursive, so "scenarios/*.json"
 # alone would silently drop everything one directory deeper.
-# scenarios/templates/meshes/ holds the .obj meshes a template's 3D model
-# imports (template 43's synthetic camera), at paths relative to the template.
+# scenarios/meshes/ holds the .obj meshes a template's 3D model imports
+# (template 43's synthetic camera), at ../meshes/ from the template: the
+# templates' folder holds scenarios and their README only.
 # gui/assets/icons/lucide/ holds the Lucide icons the GUI uses (ISC, the
 # licence ships with them) and gui/assets/fonts/ Inter and JetBrains Mono
 # (SIL OFL 1.1, a licence file per family) -- no __init__.py there either,
@@ -93,7 +94,7 @@ include = ["spacemissionstudio*"]
 # manifest of their git hashes) and the C/CMake templates it fills in.
 [tool.setuptools.package-data]
 spacemissionstudio = ["scenarios/*.json", "scenarios/templates/*.json", "scenarios/templates/README.md",
-                      "scenarios/templates/meshes/*.obj",
+                      "scenarios/meshes/*.obj",
                       "gui/assets/icons/lucide/*.svg", "gui/assets/icons/lucide/LICENSE",
                       "gui/assets/fonts/*/*.ttf", "gui/assets/fonts/*/OFL.txt",
                       "gui/assets/mission_view/*.html", "gui/assets/mission_view/*.js",

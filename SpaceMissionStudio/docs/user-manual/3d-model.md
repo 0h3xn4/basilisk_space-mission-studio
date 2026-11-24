@@ -6,7 +6,8 @@ in the 3D views. You build it from simple shapes, import it from a CAD or
 modelling tool as an `.obj` file, or mix both. Template 28, "Octagonal
 bus from a 3D model", is a worked example. Template 43 mixes cylinders,
 spheres and a camera imported from a synthetic `.obj` file in
-millimetres (`meshes/43_synthetic_camera.obj`, next to the template).
+millimetres (`scenarios/meshes/43_synthetic_camera.obj`, at
+`../meshes/` from the template).
 
 ![The 3D model editor: an octagonal bus with two solar panels and a dish](../images/model_editor.png)
 

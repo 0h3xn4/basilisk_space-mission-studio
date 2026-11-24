@@ -2953,6 +2953,31 @@ New tests:
 - Template 38 joins every test that walks the templates (the golden
   file, the hashes, the wizard, the forms, the descriptions).
 
+## Templates in categories (2026-11-24)
+
+Home shows the template cards in groups by category (decisions TC-1 to
+TC-4). One existing test changed how it reaches the cards; what it
+checks is the same.
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_home.py::test_the_keyboard_reaches_the_cards_once_and_moves_with_the_arrows` | the cards by `home.cards` (file order); the card under the second one as `home.cards[1 + columns]` | the cards by `home.grid.cards` (the order shown); the card under the second one found on the screen (`_card_below`: the next row of cards, the same column, or that row's last card when it is shorter) | `home.cards` stays in file order (`select(0)` is still template 01); the first card shown is now 22, and with headings between the groups a row down is no longer "index + columns". The test still checks one Tab stop, Right, Down by a row, End, Home and Enter |
+
+New tests:
+- `tests/test_template_catalog.py`: every template file has exactly one
+  catalog entry (a new file without one fails with "add it to
+  `catalog.py`"), every entry names a file that is there, the folder
+  holds only scenarios, the categories' titles and lines, the order and
+  groups with a file that has no entry, the README's catalog and the
+  User Manual's "Which template next?" table against `catalog.py`.
+- `tests/gui/test_home_categories.py`: the headings in catalog order
+  with each group's cards under its heading; the category list; the two
+  filters combined; the count against the folder; the empty state and
+  its action; a template opened from a group (Enter, Open template,
+  double-click, and Open template in the window); Up and Down across a
+  heading; the command palette's template entries in catalog order with
+  their category.
+
 ## Templates for every feature, batch B: templates 43 to 47 (2026-11-24)
 
 No GUI test reaches a widget another way. The tests that pin the number

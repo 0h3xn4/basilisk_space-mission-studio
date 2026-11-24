@@ -96,17 +96,17 @@ Where each piece lives in the app, and which template shows it best:
 | Piece | Where you edit it | Learn it from template |
 |---|---|---|
 | Simulation mode, epoch | Scenario tree > **General** | 01 (orbit only), 06 (attitude) |
-| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18, 42 |
+| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18, 42, 45 |
 | A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22, 39 |
-| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14, 41 |
+| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14, 41, 47 |
 | Where it points | ... > **Attitude control** | 06, 15, 19, 41 |
 | Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19, 40 |
 | Instruments, memory, downlink | ... > **Power / propulsion / link budget** > Data handling | 26 |
-| 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32 |
+| 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32, 43 |
 | Equipment list, system modes, power, mass and pointing budgets | the **Budgets** area (`Ctrl+5`) | 38 |
 | Ground stations | Scenario tree > **Ground stations** > its name | 19, 22 |
-| Mission sequence | Scenario tree > **Mission sequence** | 08, 16, 23 |
-| Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25, 37 |
+| Mission sequence | Scenario tree > **Mission sequence** | 08, 16, 23, 46 |
+| Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25, 37, 44 |
 | Results | the Results and Timeline areas, Results > Compare (Section 7) | any |
 
 **Orbit only or full attitude?** *Orbit only* simulates where each
@@ -174,7 +174,7 @@ carry on, and a note at the bottom right sums it up when it is done.
 **Not now** hides the card, and nothing is downloaded (**Settings >
 Reference data** downloads later). Home looks like this:
 
-![Home: the navigation rail on the left; Start from scratch, Open and the recent scenarios; the template cards; template 22 selected and its description on the right](docs/images/load_scenario_tab.png)
+![Home: the navigation rail on the left; Start from scratch, Open and the recent scenarios; the template cards in groups by category, with the category list and the filter above them; template 22 selected and its description on the right](docs/images/load_scenario_tab.png)
 
 A few things to notice right away:
 
@@ -182,8 +182,10 @@ A few things to notice right away:
   bottom (`Ctrl+1` to `Ctrl+7`):
   * **Home**: where you start. **Start from scratch** (**New blank
     scenario**), **Open a scenario file...** and your **Recent
-    scenarios** on the left; a card per template in the middle; the
-    selected template's description on the right.
+    scenarios** on the left; a card per template in the middle, in
+    groups by category (**Getting started** first, each group from
+    simple to advanced), with a category list and a text filter above
+    them; the selected template's description on the right.
   * **Scenario**: the scenario tree on the left and the page of the node
     you pick beside it: **Overview** (Explain: what the scenario does, end
     of Section 7), **General**, **Environment**, **Spacecraft** with
@@ -436,14 +438,27 @@ its Scenario page ("Building your own scenario, step by step", below).
   folder. A file that was moved or deleted says **(missing)** with a
   warning icon; `Delete` takes the selected entry off the list (the file
   stays where it is) and **Clear** empties it.
+* The **template cards** are in groups by category, in this order:
+  **Getting started**, **Orbits and orbit keeping**, **Maneuvers and
+  Mission Sequence**, **Attitude and control**, **Power, communications
+  and data**, **Spacecraft model, thermal and budgets**, **Operations
+  planning**, **Uncertainty (Monte Carlo)** and **Deep space and
+  navigation**. Each group has a heading with one line on what its
+  templates show, and goes from simple to advanced. The numbers in the
+  names only identify the templates (they tell in which order they were
+  added); they are not an order. The count beside **Templates** is the
+  number of templates; while a filter hides some, it says "6 of 37".
 * Each **template card** says, all read from the template file itself:
   the attitude mode (**Orbit only** or **Full attitude**, with its
   pointing mode) and how many spacecraft; the central body and the
   orbit (its altitude, or the altitudes of its lowest and highest points
   when it is not circular, the inclination, and "Sun-synchronous" when
-  it is); and the first sentence of the template's description. The
-  **Filter templates** box narrows the cards to those with every word
-  you type ("monte carlo", "formation", "mars").
+  it is); and the first sentence of the template's description. Two
+  filters above the cards narrow them, and a card must pass both: the
+  category list (**All categories**, or one category) and the **Filter
+  templates** box (every word you type must be in the card: "monte
+  carlo", "formation", "mars"). When no template passes, Home says so,
+  with **Show all templates**, which clears both.
 * Click a card to select it: the selected card has an accent edge, and
   its whole description appears on the right, with **Open template** and
   **Customize and open...**. **Open template** (or a double-click on the
@@ -451,7 +466,9 @@ its Scenario page ("Building your own scenario, step by step", below).
   open...** first asks for the template's key settings in a short
   wizard, then opens the result as a new, unsaved scenario (Section 5).
   The keyboard reaches the cards with `Tab`; the arrow keys move between
-  them and `Enter` opens one.
+  them (`Up` and `Down` by a row on the screen, also into the next or
+  the previous group) and `Enter` opens one. The headings are not `Tab`
+  stops.
 
 ### Open a view in its own window
 
@@ -492,14 +509,18 @@ and the **Budgets** area. The 3D View's 2D map can too, on its own
 
 ## 4. Your first simulation, in five minutes
 
-1. **Pick a template.** Home shows all 34 built-in example missions as
-   cards, numbered roughly from simplest to most advanced – "01 -
-   Two-body circular orbit" is the simplest possible case (one
-   satellite, one orbit, nothing else going on) and a good first choice.
-   Click its card once; its description appears on the right,
-   explaining what it demonstrates and what to look for.
-2. Click **Open template** (or the card's **Open**, or double-click the
-   card). The
+1. **Pick a template.** Home shows the built-in example missions as
+   cards, in groups by category, each group from simple to advanced. The
+   numbers only name the templates; they are not an order. In the first
+   group, **Getting started**, "01 - Two-body circular orbit" is the
+   simplest possible case (one satellite, one orbit, nothing else going
+   on) and a good first choice. To see one group only, pick it in the
+   category list above the cards (**All categories** shows them all);
+   the filter beside it finds a word in the templates' names and
+   descriptions. Click the card once; its description appears on the
+   right, explaining what it demonstrates and what to look for.
+2. Click **Open template** (or press Enter on the card, or double-click
+   it). The
    app shows the mission's **General** page – you don't need to look at
    or understand it yet, just confirm something loaded (its name appears
    in the "Name" field at the top).
@@ -531,22 +552,22 @@ yet; the app will say so clearly rather than failing silently.
 
 ### Which template next?
 
-Each template shows one idea, so a few at a time is plenty. A suggested
-path, each step building on the one before:
+Each template shows one idea, so a few at a time is plenty. Home and the
+[template catalog](spacemissionstudio/scenarios/templates/README.md) put
+them in categories, each from simple to advanced. Work down a category,
+or pick the one you need:
 
-| Step | Templates | What you learn |
+| Category | Templates, simple to advanced | What you learn |
 |---|---|---|
-| 1. Orbits | 01, 02, 22, 39, 42 | An ideal orbit; what Earth's shape, the Sun and the Moon do to it; a realistic satellite with drag and a ground station; an orbit from a TLE or a state vector; another atmosphere model and the lifetime |
-| 2. Keeping an orbit | 18, 03, 17, 40 | Station keeping against drag (low orbit) and drift (geostationary); how propellant runs down; continuous low thrust |
-| 3. Pointing | 06, 07, 15, 14, 27, 41 | Attitude control, ideal and with real hardware; pointing at the Moon; finding the Sun with sun sensors; flexible wings swinging in a turn; velocity pointing with navigation errors |
-| 4. Disturbances and momentum | 10, 21, 28, 12, 13, 11 | Gravity-gradient and surface torques; a center of mass off the body origin; unloading wheels with thrusters or torque rods; thrusters for pointing |
-| 5. Missions in steps | 08, 16, 23 | Mission Sequences: burns, a Lambert transfer, stopping on a ground pass |
-| 6. Several spacecraft | 04, 05, 24, 29 | A Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
-| 7. Whole systems | 19, 20, 23, 26 | Power, radio link and thermal working together; data from instrument to ground |
-| 8. Uncertainty | 09, 25, 37 | Monte Carlo batches: mass, orbit insertion, drag; requirements, statistics and sensitivity |
-| 9. Navigation | 30, 31 | Estimating an orbit around Mars from camera images of the planet; flying around asteroid Eros with its shape's gravity and navigating from its landmarks |
-| 10. The spacecraft as designed | 28, 32, 38 | A 3D model with its equipment mounted: fields of view, a plume, the mass budget and the launcher envelope checked without a run; the disturbance torques and the arrays' shading in a run; an equipment list with its power, mass, pointing and propellant budgets |
-| 11. Operations | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
+| Getting started | 22, 23, 01, 02 | A realistic satellite with drag and a ground station; a complete small satellite with hardware, a radio link and a Mission Sequence; an ideal orbit; what Earth's shape, the Sun and the Moon do to it |
+| Orbits and orbit keeping | 39, 42, 45, 18, 03, 40, 04, 05, 24, 29 | An orbit from a TLE or a state vector; drag from a tabular atmosphere and the lifetime; the Sun at the 95th percentile over a run past 104 days; station keeping against drag (low orbit) and drift (geostationary); continuous low thrust; a Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
+| Maneuvers and Mission Sequence | 08, 16, 46 | Mission Sequences: an impulsive burn, a Lambert transfer; assignments, a loop, a check and a script block |
+| Attitude and control | 06, 07, 41, 15, 10, 11, 17, 12, 13, 14, 47, 21 | Attitude control, ideal and with real hardware; velocity pointing with a magnetometer and navigation errors; pointing at the Moon; gravity-gradient torque; thrusters for pointing and the propellant they use; unloading wheels with thrusters or torque rods; finding the Sun with sun sensors; sensor faults; surface torques from a facet model |
+| Power, communications and data | 19, 26 | Power and a radio link working together; data from instrument to ground |
+| Spacecraft model, thermal and budgets | 28, 43, 32, 38, 27, 20, 33, 34 | A 3D model and the mass properties from its parts; cylinders, spheres and an imported mesh; equipment mounted, with fields of view, a plume and the mass budget checked; an equipment list with the power, mass, pointing and propellant budgets; flexible wings swinging in a turn; thermal sensors; a thermal model in hot, cold and safe-mode cases; flexible arrays in the thermal model |
+| Operations planning | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
+| Uncertainty (Monte Carlo) | 09, 25, 37, 44 | Monte Carlo batches: mass, orbit insertion, drag; requirements, statistics and sensitivity; attitude, inertia, body rate, SRP and density |
+| Deep space and navigation | 30, 31 | Estimating an orbit around Mars from camera images of the planet; flying around asteroid Eros with its shape's gravity and navigating from its landmarks |
 
 **Starting your own mission?** Open **22** (a realistic satellite, orbit
 only) or **23** (a complete small satellite with hardware, a radio link
@@ -2329,7 +2350,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the forty-two built-in templates teaches, in
+  describes what each of the forty-seven built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

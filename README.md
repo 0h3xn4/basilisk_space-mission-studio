@@ -22,14 +22,15 @@ Basilisk itself is unchanged: its README follows below, under
 SpaceMissionStudio lets you design a satellite mission in forms, run it,
 and read the results, without writing code. Every number comes from
 Basilisk; SpaceMissionStudio adds the windows, scenario files, plots,
-checks and analysis around it. Start from one of 36 template missions, or
-build your own, then look at orbits, ground passes, eclipses, pointing,
-battery, link margin, lifetime and propellant. A spacecraft with a 3D
-model can also carry a thermal model, solved on the run in hot, cold and
-nominal cases, with sweeps, sensitivity and a thermal Monte Carlo. And
-you can plan a mission's operations: which targets to image and which
-passes to use over days or weeks, within the battery, the memory and the
-slews, then fly the plan in the simulation and check it.
+checks and analysis around it. Start from one of 47 template missions,
+in nine categories, or build your own, then look at orbits, ground
+passes, eclipses, pointing, battery, link margin, lifetime and
+propellant. A spacecraft with a 3D model can also carry a thermal model,
+solved on the run in hot, cold and nominal cases, with sweeps,
+sensitivity and a thermal Monte Carlo. And you can plan a mission's
+operations: which targets to image and which passes to use over days or
+weeks, within the battery, the memory and the slews, then fly the plan
+in the simulation and check it.
 
 > **AI authorship.** SpaceMissionStudio was written by Claude
 > (Anthropic's AI model) through Claude Code: its code, tests and

@@ -1778,7 +1778,7 @@
         ],
         "meshes": [
           {
-            "path": "meshes/43_synthetic_camera.obj",
+            "path": "../meshes/43_synthetic_camera.obj",
             "sha256": "b035b90e7511c9c0c3b4adbb859c1304bc39db639473fc188e827f0f2183b04f",
             "units": "mm",
             "up_axis": "z"
@@ -1816,6 +1816,6 @@
   },
   "mission_sequence": [],
   "fsw_exports": [],
-  "description": "A 3D model from shapes no other template uses. A 150 kg microsatellite: a cylinder bus with a sphere tank inside, a cylinder boom with a sphere magnetometer at its tip, and a camera imported from an .obj file. The run flies the mass, center of mass, inertia and surfaces of the model.\n\nWhat to look at:\n- Spacecraft > Edit... > 3D model: six parts. The camera's two come from meshes/43_synthetic_camera.obj, a synthetic file in millimetres: a closed box (Solid) and an open hood (Shell).\n- The model gives 150 kg, the center of mass 2.0 cm toward the boom and 3.3 cm toward the camera, and a product of inertia (Ixz 0.38 kg m^2).\n- A curved part is drawn with flat sides (Segments); its mass properties are those of the true shape.\n- Results > 3D View draws the model; the tank is hidden inside the bus.\n- Without attitude control, gravity, drag and sunlight turn it slowly: under 0.01 deg/s after 2.4 hours.\n\nTry changing:\n- The magnetometer's position, or the boom's length (Open 3D model editor...): the center of mass and the inertia follow.\n- The camera parts' mass, or their Spread: Solid or Shell.\n- Import .obj... in the editor: each group of your own file becomes a part; give its units and up axis.\n\nNote:\n- The mesh path is relative to the scenario file. After Save As elsewhere, copy the meshes folder next to the file.",
+  "description": "A 3D model from shapes no other template uses. A 150 kg microsatellite: a cylinder bus with a sphere tank inside, a cylinder boom with a sphere magnetometer at its tip, and a camera imported from an .obj file. The run flies the mass, center of mass, inertia and surfaces of the model.\n\nWhat to look at:\n- Spacecraft > Edit... > 3D model: six parts. The camera's two come from ../meshes/43_synthetic_camera.obj, a synthetic file in millimetres: a closed box (Solid) and an open hood (Shell).\n- The model gives 150 kg, the center of mass 2.0 cm toward the boom and 3.3 cm toward the camera, and a product of inertia (Ixz 0.38 kg m^2).\n- A curved part is drawn with flat sides (Segments); its mass properties are those of the true shape.\n- Results > 3D View draws the model; the tank is hidden inside the bus.\n- Without attitude control, gravity, drag and sunlight turn it slowly: under 0.01 deg/s after 2.4 hours.\n\nTry changing:\n- The magnetometer's position, or the boom's length (Open 3D model editor...): the center of mass and the inertia follow.\n- The camera parts' mass, or their Spread: Solid or Shell.\n- Import .obj... in the editor: each group of your own file becomes a part; give its units and up axis.\n\nNote:\n- The mesh path is relative to the scenario file. After Save As elsewhere, give the file's full path in the 3D model editor, or import it again.",
   "schema_version": 8
 }

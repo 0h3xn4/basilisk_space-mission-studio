@@ -2618,7 +2618,7 @@ def build_42_tabular_atmosphere_and_lifetime() -> Scenario:
 # two groups: "camera_body", a closed 300 x 300 x 400 mm box (a solid part),
 # and "camera_hood", an open square funnel 150 mm long from a 260 mm to a
 # 340 mm opening (a shell part). +z is up; the camera looks along -z.
-T43_MESH_FILE = "meshes/43_synthetic_camera.obj"  # relative to the template's folder
+T43_MESH_FILE = "../meshes/43_synthetic_camera.obj"  # relative to the template's folder: scenarios/meshes/
 _T43_BODY_MM = (300.0, 300.0, 400.0)  # [mm] x, y, z
 _T43_HOOD_MM = (260.0, 340.0, 150.0)  # [mm] inner opening, outer opening, length
 

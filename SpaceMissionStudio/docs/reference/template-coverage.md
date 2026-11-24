@@ -109,7 +109,7 @@ for the other gaps.
 |---|---|---|
 | 3D model from boxes, prisms, cones and panels | 3D model | 28, 32-34 |
 | 3D model from cylinders and spheres | 3D model | 43 |
-| 3D model from an imported `.obj` mesh | 3D model | 43 (a synthetic camera in millimetres, `templates/meshes/43_synthetic_camera.obj`) |
+| 3D model from an imported `.obj` mesh | 3D model | 43 (a synthetic camera in millimetres, `scenarios/meshes/43_synthetic_camera.obj`) |
 | Import from IDM-CIC (synthetic file only) | 3D model, `idm-import` | No template: the import reads a model file of another format into a scenario, and a template is the scenario itself. Shown by the importer's synthetic test fixtures (`tests/idm_fixtures.py`) and [Import a spacecraft from IDM-CIC](../user-manual/idm-cic.md) (decision TPL-B6) |
 | Design checks: fields of view, plume, mass budget, launcher envelope | Run › Design Checks | 32 |
 | Model analyses in a run: disturbance torques, shading | Results › Model Analyses | 32 |

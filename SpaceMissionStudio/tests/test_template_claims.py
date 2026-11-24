@@ -1028,7 +1028,7 @@ def test_43_the_model_gives_the_mass_properties_of_its_cylinders_spheres_and_mes
     assert {p.shape for p in parts.values()} == {"cylinder", "sphere", "mesh"}
     mesh = sc.model.meshes[0]
     mesh_path = _TEMPLATES_DIR / mesh.path
-    assert mesh.path == "meshes/43_synthetic_camera.obj" and (mesh.units, mesh.up_axis) == ("mm", "z")
+    assert mesh.path == "../meshes/43_synthetic_camera.obj" and (mesh.units, mesh.up_axis) == ("mm", "z")
     assert model3d.file_sha256(mesh_path) == mesh.sha256
     assert "synthetic" in mesh_path.read_text(encoding="utf-8").splitlines()[0]
     assert [g.name for g in obj_io.read_obj(mesh_path, units="mm").groups] == ["camera_body", "camera_hood"]

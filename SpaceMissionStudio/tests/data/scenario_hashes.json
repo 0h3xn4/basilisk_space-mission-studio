@@ -168,8 +168,8 @@
   "scenario_sha256": "5e4300b058d6a8fc6fff0f9f8f5c1293457a443b9695c6c132137535dd8e42d4"
  },
  "43_3d_model_cylinders_spheres_and_mesh": {
-  "saved_text_sha256": "0abcd2ddc367601c9d5ac56519bcc64b2b2dd1e23845b181e0688b456f51e17e",
-  "scenario_sha256": "58bbf4220fa45d281bad2c1c9fb02a304aded04c01141ae756d683b0e3656965"
+  "saved_text_sha256": "386d584c75311a8d7da3f2f62db1f6618837ae1a1162df64533d059a79b5fc77",
+  "scenario_sha256": "f98f0dc84d9189c5c12a19e538d8ec5b2167a56cce82189f8d42593103e1727b"
  },
  "44_monte_carlo_attitude_inertia_rate_srp_density": {
   "saved_text_sha256": "827106ec87dc1bd9cce965ab1a3fc29cc37e07359658915bb0e6df24fc8f0bd0",
