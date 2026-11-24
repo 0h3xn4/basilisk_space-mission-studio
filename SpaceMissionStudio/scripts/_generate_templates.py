@@ -2251,17 +2251,35 @@ _T38_MODES = {
                        "S-band transceiver": "transmit", "camera": "standby", "heaters": "operational",
                        "propulsion module": "standby"}),
 }
+# The pointing example: the camera looks along +z. requirement: (index, kind, axis, limit [arcsec],
+# probability [-], window [s] or None, stability [s] or None, system modes)
+_T38_POINTING_REQUIREMENTS = {
+    "APE line of sight": ("absolute", "performance", "line_of_sight", 60.0, 0.95, None, None, ["imaging"]),
+    "RPE x": ("relative", "performance", "x", 15.0, 0.95, 60.0, 1.0, ["imaging"]),
+    "AKE x": ("absolute", "knowledge", "x", 15.0, 0.95, None, None, ["imaging", "downlink"]),
+}
+# contributor: (kind, behaviour, distribution, spread per axis [arcsec], period [s] or None, equipment item)
+_T38_POINTING_CONTRIBUTORS = {
+    "star tracker noise": ("both", "random", "gaussian", {"x": 2.0, "y": 2.0, "z": 15.0}, None, "star tracker"),
+    "camera alignment": ("performance", "bias", "uniform", {"x": 10.0, "y": 10.0}, None, "camera"),
+    "attitude control error": ("performance", "random", "gaussian", {"x": 6.0, "y": 6.0, "z": 8.0}, None, ""),
+    "wheel jitter": ("performance", "random", "gaussian", {"x": 0.5, "y": 0.5, "z": 0.5}, None,
+                     "reaction wheels"),
+    "thermal distortion": ("performance", "periodic", "sinusoidal", {"x": 4.0, "y": 4.0}, 5700.0, "structure"),
+}
 _T38_BUSES = {"platform": 0.92, "payload": 0.88}  # [-] converter efficiency
 _T38_POWER_MARGINS = {"estimated": 25.0, "layout": 20.0, "pre_release": 15.0, "released": 8.0,
                       "existing": 4.0, "measured": 2.0}  # [%] per maturity category
 
 
 def _t38_budgets():
-    """Template 38's budgets section: the equipment list, the system modes
-    and the numbers of the power budget, each with its source."""
+    """Template 38's budgets section: the equipment list, the system modes,
+    the numbers of the power budget and a small pointing error budget, each
+    number with its source."""
     from spacemissionstudio.schema.budgets import (BudgetBusConfig, BudgetEquipmentConfig, BudgetModeConfig,
-                                                   BudgetPowerModeConfig, BudgetsConfig, PowerMarginConfig,
-                                                   SourcedValue)
+                                                   BudgetPowerModeConfig, BudgetsConfig, PointingConfig,
+                                                   PointingContributorConfig, PointingRequirementConfig,
+                                                   PowerMarginConfig, SourcedValue)
 
     def sourced(value):
         return SourcedValue(value, _T38_SOURCE)
@@ -2282,6 +2300,21 @@ def _t38_budgets():
         system_power_margin_percent=sourced(12.0),  # [%]
         equipment=equipment,
         modes=[BudgetModeConfig(name, duty, dict(units)) for name, (duty, units) in _T38_MODES.items()],
+        pointing=PointingConfig(
+            line_of_sight="z",
+            requirements=[PointingRequirementConfig(
+                name, sourced(limit), sourced(probability), index=index, kind=kind, axis=axis,
+                window_s=None if window is None else sourced(window),
+                stability_s=None if stability is None else sourced(stability), modes=list(modes))
+                for name, (index, kind, axis, limit, probability, window, stability, modes)
+                in _T38_POINTING_REQUIREMENTS.items()],
+            contributors=[PointingContributorConfig(
+                name, kind=kind, behaviour=behaviour, distribution=distribution,
+                spread_arcsec={axis: sourced(value) for axis, value in spread.items()},
+                period_s=None if period is None else sourced(period), equipment=equipment)
+                for name, (kind, behaviour, distribution, spread, period, equipment)
+                in _T38_POINTING_CONTRIBUTORS.items()],
+        ),
     )
 
 

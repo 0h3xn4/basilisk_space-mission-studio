@@ -726,7 +726,7 @@ def test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_dr
     assert len(report["dispersions"]) == 3
 
 
-def test_38_the_power_and_mass_budgets_are_complete():
+def test_38_the_power_mass_and_pointing_budgets_are_complete():
     """Template 38's Budgets area (SRS-F-31), with the functions its Power and Mass
     pages and the ``budgets`` command use: every number of the power
     budget is known, with no finding; the four system modes' duty cycles
@@ -734,10 +734,14 @@ def test_38_the_power_and_mass_budgets_are_complete():
     the source with margins; the mass budget is 110.3 kg basic with
     22.9 kg of AIAA S-120 growth and 6 kg of propellant, 139.2 kg against
     the 150 kg limit, with no unknown line. The 3D model holds every item,
-    so the run flies the same 110.3 kg. Each number of the section is an
-    example, and its source says so."""
+    so the run flies the same 110.3 kg. The pointing budget (the Pointing
+    page and ``budgets --pointing``) meets its three requirements: the
+    line of sight at 22.1 of 60 arcsec, the relative error about x at
+    12.4 of 15 arcsec, the knowledge about x at 3.9 of 15 arcsec. Each
+    number of the section is an example, and its source says so."""
     from spacemissionstudio.analyses.mass_budget import mass_budget
     from spacemissionstudio.analyses.power_budget import power_budget
+    from spacemissionstudio.engine.pointing_budget import MET, pointing_budget, rad_to_arcsec
 
     sc = _template("38").spacecraft[0]
     section = sc.budgets
@@ -746,6 +750,12 @@ def test_38_the_power_and_mass_budgets_are_complete():
     for item in section.equipment:
         values += [item.mass_kg] + [v for mode in item.power_modes for v in (mode.average_w, mode.peak_w)
                                     if v is not None]
+    for requirement in section.pointing.requirements:
+        values += [v for v in (requirement.limit_arcsec, requirement.probability, requirement.window_s,
+                               requirement.stability_s) if v is not None]
+    for contributor in section.pointing.contributors:
+        values += list(contributor.spread_arcsec.values()) + list(contributor.mean_arcsec.values())
+        values += [contributor.period_s] if contributor.period_s is not None else []
     assert {v.source for v in values} == {"Synthetic example value; not from a data sheet or a standard."}
     assert not any(v.placeholder for v in values)
     assert len(section.equipment) == 12
@@ -771,6 +781,12 @@ def test_38_the_power_and_mass_budgets_are_complete():
     assert mass.propellant_kg == pytest.approx(6.0) and mass.launch_mass_kg == pytest.approx(139.166)  # [kg]
     assert mass.mass_limit_kg == 150.0 and mass.headroom_kg == pytest.approx(10.834)  # [kg]
     assert sc.dry_mass_kg == pytest.approx(mass.basic_dry_kg)  # [kg] the run's and the propellant budget's
+
+    pointing = pointing_budget(sc)
+    assert pointing.complete and pointing.contributors == 5
+    assert [r.status for r in pointing.results] == [MET, MET, MET]
+    values = {r.requirement: rad_to_arcsec(r.value_rad) for r in pointing.results}  # [arcsec]
+    assert values == pytest.approx({"APE line of sight": 22.11, "RPE x": 12.43, "AKE x": 3.92}, abs=0.01)
 
 
 @pytest.mark.slow

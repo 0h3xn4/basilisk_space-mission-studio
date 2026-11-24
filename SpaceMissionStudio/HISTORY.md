@@ -21760,6 +21760,10 @@ structure, the arrays, the camera and the star tracker outside, the
 other items hidden inside, each with its list item's mass, column and
 maturity, so the run flies the list's 110.3 kg. It has the S-120 policy,
 an illustrative 150 kg limit and an illustrative 1.3 x 1.5 m cylinder.
+A small pointing part (budgets section version 2): the line of sight
+along body z, three requirements at 0.95 and five contributors (star
+tracker noise, camera alignment, attitude control error, wheel jitter,
+a thermal distortion over a 5700 s period).
 A 1 N, 220 s station keeper (15 km deadband: no burn in a day) and a
 five-year propellant budget with an 8 kg tank.
 
@@ -21778,8 +21782,10 @@ of load and 77.1 W at the source with margins; imaging 129.6 W at the
 source with margins over two buses. Mass: 110.3 kg basic, 22.87 kg of
 growth, 6 kg of propellant, 139.17 kg against 150 kg. Propellant: 83.0
 m/s and 5.23 kg for five years in the 8 kg tank, without a run (about
-70 s here: the re-entry solve takes most of it). The golden capture took
-64 s.
+70 s here: the re-entry solve takes most of it). Pointing: the three
+requirements met, the line of sight at 22.1 of 60 arcsec, the relative
+error about x at 12.4 of 15, the knowledge about x at 3.9 of 15. The
+golden capture took 64 to 70 s.
 
 **Found on the way.**
 - A first draft kept the heaters and the harness outside the 3D model.
@@ -21804,5 +21810,24 @@ templates move from 37 to 38 (`docs/ui/TEST_CHANGES.md`). A Customize
 wizard (system power margin, distribution loss, mass limit, tank
 capacity, duration).
 
-**Follow-up.** No pointing example: `develop` has no pointing budget yet
-(pull request #325). `BACKLOG.md`, Later, has the item.
+**Merging develop.** Pull request #325 (the pointing error budget,
+budgets section version 2) was not on `develop` when this work started,
+so the first commit had no pointing example. #325 and #326 were merged
+while it ran; the coordinator asked for the example, and `develop` was
+merged into the branch (no rebase). Template 38 was written again at
+section version 2 with its `pointing` part; its hashes were recorded
+again; its golden file did not change (the capture holds no budgets
+section). The record files kept both sides. The merge brought one more
+test that assumed no template has a section,
+`tests/test_budgets_schema.py::test_a_scenario_without_budgets_saves_as_before`
+(found by the full suite before the merge); it now names template 38 as
+its one exception (TB-6, TB-8).
+
+**Checks**, after the merge and the pointing example. Full suite, 3
+workers: 6156 passed, 19 skipped, 1 failed, the known local-only
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`.
+`ruff check` passes. The compliance generators change nothing on a
+second run, and `check_drds.py` finds 0 problems. pre-commit passes. The
+five pages of the Budgets area on template 38, offscreen, show no
+"unknown": Power and Mass "Complete", Pointing "All met", Propellant
+83.01 m/s and 5.225 kg.

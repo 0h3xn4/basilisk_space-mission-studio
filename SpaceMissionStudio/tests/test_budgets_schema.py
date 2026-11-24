@@ -62,14 +62,20 @@ def test_the_section_round_trips_and_saves_only_what_it_sets(tmp_path):
     assert all("mass_in_model" not in item and "source_id" not in item for item in saved["equipment"])
 
 
+_TEMPLATES_WITH_A_SECTION = {"38_budgets_equipment_power_mass_propellant"}
+
+
 def test_a_scenario_without_budgets_saves_as_before():
     """A template without the section has no ``budgets`` key when saved, so
     its file is unchanged (tests/test_scenario_hashes.py has every
     template's hash)."""
     for path in sorted(fx.TEMPLATES.glob("*.json")):
         scenario = load_scenario(path)
-        assert all(sc.budgets is None for sc in scenario.spacecraft), path.stem
-        assert all("budgets" not in sc for sc in scenario.to_dict()["spacecraft"]), path.stem
+        if path.stem in _TEMPLATES_WITH_A_SECTION:  # made to show the section (decision TB-1)
+            assert all(sc.budgets is not None for sc in scenario.spacecraft), path.stem
+        else:
+            assert all(sc.budgets is None for sc in scenario.spacecraft), path.stem
+            assert all("budgets" not in sc for sc in scenario.to_dict()["spacecraft"]), path.stem
         assert scenario_text(scenario) == path.read_text(encoding="utf-8"), path.stem
 
 

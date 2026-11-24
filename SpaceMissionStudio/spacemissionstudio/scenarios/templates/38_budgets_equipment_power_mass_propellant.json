@@ -776,7 +776,7 @@
         }
       },
       "budgets": {
-        "version": 1,
+        "version": 2,
         "buses": [
           {
             "name": "platform",
@@ -1207,7 +1207,158 @@
               "propulsion module": "standby"
             }
           }
-        ]
+        ],
+        "pointing": {
+          "line_of_sight": "z",
+          "requirements": [
+            {
+              "name": "APE line of sight",
+              "limit_arcsec": {
+                "value": 60.0,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "probability": {
+                "value": 0.95,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "axis": "line_of_sight",
+              "modes": [
+                "imaging"
+              ]
+            },
+            {
+              "name": "RPE x",
+              "limit_arcsec": {
+                "value": 15.0,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "probability": {
+                "value": 0.95,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "index": "relative",
+              "window_s": {
+                "value": 60.0,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "stability_s": {
+                "value": 1.0,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "modes": [
+                "imaging"
+              ]
+            },
+            {
+              "name": "AKE x",
+              "limit_arcsec": {
+                "value": 15.0,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "probability": {
+                "value": 0.95,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "kind": "knowledge",
+              "modes": [
+                "imaging",
+                "downlink"
+              ]
+            }
+          ],
+          "contributors": [
+            {
+              "name": "star tracker noise",
+              "kind": "both",
+              "spread_arcsec": {
+                "x": {
+                  "value": 2.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "y": {
+                  "value": 2.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "z": {
+                  "value": 15.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                }
+              },
+              "equipment": "star tracker"
+            },
+            {
+              "name": "camera alignment",
+              "behaviour": "bias",
+              "distribution": "uniform",
+              "spread_arcsec": {
+                "x": {
+                  "value": 10.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "y": {
+                  "value": 10.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                }
+              },
+              "equipment": "camera"
+            },
+            {
+              "name": "attitude control error",
+              "spread_arcsec": {
+                "x": {
+                  "value": 6.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "y": {
+                  "value": 6.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "z": {
+                  "value": 8.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                }
+              }
+            },
+            {
+              "name": "wheel jitter",
+              "spread_arcsec": {
+                "x": {
+                  "value": 0.5,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "y": {
+                  "value": 0.5,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "z": {
+                  "value": 0.5,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                }
+              },
+              "equipment": "reaction wheels"
+            },
+            {
+              "name": "thermal distortion",
+              "behaviour": "periodic",
+              "distribution": "sinusoidal",
+              "spread_arcsec": {
+                "x": {
+                  "value": 4.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                },
+                "y": {
+                  "value": 4.0,
+                  "source": "Synthetic example value; not from a data sheet or a standard."
+                }
+              },
+              "period_s": {
+                "value": 5700.0,
+                "source": "Synthetic example value; not from a data sheet or a standard."
+              },
+              "equipment": "structure"
+            }
+          ]
+        }
       }
     }
   ],
@@ -1246,6 +1397,6 @@
   },
   "mission_sequence": [],
   "fsw_exports": [],
-  "description": "The Budgets area on one small imager in a 550 km Sun-synchronous orbit: an equipment list of 12 items, four system modes, the power budget of each mode, the mass budget of the 3D model and the propellant budget. Each number of the budgets is an example, and its source says so.\n\nWhat to look at:\n- Budgets > Equipment: the items with their masses and maturity, their power modes, the system modes and the power settings.\n- Budgets > Power: each mode's load, margins and source power. The duty cycles add up to 1, so the last row is the average: 54.2 W of load, 77.1 W at the source with margins.\n- Pick the imaging mode: its items, subsystems and two buses.\n- Budgets > Mass: 110.3 kg basic and 22.9 kg of AIAA S-120 growth; with 6 kg of propellant, 139.2 kg against the 150 kg limit.\n- Budgets > Propellant, Compute budget: 83.0 m/s and 5.23 kg for five years, in an 8 kg tank (about a minute: it solves the re-entry).\n\nTry changing:\n- A mode's duty cycle: when they no longer add up to 1, the average row goes and the Problems panel says why.\n- Clear the camera's imaging power (it becomes TBD): the Power badge says Unknown values.\n- Power settings: the system margin or a bus's efficiency.\n\nNote:\n- The 3D model holds every item (Mass in model), so the run and the propellant budget fly the same 110.3 kg.",
+  "description": "The Budgets area on one small imager in a 550 km Sun-synchronous orbit: 12 items, four system modes, the power, mass, pointing and propellant budgets. Each number of the budgets is an example, and its source says so.\n\nWhat to look at:\n- Budgets > Equipment: the items with mass and maturity, their power modes, the system modes, the power settings.\n- Budgets > Power: each mode's load, margins and source power. The duty cycles add up to 1, so the last row is the average: 54.2 W of load, 77.1 W at the source with margins.\n- Budgets > Mass: 110.3 kg basic and 22.9 kg of AIAA S-120 growth; with 6 kg of propellant, 139.2 kg against the 150 kg limit.\n- Budgets > Pointing: three requirements met; the line of sight at 22.1 of 60 arcsec (0.95).\n- Budgets > Propellant, Compute budget: 83.0 m/s and 5.23 kg for five years, in an 8 kg tank (about a minute).\n\nTry changing:\n- A mode's duty cycle: when they no longer add up to 1, the average row goes and Problems says why.\n- Clear the camera's imaging power (it becomes TBD): the Power badge says Unknown values.\n- Power settings: the system margin or a bus's efficiency.\n\nNote:\n- The 3D model holds every item (Mass in model): the run flies the same 110.3 kg.",
   "schema_version": 8
 }

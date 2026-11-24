@@ -44,8 +44,9 @@ fixes bugs.
   efficiencies, a distribution loss, a system margin and a power margin
   for each maturity. Its 3D model holds every item, so the Mass page
   lists them with their AIAA S-120 growth against a mass limit, the run
-  flies the same mass, and the Propellant page computes a five-year
-  budget for its tank without a run. Every number in
+  flies the same mass. A small pointing budget has three requirements
+  and five sources of error, all met, and the Propellant page computes
+  a five-year budget for its tank without a run. Every number in
   the budgets is an example, and its source says so. The run itself
   takes seconds.
 

@@ -103,7 +103,7 @@ Where each piece lives in the app, and which template shows it best:
 | Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19 |
 | Instruments, memory, downlink | ... > **Power / propulsion / link budget** > Data handling | 26 |
 | 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32 |
-| Equipment list, system modes, power and mass budgets | the **Budgets** area (`Ctrl+5`) | 38 |
+| Equipment list, system modes, power, mass and pointing budgets | the **Budgets** area (`Ctrl+5`) | 38 |
 | Ground stations | Scenario tree > **Ground stations** > its name | 19, 22 |
 | Mission sequence | Scenario tree > **Mission sequence** | 08, 16, 23 |
 | Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25, 37 |
@@ -545,7 +545,7 @@ path, each step building on the one before:
 | 7. Whole systems | 19, 20, 23, 26 | Power, radio link and thermal working together; data from instrument to ground |
 | 8. Uncertainty | 09, 25, 37 | Monte Carlo batches: mass, orbit insertion, drag; requirements, statistics and sensitivity |
 | 9. Navigation | 30, 31 | Estimating an orbit around Mars from camera images of the planet; flying around asteroid Eros with its shape's gravity and navigating from its landmarks |
-| 10. The spacecraft as designed | 28, 32, 38 | A 3D model with its equipment mounted: fields of view, a plume, the mass budget and the launcher envelope checked without a run; the disturbance torques and the arrays' shading in a run; an equipment list with its power, mass and propellant budgets |
+| 10. The spacecraft as designed | 28, 32, 38 | A 3D model with its equipment mounted: fields of view, a plume, the mass budget and the launcher envelope checked without a run; the disturbance torques and the arrays' shading in a run; an equipment list with its power, mass, pointing and propellant budgets |
 | 11. Operations | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
 
 **Starting your own mission?** Open **22** (a realistic satellite, orbit

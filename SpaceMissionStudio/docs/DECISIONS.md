@@ -6264,7 +6264,8 @@ templates 01 to 37 are byte-identical; template 38 has its own.
   average; a power margin for each of the six maturity categories, a
   system margin and a distribution loss. No placeholder: the Power badge
   says "Complete". **Why:** the owner's list; a complete budget shows
-  every row and column. The description tells the user to clear the
+  every row and column, and every page of the area (Equipment, Power,
+  Mass, Pointing, Propellant) has numbers. The description tells the user to clear the
   camera's imaging power to see the placeholder behaviour, instead of a
   "TBD" in the file.
 - **Decision TB-3: the 3D model holds all 12 items.** Each model part
@@ -6302,9 +6303,24 @@ templates 01 to 37 are byte-identical; template 38 has its own.
   they are not those of the System Budget Studio example in the test
   data. **Why:** the owner's rule: never invent a source. A number that
   only illustrates says so.
-- **Decision TB-6: no pointing example yet.** `develop` has no pointing
-  budget when this work starts (pull request #325 is not merged).
-  **Why:** the owner's instruction; `BACKLOG.md` has the follow-up.
+- **Decision TB-6: a small pointing example.** The section has a
+  `pointing` part (budgets section version 2): the line of sight along
+  body z (the camera's), three requirements (the absolute error of the
+  line of sight, 60 arcsec; the relative error about x over 1 s in
+  60 s, 15 arcsec; the absolute knowledge error about x, 15 arcsec; each
+  at 0.95 in the imaging mode) and five contributors (star tracker
+  noise, camera alignment, attitude control error, wheel jitter, a
+  thermal distortion with a 5700 s period), each linked to its item
+  where it has one. All three requirements are met. **Why:** the brief
+  asked for it if the pointing budget was on `develop`. Pull request
+  #325 was not merged when this work started, and was merged while it
+  ran; the coordinator then asked for the example. `develop` was merged
+  into the branch (no rebase).
+  `tests/test_budgets_schema.py::test_a_scenario_without_budgets_saves_as_before`
+  required that no template has a section. It now names template 38 as
+  the one template with a section and checks that it has one; every
+  other template is checked as before, and every template still saves
+  byte for byte (TB-8).
 - **Decision TB-7: the Customize wizard and two small fixes.** The
   wizard offers the system power margin, the distribution loss, the mass
   limit, the tank capacity and the duration; a value changed there keeps
@@ -6317,5 +6333,9 @@ templates 01 to 37 are byte-identical; template 38 has its own.
   templates move from 37 to 38: two in `tests/gui/test_home.py` (the
   cards, and the filter's "4 of 38" and "38") and one in
   `tests/test_monte_carlo_statistics.py`. Each test changes only the
-  count it pins. `docs/ui/TEST_CHANGES.md` lists them and the new
-  tests. **Why:** CLAUDE.md; no check is weakened.
+  count it pins. One test pinned "no template has a budgets section"
+  (`tests/test_budgets_schema.py`, TB-6): template 38 is now its one
+  named exception, which must have a section; no check of the other
+  templates is removed. `docs/ui/TEST_CHANGES.md` lists them and the
+  new tests. **Why:** CLAUDE.md; no check is weakened. The owner may
+  want to confirm the change to the budgets schema test.

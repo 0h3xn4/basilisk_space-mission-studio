@@ -7,11 +7,6 @@
 Not for an unattended run: these wait until phase A is done and the
 owner has answered the plan's open questions.
 
-- Template 38: a small `pointing` example in its `budgets` section (a
-  requirement and a few contributors, each with its source), once the
-  pointing error budget is on `develop` (pull request #325, scope B
-  above). It was not on `develop` when template 38 was made (TB-6). The
-  template's golden file and claims then grow by the pointing budget.
 - A pointing error budget, scope C: the absolute, relative and mean
   performance errors measured from a run's attitude error series over
   each requirement's windows, next to the budget's value (design
@@ -34,11 +29,12 @@ owner has answered the plan's open questions.
   for a template for the budgets feature. A small LEO imager with a
   complete `budgets` section (12 items, four system modes whose duty
   cycles add up to 1, two buses, margins), a 3D model with the S-120
-  mass budget, a mass limit and a launcher envelope, and a propellant
+  mass budget, a mass limit and a launcher envelope, a small pointing
+  error budget (three requirements, five contributors) and a propellant
   budget with a tank and a specific impulse. Every number of the section
   has the source "Synthetic example value; not from a data sheet or a
   standard.". Claims tests, a golden file, a wizard and the docs.
-  Decisions TB-1 to TB-8. The pointing example waits for #325 (Later).
+  Decisions TB-1 to TB-8.
 - A pointing error budget, scope B (the owner's answers of 2026-11-24
   to `docs/developer/pointing-error-budget-design.md` section 7), on
   branch `feature/pointing-budget` (2026-11-24). Budgets › Pointing after

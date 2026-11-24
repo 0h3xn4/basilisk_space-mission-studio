@@ -13,8 +13,8 @@ You edit the section in the **Budgets** area of the window (below), on
 the **JSON** page of the Scenario Editor, or let the IDM-CIC import make
 it. Template 38 ("Budgets: equipment list, power, mass and propellant")
 has a complete section to try: 12 items, four system modes whose duty
-cycles add up to 1, two buses, a 3D model with a mass limit and a
-propellant budget. Each of its numbers is an example, and its source
+cycles add up to 1, two buses, a 3D model with a mass limit, a small
+pointing budget and a propellant budget. Each of its numbers is an example, and its source
 says so. The spacecraft editor's **Power** tab shows a summary of it, and
 **Run › Design Checks** shows its masses in the mass budget.
 
