@@ -21387,3 +21387,63 @@ and passes with it.
 `-s` all ended in 10 s. In 12 traced runs of the cancel test, the pool
 started a worker after Cancel's list in 2, and the group ended it both
 times.
+
+## The 3D View's move: the GUI thread first (SRelD K-40, 2026-11-24)
+
+The backlog item of "Next release": in the release run of 2.14.2
+(45148067729, attempt 1) the 3D View's slowest move into its own window
+or back took 64.0 ms on the Windows runner, and 72.7 ms when timed
+again; the same test passed on the same commit in CI run 45143562273.
+Worked on branch `fix/3d-view-move` from `develop` at `bb00914`.
+
+**Measured on Linux.** Scratch tests (not committed) timed each step of
+`Breakouts.detach` and `attach`, counted the events that reached the
+view, its web view and the web view's `QQuickWidget`, and compared each
+move's wall time with its thread time (`time.thread_time`) and the
+thread's run-queue time (`/proc/self/task/<id>/schedstat`).
+- The move itself: 3 to 5 ms of processor time. No step stands out, and
+  nothing scales with native windows: under the offscreen platform Qt
+  Quick draws in software, so the `QQuickWidget` gets no window-change
+  events and keeps its scene graph.
+- Idle, wall time and thread time agree. With four busy processes beside
+  the test (as the other xdist workers), the 3D View's moves wait in the
+  run queue (one: 27.6 ms wall, 5.1 ms on the processor, 23.9 ms
+  waiting), up to 75.8 ms; Thermal's stay under 7 ms.
+- Each move makes the page draw its new size in software: 240 to 255 ms
+  of processor time in the app's process per move, on all four
+  processors, and the page drew each move's size twice (the window's
+  `resize` and the page's `ResizeObserver`).
+
+**Measured on the Windows runner.** A temporary diagnostic test (pushed
+on this branch, failing on purpose to print, removed before the pull
+request; CI run 45296869864) read every thread's priority and processor
+time. The page draws with ANGLE on WARP, 30.7 ms a frame. During 16
+moves four WARP threads used 172 to 250 ms each at "above normal"
+priority, with Chromium's GPU, compositor and IO threads; the GUI thread
+was at "normal". The slowest move took 56.2 ms. With the GUI thread at
+"above normal" it took 10.4 ms, with 400 ms between moves 10.4 ms, with
+the globe hidden 6.2 ms.
+
+**Cause.** Windows always runs the ready thread of higher priority
+first. While the 3D View's page drew after a move, the drawing threads
+held every processor, and the GUI thread, of lower priority, waited.
+This is why only the 3D View was slow, only sometimes (when a draw
+overlapped the next move), and mostly on Windows. Linux as root shows
+the same order (the drawing threads at nice -8).
+
+**Fix.** `background_threads.install()` gives the GUI thread the drawing
+threads' priority ("above normal"; nice -8 on Linux where allowed). The
+window's workers start at normal priority (`WorkerThread`,
+`worker_pool`: 24 thread classes and 5 pools changed their base), so a
+run does not take the processors from other programs. The page applies
+each new size once (`MV.onResized`), so a move draws one frame instead
+of two.
+
+**After the fix.** On the Windows runner (CI run 45304662719) the move
+test's protocol ran ten times: the slowest of 60 moves of each view took
+13.6 ms (3D View), 3.7 ms (Thermal) and 8.6 ms (Budgets). On Linux with
+four busy processes the slowest of 80 moves took 7.5 to 9.3 ms (22.9 to
+35.8 ms before). New tests: no thread that worked while the 3D View
+moved outranks the GUI thread, and the page draws each new size once;
+both fail without the fix. The move test is unchanged. The full suite
+passed locally except the known `test_a_reported_path_is_not_clipped_in_the_status_bar`.

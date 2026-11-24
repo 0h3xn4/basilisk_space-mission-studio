@@ -150,14 +150,16 @@ def collect_due() -> int | None:
     return generation
 
 
+_LINUX = sys.platform.startswith("linux")
+
+
 def _set_nice(nice: int) -> None:
     """The calling thread's nice value on Linux, where the system allows it
-    (a lower value needs root); nothing elsewhere."""
-    if sys.platform.startswith("linux"):
-        try:
-            os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), nice)
-        except OSError:  # not allowed: the thread keeps its value
-            pass
+    (a lower value needs root)."""
+    try:
+        os.setpriority(os.PRIO_PROCESS, threading.get_native_id(), nice)
+    except OSError:  # not allowed: the thread keeps its value
+        pass
 
 
 def _normal_nice() -> None:
@@ -173,7 +175,8 @@ class WorkerThread(QThread):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.started.connect(_normal_nice, Qt.ConnectionType.DirectConnection)  # in the new thread
+        if _LINUX:  # a nice value is not a QThread priority: the new thread sets its own
+            self.started.connect(_normal_nice, Qt.ConnectionType.DirectConnection)
 
     def start(self, priority: QThread.Priority = WORKER_PRIORITY) -> None:
         super().start(priority)
@@ -198,7 +201,7 @@ def worker_pool(parent: QObject | None = None, max_threads: int = 1) -> QThreadP
     """A thread pool of the window's own work, with ``max_threads`` threads
     (one by default: one task after the other) at normal priority, as
     :class:`WorkerThread`. A task is a callable."""
-    pool = _WorkerPool(parent)
+    pool = _WorkerPool(parent) if _LINUX else QThreadPool(parent)
     pool.setMaxThreadCount(max_threads)
     pool.setThreadPriority(WORKER_PRIORITY)
     return pool
@@ -243,7 +246,7 @@ def install(app: QCoreApplication | None = None) -> None:
         _state["collector"] = _Collector(app)
     gc.disable()
     QThread.currentThread().setPriority(GUI_THREAD_PRIORITY)
-    if sys.platform.startswith("linux"):
+    if _LINUX:
         if _state["nice"] is None:
             _state["nice"] = os.getpriority(os.PRIO_PROCESS, 0)  # this thread's own on Linux
         _set_nice(min(GUI_THREAD_NICE, _state["nice"]))

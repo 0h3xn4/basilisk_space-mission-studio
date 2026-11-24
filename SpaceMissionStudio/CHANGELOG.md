@@ -23,6 +23,18 @@ fixes bugs.
   Cancel ended, and Cancel did not see the replacements. A batch's
   processes now form one group (a job on Windows) that ends with the
   batch, so nothing is left running.
+- **The window no longer stalls while the 3D View draws without a
+  graphics card.** On a computer without a usable graphics card, the
+  3D View is drawn in software, on every processor, by threads that ran
+  at a higher priority than the window itself. Each time the view
+  changed size, for example when you moved it into its own window or
+  back, the window could wait for that drawing: on our Windows test
+  machine a move took up to 64 ms instead of about 8. The window now
+  runs at the same priority as the drawing, so it answers at once
+  (13.6 ms at most in 60 moves). Background work such as a run or a
+  study keeps its normal priority. The 3D View also draws each new size
+  once instead of twice, which halves the drawing after a move and while
+  you resize its window.
 
 ## 2.15.0 (2026-11-24)
 

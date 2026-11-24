@@ -42,6 +42,7 @@ pytestmark = pytest.mark.requires_gui
 _GUI_THREAD_MS = 50.0  # [ms] CLAUDE.md "Never freeze": nothing longer on the GUI thread
 _RADIUS_M = 7000e3  # [m]
 _VIEWS = ("3d_view", "thermal", "budgets")
+_WORKED_MS = 50.0  # [ms] a thread that used this much processor time while the 3D View moved worked for it
 
 
 @pytest.fixture(autouse=True)
@@ -773,7 +774,11 @@ def test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread(window, qtbot)
     Chromium's GPU and compositor threads, ran above normal priority and
     the GUI thread at normal: while the page drew, Windows gave the GUI
     thread no processor, and a move took up to 64 ms. Every thread that
-    worked while the view moved has at most the GUI thread's priority."""
+    worked while the view moved (50 ms of processor time or more in twelve
+    moves; the drawing threads use 150 to 350 ms) has at most the GUI
+    thread's priority. A thread that only wakes for a moment is not one
+    of them: Windows has one at "time critical" priority, which used one
+    tick of its clock (15.6 ms) in CI."""
     import threading
 
     from PySide6.QtWidgets import QApplication
@@ -782,7 +787,7 @@ def test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread(window, qtbot)
         pytest.skip("thread priorities are read on Windows and Linux only")
     _with_run(window, qtbot)
     before = _threads()
-    for _round in range(3):
+    for _round in range(6):
         for move in (window.breakouts.detach, window.breakouts.attach):
             move("3d_view")
             QApplication.processEvents()
@@ -790,8 +795,8 @@ def test_no_thread_that_draws_the_3d_view_outranks_the_gui_thread(window, qtbot)
     after = _threads()
     gui = after[threading.get_native_id()][1]
     worked = {tid: (name, priority, round(cpu - before[tid][2], 1)) for tid, (name, priority, cpu) in after.items()
-              if tid in before and cpu > before[tid][2]}
-    assert worked, "no thread worked while the view moved"
+              if tid in before and cpu - before[tid][2] >= _WORKED_MS}
+    assert len(worked) > 1, f"no thread but the GUI thread worked while the view moved: {worked}"
     above = {tid: row for tid, row in worked.items() if row[1] > gui}
     assert not above, f"the GUI thread's priority is {gui}; threads that worked (name, priority, ms): {above}"
 
