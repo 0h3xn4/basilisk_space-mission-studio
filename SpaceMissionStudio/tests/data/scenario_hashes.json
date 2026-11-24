@@ -147,6 +147,10 @@
   "saved_text_sha256": "366d89316ec88181f889fd32a1307e892b053a663292424b50f230ecd2933004",
   "scenario_sha256": "48200bb3345a5a9e069cd02e67dd3976f58166d15a0c4c125c51518952dd122c"
  },
+ "38_budgets_equipment_power_mass_propellant": {
+  "saved_text_sha256": "ad33a05e6ab88554a0ec32d17c184d48b3a3d53d3054e352bb7d2965dda0165b",
+  "scenario_sha256": "a77b619e29d3762bce7df1e05dfe2217159a6af712688428ae886cd70f4a5950"
+ },
  "39_orbit_inputs_tle_and_state_vector": {
   "saved_text_sha256": "fd574ab1eb2a1fff9363d3eb7ab7d72c7ee519266802ee90e7d1dad1c546ac48",
   "scenario_sha256": "25066d7f576323fdf735176c65f7d421904a1faa93f43d9b0b64c82540d24fcd"

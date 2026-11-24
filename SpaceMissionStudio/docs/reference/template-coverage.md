@@ -99,7 +99,7 @@ set of templates (`BACKLOG.md`, "Templates for every feature, batch B").
 | Radio link margin | Power / propulsion / link budget | 19, 23, 26, 35, 36 |
 | Instruments, memory and downlink | Data handling | 26, 35, 36 |
 | Operations planning (targets, passes, scheduler, flying the plan) | Run › Plan | 35, 36 |
-| Equipment list and power budget (the Budgets area) | Budgets | None yet (template 38 is in a separate change) |
+| Equipment list and power budget (the Budgets area) | Budgets | 38 |
 
 ## The spacecraft as designed
 
@@ -112,7 +112,7 @@ set of templates (`BACKLOG.md`, "Templates for every feature, batch B").
 | Design checks: fields of view, plume, mass budget, launcher envelope | Run › Design Checks | 32 |
 | Model analyses in a run: disturbance torques, shading | Results › Model Analyses | 32 |
 | Thermal analysis | Run › Thermal | 33, 34 |
-| Pointing error budget | Budgets › Pointing, `budgets --pointing` | None yet (batch B) |
+| Pointing error budget | Budgets › Pointing, `budgets --pointing` | 38 |
 
 ## Navigation
 
@@ -138,7 +138,7 @@ set of templates (`BACKLOG.md`, "Templates for every feature, batch B").
 | Lifetime estimate | Run › End of Life, `lifetime` | any template with drag; 22 and 42 describe it |
 | Lifetime with the tabular atmosphere | Run › End of Life | 42 |
 | Re-entry casualty estimate | Run › End of Life | 28, 32-34 (any template with a 3D model) |
-| Propellant budget (ESA AD10) | Budgets › Propellant, `budget` | 18 (the User Manual's example) |
+| Propellant budget (ESA AD10) | Budgets › Propellant, `budget` | 18 (the User Manual's example), 38 (a tank and a specific impulse) |
 | Flight-software export and software in the loop | Reports › Flight Software, `export-fsw`, `sil` | any template with an attitude mode |
 | Assumptions: named parameters and a project configuration | Scenario › Assumptions | None yet (batch B) |
 | Plugins | Scenario › Assumptions | None yet (batch B) |
@@ -151,8 +151,7 @@ Batch B adds templates for these, as the owner asked:
 - an IDM-CIC import, from a synthetic file only;
 - the other Monte Carlo dispersions: attitude, inertia, body rate, SRP
   coefficient and the atmospheric density scale;
-- plugins and project parameters (a project configuration);
-- the pointing error budget (Budgets › Pointing).
+- plugins and project parameters (a project configuration).
 
 These are without a template too, and batch B lists them:
 
@@ -161,8 +160,7 @@ These are without a template too, and batch B lists them:
 - long runs chained past Basilisk's 104 days;
 - Mission Sequence assignment, `if`, `while` and script blocks;
 - sensor faults;
-- a 3D model from cylinders and spheres;
-- the equipment list and power budget, if template 38 does not land.
+- a 3D model from cylinders and spheres.
 
 The exponential atmosphere and the albedo on the sun sensors are shown
 only in a "Try changing" (templates 42 and 14).

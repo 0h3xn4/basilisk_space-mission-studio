@@ -105,6 +105,7 @@ CATEGORIES: tuple[Category, ...] = (
              "The spacecraft as designed: 3D model, equipment, flexible arrays, thermal and budgets.",
              ("28_octagonal_bus_3d_model.json",
               "32_smallsat_design_checks.json",
+              "38_budgets_equipment_power_mass_propellant.json",
               "27_flexible_solar_arrays.json",
               "20_thermal_simulation.json",
               "33_microsat_thermal.json",

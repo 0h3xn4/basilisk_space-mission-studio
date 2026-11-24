@@ -2187,6 +2187,44 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                            SimSettings._MAX_SINGLE_RUN_DAYS),
         ],
     ),
+    "38_budgets_equipment_power_mass_propellant.json": TemplateWizardSpec(
+        template_filename="38_budgets_equipment_power_mass_propellant.json",
+        pages=[
+            WizardPageSpec(
+                title="Budgets",
+                intro="The Budgets area shows what these change; each number keeps its source.",
+                fields=[
+                    WizardField(
+                        "System power margin", "The margin on the sum of the margined loads of each mode.",
+                        lambda s: _sc(s).budgets.system_power_margin_percent.value,
+                        lambda s, v: setattr(_sc(s).budgets.system_power_margin_percent, "value", v),
+                        0.0, 100.0, decimals=1, step=1.0, suffix=" %", hint="On the sum of the margined loads",
+                    ),
+                    WizardField(
+                        "Distribution loss", "The share of the power lost between the source and the loads.",
+                        lambda s: _sc(s).budgets.distribution_loss.value,
+                        lambda s, v: setattr(_sc(s).budgets.distribution_loss, "value", v),
+                        0.0, 0.5, decimals=3, step=0.01, hint="0 to below 1",
+                    ),
+                    WizardField(
+                        "Mass limit", "The launch mass the mass budget compares its total with.",
+                        lambda s: _sc(s).model.mass_budget.mass_limit_kg,
+                        lambda s, v: setattr(_sc(s).model.mass_budget, "mass_limit_kg", v),
+                        1.0, 1000.0, decimals=1, step=5.0, suffix=" kg", hint="Budgets › Mass shows the headroom",
+                    ),
+                    WizardField(
+                        "Tank capacity", "The most propellant the tank holds: the propellant budget compares "
+                        "its total with it.",
+                        lambda s: _sc(s).propellant_budget.tank_capacity_kg,
+                        lambda s, v: setattr(_sc(s).propellant_budget, "tank_capacity_kg", v),
+                        0.0, 100.0, decimals=1, step=1.0, suffix=" kg", hint="Budgets › Propellant compares",
+                    ),
+                ],
+            ),
+            _duration_page("The budgets need no run; a day of orbit takes seconds.",
+                           SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
     "39_orbit_inputs_tle_and_state_vector.json": TemplateWizardSpec(
         template_filename="39_orbit_inputs_tle_and_state_vector.json",
         pages=[

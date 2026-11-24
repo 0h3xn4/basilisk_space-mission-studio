@@ -6382,6 +6382,109 @@ template has its own, recorded with `scripts/update_golden_outputs.py
   (outside `SpaceMissionStudio/`) still says 36 templates: it is part of
   the Basilisk framework's tree, which this work does not change.
 
+## Template 38: the Budgets area (2026-11-24)
+
+The owner asked: "I need a template for the budgets feature". No template
+filled a spacecraft's `budgets` section (equipment list, system modes,
+power budget); only template 32 had a model mass budget. The work ran
+without questions. No scenario format step: the scenario stays at schema
+version 8 and the section at `BUDGETS_VERSION` 1. The golden files of
+templates 01 to 37 are byte-identical; template 38 has its own.
+
+- **Decision TB-1: one new template, "38 - Budgets: equipment list,
+  power, mass and propellant".** Template 22's orbit (550 km,
+  Sun-synchronous, 10:30 LTAN), environment and Berlin station; one
+  spacecraft, `eo-sat`, orbit only, one day at 30 s (a run takes
+  seconds). **Why:** the owner asked for a small LEO satellite that runs
+  in seconds. A new template keeps the claims and golden files of the
+  others as they are.
+- **Decision TB-2: what the template shows.** An equipment list of 12
+  items over nine subsystems (structure, power, ADCS, OBC, comms,
+  payload, thermal, harness, propulsion), each with a mass, an S-120
+  column and a maturity; power modes for 8 of them (the heaters with a
+  duty cycle per power mode); two buses (platform, payload); four
+  system modes (safe 0.05, nominal 0.65, imaging 0.2, downlink 0.1)
+  whose duty cycles add up to 1, so the Power page shows the duty-cycle
+  average; a power margin for each of the six maturity categories, a
+  system margin and a distribution loss. No placeholder: the Power badge
+  says "Complete". **Why:** the owner's list; a complete budget shows
+  every row and column, and every page of the area (Equipment, Power,
+  Mass, Pointing, Propellant) has numbers. The description tells the user to clear the
+  camera's imaging power to see the placeholder behaviour, instead of a
+  "TBD" in the file.
+- **Decision TB-3: the 3D model holds all 12 items.** Each model part
+  (two for the solar arrays; the units, the heaters and the harness
+  hidden inside the bus) takes the mass, the S-120 column and the
+  maturity of its list item, from one table in the generator
+  (`_T38_EQUIPMENT`), and every item says `mass_in_model: true`. The model has the AIAA S-120-2006 policy, an
+  illustrative 150 kg mass limit and an illustrative 1.3 x 1.5 m
+  cylinder for the launcher, both with a source that says so. **Why:**
+  the run's dry mass comes from the model and the propellant budget
+  uses it: 110.3 kg, the list's total, in the class of 100 to 500 kg
+  that every template flies. With only the structure and the arrays in
+  the model, the run would fly 52 kg. An item outside the model would
+  also give the Mass page an "equipment list" line, and
+  `tests/test_budgets_mass_and_findings.py` requires that no template
+  has one (it guards the golden texts of the budgets feature); this
+  template changes no test for it.
+- **Decision TB-4: a station keeper and a propellant budget.** A 1 N,
+  220 s station keeper with 6 kg of propellant and a 15 km deadband (as
+  template 32: it does not fire in a day); a propellant budget of five
+  years with an 8 kg tank, 220 s, injection errors of 10 km and
+  0.05 deg, and three collision avoidances. **Why:** the Propellant page
+  then estimates the orbit control from the drag without a run, and the
+  Mass page has a propellant line. The budget takes about a minute: it
+  solves the re-entry, as for the other LEO station keepers.
+- **Decision TB-5: every number of the section is an example, and its
+  source says so.** The source text is the one of the budgets test data
+  (`tests/data/budgets`): "Synthetic example value; not from a data sheet
+  or a standard." The station keeper, the propellant budget, the mass
+  limit and the envelope have no source field; the generator's comments
+  and this entry say that they are examples too. The S-120 growth
+  allowances are not entered: the mass budget takes them from the
+  standard (`config.materials`). No number, text or user interface comes
+  from another tool. The margins and efficiencies were chosen so that
+  they are not those of the System Budget Studio example in the test
+  data. **Why:** the owner's rule: never invent a source. A number that
+  only illustrates says so.
+- **Decision TB-6: a small pointing example.** The section has a
+  `pointing` part (budgets section version 2): the line of sight along
+  body z (the camera's), three requirements (the absolute error of the
+  line of sight, 60 arcsec; the relative error about x over 1 s in
+  60 s, 15 arcsec; the absolute knowledge error about x, 15 arcsec; each
+  at 0.95 in the imaging mode) and five contributors (star tracker
+  noise, camera alignment, attitude control error, wheel jitter, a
+  thermal distortion with a 5700 s period), each linked to its item
+  where it has one. All three requirements are met. **Why:** the brief
+  asked for it if the pointing budget was on `develop`. Pull request
+  #325 was not merged when this work started, and was merged while it
+  ran; the coordinator then asked for the example. `develop` was merged
+  into the branch (no rebase).
+  `tests/test_budgets_schema.py::test_a_scenario_without_budgets_saves_as_before`
+  required that no template has a section. It now names template 38 as
+  the one template with a section and checks that it has one; every
+  other template is checked as before, and every template still saves
+  byte for byte (TB-8).
+- **Decision TB-7: the Customize wizard and two small fixes.** The
+  wizard offers the system power margin, the distribution loss, the mass
+  limit, the tank capacity and the duration; a value changed there keeps
+  its source, as an edit in the Budgets area does. The 3D model page's
+  note that names every part now wraps: with 11 parts it made the page
+  scroll sideways at 1280 px (`tests/gui/test_forms.py`). **Why:** every
+  template has a wizard (`tests/gui/test_template_wizard.py`); the note
+  is the only widget that grew with the number of parts.
+- **Decision TB-8: tests changed for this work.** Three counts of
+  templates move up by one, from 41 to 42 now that templates 39 to 42
+  are on `develop`: two in `tests/gui/test_home.py` (the cards, and the
+  filter's "4 of 42" and "42") and one in
+  `tests/test_monte_carlo_statistics.py`. Each test changes only the
+  count it pins. One test pinned "no template has a budgets section"
+  (`tests/test_budgets_schema.py`, TB-6): template 38 is now its one
+  named exception, which must have a section; no check of the other
+  templates is removed. `docs/ui/TEST_CHANGES.md` lists them and the
+  new tests. **Why:** CLAUDE.md; no check is weakened. The owner may
+  want to confirm the change to the budgets schema test.
+
 ## Templates in categories (2026-11-24)
 
 The owner: Home shows the templates by number (01 to 37), and that is
@@ -6511,3 +6614,15 @@ change; the golden files are byte-identical.
   `__init__.py`, so `catalog.py` was not in the wheel without it. A
   wheel built from this branch holds `catalog.py`, the `__init__.py`,
   the README and the 38 scenario files.
+- **Decision TC-6: templates 38 to 42, added on `develop` while this
+  branch was open, take these places.** 39 (orbit from a TLE or a state
+  vector) and 42 (tabular atmosphere and lifetime) open "Orbits and
+  orbit keeping": they are orbit-only and short. 40 (continuous low
+  thrust) follows 03, after the impulsive station keepers. 41 (velocity
+  pointing with navigation errors) follows 07: it is 07's spacecraft
+  with one more feature. 38 (the budgets) follows 32 in "Spacecraft
+  model, thermal and budgets": it fills the design 32 checks. The
+  orbits description changes to name the new topics and stays one line
+  under 90 characters. The Home category tests now take their counts
+  and the attitude group from the catalog, so a new template needs no
+  test change.

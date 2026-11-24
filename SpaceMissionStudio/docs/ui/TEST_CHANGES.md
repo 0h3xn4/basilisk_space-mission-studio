@@ -2926,6 +2926,33 @@ New tests:
 - The tests that run every template now run the four new ones too (their
   golden files and hashes are new).
 
+## Template 38: the Budgets area (2026-11-24)
+
+Decision TB-8. Three tests pin the number of templates. Each changes only
+that count. One test pinned that no template has a budgets section; it
+now names template 38 as the exception (last row). No GUI test reaches a
+widget another way.
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_home.py::test_every_template_has_a_card_with_its_type_orbit_and_first_sentence` | `len(files) == 41` (develop, with templates 39 to 42) | `== 42` | template 38 is new |
+| `tests/gui/test_home.py::test_the_filter_narrows_the_cards_and_says_how_many` | "4 of 41"; 41 cards and "41" | "4 of 42"; 42 cards and "42" | template 38 is new; its text does not match "monte carlo", so the filter still shows 4 |
+| `tests/test_monte_carlo_statistics.py::test_no_template_has_a_false_finding` | `len(paths) == 41` | `== 42` | template 38 is new |
+| `tests/test_budgets_schema.py::test_a_scenario_without_budgets_saves_as_before` | every template has no `budgets` section | template 38 is named in `_TEMPLATES_WITH_A_SECTION` and must have a section; every other template is checked as before; every template still saves byte for byte | template 38 is made to show the section (TB-6); not a count, so the owner may want to confirm it |
+
+New tests:
+- `tests/test_template_claims.py`:
+  `test_38_the_power_mass_and_pointing_budgets_are_complete` (every
+  number of the section has its example source and no placeholder; the
+  power per system mode, the duty-cycle average, the mass totals and the
+  three pointing requirements, with the functions of the Power, Mass and
+  Pointing pages and the `budgets` command) and
+  `test_38_the_propellant_budget_fits_the_tank` (slow: the propellant
+  total, with the function of the Propellant page and the `budget`
+  command).
+- Template 38 joins every test that walks the templates (the golden
+  file, the hashes, the wizard, the forms, the descriptions).
+
 ## Templates in categories (2026-11-24)
 
 Home shows the template cards in groups by category (decisions TC-1 to

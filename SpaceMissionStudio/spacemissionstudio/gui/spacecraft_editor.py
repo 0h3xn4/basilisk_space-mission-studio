@@ -331,6 +331,9 @@ class ModelSummary(QWidget):
         self.state_label.setWordWrap(True)
         column.addWidget(self.state_label)
         self.sheet = ValueSheet()
+        # The note names every part: it wraps, so a model of many parts
+        # does not widen the page (template 38 has 11).
+        self.sheet.note_label.setWordWrap(True)
         column.addWidget(self.sheet)
         self.problems = NoteList("warning")
         column.addWidget(self.problems)
