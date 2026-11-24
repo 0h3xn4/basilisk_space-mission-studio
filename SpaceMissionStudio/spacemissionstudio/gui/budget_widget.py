@@ -30,7 +30,7 @@
 from __future__ import annotations
 
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -47,6 +47,7 @@ from PySide6.QtWidgets import (
 from . import export_log, units
 from .. import output_provenance
 from ..schema.scenario import SUPPORTED_DISPOSALS, PropellantBudgetConfig
+from .background_threads import WorkerThread
 from .calculation_panel import Explanation
 from .chained_inputs_panel import ChainedInputsPanel
 from .data_table import DataTable, Row
@@ -247,7 +248,7 @@ def _titled(title: str, form: QFormLayout) -> QGroupBox:
     return box
 
 
-class _BudgetWorker(QThread):
+class _BudgetWorker(WorkerThread):
     """One budget, the launch-delay sweep or the altitude trade (``mode``
     "budget", "sweep" or "trade"), off the GUI thread."""
 

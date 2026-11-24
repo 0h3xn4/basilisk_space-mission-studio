@@ -41,7 +41,7 @@ from pathlib import Path
 
 import re
 
-from PySide6.QtCore import QByteArray, QRectF, Qt, QThread, Signal
+from PySide6.QtCore import QByteArray, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -60,6 +60,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import export_log, units
+from .background_threads import WorkerThread
 from .badges import StatusBadge
 from .data_table import DataTable, Row
 from .feedback import report
@@ -307,7 +308,7 @@ def _page() -> tuple[QWidget, QVBoxLayout]:
     return page, layout
 
 
-class _ThermalWorker(QThread):
+class _ThermalWorker(WorkerThread):
     progress = Signal(str)
     finished_ok = Signal(object)  # thermal.analysis.ThermalAnalysis
     failed = Signal(str)
@@ -329,7 +330,7 @@ class _ThermalWorker(QThread):
             self.failed.emit(f"thermal analysis failed: {exc}")
 
 
-class _StudyWorker(QThread):
+class _StudyWorker(WorkerThread):
     """A sweep, a sensitivity or a Monte Carlo (thermal.sweeps) off the GUI thread."""
 
     finished_ok = Signal(object)
@@ -346,7 +347,7 @@ class _StudyWorker(QThread):
             self.failed.emit(str(exc))
 
 
-class _PlotRenderer(QThread):
+class _PlotRenderer(WorkerThread):
     """The screen copies of the plots shown (T-40), off the GUI thread:
     each plot's SVG at its view's size in the theme's style, and its
     picture (``svg_plot.render_image``)."""

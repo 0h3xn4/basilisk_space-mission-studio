@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
@@ -41,6 +41,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import export_log
+from .background_threads import WorkerThread
 from .data_table import DataTable, Row
 from .theme import set_role
 from .value_sheet import NoteList, ValueSheet
@@ -50,7 +51,7 @@ STIFFNESS_NOTE = ("Launcher compatibility here is geometry, mass and centre of m
                   "fundamental frequencies need a structural model and are not checked.")
 
 
-class _Worker(QThread):
+class _Worker(WorkerThread):
     finished_ok = Signal(object)  # DesignReport
     failed = Signal(str)
 

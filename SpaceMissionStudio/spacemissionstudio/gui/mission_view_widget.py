@@ -90,7 +90,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import QEvent, QPointF, QSettings, QThread, QTimer, QUrl, Qt, Signal
+from PySide6.QtCore import QEvent, QPointF, QSettings, QTimer, QUrl, Qt, Signal
 from PySide6.QtGui import QAction, QColor, QKeySequence, QLinearGradient, QPainter, QPen, QShortcut
 from PySide6.QtWidgets import (QButtonGroup, QComboBox, QFrame, QHBoxLayout, QLabel, QMenu, QPushButton, QSlider,
                                QSplitter, QStackedWidget, QToolButton, QVBoxLayout, QWidget)
@@ -98,6 +98,7 @@ from PySide6.QtWidgets import (QButtonGroup, QComboBox, QFrame, QHBoxLayout, QLa
 from ..constants import CENTRAL_BODY_EQUATORIAL_RADIUS_KM
 from ..engine import live_view, scene3d
 from ..schema.epochs import parse_epoch_utc
+from .background_threads import WorkerThread
 from .ground_map_widget import GroundMapWidget
 from .live_scene import LIVE_BATCH, LIVE_BATCH_STATES, LIVE_TICK_MS, LiveScene, live_batch  # noqa: F401 -- public names
 from .theme import SPACE, TOKENS, current_theme, icon, mono_font, on_change, set_role
@@ -237,7 +238,7 @@ def views(scene: scene3d.Scene) -> list[tuple[str, dict]]:
     return found
 
 
-class SceneBuilder(QThread):
+class SceneBuilder(WorkerThread):
     """Builds the scene and the page's data off the GUI thread."""
 
     built = Signal(object, str)  # engine.scene3d.Scene, its MV.load payload as JSON
@@ -296,7 +297,7 @@ def temperature_frames(scene: scene3d.Scene, analysis, case_name: str) -> dict |
             "colours": rgb.reshape(len(times), -1).tolist(), "none": none, "low_c": low, "high_c": high}
 
 
-class TemperatureFramesBuilder(QThread):
+class TemperatureFramesBuilder(WorkerThread):
     """Builds :func:`temperature_frames` and its JSON off the GUI thread."""
 
     built = Signal(int, object, str)  # the request's number, the table (dict or None), its JSON

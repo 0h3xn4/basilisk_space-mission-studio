@@ -54,12 +54,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (QAbstractItemView, QCheckBox, QDialog, QDialogButtonBox, QFileDialog, QFormLayout,
                                QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPushButton, QScrollArea, QTableWidget,
                                QTableWidgetItem, QTabWidget, QVBoxLayout, QWidget)
 
 from . import units
+from .background_threads import WorkerThread
 from .theme import SPACE, set_role
 from .value_sheet import NoteList, ValueSheet
 from .widgets import ComboBox, EmptyStack, EmptyState, set_table_look
@@ -85,7 +86,7 @@ class _PreviewArea(QScrollArea):
         return hint
 
 
-class _Worker(QThread):
+class _Worker(WorkerThread):
     """Reads the file (when no model is given) and plans the import."""
 
     finished_ok = Signal(object, object)  # model, plan

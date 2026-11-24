@@ -74,17 +74,17 @@ import logging
 import threading
 from pathlib import Path
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Signal
 
 from ..schema.command import runs_sequence
-from .background_threads import FIRST_IMPORTS, import_pandas
+from .background_threads import FIRST_IMPORTS, WorkerThread, import_pandas
 from .monte_carlo_process import BatchCancelled, failure_text, run_batch
 from ..schema.scenario import MonteCarloConfig, Scenario
 
 _logger = logging.getLogger(__name__)
 
 
-class RunWorker(QThread):
+class RunWorker(WorkerThread):
     finished_ok = Signal(object, object)  # engine.results.ResultSet, Optional[engine.results.CommandSummary]
     failed = Signal(str)
     progress = Signal(object, float)  # engine.results.ResultSet (partial), fraction_complete in [0, 1]
@@ -259,7 +259,7 @@ class RunWorker(QThread):
         self.finished_ok.emit(result, None)
 
 
-class MonteCarloWorker(QThread):
+class MonteCarloWorker(WorkerThread):
     finished_ok = Signal(list)  # list[int] of failed run indices (empty == all succeeded)
     failed = Signal(str)
     cancelled = Signal(int)  # the cases finished before Cancel (audit G3)

@@ -41,10 +41,11 @@ from datetime import datetime
 from pathlib import Path
 from collections.abc import Callable
 
-from PySide6.QtCore import QObject, QThread, QTimer, Signal
+from PySide6.QtCore import QObject, QTimer, Signal
 
 from ..engine import run_store
 from ..engine.results import ResultSet
+from .background_threads import WorkerThread
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class RunRecord:
         return f"Run {self.number} ({when}{', cancelled' if self.cancelled else ''}): {name}"
 
 
-class _LoadWorker(QThread):
+class _LoadWorker(WorkerThread):
     """The store's index (:func:`run_store.load_index`), read off the GUI thread."""
 
     done = Signal(list)  # [run_store.SavedRun]
@@ -120,7 +121,7 @@ class _LoadWorker(QThread):
         self.done.emit(self.index)
 
 
-class _SaveWorker(QThread):
+class _SaveWorker(WorkerThread):
     """One run saved, then the store pruned, off the GUI thread."""
 
     done = Signal(object, object, str, list)  # record, SavedRun or None, the error ("" if saved), pruned run ids

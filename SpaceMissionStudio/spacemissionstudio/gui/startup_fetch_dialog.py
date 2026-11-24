@@ -69,7 +69,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, UTC
 
-from PySide6.QtCore import QEventLoop, Qt, QThread, Signal
+from PySide6.QtCore import QEventLoop, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -84,13 +84,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .background_threads import WorkerThread
 from .feedback import report
 from .theme import SPACE, set_role
 
 _logger = logging.getLogger(__name__)
 
 
-class StartupFetchWorker(QThread):
+class StartupFetchWorker(WorkerThread):
     """Runs the selected fetch(es) on a background thread. Constructed
     and started only from :func:`maybe_run_startup_fetch`, itself only
     reached after :class:`StartupFetchDialog`'s "Fetch now" button was

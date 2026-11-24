@@ -46,13 +46,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from PySide6.QtCore import QPoint, Qt, QThread, Signal
+from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtWidgets import (QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea, QStackedWidget,
                                QVBoxLayout, QWidget)
 
 from ..config import registry
 from ..engine import run_summary
 from . import units
+from .background_threads import WorkerThread
 from .calculation_panel import Explanation
 from .flow_layout import FlowLayout
 from .run_history_view import ProvenancePopover, provenance_text
@@ -174,7 +175,7 @@ def _card_height(card: MetricCard) -> int:
     return layout.totalHeightForWidth(CARD_WIDTH_PX) if layout.hasHeightForWidth() else card.sizeHint().height()
 
 
-class _SummaryWorker(QThread):
+class _SummaryWorker(WorkerThread):
     """:func:`run_summary.overview_figures` of one result, off the GUI thread."""
 
     def __init__(self, result, parent: QWidget | None = None) -> None:
