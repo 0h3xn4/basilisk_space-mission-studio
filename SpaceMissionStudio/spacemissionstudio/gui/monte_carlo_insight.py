@@ -58,6 +58,40 @@ WEBGL_POINTS = 5000
 NO_VALUE, number_text, percentile_title = mcs.NO_VALUE, mcs.number_text, mcs.percentile_title
 
 
+class _Relay(QObject):
+    """Carries a worker's result to the GUI thread. A worker emits this
+    object's signal, never its owner's: the owner (a view) can be deleted
+    while the worker runs, and a signal of an object being deleted is not
+    safe to emit from another thread (on the Windows CI runner: "TypeError:
+    only accepts 0 argument(s), 3 given", 2026-11-24). The relay has no
+    parent; the worker's task keeps it alive. Its owner connects a method
+    of its own, so Qt ends the connection when the owner is deleted, and a
+    late result is then dropped."""
+
+    done = Signal(object)  # the result, a tuple
+
+
+def _compute(relay: _Relay, compute: Callable, batch) -> None:
+    """:class:`InsightComputer`'s task, in its worker."""
+    try:
+        result, error = compute(batch), ""
+    except Exception as exc:  # noqa: BLE001 -- said in the tab, never a crash of the window
+        result, error = None, f"{type(exc).__name__}: {exc}"
+    relay.done.emit((batch, result, error))
+
+
+def _write_report(relay: _Relay, write: Callable, batch, path: Path, folder: Path | None, insight) -> None:
+    """:class:`ReportWriter`'s task, in its worker."""
+    try:
+        write(batch, path, folder, insight)
+        error = ""
+    except (OSError, ValueError, monte_carlo_report.MonteCarloReportError) as exc:
+        error = str(exc)
+    except Exception as exc:  # noqa: BLE001 -- said in a toast and the Log, never a crash of the window
+        error = f"{type(exc).__name__}: {exc}"
+    relay.done.emit((path, error))
+
+
 class InsightComputer(QObject):
     """Works out :func:`engine.monte_carlo_statistics.insight` of a batch in
     one serial worker (a ``QThreadPool`` of one thread, as the ground map's
@@ -68,7 +102,6 @@ class InsightComputer(QObject):
     running."""
 
     ready = Signal(object, object, str)
-    _done = Signal(object, object, str)
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -77,7 +110,8 @@ class InsightComputer(QObject):
         self.compute: Callable = mcs.insight  # what the worker runs (a test may replace it)
         self.busy = False
         self._pending = None
-        self._done.connect(self._on_done)
+        self._relay = _Relay()
+        self._relay.done.connect(self._on_done)  # queued: emitted in the worker
 
     def request(self, batch) -> None:
         if self.busy:
@@ -91,20 +125,11 @@ class InsightComputer(QObject):
 
     def _start(self, batch) -> None:
         self.busy = True
-        compute = self.compute
-        self._pool.start(lambda: self._work(compute, batch))
+        compute, relay = self.compute, self._relay
+        self._pool.start(lambda: _compute(relay, compute, batch))
 
-    def _work(self, compute: Callable, batch) -> None:
-        try:
-            result, error = compute(batch), ""
-        except Exception as exc:  # noqa: BLE001 -- said in the tab, never a crash of the window
-            result, error = None, f"{type(exc).__name__}: {exc}"
-        try:
-            self._done.emit(batch, result, error)
-        except RuntimeError:  # the view was closed meanwhile
-            pass
-
-    def _on_done(self, batch, result, error: str) -> None:
+    def _on_done(self, done: tuple) -> None:
+        batch, result, error = done
         self.busy = False
         if self._pending is not None:  # a newer batch was asked for: only its result is wanted
             batch, self._pending = self._pending, None
@@ -121,7 +146,6 @@ class ReportWriter(QObject):
     written). The pool waits for its job when it is deleted."""
 
     written = Signal(object, str)
-    _done = Signal(object, str)
 
     def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
@@ -129,31 +153,20 @@ class ReportWriter(QObject):
         self._pool.setMaxThreadCount(1)
         self.write: Callable = monte_carlo_report.write  # what the worker runs (a test may replace it)
         self.pending = 0  # reports asked for and not yet written
-        self._done.connect(self._on_done)
+        self._relay = _Relay()
+        self._relay.done.connect(self._on_done)  # queued: emitted in the worker
 
     def request(self, batch, path: Path, folder: Path | None, insight=None) -> None:
         self.pending += 1
-        write = self.write
-        self._pool.start(lambda: self._work(write, batch, path, folder, insight))
+        write, relay = self.write, self._relay
+        self._pool.start(lambda: _write_report(relay, write, batch, path, folder, insight))
 
     def wait(self) -> None:
         """Until the reports asked for are written (tests, closing)."""
         self._pool.waitForDone()
 
-    def _work(self, write: Callable, batch, path: Path, folder: Path | None, insight) -> None:
-        try:
-            write(batch, path, folder, insight)
-            error = ""
-        except (OSError, ValueError, monte_carlo_report.MonteCarloReportError) as exc:
-            error = str(exc)
-        except Exception as exc:  # noqa: BLE001 -- said in a toast and the Log, never a crash of the window
-            error = f"{type(exc).__name__}: {exc}"
-        try:
-            self._done.emit(path, error)
-        except RuntimeError:  # the view was closed meanwhile
-            pass
-
-    def _on_done(self, path, error: str) -> None:
+    def _on_done(self, done: tuple) -> None:
+        path, error = done
         self.pending -= 1
         self.written.emit(path, error)
 
@@ -265,6 +278,11 @@ def _remove(page: str) -> None:
         pass
 
 
+def _write_plot_page(relay: _Relay, request: int, figure: dict, plotly_js: str, style: str, page: Path) -> None:
+    """:class:`InsightPlot`'s task, in its worker: write the page, then report it."""
+    relay.done.emit((request, str(page), write_page(figure, plotly_js, style, page)))
+
+
 class InsightPlot(QWidget):
     """One figure in a web view made when it is first needed. :meth:`show`
     takes a function that builds the figure in the current theme;
@@ -275,9 +293,8 @@ class InsightPlot(QWidget):
     file, megabytes for a batch of 100 000 runs, are made in one serial
     worker (:func:`write_page`). On the Windows CI runner that part took
     50 to 100 ms, above the 50 ms of design rule 6. Only the newest
-    page is shown: a page that an older request wrote is not loaded."""
-
-    _written = Signal(int, str, str)
+    page is shown: a page that an older request wrote is not loaded. The
+    worker reports through a :class:`_Relay`, never the plot itself."""
 
     def __init__(self, empty: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -286,7 +303,8 @@ class InsightPlot(QWidget):
         self._request = 0  # the number of the newest page asked for
         self.page_error = ""  # the last page's error, for tests and the log
         self._shown_page = ""  # the file of the page in the web view
-        self._written.connect(self._on_written)
+        self._relay = _Relay()
+        self._relay.done.connect(self._on_written)  # queued: emitted in the worker
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.stack = QStackedWidget()
@@ -331,16 +349,11 @@ class InsightPlot(QWidget):
         plotly_js = QUrl.fromLocalFile(str(_plotlyjs_path())).toString()
         style = _page_style()  # the theme's, read here on the GUI thread
         page = Path(self._page_dir.name) / f"monte_carlo_insight_{request}.html"
-        self._pool.start(lambda: self._write(request, figure, plotly_js, style, page))
+        relay = self._relay
+        self._pool.start(lambda: _write_plot_page(relay, request, figure, plotly_js, style, page))
 
-    def _write(self, request: int, figure: dict, plotly_js: str, style: str, page: Path) -> None:
-        error = write_page(figure, plotly_js, style, page)
-        try:
-            self._written.emit(request, str(page), error)
-        except RuntimeError:  # the view was closed meanwhile
-            pass
-
-    def _on_written(self, request: int, page: str, error: str) -> None:
+    def _on_written(self, written: tuple) -> None:
+        request, page, error = written
         if request != self._request or self.web_view is None:
             _remove(page)  # a newer figure was asked for, or the plot was cleared
             return

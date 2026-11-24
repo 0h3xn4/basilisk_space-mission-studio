@@ -21496,3 +21496,40 @@ moved outranks the GUI thread, and the page draws each new size once;
 both fail without the fix, and both passed on the Windows runner (run
 45314703069). The move test is unchanged. The full suite
 passed locally except the known `test_a_reported_path_is_not_clipped_in_the_status_bar`.
+
+## Monte Carlo workers report through a relay (2026-11-24)
+
+**Found.** CI of PR #322 (the density dispersion), job "platforms
+(windows-latest)" on `00ff2bb`: one failure in 5967 tests,
+`test_monte_carlo_results_widget.py::test_the_statistics_tab_gives_each_outcomes_percentiles_and_its_distribution`.
+pytest-qt caught an exception from the Statistics plot's worker:
+`InsightPlot._write` -> `self._written.emit(...)` -> "TypeError: only
+accepts 0 argument(s), 3 given!". The test ends with a theme change,
+which starts a new page; the fixture then deletes the widget while that
+page is written. The plot's pool is its child and waits for the worker,
+but the worker emits a signal of the plot while the plot is in its
+destructor. PySide6 on that runner resolved the signal of the
+half-deleted object wrongly. The old code caught only `RuntimeError`.
+The fault came in with #314 (the plot worker); PR #322 does not touch it.
+
+**Linux.** A scratch test deleted an `InsightPlot` while its worker
+wrote (the worker held for 0.5 s): the emit returned without an error.
+The race did not show here.
+
+**Fix.** `gui/monte_carlo_insight.py`: a `_Relay` (a `QObject` with one
+`done` signal, no parent) per `InsightPlot`, `InsightComputer` and
+`ReportWriter`. The worker's task is a module function that gets the
+relay, not the view, and emits the relay's signal. The view connects
+its own method, so Qt ends the connection when the view is deleted and
+removes a result already queued for it. The workers never touch a view.
+
+**Test.** `test_a_view_deleted_while_its_workers_run_gets_no_late_result`
+holds the three workers, deletes the three views, then lets the workers
+finish: the plot's page reaches a receiver that outlives the plot, and
+the deleted computer and writer emit nothing. It does not reproduce the
+Windows `TypeError` on Linux (the old code passed the same order of
+events here); it fixes the order of events and checks that a late result
+is dropped.
+
+**Checks.** Full local suite, generators twice, `check_drds.py`,
+pre-commit: see the PR.

@@ -2813,3 +2813,11 @@ plain 50 ms limit and reaches the views as before. Added:
   `install()` raises the GUI thread's priority (on Linux its nice value
   where allowed), a worker started from it takes the same, and
   `uninstall()` gives back the thread's own.
+
+## Monte Carlo workers report through a relay (2026-11-24)
+
+No existing test changed. Added:
+`tests/gui/test_monte_carlo_results_widget.py::test_a_view_deleted_while_its_workers_run_gets_no_late_result`
+(the Statistics plot, the statistics' computer and the report writer
+deleted while their workers run; the late results are dropped). It does
+not reproduce the Windows failure on Linux; see `HISTORY.md`.
