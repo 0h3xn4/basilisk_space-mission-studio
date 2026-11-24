@@ -60,6 +60,17 @@ owner has answered the plan's open questions.
   has the source "Synthetic example value; not from a data sheet or a
   standard.". Claims tests, a golden file, a wizard and the docs.
   Decisions TB-1 to TB-8.
+
+- Templates in categories, on branch `feature/template-categories`
+  (2026-11-24). `spacemissionstudio/scenarios/catalog.py` holds nine
+  categories and each template's place, from simple to advanced; the
+  numbers and file names stay. Home groups the cards under the category
+  headings, with a category filter beside the text filter, an empty
+  state and a count that reads the folder. The command palette, the
+  template README and the User Manual follow the catalog; tests check
+  the folder, the README and the manual against it. Decisions TC-1 to
+  TC-5; three changes to the owner's list (17, 18, 15).
+
 - A pointing error budget, scope B (the owner's answers of 2026-11-24
   to `docs/developer/pointing-error-budget-design.md` section 7), on
   branch `feature/pointing-budget` (2026-11-24). Budgets › Pointing after
@@ -76,7 +87,6 @@ owner has answered the plan's open questions.
   coefficient, body rate) failed every run of the batch, as a new
   dispersion starts at [nominal, nominal]; branch
   `fix/uniform-equal-bounds` (2026-11-24, decision MC-41).
-
 - Monte Carlo phase C, item 1: the atmospheric density dispersion, on
   branch `feature/monte-carlo-density` (2026-11-24). The owner's order
   of the phase C dispersions (Q6) is recorded as MC-36. A spike

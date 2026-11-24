@@ -18,7 +18,7 @@ to do. New here? Start with **Getting started**.
 |---|---|
 | [How-to guides](user-manual/README.md) | One short page per task: run, customize, build, read results, and each feature |
 | [User Manual](../USER_MANUAL.md) | The full manual, also in the app under **Help**, the last button of the navigation rail (`F1`) |
-| [Template catalog](../spacemissionstudio/scenarios/templates/README.md) | The 41 template missions, what each teaches, and a learning path |
+| [Template catalog](../spacemissionstudio/scenarios/templates/README.md) | The template missions by category, from simple to advanced, and what each one teaches |
 | [Tips](tips.md) | Shortcuts, good habits, and every file the app reads and writes |
 
 ## Reference

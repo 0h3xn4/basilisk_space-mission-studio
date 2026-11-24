@@ -313,7 +313,9 @@ bar and no toolbar:
   reference-data card across the top (it replaced the start-up dialog);
   then three columns: Start (New blank scenario, the recent scenarios
   with their empty state, Open a scenario file...), the template cards in as many columns
-  as fit (at least 264 px each) with a filter, and the selected card's
+  as fit (at least 264 px each), in groups under the headings of their
+  categories in the order of `scenarios/catalog.py` (decision TC-1),
+  with a category list and a text filter that combine, and the selected card's
   whole description with Open template (the page's one accent button
   while no scenario is open; with one open, the top bar's Run is the
   accent and Open template is secondary) and Customize and open... (the
@@ -941,7 +943,7 @@ standard key is checked against the running platform's binding.
 | Mission Sequence list | Alt+Up, Alt+Down | Move the step |
 | Mission Sequence list | Delete | Remove the step |
 | Scenario tree | Up, Down | Pass through a group or a page's sections in the key's direction |
-| Home, template cards | Arrows, Home, End | Move between the cards |
+| Home, template cards | Arrows, Home, End | Move between the cards (Up and Down by a row on the screen, across the category headings) |
 | Home, template cards | Enter | Open the card's template |
 | Home, recent scenarios | Delete | Take the scenario off the list |
 | Scenario JSON page | Ctrl+Space | Suggest what can be typed at the cursor |

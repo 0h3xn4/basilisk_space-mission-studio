@@ -156,23 +156,38 @@ def test_the_keyboard_reaches_the_cards_once_and_moves_with_the_arrows(home, qtb
         home.show()
         home.activateWindow()
     qtbot.waitUntil(lambda: home.grid.columns() >= 3)
-    tab_stops = [card for card in home.cards if card.focusPolicy() & Qt.FocusPolicy.TabFocus]
-    assert tab_stops == [home.cards[0]]
-    home.cards[0].setFocus()
-    qtbot.waitUntil(lambda: home.selected_card() is home.cards[0])  # a card selects itself on taking the focus
+    cards = home.grid.cards  # in the order shown (catalog order); home.cards is in file order
+    tab_stops = [card for card in cards if card.focusPolicy() & Qt.FocusPolicy.TabFocus]
+    assert tab_stops == [cards[0]]
+    cards[0].setFocus()
+    qtbot.waitUntil(lambda: home.selected_card() is cards[0])  # a card selects itself on taking the focus
     qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_Right)
-    assert home.selected_card() is home.cards[1] and QApplication.focusWidget() is home.cards[1]
+    assert home.selected_card() is cards[1] and QApplication.focusWidget() is cards[1]
     qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_Down)
-    assert home.selected_card() is home.cards[1 + home.grid.columns()]
+    assert home.selected_card() is _card_below(home, cards[1])
     qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_End)
-    assert home.selected_card() is home.cards[-1]
+    assert home.selected_card() is cards[-1]
     qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_Home)
-    assert home.selected_card() is home.cards[0]
-    assert [card for card in home.cards if card.focusPolicy() & Qt.FocusPolicy.TabFocus] == [home.cards[0]]
+    assert home.selected_card() is cards[0]
+    assert [card for card in cards if card.focusPolicy() & Qt.FocusPolicy.TabFocus] == [cards[0]]
     opened = []
     home.path_chosen.connect(opened.append)
     qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_Return)
-    assert opened == [home.cards[0].path]
+    assert opened == [cards[0].path]
+
+
+def _card_below(home, card):
+    """The card one row below ``card`` on the screen: in the next row of
+    cards (the cards are in groups under headings, so not ``index +
+    columns``), in its column, or that row's last card when it is shorter."""
+    def top_left(other):
+        return other.mapTo(home, other.rect().topLeft())
+
+    here = top_left(card)
+    below = [other for other in home.grid.visible_cards() if top_left(other).y() > here.y()]
+    row_y = min(top_left(other).y() for other in below)
+    row = sorted((other for other in below if top_left(other).y() == row_y), key=lambda other: top_left(other).x())
+    return [other for other in row if top_left(other).x() <= here.x()][-1]
 
 
 def test_a_cards_open_button_opens_that_template(home, qtbot):
