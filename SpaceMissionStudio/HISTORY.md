@@ -21388,6 +21388,46 @@ and passes with it.
 started a worker after Cancel's list in 2, and the group ended it both
 times.
 
+### Release 2.15.0 published (2026-11-24)
+
+The release pull request #318 was merged at 20:40 UTC on 2026-11-23 as
+`5ebbd3b`, after the 2.14.2 record #317 (`f4ab371`). On its head
+`3fd215f`, only CI's "Windows (MAX Python)" job was red. It failed only
+the Basilisk framework test `LambertInputValidation` (K-45), 1 test of
+842. CI ("SpaceMissionStudio") on `develop`'s head `5ebbd3b`, the merge
+of #318 (run 45261875723), passed at the first attempt. No job was run
+again.
+
+The tag workflow (run 45294312275, 00:05:49 to 00:07:06 UTC on
+2026-11-24) ran the release check on `5ebbd3b`. The check passed, and
+the workflow tagged `spacemissionstudio-v2.15.0` at 00:06:56 UTC. The
+tag is annotated and not signed (tag object `56e0831`). The release
+workflow (run 45294483106, 00:07:02 to 00:38:47 UTC) passed at the
+first attempt. Every job passed, the Windows tests too. It built,
+installed and checked every file. It attached the eleven files and
+published "SpaceMissionStudio 2.15.0" at 00:38:45 UTC, 32 minutes
+after the tag. The release is not a draft and not a pre-release. It was
+never public without its files.
+
+The release and its files were checked after the publication:
+- The release notes are the CHANGELOG's 2.15.0 section. Their digests
+  table gives the same digests as the `.deb` and the setup program.
+  The notes do not name the 3D vendor.
+- Each file's GitHub digest equals its line in `SHA256SUMS-linux`,
+  `SHA256SUMS-windows` or `SHA256SUMS-sources`.
+- The wheel, the sdist, both bills of materials and the three
+  `SHA256SUMS-*` files, downloaded from the release, give the same
+  digests.
+- The LGPL sources are the same files as 2.14.x's.
+
+#319 ("A cancelled Monte Carlo batch leaves no process", above) was
+merged after the tag, as `bb00914`. It is not in 2.15.0, and its
+CHANGELOG entry stays under "Unreleased".
+
+SRelD issue 56, the SDP, H05, `releasing.md` and the Monte Carlo plan's
+section 10 record the tag, the runs and the files' digests. The
+CHANGELOG and `BACKLOG.md` are unchanged.
+
 ## The 3D View's move: the GUI thread first (SRelD K-40, 2026-11-24)
 
 The backlog item of "Next release": in the release run of 2.14.2
