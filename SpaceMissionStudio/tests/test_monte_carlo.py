@@ -1315,3 +1315,65 @@ def test_a_seeded_batch_draws_the_same_density_scales_again_and_its_cases_run_ag
         result, _summary = monte_carlo.replay_case(scenario, tmp_path / "first", case)
         position = _position_at_kept_samples(result, "sat-1", first.time_s)
         assert np.max(np.abs(position - first.positions["sat-1"][k])) <= 1e-6  # [m]
+
+
+@pytest.mark.parametrize("quantity, bounds, expected", [
+    ("dry_mass_kg", [150.0, 150.0], 150.0),  # [kg]
+    ("drag_coeff", [2.2, 2.2], 2.2),  # [-]
+    ("srp_coeff", [1.3, 1.3], 1.3),  # [-]
+    ("angular_rate_bn_b", [0.5, 0.5], 0.5),  # [deg/s] added to the nominal rate on each axis
+])
+def test_a_uniform_dispersion_with_equal_bounds_gives_that_value(quantity, bounds, expected):
+    """Basilisk 2.12.0's uniform classes divide by the half-width, so equal
+    bounds (the form starts a new dispersion at [nominal, nominal]) failed
+    every run of the batch with a ZeroDivisionError. Now the draw is that
+    value, and it takes the same numbers from random as before, so the draws
+    after it do not change."""
+    import math
+    import random
+
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+
+    scenario = _template_25(num_runs=1)
+    name = scenario.spacecraft[0].name
+    # Only the draw is tested here: template 25 simulates no attitude or SRP, which a run of the
+    # rate or SRP dispersion needs; the batch test below runs one end to end.
+    config = DispersionConfig(spacecraft=name, quantity=quantity, kind="uniform", bounds=bounds)
+    config.validate()
+    scenario.monte_carlo.dispersions = [config]
+    dispersion = monte_carlo._build_dispersion(scenario.monte_carlo.dispersions[0], scenario)
+    draws = 3 if quantity == "angular_rate_bn_b" else 1
+    random.seed(4)
+    value = dispersion.generate(None)
+    after = random.random()
+    random.seed(4)
+    for _ in range(draws):
+        random.uniform(0.0, 1.0)
+    assert random.random() == after
+    if quantity == "angular_rate_bn_b":
+        nominal = np.asarray(scenario.spacecraft[0].omega_bn_b_init_rad_s, dtype=float)  # [rad/s]
+        np.testing.assert_allclose(value, nominal + math.radians(expected), rtol=0, atol=1e-15)
+        assert dispersion.getDispersionMag() == ["0.0 %"] * 9
+    else:
+        offset = monte_carlo._propellant_offset_kg(scenario.spacecraft[0]) if quantity == "dry_mass_kg" else 0.0
+        assert value == pytest.approx(expected + offset, rel=0, abs=1e-12)
+        assert dispersion.getDispersionMag() == ["0.0 %"]
+
+
+def test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs(tmp_path):
+    """The case found while building the density scale: template 25, one
+    run, its dry mass uniform in [150, 150] (a dispersion as the form starts
+    it). Run 0 failed before; now it runs and draws 150 kg."""
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+    from spacemissionstudio.engine.monte_carlo import run_monte_carlo
+
+    scenario = _template_25(num_runs=1, duration_days=0.001)
+    name = scenario.spacecraft[0].name
+    scenario.monte_carlo.dispersions = [DispersionConfig(spacecraft=name, quantity="dry_mass_kg", kind="uniform",
+                                                         bounds=[150.0, 150.0])]
+    scenario.validate()
+    assert run_monte_carlo(scenario, scenario.monte_carlo, tmp_path) == []
+    batch = mcr.load(tmp_path)
+    assert batch.drawn[0][f"{name} dry mass [kg]"] == pytest.approx(150.0)

@@ -6211,6 +6211,34 @@ request's run on the same commit and on `develop`.
   the first delete fail as Windows does; it fails without the retry and
   passes with it.
 
+## A uniform dispersion with equal bounds is that value (MC-41, 2026-11-24)
+
+Found while building the density dispersion (MC-37): Basilisk 2.12.0's
+`UniformDispersion.generate` and `UniformVectorCartDispersion.generate`
+divide by the half-width of the bounds to note the draw's place in them.
+With equal bounds every run failed with a `ZeroDivisionError`. The form
+starts a new dispersion at [nominal, nominal] (transparency audit 3.7), so
+an untouched new dispersion of the dry mass, the drag or SRP coefficient
+or the body rate failed the whole batch. Reproduced on template 25 (one
+run, dry mass uniform [150, 150]: run 0 failed).
+
+- **Decision MC-41: equal bounds give that value.** A new
+  `engine.monte_carlo._UniformDispersion` subclass takes equal bounds: the
+  draw is the bound, it still calls `random.uniform` once (so the draws
+  after it are the same as before), and it notes "0.0 %" as its place in
+  the bounds. The dry-mass class and the density scale's class
+  (`_UniformDensityScale`, MC-37) now derive from it; the drag and SRP
+  coefficients use it. The uniform body rate does the same per axis
+  (three draws, nine notes, as Basilisk's class). **Why:** a range with
+  no width has one meaning, the value itself; refusing it in the schema
+  would refuse what the form itself makes, and the runs of an existing
+  batch with wider bounds draw exactly what they drew before.
+- **Not changed:** the orbit elements (NumPy's uniform takes equal
+  bounds), the uniform attitude (no division), the normal draws (a
+  deviation of 0 is already handled by Basilisk). No scenario field
+  changed: no schema step. No template has equal bounds (each would have
+  failed), so every golden file is unchanged.
+
 ## The owner confirmed the Monte Carlo answers and the pointing choices (2026-11-24)
 
 The owner answered "as per your current answer" to each of Q1 to Q8 of

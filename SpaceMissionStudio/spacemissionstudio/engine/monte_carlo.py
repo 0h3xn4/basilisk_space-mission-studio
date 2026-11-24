@@ -79,7 +79,10 @@ dry-mass value before it's written to ``hub.mHub``.
 Dispersed quantities
 --------------------
 Each ``schema.scenario.DISPERSION_QUANTITIES`` entry uses one of
-Basilisk's own ``Dispersions`` classes, unmodified:
+Basilisk's own ``Dispersions`` classes, unmodified, except that a uniform
+draw of one number or of the rate takes equal bounds (a fixed value, as the
+form starts a new dispersion): Basilisk 2.12.0 divides by the half-width
+there, and every run failed (:class:`_UniformDispersion`):
 
 * ``dry_mass_kg``: ``UniformDispersion``/``NormalDispersion`` on
   ``hub.mHub``, plus the propellant (below).
@@ -353,7 +356,26 @@ def _propellant_offset_kg(sc_config) -> float:
     return hub_mass_offset_kg(sc_config)
 
 
-class _DryMassPlusPropellantUniformDispersion(UniformDispersion):
+class _UniformDispersion(UniformDispersion):
+    """``UniformDispersion`` that also takes equal bounds (a fixed value).
+    Basilisk 2.12.0's class divides by the half-width to note the draw's
+    place in the bounds, so equal bounds fail the run with a
+    ``ZeroDivisionError``. The form starts a new dispersion at [nominal,
+    nominal] (no spread yet), so an untouched new one failed every run of
+    the batch. Here equal bounds give that value; the draw still takes one
+    number from ``random`` (the same ``random.uniform`` call), so the draws
+    after it do not change, and notes "0.0 %" as its place in the bounds."""
+
+    def generate(self, sim):
+        low, high = self.bounds
+        if low != high:
+            return super().generate(sim)
+        value = random.uniform(low, high)  # noqa: S311 -- the draw Basilisk makes, not a secret
+        self.magnitude.append("0.0 %")
+        return value
+
+
+class _DryMassPlusPropellantUniformDispersion(_UniformDispersion):
     """A ``dry_mass_kg`` dispersion writes its generated value ABSOLUTELY
     to ``hub.mHub`` (Basilisk's dispersion framework has no notion of
     "add this on top of whatever's already there" -- see
@@ -405,31 +427,27 @@ class _AddedToNominalNormalRate(NormalVectorCartDispersion):
 
 
 class _AddedToNominalUniformRate(UniformVectorCartDispersion):
-    """Same as :class:`_AddedToNominalNormalRate`, uniform per axis."""
+    """Same as :class:`_AddedToNominalNormalRate`, uniform per axis. Equal
+    bounds give that offset on every axis (as :class:`_UniformDispersion`:
+    Basilisk's class divides by the half-width); the three draws still take
+    their numbers from ``random``, and the notes keep their count."""
 
     def __init__(self, varName, bounds, nominal):
         super().__init__(varName, bounds=bounds)
         self._nominal = np.asarray(nominal, dtype=float)
 
     def generate(self, sim=None):
-        return list(self._nominal + np.asarray(super().generate(sim), dtype=float))
-
-
-class _UniformDensityScale(UniformDispersion):
-    """``UniformDispersion`` for the density scale (decision MC-37). Basilisk
-    2.12.0's class divides by the half-width to note the draw's place in the
-    bounds, so equal bounds (a fixed scale, as the form starts a new one:
-    [1, 1]) fail the run with a ``ZeroDivisionError``. Here equal bounds give
-    that value; the draw still takes one number from ``random`` (the same
-    ``random.uniform`` call), so the draws after it do not change."""
-
-    def generate(self, sim):
         low, high = self.bounds
         if low != high:
-            return super().generate(sim)
-        value = random.uniform(low, high)  # noqa: S311 -- the draw Basilisk makes, not a secret
-        self.magnitude.append("0.0 %")
-        return value
+            return list(self._nominal + np.asarray(super().generate(sim), dtype=float))
+        offsets = [random.uniform(low, high) for _ in range(3)]  # noqa: S311 -- the draws Basilisk makes
+        self.magnitude.extend(["0.0 %"] * 9)  # Basilisk's class notes three per axis
+        return list(self._nominal + np.asarray(offsets, dtype=float))
+
+
+class _UniformDensityScale(_UniformDispersion):
+    """The density scale's uniform draw (decision MC-37): a new scale starts
+    at [1, 1], so it takes equal bounds as :class:`_UniformDispersion` does."""
 
 
 def _central_body_mu(scenario: Scenario) -> float:
@@ -487,7 +505,7 @@ def _build_dispersion(dispersion: DispersionConfig, scenario: Scenario):
         effector_accessor = accessor.replace("get_spacecraft_", _EFFECTOR_ACCESSORS[dispersion.quantity], 1)
         path = f"{effector_accessor}().{_QUANTITY_PATHS[dispersion.quantity]}"
         if dispersion.kind == "uniform":
-            return UniformDispersion(path, bounds=dispersion.bounds)
+            return _UniformDispersion(path, bounds=dispersion.bounds)
         return NormalDispersion(path, mean=dispersion.mean, stdDeviation=dispersion.std_deviation,
                                 bounds=dispersion.bounds)
     if dispersion.quantity in ("orbit_elements", "angular_rate_bn_b") and sc_config is None:
