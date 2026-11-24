@@ -810,13 +810,25 @@ def test_the_3d_view_draws_each_new_size_of_its_page_once(window, qtbot):
     _js(qtbot, view, "MV.drawn = []; MV.render0 = MV.render; MV.render = function () { MV.render0(); "
                      "MV.drawn.push(MV.renderer.domElement.width + 'x' + MV.renderer.domElement.height); }; 1")
     qtbot.waitUntil(lambda: not _js(qtbot, view, "MV.drawn.splice(0).length"), timeout=10000)  # nothing left to draw
+    def size():
+        return _js(qtbot, view, "MV.renderer.domElement.width + 'x' + MV.renderer.domElement.height")
+
+    def take():
+        drawn.extend(json.loads(_js(qtbot, view, "JSON.stringify(MV.drawn.splice(0))")))
+
     for move in (window.breakouts.detach, window.breakouts.attach, window.breakouts.detach,
                  window.breakouts.attach):
+        drawn = []
         move("3d_view")
-        qtbot.wait(500)  # [ms]
-        drawn = json.loads(_js(qtbot, view, "JSON.stringify(MV.drawn.splice(0))"))
-        size = _js(qtbot, view, "MV.renderer.domElement.width + 'x' + MV.renderer.domElement.height")
-        assert drawn and drawn[-1] == size, (move.__name__, drawn, size)
+        # The new size is drawn: on a loaded Windows runner this took more than
+        # the 500 ms the test waited before (1171x465 not yet drawn after it).
+        try:
+            qtbot.waitUntil(lambda: take() or bool(drawn and drawn[-1] == size()), timeout=5000)
+        except AssertionError:
+            raise AssertionError((move.__name__, drawn, size())) from None
+        qtbot.wait(500)  # [ms] a second frame of the same size would come in this time
+        take()
+        assert drawn[-1] == size(), (move.__name__, drawn, size())
         assert all(a != b for a, b in zip(drawn, drawn[1:])), (move.__name__, drawn)
 
 
