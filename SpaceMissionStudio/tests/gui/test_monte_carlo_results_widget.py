@@ -725,7 +725,8 @@ def test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread(
         assert plot.page_error == "" and plot.stack.currentWidget() is plot.web_view
         page = Path(plot._shown_page)
         assert page.stat().st_size > 1_000_000
-        assert sorted(page.parent.glob("monte_carlo_insight_*.html")) == [page]  # the older pages removed
+        # The older pages removed: at once, or (Windows, while the web view still reads one) a little later.
+        qtbot.waitUntil(lambda: sorted(page.parent.glob("monte_carlo_insight_*.html")) == [page], timeout=10000)
     trace = json.loads(mi.figure_json(builds[0]()))["data"][0]
     assert trace["type"] == "scattergl" and trace["x"]["dtype"] == "f8"
     assert np.frombuffer(base64.b64decode(trace["x"]["bdata"]), "<f8").tolist() == x.values.tolist()
@@ -957,3 +958,40 @@ def test_a_view_deleted_while_its_workers_run_gets_no_late_result(qtbot, tmp_pat
     qtbot.wait(100)
     assert [page_error for _, _, page_error in reported] == [""]  # the page was written, and told to the relay only
     assert ready == [] and written == []  # the deleted views got nothing
+
+
+def test_a_page_the_web_view_still_holds_is_deleted_a_little_later(qtbot, monkeypatch):
+    """On Windows a page the web view is still reading cannot be deleted
+    (CI, platforms (windows-latest), PR #325: the page shown before stayed).
+    Here the first try to delete it fails as it does there; it is tried
+    again until it is gone, and only the newest page is left."""
+    from pathlib import Path
+
+    from spacemissionstudio.engine import monte_carlo_statistics as mcs
+    from spacemissionstudio.gui import monte_carlo_insight as mi
+
+    held = set()
+    real_unlink = Path.unlink
+
+    def unlink(path, missing_ok=False):
+        if str(path) in held:
+            held.discard(str(path))  # held once, as while the web view reads it
+            raise PermissionError(13, "The process cannot access the file", str(path))
+        return real_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", unlink)
+    values = mcs.Column("b [km]", np.arange(10.0))
+    plot = mi.InsightPlot("empty")
+    qtbot.addWidget(plot)
+    plot.show_figure(lambda: mi.ecdf_figure(values, "b", ""))
+    plot.wait()
+    qtbot.waitUntil(lambda: plot._shown_page.endswith(f"_{plot._request}.html"))
+    first = plot._shown_page
+    held.add(first)
+    plot.show_figure(lambda: mi.ecdf_figure(values, "b again", ""))
+    plot.wait()
+    qtbot.waitUntil(lambda: plot._shown_page.endswith(f"_{plot._request}.html"))
+    assert plot._stale == [first] and Path(first).exists()  # the first try failed
+    page = Path(plot._shown_page)
+    qtbot.waitUntil(lambda: sorted(page.parent.glob("monte_carlo_insight_*.html")) == [page], timeout=5000)
+    assert plot._stale == []

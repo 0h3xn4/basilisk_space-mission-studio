@@ -75,8 +75,8 @@ def test_a_scenario_without_budgets_saves_as_before():
 
 def test_a_minimal_section_is_only_its_version():
     """An empty section saves as its version alone and loads back."""
-    scenario = fx.scenario({"version": 1})
-    assert scenario.to_dict()["spacecraft"][0]["budgets"] == {"version": 1}
+    scenario = fx.scenario({"version": 2})
+    assert scenario.to_dict()["spacecraft"][0]["budgets"] == {"version": 2}
     assert Scenario.from_dict(scenario.to_dict()).spacecraft[0].budgets == scenario.spacecraft[0].budgets
 
 
@@ -130,7 +130,7 @@ def test_an_unknown_field_or_a_wrong_shape_is_refused(change, match):
 
 
 @pytest.mark.parametrize(("change", "match"), [
-    (lambda d: d.update(version=2), r"budgets: version 2 is not one this version reads"),
+    (lambda d: d.update(version=3), r"budgets: version 3 is not one this version reads"),
     (lambda d: d["equipment"].append(copy.deepcopy(d["equipment"][0])), r"equipment names must be unique \(OBC"),
     (lambda d: d["buses"].append({"name": "main"}), r"bus names must be unique"),
     (lambda d: d["modes"].append({"name": "nominal"}), r"mode names must be unique"),

@@ -17,7 +17,7 @@ it. The spacecraft editor's **Power** tab shows a summary of it, and
 ## The Budgets area
 
 **Budgets** is the area after **Results** in the navigation rail
-(`Ctrl+5`, or **Go > Go to Budgets**). It has four pages. When the
+(`Ctrl+5`, or **Go > Go to Budgets**). It has five pages. When the
 scenario has more than one spacecraft, pick one with **Spacecraft** at
 the top; every page, **Propellant** too, shows that spacecraft.
 
@@ -61,6 +61,10 @@ equipment list, with the AIAA S-120 growth allowances, and the totals. A
 placeholder mass reads "unknown", and the badge says the totals are
 incomplete. It is the same budget as **Run › Design Checks**.
 
+**Pointing** is the pointing error budget: requirements and error
+contributors in tables, and the result per requirement with its margin
+and status ([The pointing error budget](#the-pointing-error-budget)).
+
 **Propellant** is the delta-V and propellant budget. Until 2.10.0 it was
 **Run > Budget**; it works as before
 ([Lifetime and propellant budget](lifetime-and-budget.md)).
@@ -92,7 +96,7 @@ Each spacecraft can have a `budgets` section:
 
 ```json
 "budgets": {
-  "version": 1,
+  "version": 2,
   "buses": [
     {"name": "main", "converter_efficiency": {"value": 0.9, "source": "PCDU data sheet"}}
   ],
@@ -159,7 +163,10 @@ The fields:
 
 Names are unique in each list. The section has its own `version`. A
 scenario file with a `budgets` section is at schema version 5, which
-SpaceMissionStudio 2.10.0 and earlier cannot open.
+SpaceMissionStudio 2.10.0 and earlier cannot open. The section's own
+version is 2 since the pointing error budget: a version 1 section opens
+as before and is saved as version 2, which 2.15.0 and earlier cannot
+read.
 
 ## How the budget is computed
 
@@ -204,6 +211,71 @@ my-sat: power budget, 2 system mode(s), 1 item(s) with power modes
 `--spacecraft NAME` picks a spacecraft (default: the first), `--csv`
 prints the totals of each mode as CSV, and `--explain` each finding's
 rule. From Python: `api.power_budget(scenario)` ([The Python API](../api.md)).
+
+## The pointing error budget
+
+The `pointing` part of the section (version 2) holds the pointing error
+budget that **Budgets › Pointing** edits:
+
+```json
+"pointing": {
+  "line_of_sight": "z",
+  "requirements": [
+    {"name": "APE", "index": "absolute", "kind": "performance", "axis": "line_of_sight",
+     "limit_arcsec": {"value": 30, "source": "mission requirement MR-12"},
+     "probability": {"value": 0.9973, "source": "mission requirement MR-12"}}
+  ],
+  "contributors": [
+    {"name": "st-1 noise", "kind": "knowledge", "behaviour": "random", "sensor": "st-1",
+     "spread_arcsec": {"x": {"value": 5, "source": "scenario: sat.sensors[st-1].params.noise_arcsec"},
+                       "y": {"value": 5, "source": "scenario: sat.sensors[st-1].params.noise_arcsec"}}},
+    {"name": "thermal distortion", "behaviour": "periodic", "distribution": "sinusoidal",
+     "spread_arcsec": {"x": {"value": 4, "source": "thermal analysis TA-3"}},
+     "period_s": {"value": 5900, "source": "orbit period"}}
+  ]
+}
+```
+
+- A requirement: `index` (`absolute`, `mean`, `relative`, `drift`,
+  `reproducibility`), `kind` (`performance`, `knowledge`), `axis` (`x`,
+  `y`, `z`, `line_of_sight`), `limit_arcsec`, `probability` (no default),
+  `interpretation` (`temporal`, `ensemble`, `mixed`; recorded), the
+  windows `window_s` and `stability_s`, and the system `modes` it
+  applies to.
+- A contributor: `kind` (`performance`, `knowledge`, `both`), `behaviour`
+  (`bias`, `random`, `periodic`, `drift`, `transient`), `distribution`
+  (`gaussian`: the spread is a 1-sigma; `uniform`: a half-width;
+  `sinusoidal`: an amplitude), per axis `mean_arcsec` and
+  `spread_arcsec` (an axis left out: the contributor does not act about
+  it), `period_s` for a periodic one, a correlated `group`, and the
+  `equipment` item or scenario `sensor` it comes from.
+
+Which indices a contributor enters, by its behaviour (a periodic one by
+the share of it that the window sees):
+
+| Behaviour | Absolute | Mean | Relative | Drift | Reproducibility |
+|---|---|---|---|---|---|
+| bias | yes | yes | no | no | no |
+| random | yes | no | yes | no | no |
+| periodic | yes | share | share | share | share |
+| drift | yes | yes | no | yes | yes |
+| transient | yes | yes | yes | no | no |
+
+Per index and axis the means add, independent deviations add as a root
+sum of squares and a group's add linearly. The value about an axis is
+|mean| + k × std, k the two-sided normal factor of the probability
+(3.0 for 0.9973); about the line of sight it is the length of the mean
+across it plus the larger deviation of its two axes times
+sqrt(−2 ln(1 − probability)). A placeholder makes every value that
+needs it **TBD**, never zero.
+
+```console
+$ spacemissionstudio budgets scenario.json --pointing
+```
+
+prints the result table and, per requirement, the contributors that
+enter it with their share and why a value is TBD; `--csv` prints it as
+CSV.
 
 ## What the checks say
 

@@ -70,6 +70,8 @@ LIST_ITEMS = {
     ("BudgetsConfig", "equipment"): "BudgetEquipmentConfig",
     ("BudgetsConfig", "modes"): "BudgetModeConfig",
     ("BudgetEquipmentConfig", "power_modes"): "BudgetPowerModeConfig",
+    ("PointingConfig", "requirements"): "PointingRequirementConfig",
+    ("PointingConfig", "contributors"): "PointingContributorConfig",
     ("Scenario", "spacecraft"): "SpacecraftConfig",
     ("Scenario", "ground_stations"): "GroundStationConfig",
     ("Scenario", "fsw_exports"): "FswExportRecord",
@@ -131,6 +133,13 @@ CHOICES = {
     ("ThermalCaseConfig", "preset"): "CASE_PRESETS",
     ("ThermalDispersionConfig", "distribution"): "DISTRIBUTIONS",
     ("BudgetEquipmentConfig", "mass_column"): "MASS_COLUMNS",
+    ("PointingRequirementConfig", "index"): "POINTING_INDICES",
+    ("PointingRequirementConfig", "kind"): "POINTING_KINDS",
+    ("PointingRequirementConfig", "axis"): "POINTING_REQUIREMENT_AXES",
+    ("PointingRequirementConfig", "interpretation"): "POINTING_INTERPRETATIONS",
+    ("PointingContributorConfig", "kind"): "POINTING_CONTRIBUTOR_KINDS",
+    ("PointingContributorConfig", "behaviour"): "POINTING_BEHAVIOURS",
+    ("PointingContributorConfig", "distribution"): "POINTING_DISTRIBUTIONS",
 }
 #: What kind of name a field refers to: "spacecraft", "ground_station", "part" or "material".
 REFERENCES = {

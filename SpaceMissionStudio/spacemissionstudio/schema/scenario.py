@@ -75,7 +75,7 @@ from . import budgets as budgets_schema
 from . import operations as operations_schema
 from . import thermal as thermal_schema
 from .budgets import BudgetsConfig
-from .budgets import SourcedValue  # noqa: F401 -- the section's type hints resolve in this module's namespace
+from .budgets import PointingConfig, SourcedValue  # noqa: F401 -- the section's type hints resolve in this module's namespace
 from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence

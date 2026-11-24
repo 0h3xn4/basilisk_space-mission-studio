@@ -269,13 +269,20 @@ def write_page(figure: dict, plotly_js: str, style: str, page: Path) -> str:
     return ""
 
 
-def _remove(page: str) -> None:
-    """Delete a plot page that is no longer shown; a file the web view still
-    holds open (Windows) stays until its folder is removed."""
+#: A page that could not be deleted (Windows: the web view still reads it) is tried again this often
+#: [ms], this many times; then it stays until its folder is removed.
+_RETRY_MS = 250
+_RETRIES = 40
+
+
+def _remove(page: str) -> bool:
+    """Delete a plot page that is no longer shown. False when the file is
+    still there (Windows: the web view may still hold it open)."""
     try:
         Path(page).unlink(missing_ok=True)
     except OSError:
-        pass
+        return False
+    return True
 
 
 def _write_plot_page(relay: _Relay, request: int, figure: dict, plotly_js: str, style: str, page: Path) -> None:
@@ -316,6 +323,12 @@ class InsightPlot(QWidget):
         self.figure = None  # the figure shown (Plotly's JSON form, a dict), for tests
         self._build: Callable | None = None
         self._page_dir = None
+        self._stale: list[str] = []  # pages not deleted yet: tried again by _retry_timer
+        self._retries = 0
+        self._retry_timer = QTimer(self)
+        self._retry_timer.setSingleShot(True)
+        self._retry_timer.setInterval(_RETRY_MS)
+        self._retry_timer.timeout.connect(self._remove_stale)
         on_change(self._on_theme_changed)
 
     def show_figure(self, build: Callable) -> None:
@@ -364,8 +377,22 @@ class InsightPlot(QWidget):
         self.web_view.load(QUrl.fromLocalFile(page))
         self.stack.setCurrentWidget(self.web_view)
         if self._shown_page and self._shown_page != page:
-            _remove(self._shown_page)  # the page shown before: a few megabytes each
+            self._discard(self._shown_page)  # the page shown before: a few megabytes each
         self._shown_page = page
+
+    def _discard(self, page: str) -> None:
+        """Delete ``page``; if the web view still holds it (Windows, while
+        it loads the next page), try again a little later."""
+        if not _remove(page):
+            self._stale.append(page)
+            self._retries = 0
+            self._retry_timer.start()
+
+    def _remove_stale(self) -> None:
+        self._stale = [page for page in self._stale if not _remove(page)]
+        self._retries += 1
+        if self._stale and self._retries < _RETRIES:
+            self._retry_timer.start()
 
     def wait(self) -> None:
         """Until the page being written is written (tests, closing)."""

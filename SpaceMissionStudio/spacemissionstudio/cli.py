@@ -1050,6 +1050,8 @@ def cmd_budgets(args: argparse.Namespace) -> int:
         print(f"ERROR: {sc.name} has no budgets section (idm-import --budgets makes one from an IDM-CIC model)",
               file=sys.stderr)
         return 1
+    if args.pointing:
+        return _print_pointing_budget(sc, args.csv)
     budget = power_budget.power_budget(sc)
     if args.csv:
         import csv
@@ -1092,6 +1094,30 @@ def cmd_budgets(args: argparse.Namespace) -> int:
             print(f"{finding}:")
             for line in explanation_lines(finding):
                 print(f"  {line}")
+    return 0
+
+
+def _print_pointing_budget(sc, as_csv: bool) -> int:
+    """The pointing error budget of ``sc``'s ``budgets.pointing`` section
+    (engine.pointing_budget): per requirement the value at its probability,
+    the margin and its status, then the contributors that enter it; with
+    ``as_csv``, the same as CSV. Angles in arcsec."""
+    from .engine import pointing_budget
+
+    if sc.budgets.pointing is None:
+        print(f"ERROR: {sc.name} has no pointing budget (budgets.pointing; the Budgets area's Pointing tab makes one)",
+              file=sys.stderr)
+        return 1
+    budget = pointing_budget.pointing_budget(sc)
+    if as_csv:
+        import csv
+
+        writer = csv.writer(sys.stdout, lineterminator="\n")
+        writer.writerows(["" if value is None else value for value in row]
+                         for row in pointing_budget.csv_rows(budget))
+        return 0
+    for line in pointing_budget.report_lines(budget):
+        print(line)
     return 0
 
 
@@ -2869,11 +2895,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_design.set_defaults(func=cmd_check_design)
 
     p_budgets = subparsers.add_parser("budgets", help="the static power budget of a spacecraft's budgets section per "
-                                      "system mode: loads, margins, source power, per bus (no Basilisk needed)")
+                                      "system mode: loads, margins, source power, per bus; with --pointing, its "
+                                      "pointing error budget (no Basilisk needed)")
     p_budgets.add_argument("scenario", type=Path)
     p_budgets.add_argument("--spacecraft", help="spacecraft name (default: the first)")
     p_budgets.add_argument("--csv", action="store_true", help="print the totals of each system mode as CSV")
     p_budgets.add_argument("--explain", action="store_true", help="each finding's rule, why, fix and override")
+    p_budgets.add_argument("--pointing", action="store_true",
+                           help="print the pointing error budget instead (budgets.pointing): per requirement the "
+                                "value at its probability, the limit and the margin in arcsec, its status, and the "
+                                "contributors that enter it with their share; with --csv, as CSV")
     p_budgets.set_defaults(func=cmd_budgets)
 
     p_analyses = subparsers.add_parser("model-analyses", help="run the scenario and report its model analyses: "
