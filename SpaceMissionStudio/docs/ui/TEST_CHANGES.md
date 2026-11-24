@@ -3003,3 +3003,15 @@ New tests in `tests/test_template_claims.py`:
 and `test_47_each_faulty_sensor_reports_its_fault_and_the_attitude_is_the_same`.
 The tests that run every template now run the five new ones too (their
 golden files and hashes are new).
+
+## The 3D View's resize test waits for the new size (2026-11-24)
+
+On CI's Windows runner (#331, commit `b978847`, job 138824780184) the
+3D View had not drawn its new size 500 ms after the view moved back
+into the window: the last frame was 980x553, the page 1171x465. The
+test waited a fixed 500 ms. The same test passed on the commit before,
+and no code of the 3D View changed.
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_breakout.py::test_the_3d_view_draws_each_new_size_of_its_page_once` | after each move, a fixed wait of 500 ms, then the frames drawn | after each move, wait until the last frame drawn has the page's size (at most 5 s), then 500 ms more, then the frames drawn | A loaded runner draws later. The test still checks that the new size is drawn and that no two frames in a row have the same size; the 500 ms after the new frame still catches the second frame of the same size (K-40) |
