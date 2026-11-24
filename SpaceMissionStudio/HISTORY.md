@@ -22064,3 +22064,11 @@ template's meshes from the templates' folder. `pyproject.toml` ships
 `scenarios/meshes/*.obj`. Wizards, the catalog and its README
 groups, the User Manual's table, the how-to pages, the coverage page and
 the counts (forty-two to forty-seven).
+
+**Checks.** ruff passes. Full suite, 3 workers: 6447 passed, 19 skipped,
+1 failed, the known local-only status bar test
+(`test_a_reported_path_is_not_clipped_in_the_status_bar`). The compliance
+generators change nothing on a second run; `check_drds.py` finds 0
+problems. Running `scripts/_generate_templates.py` writes templates 01 to
+42 byte for byte as committed, except template 03's last digits on this
+machine (as before; not committed).

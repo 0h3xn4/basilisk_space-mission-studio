@@ -55,7 +55,7 @@ fixes bugs.
   *43 - 3D model: cylinders, spheres and an imported mesh* builds a
   150 kg microsatellite from a cylinder bus, a sphere tank, a cylinder
   boom with a sphere magnetometer, and a camera read from an `.obj` file
-  in millimetres (a synthetic one, shipped next to the template); the
+  in millimetres (a synthetic one, shipped with the template); the
   run flies the mass, center of mass and inertia they give. *44 - Monte
   Carlo: attitude, inertia, body rate, SRP and density* draws the five
   quantities no template drew before in 12 runs, and shows that the
