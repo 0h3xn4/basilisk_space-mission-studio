@@ -1427,6 +1427,77 @@ def test_a_coefficient_dispersion_needs_its_force_model(fields, message):
         _with_dispersion(_minimal_scenario(), **fields).validate()
 
 
+# -- The atmospheric density scale (schema 8, Monte Carlo plan C1, decision MC-37) -------------------
+
+
+def _with_density_scale(drag=True, **fields):
+    sc = _minimal_scenario()
+    sc.spacecraft[0].enable_drag = drag
+    fields = {"kind": "uniform", "bounds": [0.6, 1.6], **fields}
+    sc.monte_carlo = MonteCarloConfig(enabled=True, dispersions=[
+        DispersionConfig(spacecraft=fields.pop("spacecraft", ""), quantity="density_scale", **fields)])
+    return sc
+
+
+@pytest.mark.parametrize("model", ["nrlmsise00", "exponential", "tabular"])
+def test_a_density_scale_has_no_spacecraft_validates_with_each_atmosphere_model_and_round_trips(model):
+    """The density scale is the atmosphere's, not a spacecraft's: its
+    spacecraft is empty, it validates with each atmosphere model a run with
+    drag can use (uniform, and normal with or without bounds), and it saves
+    and loads as it was."""
+    from spacemissionstudio.schema.scenario import (ATMOSPHERE_MODELS, DENSITY_SCALE_ATMOSPHERE_MODELS,
+                                                    scenario_text)
+
+    assert set(ATMOSPHERE_MODELS) == set(DENSITY_SCALE_ATMOSPHERE_MODELS)  # every model takes the scale
+    for fields in ({}, {"kind": "normal", "bounds": None, "mean": 1.0, "std_deviation": 0.2},
+                   {"kind": "normal", "bounds": [0.0, 3.0], "mean": 1.2, "std_deviation": 0.3}):
+        sc = _with_density_scale(**fields)
+        sc.space_weather.atmosphere_model = model
+        sc.validate()
+        saved = json.loads(scenario_text(sc))
+        assert saved["schema_version"] == CURRENT_SCHEMA_VERSION == 8
+        assert saved["monte_carlo"]["dispersions"][0]["spacecraft"] == ""
+        assert Scenario.from_dict(saved).monte_carlo.dispersions == sc.monte_carlo.dispersions
+
+
+@pytest.mark.parametrize("fields, message", [
+    ({"spacecraft": "sat-1"}, "leave spacecraft empty, got 'sat-1'"),
+    ({"bounds": [-0.1, 1.5]}, "bounds must not be below 0"),
+    ({"kind": "normal", "bounds": None, "mean": 0.0, "std_deviation": 0.1}, "mean must be above 0"),
+    ({"kind": "normal", "bounds": [-1.0, 2.0], "mean": 1.0, "std_deviation": 0.1}, "bounds must not be below 0"),
+    ({"kind": "normal", "bounds": None, "std_deviation": 0.1}, "needs mean and std_deviation"),
+    ({"kind": "uniform_euler_mrp"}, "must be one of"),
+])
+def test_a_badly_formed_density_scale_is_refused_naming_the_field(fields, message):
+    """A spacecraft named, a bound or mean that would make the density
+    negative, a normal without its mean, a kind it has not: refused."""
+    with pytest.raises(ScenarioValidationError, match=message):
+        _with_density_scale(**fields).validate()
+
+
+def test_a_density_scale_that_would_change_nothing_is_refused_not_ignored(monkeypatch):
+    """No spacecraft with drag, a central body without an atmosphere model,
+    an atmosphere model the scale does not apply to, two scales: each is
+    refused with its reason, never drawn and ignored (decision MC-37)."""
+    from spacemissionstudio.schema import scenario as scenario_module
+
+    with pytest.raises(ScenarioValidationError, match="no spacecraft has enable_drag"):
+        _with_density_scale(drag=False).validate()
+    sc = _with_density_scale()
+    sc.monte_carlo.dispersions.append(copy.deepcopy(sc.monte_carlo.dispersions[0]))
+    with pytest.raises(ScenarioValidationError, match="2 density_scale dispersions"):
+        sc.validate()
+    sc = _with_density_scale()
+    sc.gravity.central_body = "moon"
+    assert "wired up for 'earth' only" in scenario_module.density_scale_refusal(sc)
+    # A model the scale does not apply to (every model of this version takes it, so one is taken out here).
+    monkeypatch.setattr(scenario_module, "DENSITY_SCALE_ATMOSPHERE_MODELS", ("nrlmsise00", "tabular"))
+    sc = _with_density_scale()
+    sc.space_weather.atmosphere_model = "exponential"
+    with pytest.raises(ScenarioValidationError, match="'exponential' does not take a density scale"):
+        sc.validate()
+
+
 @pytest.mark.parametrize("quantity, extra", [
     ("inertia_kg_m2", {"std_deviation": 0.5}),
     ("angular_rate_bn_b", {"std_deviation": 0.05}),
@@ -2739,7 +2810,7 @@ def test_a_requirement_has_its_fields_and_round_trips():
     sc = _with_requirement(max_probability=0.01)
     sc.validate()
     saved = json.loads(scenario_text(sc))
-    assert saved["schema_version"] == CURRENT_SCHEMA_VERSION == 7
+    assert saved["schema_version"] == CURRENT_SCHEMA_VERSION == 8
     assert saved["monte_carlo"]["requirements"] == [
         {"name": "R-ALT-01", "spacecraft": "sat-1", "outcome": "lowest_altitude", "at_least": 400.0,
          "at_most": None, "confidence": 0.95, "max_probability": 0.01}]
@@ -2800,7 +2871,7 @@ def test_the_batch_seed_is_optional_and_saved_only_when_set():
     sc.monte_carlo.seed = 12345
     sc.validate()
     saved = json.loads(scenario_text(sc))
-    assert saved["monte_carlo"]["seed"] == 12345 and saved["schema_version"] == 7
+    assert saved["monte_carlo"]["seed"] == 12345 and saved["schema_version"] == 8
     assert Scenario.from_dict(saved).monte_carlo.seed == 12345
     assert scenario_sha256(sc) != before  # the seed is part of the scenario: a case is checked against it
 

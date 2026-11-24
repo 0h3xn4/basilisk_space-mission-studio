@@ -67,7 +67,10 @@ SETTINGS_KEY = "monte_carlo_settings"
 NOT_RECORDED = "not recorded: the batch was made before its settings were kept (SpaceMissionStudio 2.14.2 or earlier)"
 # The unit of each dispersed quantity's bounds, mean and spread (schema.scenario.DispersionConfig).
 DISPERSION_UNITS = {"dry_mass_kg": "kg", "attitude_sigma_bn": "rad", "orbit_elements": "per element",
-                    "inertia_kg_m2": "kg*m^2", "angular_rate_bn_b": "deg/s", "drag_coeff": "-", "srp_coeff": "-"}
+                    "inertia_kg_m2": "kg*m^2", "angular_rate_bn_b": "deg/s", "drag_coeff": "-", "srp_coeff": "-",
+                    "density_scale": "-"}
+# What the report names as the owner of a dispersion of the atmosphere (its spacecraft is empty, MC-37).
+ATMOSPHERE_OWNER = "atmosphere"
 
 
 class MonteCarloReportError(Exception):
@@ -294,7 +297,8 @@ def _dispersion_rows(dispersions: list[dict]) -> list[tuple]:
     for d in dispersions:
         bounds = d.get("bounds")
         spread = d.get("element_spread")
-        rows.append((d.get("spacecraft", ""), d.get("quantity", ""), d.get("kind", ""), d.get("unit", "-"),
+        owner = d.get("spacecraft", "") or (ATMOSPHERE_OWNER if d.get("quantity") == "density_scale" else "")
+        rows.append((owner, d.get("quantity", ""), d.get("kind", ""), d.get("unit", "-"),
                      "" if not bounds else f"{bounds[0]:g} to {bounds[1]:g}",
                      "" if d.get("mean") is None else f"{d['mean']:g}",
                      "" if d.get("std_deviation") is None else f"{d['std_deviation']:g}",

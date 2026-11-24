@@ -20,7 +20,7 @@ Top-level scenario object (the JSON file's root).
 | `mission_sequence` | list | `[]` | list[Command] |
 | `fsw_exports` | list | `[]` | list[FswExportRecord], at most one per spacecraft |
 | `description` | str | `''` |  |
-| `schema_version` | int | `7` |  |
+| `schema_version` | int | `8` |  |
 | `config_file` | str / None | `None` |  |
 | `configuration` | object | `None` |  |
 | `value_marks` | list | `[]` | list[ValueMark] |
@@ -147,15 +147,15 @@ Onboard data generation, storage and downlink (``engine.data_handling``), built 
 
 ## DispersionConfig
 
-One dispersed quantity for one spacecraft in a Monte Carlo batch -- see :data:`DISPERSION_QUANTITIES`/:data:`DISPERSION_KINDS_BY_QUANTITY` for what's supported and ``engine/monte_carlo.py`` for how each pairing maps onto a ``Basilisk.utilities.MonteCarlo.Dispersions`` class.
+One dispersed quantity for one spacecraft in a Monte Carlo batch, or for the atmosphere (``density_scale``, schema 8, decision MC-37) -- see :data:`DISPERSION_QUANTITIES`/:data:`DISPERSION_KINDS_BY_QUANTITY` for what's supported and ``engine/monte_carlo.py`` for how each pairing maps onto a ``Basilisk.utilities.MonteCarlo.Dispersions`` class.
 
 | Field | Type | Default | Unit / note |
 |---|---|---|---|
-| `spacecraft` | str | `required` | must match a SpacecraftConfig.name in this scenario |
+| `spacecraft` | str | `required` | must match a SpacecraftConfig.name in this scenario; empty for density_scale (the atmosphere's) |
 | `quantity` | str | `required` | one of DISPERSION_QUANTITIES |
 | `kind` | str | `required` | one of DISPERSION_KINDS_BY_QUANTITY[quantity] |
 | `bounds` | list / None | `None` | [lo, hi] in the quantity's unit (User Manual section 10) |
-| `mean` | float / None | `None` | required for "normal" on dry_mass_kg, drag_coeff, srp_coeff |
+| `mean` | float / None | `None` | required for "normal" on dry_mass_kg, drag_coeff, srp_coeff, density_scale |
 | `std_deviation` | float / None | `None` | 1-sigma in the quantity's unit (User Manual section 10) |
 | `element_spread` | dict / None | `None` | "orbit_elements": {element key: spread} |
 | `angle_std_deg` | float / None | `None` | [deg] "inertia_kg_m2": 1-sigma rotation that mixes in off-diagonal terms |

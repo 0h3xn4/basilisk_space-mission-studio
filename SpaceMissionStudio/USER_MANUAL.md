@@ -2067,7 +2067,8 @@ the folder you saved it in. It reads only the summary the batch wrote
 From Python, [`examples/monte_carlo_spread.py`](examples/monte_carlo_spread.py)
 reads the same summary.
 
-What can vary, each spacecraft on its own:
+What can vary, each spacecraft on its own (the density scale for the
+whole atmosphere):
 
 | Quantity | Varies | Kinds |
 |---|---|---|
@@ -2077,6 +2078,7 @@ What can vary, each spacecraft on its own:
 | `inertia_kg_m2` | each diagonal element of the inertia [kg·m²], plus an optional small rotation that adds products of inertia | normal |
 | `angular_rate_bn_b` | starting body rate, each axis [°/s], on top of the configured rate | normal, uniform |
 | `drag_coeff`, `srp_coeff` | the drag or radiation-pressure coefficient | uniform, normal |
+| `density_scale` | a scale on the atmospheric density that drag reads (no unit; 1 is the model's own density): one draw per run, for every spacecraft with drag | uniform, normal |
 
 The orbit varies as orbital elements, never as raw position and velocity,
 so every run starts on a real orbit; an element left at 0 is not varied.
@@ -2084,7 +2086,11 @@ For a near-circular orbit, put an along-track spread on the true anomaly
 only (its argument of periapsis is not well defined). Inertia and body
 rate need full attitude simulation. The coefficients need drag or solar
 pressure switched on, and a spacecraft without surface facets (facets
-carry their own coefficients).
+carry their own coefficients). The density scale belongs to the
+atmosphere, so it names no spacecraft (the form hides the field). It
+works with each atmosphere model and with facets, needs at least one
+spacecraft with drag, and a scenario has one at most. A scale cannot be
+below 0; a normal draw is held at 0 or above.
 
 ## 11. Common questions and problems
 

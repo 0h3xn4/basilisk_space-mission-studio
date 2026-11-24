@@ -388,13 +388,91 @@ monte_carlo_report`). CLI: `--summarize`, `--report`, `--runs`,
 refuses an unknown quantity). The summary NPZ may hold per-run reduced
 series. Each with its own decisions.
 
+### 6.1 C1 density spike (2026-11-24)
+
+The first item of C1, by the owner's order (Q6, MC-36). The spike read
+the code of the app and of the installed Basilisk 2.12.0 wheel before
+any design. Decisions: MC-37 to MC-40.
+
+**How the app sets the atmosphere** (`engine/service.py`, "Phase 4:
+atmospheric drag"). A run with drag (`enable_drag` on a spacecraft)
+builds one atmosphere module for every spacecraft with drag. The module
+comes from `space_weather.atmosphere_model`:
+
+| Model | Basilisk module | Inputs |
+|---|---|---|
+| `nrlmsise00` (default) | `msisAtmosphere.MsisAtmosphere` | 23 space-weather messages from `spaceWeatherData`, filled from the real CelesTrak and MSFC files (`engine/spaceweather.py`) |
+| `exponential` | `exponentialAtmosphere.ExponentialAtmosphere` | `baseDensity` and `scaleHeight` from `simSetPlanetEnvironment.exponentialAtmosphere(..., "earth")` |
+| `tabular` | `tabularAtmosphere.TabularAtmosphere` | `altList`, `rhoList`, `tempList` from one of Basilisk's published tables (`engine/atmosphere_tables.py`) |
+
+Each spacecraft with drag gets a geodetic proxy state
+(`engine/geodetic_atmosphere.py`, a Python `SysModel` at priority 395),
+then the model (390) writes `envOutMsgs[i]` (`AtmoPropsMsg`:
+`neutralDensity`, `localTemp`), which the drag effector reads through
+`atmoDensInMsg` (priority 100). The sphere drag
+(`dragDynamicEffector`) and the facet drag (`facetDragDynamicEffector`)
+both read it. With `model_analyses.surface_exposure`, a recorder keeps
+the same message for the atomic-oxygen fluence. Drag is Earth only.
+
+**What Basilisk 2.12.0 offers for a scale.**
+- `AtmosphereBase` has no density scale.
+- `ExponentialAtmosphere.baseDensity` and `TabularAtmosphere.rhoList`
+  scale the density exactly, but only for their own model.
+- `MsisAtmosphere` has no density parameter. It reads F10.7 and Ap from
+  the space-weather messages.
+- `DragDynamicEffector.densityCorrection` multiplies the density, but it
+  is a state of the dynamics (`densityCorrectionStateName`, for a
+  stochastic integrator), not a parameter. The facet drag has none.
+
+**How a dispersion reaches Basilisk** (`engine/monte_carlo.py`). The
+Controller sets a path of attributes, indices and zero-argument calls
+on the sim object. The creation function attaches one accessor per
+spacecraft (`get_spacecraft_<name>()`, `get_drag_<name>()`,
+`get_srp_<name>()`), and `_QUANTITY_PATHS` names the attribute after
+it. `schema.scenario.DISPERSION_QUANTITIES` and
+`DISPERSION_KINDS_BY_QUANTITY` list what the schema accepts; the
+cross checks in `Scenario.validate` refuse a dispersion that cannot act
+(for example `drag_coeff` without drag). `_drawn_values` reads each
+run's `run<N>.json` back into labelled values for the summary, the Runs
+table, its CSV and the report.
+
+**The options.**
+
+| Option | Exponential | NRLMSISE-00 | Tabular | Verdict |
+|---|---|---|---|---|
+| A module parameter (`baseDensity`, `rhoList`) | exact | none | exact | refuses the default model |
+| A scaled table | no | no | exact | one model only |
+| Scaled F10.7 and Ap | no effect | changes the density, not by a fixed factor (non-linear, altitude dependent) | no effect | not a density scale; it makes synthetic space weather, which the user requirement "real data only" forbids |
+| The drag coefficient as a proxy | same force on the sphere | same | same | a proxy: it is not the density, it multiplies with a Cd dispersion, it does not reach the facets' coefficients or the atomic-oxygen recorder |
+| A scale on the density message, between the model and the drag | exact | exact | exact | **chosen** (MC-37) |
+
+**The chosen design.** A Python `SysModel`, `engine/density_scale.py`
+(priority 385, after the model, before the drag), reads each `envOutMsgs[i]`
+and writes a copy with `neutralDensity` times `scale` (no unit). The
+drag effectors, and the atomic-oxygen recorder, read the copy. The
+service builds it only for a Monte Carlo run whose scenario has the new
+quantity `density_scale`; every other run is built as before. The
+Controller's path is `get_density_scale().scale`. No change to Basilisk.
+
+**Measured here** (template 25, Linux container).
+- Over 0.05 day at 400 km (NRLMSISE-00), the run at scale 2 is
+  18.36 m from the run without drag (scale 0), the run at scale 1 is
+  9.18 m from it: a ratio of 2.00001.
+- For each model, the density that drag reads is the model's times the
+  scale, to the last bit, at every step; at scale 1 the run is
+  identical to a run built without the module.
+- A 0.5-day run took 0.80 and 0.81 s with the module and 0.73 and
+  0.75 s without it (the second and third of three runs each; the first
+  includes the start-up): about 0.06 s, or 8 %, more. A batch without
+  the quantity does not build the module.
+
 ## 7. File format changes, per phase
 
 | Phase | Scenario file | Batch summary | Other outputs | CLI and API |
 |---|---|---|---|---|
 | A | Schema 6: `monte_carlo.requirements` (optional). Version-only migration. | Format 1 kept; optional keys `outcomes`, `outcome_units`, `requirements`, `failed_drawn`. | Runs CSV: outcome and status columns. Run record: `monte_carlo_case`. | `monte-carlo --case`, `--out-dir`; exit code 5; `api.monte_carlo_case`. |
 | B | Schema 7 (or 6, Q2): `monte_carlo.seed`; thermal Monte Carlo `confidence`. | Optional `seed`; thermal limit counts. | The batch report (JSON, Markdown). | `--summarize`, `--report`, `--runs`, `--processes`. |
-| C | New dispersion quantities; `monte_carlo.outcomes`. | Reduced series per run. | — | as needed. |
+| C | New dispersion quantities; `monte_carlo.outcomes`. Schema 8 (C-1): the dispersion `density_scale`, with an empty `spacecraft`. Version-only migration. | Reduced series per run. C-1: the drawn label `atmospheric density scale [-]`. | — | as needed. |
 
 **Why each change.** A requirement belongs to the scenario, so it is
 shared and kept with the dispersions it is judged against. A version
@@ -445,7 +523,13 @@ new version opens an old batch without them.
 - **Q5** Exit code 5 from `monte-carlo` when a requirement is not shown
   met (proposed, MC-10): acceptable for scripts that call it today?
 - **Q6** Phase C: which dispersions first (maneuver errors, thrusters,
-  wheels, density)?
+  wheels, density)? *Answer (the owner, 2026-11-24; MC-36): in this
+  order: 1. atmospheric density (a scale on the density, or on F10.7 and
+  Ap); 2. maneuver execution errors of the Mission Sequence's impulsive
+  and Lambert burns, magnitude and direction (the Mission Sequence draws
+  them); 3. thruster force and misalignment; 4. reaction-wheel friction
+  and bias; 5. propellant load and centre-of-mass offset. Each item
+  starts with a short spike.*
 - **Q7** A template for the new features: change template 25 (its
   golden file changes) or add template 37? *Provisional answer (MC-34):
   template 37 is added; template 25 and every golden file stay as they
@@ -453,6 +537,13 @@ new version opens an old batch without them.
 - **Q8** Thermal and operations batches: keep the "mean ± 3 sigma"
   lines with a clear label, or replace them by percentile lines (B3)?
   Which percentiles should the view show?
+- **Q9** The density dispersion (C1): a scale on the density, the same
+  for every atmosphere model, is built (MC-37, provisional). Is a
+  dispersion of F10.7 and Ap (NRLMSISE-00 only, as solar-activity
+  uncertainty) also wanted? It would scale real space-weather data, so
+  the "real data only" requirement must allow it first. *Answered by
+  the owner (2026-11-24, "as per your recommendation"): the density
+  scale only; no F10.7 and Ap dispersion. MC-37 is final.*
 
 ## 10. Progress
 
@@ -465,7 +556,9 @@ new version opens an old batch without them.
 | B-2 Sensitivity (B2), outcome statistics (B3), trust checks (B6) | done (`feature/monte-carlo-insight`, 2026-11-23; DECISIONS MC-26 to MC-31; Q8 answered provisionally by MC-27) |
 | B-3 Batch report (B5), command line (B7), template 37 (B9) | done (`feature/monte-carlo-report`, 2026-11-23; DECISIONS MC-32 to MC-35; Q7 answered provisionally by MC-34: a new template 37, template 25 unchanged). |
 | Phase B | published in 2.15.0 (2026-11-24, tag `spacemissionstudio-v2.15.0` on `5ebbd3b`, SRelD issue 56): B-1, B-2 and B-3 merged into `develop` (#313, #314, #316); release prepared 2026-11-23 (`release/2.15.0`, #318). MC-27 and MC-34, and the answers to Q1 to Q8, are provisional. |
-| C | later |
+| C order of the dispersions | decided (the owner's answer to Q6, 2026-11-24; DECISIONS MC-36): density, maneuver execution errors, thrusters, reaction wheels, propellant load and centre of mass, each with a spike first |
+| C-1 Atmospheric density dispersion | done (`feature/monte-carlo-density`, 2026-11-24; spike §6.1; DECISIONS MC-37 to MC-40; schema 8; MC-37 confirmed by the owner, Q9) |
+| C, other items | later |
 
 ---
 

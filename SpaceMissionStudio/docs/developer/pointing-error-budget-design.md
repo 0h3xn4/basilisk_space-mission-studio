@@ -9,11 +9,12 @@ choices and the questions for the owner. **No code changed in this
 step.** The owner chooses the scope (section 7) before any code.
 
 - **Decisions:** `docs/DECISIONS.md`, section "Pointing error budget:
-  design (2026-11-23)", decisions PE-1 to PE-9, final since the owner's
-  answers of 2026-11-24; section "Pointing error budget: scope B built
-  (2026-11-24)", PE-10 to PE-20.
+  design (2026-11-23)", decisions PE-1 to PE-9. The owner answered
+  section 7 on 2026-11-24; the decisions are final. Section "Pointing
+  error budget: scope B built (2026-11-24)", PE-10 to PE-20.
 - **Progress:** section 8.
-- **Backlog:** `BACKLOG.md`, `## Needs human`.
+- **Backlog:** `BACKLOG.md`, `## Done` (scope B) and `## Later`
+  (scope C).
 - **Base:** `develop` at `7a9a25f` (release 2.14.1).
 
 **Clean room.** The design uses only the public concepts of the ECSS
@@ -191,13 +192,17 @@ by hand as a number with its source.
    (conservative, simpler)?
 5. **Place:** a tab of the Budgets area (PE-1), or a page of its own?
 
-## 8. Progress
+**The owner's answers (2026-11-24): "as per your recommendation".**
+1. Scope B first; C is its own item after it.
+2. No default probability level: a new requirement has "TBD" (PE-5).
+3. Per axis, and a line-of-sight (half-cone) value from two axes by a
+   stated rule, in the first step (PE-6).
+4. The window share rule for periodic contributors (PE-7).
+5. A tab of the Budgets area (PE-1).
 
-**2026-11-24: the owner's answers.** (1) Scope B. (2) No default
-probability level: a new requirement has "TBD". (3) Per axis, plus a
-line-of-sight (half-cone) value from two axes by a stated rule, in this
-step. (4) The window share rule for periodic contributors (PE-7). (5) A
-"Pointing" tab of the Budgets area, after Mass.
+PE-1 to PE-9 are no longer provisional (`docs/DECISIONS.md`).
+
+## 8. Progress
 
 **2026-11-24: scope B built** on branch `feature/pointing-budget`
 (SRS-F-32; decisions PE-10 to PE-20):

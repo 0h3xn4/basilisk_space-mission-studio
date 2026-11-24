@@ -855,5 +855,5 @@
   "mission_sequence": [],
   "fsw_exports": [],
   "description": "Template 33's microsatellite with its two arrays as flexible wings on hinges. Each wing is a node of the thermal model whose faces turn with the hinge angle the run records. Run > Thermal solves nominal, hot and cold, and its Studies run a Monte Carlo of the hot case.\n\nWhat to look at:\n- The wings swing by about 0.01 deg in the Sun-safe turn: their sunlight follows the hinge, and the hinge barely moves.\n- Each wing at about -46 to 88 degC, the bus at 14 to 18 degC and the battery at 24 to 28 degC.\n- Studies, Monte Carlo: in 4 of 20 runs the battery passes its 30 degC limit, when its isolators conduct less.\n\nTry changing:\n- The isolators' conductance (Conductors), then run the Monte Carlo again.\n- A wing's first mode (Spacecraft > Solar arrays): a softer hinge swings further.",
-  "schema_version": 7
+  "schema_version": 8
 }

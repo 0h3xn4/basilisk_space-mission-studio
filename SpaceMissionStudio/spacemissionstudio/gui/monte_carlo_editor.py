@@ -68,6 +68,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..schema.scenario import (
+    ATMOSPHERE_DISPERSION_QUANTITIES,
     SPREAD_ONLY_DISPERSION_QUANTITIES,
     DISPERSION_KINDS_BY_QUANTITY,
     DISPERSION_QUANTITIES,
@@ -108,12 +109,14 @@ _UNITS = {
     "angular_rate_bn_b": "°/s on each axis, added to the initial rate",
     "drag_coeff": "drag coefficient Cd [-]",
     "srp_coeff": "radiation-pressure coefficient Cr [-]",
+    "density_scale": "a factor on the atmospheric density that every spacecraft's drag reads [-]; 1 is the "
+                     "atmosphere model's own density",
 }
 # The unit the mean, standard deviation and bounds fields carry for each
 # quantity (orbit_elements has a field per element, with its own unit).
 _FIELD_UNITS = {
     "dry_mass_kg": "kg", "attitude_sigma_bn": "deg", "inertia_kg_m2": "kg*m^2", "angular_rate_bn_b": "deg/s",
-    "drag_coeff": "-", "srp_coeff": "-",
+    "drag_coeff": "-", "srp_coeff": "-", "density_scale": "-",
 }
 _ELEMENT_LABELS = {
     "semi_major_axis_km": "Semi-major axis [km]",
@@ -133,6 +136,15 @@ DEGREE_BOUND_QUANTITIES = ("attitude_sigma_bn",)
 # Quantities whose dispersion is the value itself (written absolutely, as
 # engine.monte_carlo does), so a new one starts at the spacecraft's own.
 SCALAR_DISPERSION_QUANTITIES = ("dry_mass_kg", "drag_coeff", "srp_coeff")
+# The atmosphere's density scale starts at the model's own density (decision MC-37).
+NOMINAL_DENSITY_SCALE = 1.0  # [-]
+# What a dispersion of the atmosphere names in place of a spacecraft.
+ATMOSPHERE_OWNER = "atmosphere"
+
+
+def dispersion_owner(item: DispersionConfig) -> str:
+    """What ``item`` disperses: its spacecraft, or the atmosphere (decision MC-37)."""
+    return ATMOSPHERE_OWNER if item.quantity in ATMOSPHERE_DISPERSION_QUANTITIES else item.spacecraft
 
 
 class _DispersionEditorDialog(QDialog):
@@ -149,7 +161,7 @@ class _DispersionEditorDialog(QDialog):
         self.spacecraft_combo = ComboBox()
         for name in spacecraft_names:
             self.spacecraft_combo.addItem(name, userData=name)
-        if item is not None:
+        if item is not None and item.quantity not in ATMOSPHERE_DISPERSION_QUANTITIES:  # the atmosphere's has none
             index = self.spacecraft_combo.findData(item.spacecraft)
             if index >= 0:
                 self.spacecraft_combo.setCurrentIndex(index)
@@ -171,13 +183,18 @@ class _DispersionEditorDialog(QDialog):
         self.quantity_combo = ComboBox()
         self.quantity_combo.setToolTip(
             "Which quantity gets randomized, independently, on each Monte Carlo run – e.g. a "
-            "real uncertainty in orbit insertion, mass properties, initial attitude or rate, or "
-            "the drag and radiation-pressure coefficients. Every other dispersion on this "
-            "spacecraft (if any) varies independently alongside it. See User Manual, section 10."
+            "real uncertainty in orbit insertion, mass properties, initial attitude or rate, "
+            "the drag and radiation-pressure coefficients, or the atmospheric density (a scale "
+            "on the density every spacecraft's drag reads, not a spacecraft's own). Every other "
+            "dispersion varies independently alongside it. See User Manual, section 10."
         )
         self.quantity_combo.addItems(DISPERSION_QUANTITIES)
+        # True while the form shows a saved dispersion; a quantity the user picks afterwards may
+        # set the fields to its own starting values.
+        self._loading = True
         self.quantity_combo.currentTextChanged.connect(self._refresh_kind_choices)
         self.quantity_combo.currentTextChanged.connect(lambda _text: self._refresh_rows())
+        self.quantity_combo.currentTextChanged.connect(self._on_quantity_picked)
         form.addRow("Quantity", self.quantity_combo)
 
         self.kind_combo = ComboBox()
@@ -262,6 +279,7 @@ class _DispersionEditorDialog(QDialog):
         # would otherwise leave the row visibility out of sync with the
         # real selection.
         self._on_kind_changed(self.kind_combo.currentText())
+        self._loading = False
 
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self._on_accept)
@@ -285,6 +303,13 @@ class _DispersionEditorDialog(QDialog):
         self.bounds_hi_spin.setValue(nominal)
         self.mean_spin.setValue(nominal)
         self.std_spin.setValue(0.0)
+
+    def _on_quantity_picked(self, quantity: str) -> None:
+        """The density scale, picked by the user, starts at the model's own
+        density (1, no spread): the fields of another quantity (a dry mass
+        of 150 kg) would scale the density by 150."""
+        if not self._loading and quantity in ATMOSPHERE_DISPERSION_QUANTITIES:
+            self.start_at(NOMINAL_DENSITY_SCALE)
 
     def _refresh_kind_choices(self, quantity: str) -> None:
         current = self.kind_combo.currentText()
@@ -311,6 +336,8 @@ class _DispersionEditorDialog(QDialog):
         """Only the fields the selected quantity and kind use are shown."""
         quantity, kind = self.quantity_combo.currentText(), self.kind_combo.currentText()
         orbit = quantity == "orbit_elements"
+        # The atmosphere's quantity has no spacecraft: one scale for every spacecraft with drag (MC-37).
+        self._set_row_visible(self.spacecraft_combo, quantity not in ATMOSPHERE_DISPERSION_QUANTITIES)
         self._set_row_visible(self._bounds_row, kind in ("uniform", "uniform_euler_mrp") and not orbit)
         self._set_row_visible(self.mean_spin, kind == "normal" and quantity not in SPREAD_ONLY_DISPERSION_QUANTITIES)
         self._set_row_visible(self.std_spin, kind == "normal" and not orbit)
@@ -354,8 +381,9 @@ class _DispersionEditorDialog(QDialog):
         kind = self.kind_combo.currentText()
         quantity = self.quantity_combo.currentText()
         orbit = quantity == "orbit_elements"
+        atmosphere = quantity in ATMOSPHERE_DISPERSION_QUANTITIES
         config = DispersionConfig(
-            spacecraft=self.spacecraft_combo.currentData(),
+            spacecraft="" if atmosphere else self.spacecraft_combo.currentData(),
             quantity=quantity,
             kind=kind,
             bounds=[self._bound(self.bounds_lo_spin, quantity), self._bound(self.bounds_hi_spin, quantity)]
@@ -430,7 +458,7 @@ class DispersionListWidget(QWidget):
 
     @staticmethod
     def _text(item: DispersionConfig) -> str:
-        return f"{item.spacecraft}: {item.quantity} ({item.kind})"
+        return f"{dispersion_owner(item)}: {item.quantity} ({item.kind})"
 
     def _on_add(self) -> None:
         """Add a dispersion with the form's defaults and open its form (no
@@ -450,7 +478,7 @@ class DispersionListWidget(QWidget):
         self._items.append(item)
         self._refresh_list()
         self.list_widget.setCurrentRow(len(self._items) - 1)
-        show_toast(self.window(), f"Added dispersion: {item.spacecraft}: {item.quantity}"
+        show_toast(self.window(), f"Added dispersion: {dispersion_owner(item)}: {item.quantity}"
                    + (f", at its own {nominal:g} with no spread yet: widen its bounds" if nominal is not None else ""))
         self.changed.emit()
         self._focus_form()
@@ -477,7 +505,7 @@ class DispersionListWidget(QWidget):
         item = self._items[row]
         del self._items[row]
         self._refresh_list()
-        show_toast(self.window(), f"Removed dispersion: {item.spacecraft}: {item.quantity}", kind="info")
+        show_toast(self.window(), f"Removed dispersion: {dispersion_owner(item)}: {item.quantity}", kind="info")
         self.changed.emit()
 
     def to_list(self) -> list:

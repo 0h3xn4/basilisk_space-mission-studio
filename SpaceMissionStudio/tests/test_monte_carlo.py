@@ -26,7 +26,8 @@ import pytest
 
 from spacemissionstudio.schema import GravityConfig, MonteCarloConfig, OrbitIC, Scenario, SpacecraftConfig
 from spacemissionstudio.schema.command import Command
-from spacemissionstudio.schema.scenario import ConstantThrustConfig, DispersionConfig, StationKeepingConfig
+from spacemissionstudio.schema.scenario import (ConstantThrustConfig, DispersionConfig, ScenarioValidationError,
+                                               StationKeepingConfig)
 
 pytestmark = pytest.mark.requires_basilisk
 
@@ -1129,3 +1130,188 @@ def test_a_case_of_a_seeded_batch_runs_again_as_the_batch_ran(tmp_path):
     other = _template_25(seed=2027)  # another seed is another scenario: its cases are not this batch's
     with pytest.raises(monte_carlo.MonteCarloCaseRefused, match="the scenario changed since the batch"):
         monte_carlo.replay_case(other, tmp_path, 0)
+
+
+# -- The atmospheric density scale (Monte Carlo plan C1, decision MC-37) -----------------------
+
+
+def _density_scaled(kind="uniform", model="nrlmsise00", duration_days=0.02, num_runs=1, **fields):
+    """Template 25 on a 300 km orbit (a short low-orbit case), with one
+    density scale and no other dispersion."""
+    scenario = _template_25(num_runs=num_runs, duration_days=duration_days)
+    scenario.spacecraft[0].orbit.semi_major_axis_km = 6678.0  # [km] 300 km above the equator
+    scenario.space_weather.atmosphere_model = model
+    if model == "tabular":
+        scenario.space_weather.atmosphere_table = "nrlmsise00_nominal"  # the profile that reaches 300 km
+    if kind == "uniform":
+        fields.setdefault("bounds", [1.0, 1.0])
+    scenario.monte_carlo.dispersions = [DispersionConfig(spacecraft="", quantity="density_scale", kind=kind,
+                                                         **fields)]
+    scenario.validate()
+    return scenario
+
+
+def test_a_drawn_density_scale_reaches_the_drag_of_the_run(tmp_path):
+    """The Controller's draw reaches the simulation: three 1-run batches
+    whose scale can only be 0, 1 or 2. Against the run without drag (0),
+    the run at 2 has twice the drag decay of the run at 1: its semi-major
+    axis falls twice as far and it is twice as far behind. The summary keeps
+    each run's drawn scale under its label."""
+    import numpy as np
+    from Basilisk.utilities import orbitalMotion
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    final_a, final_r = {}, {}
+    for scale in (0.0, 1.0, 2.0):
+        scenario = _density_scaled(bounds=[scale, scale])
+        folder = tmp_path / f"scale_{scale:g}"
+        assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, folder) == []
+        batch = mcr.load(folder)
+        assert batch.drawn == [{monte_carlo.DENSITY_SCALE_LABEL: scale}]
+        r, v = batch.positions["sat-1"][0, -1], batch.velocities["sat-1"][0, -1]
+        final_a[scale] = orbitalMotion.rv2elem(monte_carlo._central_body_mu(scenario), r, v).a  # [m]
+        final_r[scale] = r
+    decay_1, decay_2 = final_a[0.0] - final_a[1.0], final_a[0.0] - final_a[2.0]  # [m]
+    assert decay_1 > 5.0  # [m] in 0.02 day at 300 km: measurable
+    assert decay_2 / decay_1 == pytest.approx(2.0, rel=1e-2)
+    behind_1 = np.linalg.norm(final_r[1.0] - final_r[0.0])
+    behind_2 = np.linalg.norm(final_r[2.0] - final_r[0.0])
+    assert behind_1 > 1.0 and behind_2 / behind_1 == pytest.approx(2.0, rel=1e-2)  # [m]
+
+
+@pytest.mark.parametrize("model", ["nrlmsise00", "exponential", "tabular"])
+def test_the_density_that_drag_reads_is_the_models_times_the_scale(model):
+    """Each atmosphere model: the density the drag effector reads is the
+    model's own times the scale, to the last bit, at every step; the scale
+    1 run flies exactly as a run built without the scale (no side
+    effect)."""
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine.service import SimulationService
+
+    def fly(scale):
+        scenario = _density_scaled(model=model, duration_days=0.002)
+        sim = monte_carlo._create_sim(scenario)
+        service = sim._spacemissionstudio_service
+        sim.get_density_scale().scale = scale
+        given = service._record(service.atmosphere_module.envOutMsgs[0])
+        read = service._record(service.density_scale.atmoOutMsgs[0])
+        for recorder in (given, read):
+            sim.AddModelToTask(service.dyn_task_name, recorder)
+        service.initialize()
+        result = service.run()
+        return np.asarray(given.neutralDensity), np.asarray(read.neutralDensity), result
+
+    for scale in (0.5, 2.0):
+        given, read, _result = fly(scale)
+        assert given.size >= 5 and np.all(given > 0.0)  # [kg/m^3] drag acts at 300 km in every model
+        assert np.array_equal(read, given * scale)
+    _given, _read, scaled_once = fly(1.0)
+    plain = SimulationService(_density_scaled(model=model, duration_days=0.002)).run()
+    assert np.array_equal(np.asarray(scaled_once.series["sat-1.position_N"].data),
+                          np.asarray(plain.series["sat-1.position_N"].data))
+
+
+def test_a_negative_density_scale_fails_the_run_with_a_message(capfd):
+    """The module refuses a scale it cannot apply (a negative or not finite
+    number) when the run starts; a normal draw without bounds is held at 0
+    or above by the dispersion (bounds [0, inf])."""
+    import math
+
+    from spacemissionstudio.engine import monte_carlo
+
+    scenario = _density_scaled(duration_days=0.001)
+    sim = monte_carlo._create_sim(scenario)
+    sim.get_density_scale().scale = -0.5
+    with pytest.raises(RuntimeError, match="_SysModel.Reset"):  # Basilisk's SWIG director wraps the ValueError
+        sim._spacemissionstudio_service.initialize()
+    assert "density scale must be a finite number >= 0, got -0.5" in capfd.readouterr().err  # its traceback
+    normal = monte_carlo._build_dispersion(
+        DispersionConfig(spacecraft="", quantity="density_scale", kind="normal", mean=0.1, std_deviation=5.0),
+        scenario)
+    assert normal.bounds == [0.0, math.inf]
+    assert min(normal.generate(None) for _ in range(200)) == 0.0
+
+
+def test_a_uniform_density_scale_with_equal_bounds_gives_that_scale():
+    """Basilisk's UniformDispersion divides by the half-width, so equal
+    bounds (a new scale starts at [1, 1]) would fail every run; the scale's
+    own class gives the value and takes the same one number from random."""
+    import random
+
+    from spacemissionstudio.engine import monte_carlo
+
+    scenario = _density_scaled(bounds=[1.0, 1.0])
+    dispersion = monte_carlo._build_dispersion(scenario.monte_carlo.dispersions[0], scenario)
+    random.seed(4)
+    assert dispersion.generate(None) == 1.0
+    after = random.random()
+    random.seed(4)
+    random.uniform(0.6, 1.6)
+    assert random.random() == after
+
+
+def test_a_density_scale_without_an_atmosphere_is_refused_by_the_engine_too():
+    """A scenario that skipped validation (no spacecraft with drag) is
+    refused when the batch builds the dispersion and when a run is built,
+    never drawn and ignored."""
+    from spacemissionstudio.engine import monte_carlo
+
+    scenario = _density_scaled()
+    scenario.spacecraft[0].enable_drag = False
+    with pytest.raises(monte_carlo.MonteCarloError, match="no spacecraft has enable_drag"):
+        monte_carlo._build_dispersion(scenario.monte_carlo.dispersions[0], scenario)
+    with pytest.raises(ScenarioValidationError, match="no spacecraft has enable_drag"):
+        monte_carlo._create_sim(scenario)  # the service validates the scenario it builds
+
+
+def test_a_seeded_batch_draws_the_same_density_scales_again_and_its_cases_run_again(tmp_path):
+    """Reproducibility with the batch seed: one seed gives the same scales
+    and trajectories twice, another seed other scales; the scales reach the
+    Runs table, its CSV and the report like every drawn value; and each
+    case, run again from its run<N>.json, flies as the batch flew it."""
+    import csv
+    import json
+
+    import numpy as np
+
+    from spacemissionstudio.engine import monte_carlo
+    from spacemissionstudio.engine import monte_carlo_report as report
+    from spacemissionstudio.engine import monte_carlo_results as mcr
+
+    def batch(folder, seed):
+        scenario = _density_scaled(kind="normal", mean=1.0, std_deviation=0.3, num_runs=3, duration_days=0.01)
+        scenario.monte_carlo.seed = seed
+        assert monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, tmp_path / folder) == []
+        return scenario, mcr.load(tmp_path / folder)
+
+    scenario, first = batch("first", 37)
+    _, again = batch("again", 37)
+    _, other = batch("other", 38)
+    label = monte_carlo.DENSITY_SCALE_LABEL
+    scales = [drawn[label] for drawn in first.drawn]
+    assert len(set(scales)) == 3 and all(scale >= 0.0 for scale in scales)
+    assert [drawn[label] for drawn in again.drawn] == scales
+    assert np.array_equal(first.positions["sat-1"], again.positions["sat-1"])
+    assert all(a != b for a, b in zip(scales, (drawn[label] for drawn in other.drawn)))
+
+    labels, rows = mcr.run_table(first, outcomes=True)
+    column = labels.index(label)
+    assert [row[column] for row in rows] == scales
+    path = tmp_path / "runs.csv"
+    report.write_runs_csv(first, path, "sat-1", tmp_path / "first")
+    with path.open(encoding="utf-8") as handle:
+        written = list(csv.reader(handle))
+    assert [float(row[written[0].index(label)]) for row in written[1:]] == pytest.approx(scales, rel=1e-8)
+    record = report.build(first, tmp_path / "first")
+    assert record["dispersions"][0]["quantity"] == "density_scale" and record["dispersions"][0]["unit"] == "-"
+    assert "| atmosphere | density_scale |" in report.markdown(record, first)
+    json.dumps(record, allow_nan=False)
+
+    for k, case in enumerate(first.runs):
+        result, _summary = monte_carlo.replay_case(scenario, tmp_path / "first", case)
+        position = _position_at_kept_samples(result, "sat-1", first.time_s)
+        assert np.max(np.abs(position - first.positions["sat-1"][k])) <= 1e-6  # [m]
