@@ -220,9 +220,8 @@ drawn outcomes and each profile's lowest and highest value. A crashed run
 has no outcome and is not in N.
 
 - **The percentiles** shown are a parameter, `monte_carlo.percentiles`
-  [%]. Its value is provisional: the owner has not named the
-  percentiles (plan Q8), so the source is "TBD", and the default is 1,
-  5, 50, 95 and 99 % (decision MC-27). A project file changes them:
+  [%]. The default is 1, 5, 50, 95 and 99 %, the owner's answer to
+  plan Q8 (decision MC-27, confirmed 2026-11-24). A project file changes them:
 
   ```yaml
   parameters:

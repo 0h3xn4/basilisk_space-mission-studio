@@ -221,3 +221,8 @@ attitude error series over the requirement's windows, is its own item;
 option D waits for Monte Carlo phase B. A use of the statistical
 interpretation in the sum (PE-14) and an angle for a gyroscope's noise
 (PE-15) need a rule from the owner.
+
+**The owner's answers on the choices of scope B (2026-11-24):** PE-12,
+PE-13 and PE-15 are confirmed; PE-14 stays (the interpretation is
+recorded, not used) until scope C; a gyroscope's angle error comes from a
+sourced time between attitude fixes (PE-21, a backlog item).

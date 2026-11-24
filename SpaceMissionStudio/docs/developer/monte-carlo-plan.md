@@ -545,6 +545,11 @@ new version opens an old batch without them.
   the owner (2026-11-24, "as per your recommendation"): the density
   scale only; no F10.7 and Ap dispersion. MC-37 is final.*
 
+**The owner's answers are final (2026-11-24):** "as per your current
+answer" to each of Q1 to Q8. Q1: MC-11; Q2: MC-12; Q3: MC-17; Q4:
+MC-13; Q5: MC-14; Q6: MC-36; Q7: MC-34; Q8: MC-15 and MC-27. None of them
+is provisional any more.
+
 ## 10. Progress
 
 | Step | State |
@@ -555,7 +560,7 @@ new version opens an old batch without them.
 | B-1 Batch seed (B1), thermal node limits (B4), small fixes (B8) | done (`feature/monte-carlo-seed`, 2026-11-23; DECISIONS MC-20 to MC-25) |
 | B-2 Sensitivity (B2), outcome statistics (B3), trust checks (B6) | done (`feature/monte-carlo-insight`, 2026-11-23; DECISIONS MC-26 to MC-31; Q8 answered provisionally by MC-27) |
 | B-3 Batch report (B5), command line (B7), template 37 (B9) | done (`feature/monte-carlo-report`, 2026-11-23; DECISIONS MC-32 to MC-35; Q7 answered provisionally by MC-34: a new template 37, template 25 unchanged). |
-| Phase B | published in 2.15.0 (2026-11-24, tag `spacemissionstudio-v2.15.0` on `5ebbd3b`, SRelD issue 56): B-1, B-2 and B-3 merged into `develop` (#313, #314, #316); release prepared 2026-11-23 (`release/2.15.0`, #318). MC-27 and MC-34, and the answers to Q1 to Q8, are provisional. |
+| Phase B | published in 2.15.0 (2026-11-24, tag `spacemissionstudio-v2.15.0` on `5ebbd3b`, SRelD issue 56): B-1, B-2 and B-3 merged into `develop` (#313, #314, #316); release prepared 2026-11-23 (`release/2.15.0`, #318). MC-27 and MC-34, and the answers to Q1 to Q8, were provisional; the owner confirmed them on 2026-11-24. |
 | C order of the dispersions | decided (the owner's answer to Q6, 2026-11-24; DECISIONS MC-36): density, maneuver execution errors, thrusters, reaction wheels, propellant load and centre of mass, each with a spike first |
 | C-1 Atmospheric density dispersion | done (`feature/monte-carlo-density`, 2026-11-24; spike §6.1; DECISIONS MC-37 to MC-40; schema 8; MC-37 confirmed by the owner, Q9) |
 | C, other items | later |

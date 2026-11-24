@@ -67,6 +67,14 @@ fixes bugs.
   every older file still opens, and 2.15.0 and earlier do not open a
   version 8 file.
 
+### Changed
+
+- **The Monte Carlo choices that 2.15.0 called provisional are now
+  final.** The percentiles the Statistics tab shows (1, 5, 50, 95 and
+  99 %), template 37, and the answers behind the requirements (a crashed
+  run counts against them, a confidence level for each, exit status 5)
+  stay exactly as they were; they are simply no longer marked as open.
+
 ### Fixed
 
 - **Monte Carlo plot pages no longer pile up in the temporary folder on

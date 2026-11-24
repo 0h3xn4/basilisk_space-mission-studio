@@ -1128,7 +1128,7 @@ def _write_monte_carlo_scenario(path, requirements):
 @pytest.mark.requires_basilisk
 @pytest.mark.parametrize("limit_km, expected", [(0.0, 0), (1.0e6, 5)])
 def test_monte_carlo_exits_5_when_a_requirement_is_not_shown_met(tmp_path, capsys, limit_km, expected):
-    """Decision MC-10 (the owner's answer Q5, provisional): a batch that ran
+    """Decision MC-10 (the owner's answer Q5, confirmed): a batch that ran
     but does not show a requirement with an allowed probability met exits
     5 (ICD-02, "its check did not pass"); one that shows it met exits 0.
     The command prints each outcome's range and the requirements table."""

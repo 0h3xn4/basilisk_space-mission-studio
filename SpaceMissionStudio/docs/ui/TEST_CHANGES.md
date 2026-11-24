@@ -2892,6 +2892,13 @@ No existing test changed. Added to `tests/test_monte_carlo.py`:
 `test_a_uniform_dispersion_with_equal_bounds_gives_that_value` (four
 cases) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`.
 
+## The owner confirmed Q1 to Q8 (2026-11-24)
+
+Wording only: the docstrings of `test_cli.py::test_monte_carlo_exits_5_when_a_requirement_is_not_shown_met`,
+`test_monte_carlo.py::test_a_case_of_a_changed_scenario_is_refused_with_both_hashes` and
+`test_monte_carlo_requirements.py::test_a_crashed_run_counts_as_not_met_and_is_shown_apart`
+say "confirmed" instead of "provisional". No assertion changed.
+
 ## Template 38: the Budgets area (2026-11-24)
 
 Decision TB-8. Three tests pin the number of templates. Each changes only
