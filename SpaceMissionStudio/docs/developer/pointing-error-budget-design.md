@@ -10,8 +10,10 @@ step.** The owner chooses the scope (section 7) before any code.
 
 - **Decisions:** `docs/DECISIONS.md`, section "Pointing error budget:
   design (2026-11-23)", decisions PE-1 to PE-9. The owner answered
-  section 7 on 2026-11-24; the decisions are final.
-- **Backlog:** `BACKLOG.md`, `## Next release` (scope B) and `## Later`
+  section 7 on 2026-11-24; the decisions are final. Section "Pointing
+  error budget: scope B built (2026-11-24)", PE-10 to PE-20.
+- **Progress:** section 8.
+- **Backlog:** `BACKLOG.md`, `## Done` (scope B) and `## Later`
   (scope C).
 - **Base:** `develop` at `7a9a25f` (release 2.14.1).
 
@@ -199,3 +201,23 @@ by hand as a number with its source.
 5. A tab of the Budgets area (PE-1).
 
 PE-1 to PE-9 are no longer provisional (`docs/DECISIONS.md`).
+
+## 8. Progress
+
+**2026-11-24: scope B built** on branch `feature/pointing-budget`
+(SRS-F-32; decisions PE-10 to PE-20):
+
+| Part | Where | State |
+|---|---|---|
+| 3.1 Data: `budgets.pointing`, section version 2 with a migration from 1 | `schema/budgets.py` | done |
+| 3.2 Computation: selection table, window shares, sum, value at the probability, margin, line of sight, "TBD" | `engine/pointing_budget.py` | done |
+| 3.3 GUI: Budgets › Pointing (requirements, contributors, result with status, Add Scenario Sensors, Copy as CSV) | `gui/budgets_area.py` (`PointingPage`) | done |
+| 3.4 Records: decisions, ICD (generated), SRS-F-32, user manual, golden files unchanged | `docs/`, `compliance/docs/` | done |
+| Report and CLI: `budgets --pointing` (`--csv`), `api.pointing_budget` | `cli.py`, `api.py` | done |
+| Option B: the scenario's star trackers, gyroscopes and sun sensors as knowledge contributors | `engine/pointing_budget.py` (`sensor_contributors`) | done; a gyroscope's angle is "TBD" (PE-15) |
+
+**Next (not in this step):** option C, the indices measured from a run's
+attitude error series over the requirement's windows, is its own item;
+option D waits for Monte Carlo phase B. A use of the statistical
+interpretation in the sum (PE-14) and an angle for a gyroscope's noise
+(PE-15) need a rule from the owner.

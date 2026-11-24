@@ -36,8 +36,8 @@ results with their calculation traces, provenance), and :func:`write`
 saves one.
 
 Without Basilisk only :func:`load`, :func:`validate`, :func:`assumptions`,
-:func:`compare`, :func:`design_checks` and :func:`power_budget` work; the
-others raise ``ImportError``.
+:func:`compare`, :func:`design_checks`, :func:`power_budget` and
+:func:`pointing_budget` work; the others raise ``ImportError``.
 """
 
 from __future__ import annotations
@@ -47,7 +47,8 @@ from pathlib import Path
 API_VERSION = 1
 
 __all__ = ["API_VERSION", "template", "load", "validate", "assumptions", "run", "summary", "lifetime", "budget",
-           "launch_delays", "altitude_trade", "monte_carlo", "monte_carlo_case", "compare", "design_checks", "power_budget", "model_analyses",
+           "launch_delays", "altitude_trade", "monte_carlo", "monte_carlo_case", "compare", "design_checks", "power_budget", "pointing_budget",
+           "model_analyses",
            "reentry",
            "thermal", "thermal_model", "thermal_sweep", "thermal_sensitivity", "thermal_monte_carlo",
            "plan_opportunities", "plan_schedule", "plan_fly", "plan_verify", "plan_export", "plan_load",
@@ -260,6 +261,21 @@ def power_budget(scenario, spacecraft: str | None = None):
     from .analyses import common, power_budget as budget
 
     return budget.power_budget(common.spacecraft(scenario, spacecraft))
+
+
+def pointing_budget(scenario, spacecraft: str | None = None):
+    """The pointing error budget of a spacecraft's ``budgets.pointing``
+    section: ``engine.pointing_budget.PointingBudget`` with ``results``
+    (per requirement its value at the requirement's probability, its limit
+    and margin in radians, its status, the contributors that enter it with
+    their share; None for "TBD", never 0) and ``rows()`` / ``term_rows()``
+    in arcsec. Empty for a spacecraft without the section. Needs no
+    Basilisk.
+    """
+    from .analyses import common
+    from .engine import pointing_budget as budget
+
+    return budget.pointing_budget(common.spacecraft(scenario, spacecraft))
 
 
 def model_analyses(scenario, result, spacecraft: str | None = None, base_dir=None):

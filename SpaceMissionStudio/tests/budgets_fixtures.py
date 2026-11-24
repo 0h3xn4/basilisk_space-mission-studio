@@ -39,7 +39,7 @@ def sourced(value, source: str = "data sheet rev B") -> dict:
 
 
 SECTION = {
-    "version": 1,
+    "version": 2,
     "buses": [{"name": "main", "converter_efficiency": sourced(0.9, "PCDU data sheet")}],
     "distribution_loss": sourced(0.02, "harness estimate"),
     "power_margins": [

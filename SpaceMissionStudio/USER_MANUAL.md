@@ -225,10 +225,11 @@ A few things to notice right away:
   * **Budgets** (`Ctrl+5`): the budgets of a spacecraft, without a run.
     **Equipment** edits its equipment list, its power modes, its system
     modes and its power settings in tables; **Power** gives its power
-    budget per system mode; **Mass** its mass budget; **Propellant** its
-    delta-V and propellant budget (Section 11; until 2.10.0 this was
-    **Run > Budget**). With several spacecraft, pick one at the top
-    ([Equipment list and power budget](docs/user-manual/budgets.md)).
+    budget per system mode; **Mass** its mass budget; **Pointing** its
+    pointing error budget (Section 6, "The pointing error budget");
+    **Propellant** its delta-V and propellant budget (Section 11; until
+    2.10.0 this was **Run > Budget**). With several spacecraft, pick one
+    at the top ([Equipment list and power budget](docs/user-manual/budgets.md)).
   * **Timeline**: passes, eclipses, burns and mode changes (Section 7).
   * **Reports**: **Exports** and **Flight Software** (export the
     attitude flight software and run it in the loop, Section 6).
@@ -1111,6 +1112,58 @@ Every number comes with its method and source
 (`docs/models/model-analyses.md`, `docs/models/reentry.md`); ray-cast
 results come with their sampling error. Template 32 shows them all. On
 the command line: `check-design`, `model-analyses` and `reentry`.
+
+### The pointing error budget
+
+**Budgets › Pointing** (the tab after **Mass**) holds a spacecraft's
+pointing error budget: how far the spacecraft can point from where it
+should (performance) or from where it believes it points (knowledge),
+and with what probability. It needs no run. The ideas are the public
+ones of the ECSS control performance standard (ECSS-E-ST-60-10C), in
+this app's own words. Every number has a source or reads **TBD**; the
+app guesses none.
+
+- **Add Pointing Budget** starts one. If the spacecraft has no budgets
+  section yet, the new section holds the pointing budget and nothing
+  else.
+- **Requirements**: one row per limit. **Index** is the error looked at:
+  *absolute* (at any instant), *mean* (over the window), *relative*
+  (about the window's mean), *drift* and *reproducibility* (the change
+  of the window's mean between two windows). **Axis** is a body axis or
+  the *line of sight* (a half-cone). Give the **Limit [arcsec]**, the
+  **Probability** (for example 0.9973) and their sources. A new
+  requirement has no probability: it reads **TBD** until you give one.
+  **Window [s]** and **Stability [s]** are the observation period and
+  the shorter window of a relative index. **Interpretation** (temporal,
+  ensemble, mixed) and **Modes** are recorded with the requirement.
+- **Contributors**: one row per source of error: its **Kind**
+  (performance, knowledge or both), its **Behaviour** (bias, random,
+  periodic, drift, transient), its **Distribution** and, about each
+  axis, a **Spread** (a 1-sigma, a half-width or an amplitude) and a
+  **Mean**, in arcsec. A periodic one needs its **Period [s]**. **Source**
+  is the source of all its values. Contributors with the same **Group**
+  are correlated. **Enters** says which indices the behaviour enters.
+- **Add Scenario Sensors** adds the spacecraft's star trackers,
+  gyroscopes and sun sensors as knowledge contributors, with their noise
+  and where it comes from: the catalog product the sensor's name names,
+  else the scenario. A gyroscope's noise is a rate, so its angle reads
+  **TBD** until you give it.
+- **Line of sight along** is the body axis of the line of sight: a
+  half-cone requirement adds the errors about the two axes across it.
+
+**Result per requirement** gives the mean, the standard deviation, the
+value at the requirement's probability, the limit and the margin, all in
+arcsec, and a **Status** (an icon and a word): *met*, *not met*, *TBD*
+or *no contributor*. Pick a row to see the contributors that enter it,
+with their share, and why a value is **TBD**. Per index and axis the
+means add, the deviations of independent contributors add as a root sum
+of squares, and those of a group add linearly. A periodic contributor
+enters a window by the share of its amplitude that the window sees. The
+rules and their reasons are in `docs/developer/pointing-error-budget-design.md`
+and `docs/DECISIONS.md` (PE-1 to PE-20). **Copy as CSV** copies the
+result with the scenario's provenance. On the command line:
+`spacemissionstudio budgets scenario.json --pointing` (`--csv` for CSV);
+from Python, `api.pointing_budget(scenario)`.
 
 ### Thermal analysis
 
