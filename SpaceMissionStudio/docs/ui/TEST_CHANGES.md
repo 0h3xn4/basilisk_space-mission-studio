@@ -2878,3 +2878,12 @@ validation rule, a section with only a pointing budget) and
 into the scenario with save and undo, the result's status icons and
 words, Add Scenario Sensors, Copy as CSV, names, both themes, 1280 x 720
 and the 50 ms limit). Each fails without the change.
+
+## A Monte Carlo plot page that Windows holds is deleted later (2026-11-24)
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_monte_carlo_results_widget.py::test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread` | the older pages gone at once after the newest is shown | waits up to 10 s until only the newest page is left | on Windows the web view can still hold the page shown before; it is now deleted on a retry (`docs/DECISIONS.md`, same title). The assertion (only the newest page left) is unchanged |
+
+New: `test_a_page_the_web_view_still_holds_is_deleted_a_little_later`
+(fails without the retry).

@@ -6183,3 +6183,29 @@ tool's name, user interface, file format, text or numbers.
 list gains Pointing; two version pins of `tests/test_budgets_schema.py`
 and the fixture section's version follow the version step. No assertion
 is weakened.
+
+## A Monte Carlo plot page that Windows holds is deleted later (2026-11-24)
+
+CI on PR #325 (`8b24d50`, push run 45360519117, job "platforms
+(windows-latest)") failed
+`test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread`:
+the page shown before (`monte_carlo_insight_4.html`) was still in the
+plot folder beside the newest one. The same job passed in the pull
+request's run on the same commit and on `develop`.
+
+- **The cause.** `InsightPlot` deletes the page shown before as soon as
+  it loads the next one. On Windows the web view can still hold that
+  file open (it was still reading the 5 MB page), so the delete fails,
+  and `_remove` ignored the error: the file stayed until the plot's
+  folder was removed.
+- **Decision: a page that cannot be deleted is tried again** every
+  250 ms, at most 40 times (10 s); then it stays until its folder is
+  removed, as before. **Why:** the web view lets the file go once it has
+  the next page; a fixed retry needs no new signal from the web view
+  (`loadFinished` can stall on some platforms, `test_results_widget.py`).
+- **Tests:** the batch test now waits (up to 10 s) until only the newest
+  page is left, instead of checking at once; it still requires the older
+  pages to be removed. New:
+  `test_a_page_the_web_view_still_holds_is_deleted_a_little_later` makes
+  the first delete fail as Windows does; it fails without the retry and
+  passes with it.

@@ -50,6 +50,11 @@ fixes bugs.
 
 ### Fixed
 
+- **Monte Carlo plot pages no longer pile up in the temporary folder on
+  Windows.** When a statistics plot was drawn again while the previous
+  one was still loading, the old page (a few megabytes) could not be
+  deleted and stayed until you closed the view. It is now tried again a
+  moment later.
 - **Cancelling a Monte Carlo batch that uses several processes no longer
   leaves a process behind.** When you cancelled such a batch, one of its
   worker processes could stay running after the batch had stopped,

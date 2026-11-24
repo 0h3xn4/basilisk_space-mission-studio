@@ -21689,3 +21689,20 @@ recorded hashes do not change.
 **Tests.** Three new files (145 tests). Three existing tests and the
 budgets fixture changed for the version step and the new tab
 (`docs/ui/TEST_CHANGES.md`); none is weakened.
+
+## A Monte Carlo plot page that Windows holds is deleted later (2026-11-24)
+
+CI on PR #325 (`8b24d50`) failed one test on the Windows runner in the
+push run: `test_the_plots_of_a_batch_of_100000_runs_take_under_50_ms_of_the_gui_thread`
+found the page shown before (`monte_carlo_insight_4.html`) still beside
+the newest. The pull request's run on the same commit passed, and so did
+`develop`. The plot deletes the previous page as soon as it loads the
+next; the web view can still be reading the previous one, Windows then
+refuses the delete, and the error was ignored. A page that cannot be
+deleted is now tried again every 250 ms for up to 10 s (`docs/DECISIONS.md`).
+The batch test waits for the folder to hold only the newest page; a new
+test makes the first delete fail and checks the retry. The Windows (MAX
+Python) job of the same CI failed only on the framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45), and Linux (MAX Python) stopped at the build cache's start, before
+any test.
