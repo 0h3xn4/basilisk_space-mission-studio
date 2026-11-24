@@ -6046,3 +6046,114 @@ dispersion.** Schema step 7 to 8. The golden files of the 37 templates are byte-
   current version, as the step from 5 to 6 already did). No GUI test reaches a widget another way.
   `docs/ui/TEST_CHANGES.md` lists the new tests. **Why:** CLAUDE.md: a
   pinned version moves with the schema; no check is weakened.
+
+## Templates for every feature, batch A: templates 39 to 42 (2026-11-24)
+
+The owner wants at least one template for every feature of the tool. The
+37 templates on `develop` give every orbit as classical elements and use
+only NRLMSISE-00. None uses `constant_thrust`, `navigation_error`, the
+`velocityPoint` mode or a `magnetometer` sensor. Batch A adds four
+templates for these gaps. Number 38 is kept for the Budgets template (a
+separate change). No scenario field changed, so there is no schema step.
+The golden files of templates 01 to 37 are byte-identical; each new
+template has its own, recorded with `scripts/update_golden_outputs.py
+39_ 40_ 41_ 42_ --write`.
+
+- **Decision TPL-A1: what the four templates show, and how their values
+  are sourced.** The rule: a value comes from a named source in the app,
+  or it is labelled illustrative or synthetic in the generator and in
+  the description. No source is invented.
+  - **39, orbit inputs.** Three 150 kg satellites, orbit only, no drag.
+    - tle-sat: a **synthetic** TLE (catalogue number 99999, no
+      international designator, no drag terms, epoch the scenario's,
+      51.64 deg, e 0.0004, 15.5 revolutions a day). The generator builds
+      each line field by field and computes the checksum
+      (`_tle_line`). **Why synthetic:** a real TLE needs a fixed
+      historical record that we can cite, the repository holds none,
+      and the template must not fetch anything. A TLE more than 3 days
+      from the scenario epoch also gets a warning. A synthetic set at
+      the epoch avoids both, and it is labelled synthetic.
+    - state-sat: an **illustrative** Cartesian state, the perigee of a
+      500 x 1500 km orbit at 63.4 deg, with the speed from the vis-viva
+      equation and Basilisk's Earth constants
+      (`spacemissionstudio.constants`), rounded to 1 m and 1 mm/s.
+      **Why:** it is consistent by construction, and the critical
+      inclination gives a check (the perigee holds).
+    - elements-sat: template 22's 550 km Sun-synchronous orbit.
+    - The description points to `ccsds-import` and **Import CCSDS
+      OPM/OMM...** for an orbit file.
+  - **40, continuous low thrust.** Two 150 kg satellites at 400 km with
+    drag from the bundled space weather (2030), three days. ep-sat has
+    `constant_thrust` along the velocity (VNB [1, 0, 0]); twin-sat has
+    none. The thruster values are the **device catalogue's ENPULSION
+    MICRO R3** (`engine/device_catalog.py`: 1 mN, Isp 3000 s, 1.3 kg).
+    **Why a twin:** the claim "the thrust raises the orbit" is then a
+    comparison in one run. The fuel use shows in the run's
+    `constant_thrust.propellant_remaining` and `delta_v` series and in
+    the command line's run summary.
+  - **41, velocity pointing and navigation errors.** Template 07's
+    microsatellite on three wheels in `velocityPoint`, with a star
+    tracker, an IMU and a magnetometer (the **device catalogue's MM200**
+    noise), for 0.07 day in March 2027. **Why 2027:** the World Magnetic
+    Model 2025 is valid from 2025.0 to 2030.0, and the 2030 epoch of the
+    other templates is at its end. The navigation errors are
+    **illustrative** (attitude 0.002 deg a step within 0.02 deg, rate
+    0.0001 deg/s within 0.001 deg/s, position 1 m within 10 m, velocity
+    0.01 m/s within 0.1 m/s, seed 41), of the order a star tracker, a
+    gyro and a GNSS receiver give. A first draft had the rate bound at
+    0.005 deg/s (the values of `tests/test_navigation_error.py`): the
+    pointing error was then 0.25 deg, and other draws moved the wheel
+    speeds by 0.84 % of their scale (see TPL-A3). With 0.001 deg/s the
+    error is about 0.07 deg and other draws move them by 0.22 %.
+  - **42, other atmosphere models.** One 150 kg satellite at 350 km, two
+    days from 1 October 2024, drag from the **tabular** model with
+    NRLMSISE-00's nominal profile (`engine/atmosphere_tables.py`, a
+    table Basilisk ships). **Why this table:** the US Standard
+    Atmosphere stops at 86 km and Earth-GRAM 2016's profile at 200 km.
+    **Why October 2024:** near the maximum of solar cycle 25, so
+    NRLMSISE-00 with the observed space weather ("Try changing") gives
+    about seven times the decay of the fixed profile; in January 2030,
+    at 320 km, the two differed by about 15 %. The exponential model shows in "Try
+    changing" only: at 350 km it gives no drag. The End of Life
+    estimate reads the same table (re-entry after about 350 days at
+    Cd 2.2).
+  - Every spacecraft is 150 kg, the class the app is for
+    (`tests/test_scenario_templates.py`).
+- **Decision TPL-A2: the claims tests.** `tests/test_template_claims.py`
+  has one test per template. Each checks what the description says:
+  39, the TLE spacecraft's mean semi-major axis against SGP4's (0.5 km)
+  and its inclination in TEME of date (0.01 deg), the state vector's
+  apsides and its fixed perigee; 40, the rise and the fall, the gap
+  against Gauss's equation (2 %) and the propellant against F t / (Isp
+  g0); 41, the true pointing error against the bound the errors imply
+  (the attitude bound as a rotation, plus 4 x P/K x the rate bound, plus
+  0.01 deg), and below 0.01 deg without errors; 42, the tabular decay
+  against NRLMSISE-00's and the exponential model's, and the two
+  lifetimes. **Why bounds for 41:** another C++ standard library draws
+  other errors (TPL-A3). Eight seeds gave 0.064 to 0.076 deg, against
+  the implied 0.104 deg.
+- **Decision TPL-A3: a navigation error is noise in the golden
+  comparison.** `simpleNav` draws its errors with Basilisk's
+  GaussMarkov, from `std::normal_distribution`, as the sensors do. So
+  on another standard library (Windows) template 41 draws other errors.
+  `tests/golden_capture.py` now treats a `navigation_error.` series like
+  a `sensor.` one: compared value by value only on the library that
+  recorded it, elsewhere by its count. The attitude, rates, wheels and
+  torques that the errors steer are still compared, to the other
+  library's 1 %. Measured here with six other seeds as a stand-in for
+  another library: at most 0.22 % of scale (wheel speeds). No existing
+  template has a navigation error, so no existing comparison changes.
+  A new test in `tests/test_golden_outputs.py` checks the rule.
+- **Decision TPL-A4: the records.** Each template has a Customize wizard
+  (39: state-sat's perigee and apogee, the state made again at the
+  perigee; 40: thrust, specific impulse, propellant; 41: the attitude
+  and rate bounds, the step kept at a tenth of the bound or less, and a
+  duration page from 0.01 day; 42: the orbit, the drag area, the
+  duration), a row in the templates' README, a place in the learning
+  path, and `tests/data/scenario_hashes.json` gained its two hashes. A
+  new page, `docs/reference/template-coverage.md`, lists each feature
+  with its templates and the gaps for batch B (`BACKLOG.md`). Two tests
+  pin the number of templates; only that number changed, from 37 to 41
+  (`docs/ui/TEST_CHANGES.md`). The repository's root `README.md`
+  (outside `SpaceMissionStudio/`) still says 36 templates: it is part of
+  the Basilisk framework's tree, which this work does not change.

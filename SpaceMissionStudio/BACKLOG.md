@@ -16,6 +16,21 @@
   concepts of ECSS-E-ST-60-10C only; every number has a source or is
   "TBD". About 22 hours.
 
+- Templates for every feature, batch B (`docs/reference/template-coverage.md`,
+  "Still without a template"; batch A is templates 39 to 42, decisions
+  TPL-A1 to TPL-A4). One or more templates for: a 3D model from an
+  imported `.obj` mesh; an IDM-CIC import from a synthetic file only; the
+  other Monte Carlo dispersions (attitude, inertia, body rate, SRP
+  coefficient, atmospheric density scale); plugins and project
+  parameters (a project configuration); the pointing error budget, once
+  it is on `develop`. Also without a template: solar activity at the
+  95th or 5th percentile or a local space-weather file; a long run past
+  Basilisk's 104 days; Mission Sequence assignment, `if`, `while` and
+  script blocks; sensor faults; a 3D model from cylinders and spheres;
+  the equipment list and power budget, if template 38 does not land.
+  Each new template gets its golden file, its claims test and a row in
+  the coverage page.
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the

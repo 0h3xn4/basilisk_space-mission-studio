@@ -111,6 +111,22 @@ def test_sensor_noise_compares_value_by_value_only_on_the_library_that_recorded_
     assert _changed(other, "sat.sensor.imu-1.gyro", noise[:2])
 
 
+def test_a_navigation_error_compares_value_by_value_only_on_the_library_that_recorded_it():
+    """A navigation error is drawn by the same GaussMarkov as sensor noise
+    (template 41): on the recording library every value is compared;
+    elsewhere only its count. The attitude it steers is not noise: it is
+    still held to the other library's 1 %."""
+    golden = _fingerprint({"sat-1.navigation_error.attitude": _series("deg", "angle", [0.01, 0.02, 0.03]),
+                           "sat-1.attitude_sigma_BN": _series("-", "s1", [-0.2, 0.01, 0.2])})
+    other = copy.deepcopy(golden)
+    other["rng_library"] = "another library"
+    drawn = [0.03, 0.005, 0.01]  # [deg]
+    assert _changed(golden, "sat-1.navigation_error.attitude", drawn)
+    assert _changed(other, "sat-1.navigation_error.attitude", drawn) == []
+    assert _changed(other, "sat-1.navigation_error.attitude", drawn[:2])
+    assert _changed(other, "sat-1.attitude_sigma_BN", [-0.2, 0.01 + 0.001, 0.2]) == []
+    assert _changed(other, "sat-1.attitude_sigma_BN", [-0.2, 0.01 + 0.004, 0.2])
+
 def test_on_another_library_numbers_are_held_to_one_percent():
     """Off the recording platform every number is held to 1 % of its scale
     (switching controllers turn last bits into shifted switches there): a

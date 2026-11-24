@@ -724,3 +724,199 @@ def test_37_the_batch_meets_its_altitude_requirement_and_the_drag_coefficient_dr
     assert report["settings"]["seed"] == 37 and report["settings"]["processes"] == 1
     assert [r["verdict"] for r in report["requirements"]["results"]] == ["met", None]
     assert len(report["dispersions"]) == 3
+
+
+def _mean_elements(result, name, element):
+    return result.series[f"{name}.orbit_elements_mean.{element}"].data[:, 0]
+
+
+def test_39_each_orbit_input_flies_the_orbit_it_states():
+    """Template 39 (decision TPL-A1): the synthetic TLE flies near the mean
+    elements it encodes (SGP4's semi-major axis, its inclination in TEME of
+    date, about 15.5 revolutions a day); the illustrative state vector is the
+    perigee of a 500 x 1500 km orbit at the critical inclination, so its
+    perigee stays while its node moves; the classical elements are taken as
+    given."""
+    import math
+
+    from sgp4.api import Satrec
+
+    from spacemissionstudio import constants
+    from spacemissionstudio.engine import tle
+
+    scenario = _template("39")
+    assert [sc.orbit.type for sc in scenario.spacecraft] == ["tle", "cartesian", "classical_elements"]
+    result = _run(scenario)
+
+    orbit = scenario.spacecraft[0].orbit
+    tle.check_lines(orbit.tle_line1, orbit.tle_line2)  # columns and checksums
+    assert orbit.tle_line1[2:7] == "99999"  # the analysts' number: no real satellite
+    record = Satrec.twoline2rv(orbit.tle_line1, orbit.tle_line2)
+    sgp4_a_km = record.a * record.radiusearthkm  # [km]
+    assert float(np.mean(_mean_elements(result, "tle-sat", "semi_major_axis"))) / 1e3 == pytest.approx(
+        sgp4_a_km, abs=0.5)
+    position = result.series["tle-sat.position_N"]
+    velocity = result.series["tle-sat.velocity_N"].data
+    first_orbit = position.time_s <= 2.0 * math.pi * math.sqrt((sgp4_a_km * 1e3) ** 3 / constants.EARTH_GM_M3_S2)
+    to_teme = tle.teme_to_eme2000_matrix(tle._naive_utc(scenario.epoch_utc)).T
+    h = to_teme @ np.cross(position.data[first_orbit], velocity[first_orbit]).mean(axis=0)
+    assert math.degrees(math.acos(h[2] / np.linalg.norm(h))) == pytest.approx(51.64, abs=0.01)  # [deg]
+    assert float(np.mean(_mean_elements(result, "tle-sat", "eccentricity"))) < 0.002
+    turns = np.unwrap(np.arctan2(position.data[:, 1], position.data[:, 0]))  # [rad] near enough for 51.6 deg
+    revolutions_per_day = abs(turns[-1] - turns[0]) / (2.0 * math.pi) / (position.time_s[-1] / 86400.0)
+    assert revolutions_per_day == pytest.approx(15.5, rel=2e-3)
+
+    state = scenario.spacecraft[1].orbit
+    r_km, v_km_s = np.array(state.position_km), np.array(state.velocity_km_s)
+    mu_km3_s2 = constants.EARTH_GM_M3_S2 / 1e9  # [km^3/s^2]
+    a_km = -mu_km3_s2 / (2.0 * (v_km_s @ v_km_s / 2.0 - mu_km3_s2 / np.linalg.norm(r_km)))
+    radius_km = constants.EARTH_EQUATORIAL_RADIUS_M / 1e3  # [km]
+    assert np.linalg.norm(r_km) - radius_km == pytest.approx(500.0, abs=0.01)  # [km] perigee
+    assert 2.0 * a_km - np.linalg.norm(r_km) - radius_km == pytest.approx(1500.0, abs=0.01)  # [km] apogee
+    assert math.degrees(math.atan2(v_km_s[2], v_km_s[1])) == pytest.approx(63.4, abs=1e-4)  # [deg]
+    assert result.series["state-sat.orbit_elements.semi_major_axis"].data[0, 0] / 1e3 == pytest.approx(a_km, abs=1e-3)
+    perigee = np.degrees(_mean_elements(result, "state-sat", "arg_periapsis"))  # [deg]
+    node = np.degrees(_mean_elements(result, "state-sat", "raan"))  # [deg]
+    assert abs((perigee[-1] - perigee[0] + 180.0) % 360.0 - 180.0) < 0.1  # [deg/day] critical inclination
+    assert (node[0] - node[-1]) % 360.0 == pytest.approx(2.7, abs=0.1)  # [deg/day] the node regresses
+
+    elements = scenario.spacecraft[2].orbit
+    assert result.series["elements-sat.orbit_elements.semi_major_axis"].data[0, 0] / 1e3 == pytest.approx(
+        elements.semi_major_axis_km, abs=1e-6)
+    assert math.degrees(result.series["elements-sat.orbit_elements.inclination"].data[0, 0]) == pytest.approx(
+        elements.inclination_deg, abs=1e-9)
+
+
+def test_40_the_thruster_raises_the_orbit_against_drag_and_spends_what_the_rocket_equation_says():
+    """Template 40 (decision TPL-A1): over three days ep-sat's 1 mN along the
+    velocity raises its mean semi-major axis by about 2.8 km while its
+    unthrusted twin sinks by about 0.3 km; the gap is Gauss's 2 a^1.5 /
+    sqrt(mu) per m/s of delta-V; the propellant used is F t / (Isp g0),
+    8.8 g."""
+    import math
+
+    from spacemissionstudio import constants
+
+    scenario = _template("40")
+    thrust = scenario.spacecraft[0].constant_thrust
+    assert (thrust.frame, thrust.direction, thrust.thrust_n, thrust.isp_s, thrust.propellant_kg) == (
+        "VNB", [1.0, 0.0, 0.0], 1.0e-3, 3000.0, 1.3)  # the catalogue's MICRO R3
+    assert scenario.spacecraft[1].constant_thrust is None
+    result = _run(scenario)
+    raised = _mean_elements(result, "ep-sat", "semi_major_axis") / 1e3  # [km]
+    sunk = _mean_elements(result, "twin-sat", "semi_major_axis") / 1e3  # [km]
+    assert raised[-1] - raised[0] == pytest.approx(2.8, abs=0.1)
+    assert sunk[-1] - sunk[0] == pytest.approx(-0.3, abs=0.1)
+
+    delta_v = result.series["ep-sat.constant_thrust.delta_v"]
+    elapsed_s = float(delta_v.time_s[-1])  # [s]
+    gauss_km = 2.0 * (raised[0] * 1e3) ** 1.5 / math.sqrt(constants.EARTH_GM_M3_S2) * float(delta_v.data[-1, 0]) / 1e3
+    assert (raised[-1] - sunk[-1]) - (raised[0] - sunk[0]) == pytest.approx(gauss_km, rel=0.02)
+    assert float(delta_v.data[-1, 0]) == pytest.approx(1.7, abs=0.05)  # [m/s]
+    used_kg = thrust.propellant_kg - float(result.series["ep-sat.constant_thrust.propellant_remaining"].data[-1, 0])
+    assert used_kg == pytest.approx(thrust.thrust_n * elapsed_s / (thrust.isp_s * constants.STANDARD_GRAVITY_M_S2),
+                                    rel=1e-3)
+    assert used_kg == pytest.approx(8.8e-3, abs=0.1e-3)  # [kg]
+    assert thrust.propellant_kg / (used_kg / 3.0) / 30.4 == pytest.approx(14.5, abs=0.5)  # [month] of firing
+
+
+def _velocity_pointing_error_deg(result, name="sat-1", after_s=600.0):
+    """The true angle [deg] between the body frame and velocityPoint's
+    frame (y along the velocity, z along the orbit normal), from the true
+    state, after ``after_s``."""
+    r = result.series[f"{name}.position_N"].data
+    v = result.series[f"{name}.velocity_N"].data
+    sigma = result.series[f"{name}.attitude_sigma_BN"]
+    errors = []
+    for k in np.flatnonzero(sigma.time_s >= after_s):
+        y = v[k] / np.linalg.norm(v[k])
+        z = np.cross(r[k], v[k])
+        z /= np.linalg.norm(z)
+        reference = np.array([np.cross(y, z), y, z])  # RN
+        s = sigma.data[k]
+        cross = np.array([[0.0, -s[2], s[1]], [s[2], 0.0, -s[0]], [-s[1], s[0], 0.0]])
+        body = np.eye(3) + (8.0 * cross @ cross - 4.0 * (1.0 - s @ s) * cross) / (1.0 + s @ s) ** 2  # BN
+        cosine = (np.trace(body @ reference.T) - 1.0) / 2.0
+        errors.append(np.degrees(np.arccos(np.clip(cosine, -1.0, 1.0))))
+    return np.array(errors)
+
+
+def test_41_velocity_pointing_stays_within_what_the_navigation_errors_imply():
+    """Template 41 (decision TPL-A1): after the first 10 minutes the true
+    attitude stays within the velocity frame by what its navigation errors
+    imply: the attitude bound as a rotation (each MRP component at the
+    bound), plus the turn a rate error w gives, 4 x P/K x w (the controller
+    damps a rate that is not there), plus the controller's own 0.01 deg.
+    Without the errors it points within 0.01 deg; with them the rate error,
+    not the attitude error, sets the size. The magnetometer reads the
+    Earth's field, 19 to 50 uT. Bounds only: another standard library
+    draws other errors (golden_capture)."""
+    import math
+
+    from spacemissionstudio.engine import control_gains
+    from spacemissionstudio.schema.scenario import NavigationErrorConfig
+
+    scenario = _template("41")
+    sc = scenario.spacecraft[0]
+    assert sc.fsw_mode == "velocityPoint" and {s.kind for s in sc.sensors} == {"star_tracker", "imu", "magnetometer"}
+    errors = sc.navigation_error
+    assert errors.any_error and errors.sun_step_deg == 0.0
+    result = _run(scenario)
+
+    def rotation_deg(bound_deg):  # each MRP component held within tan(bound/4)
+        return math.degrees(4.0 * math.atan(math.sqrt(3.0) * math.tan(math.radians(bound_deg) / 4.0)))
+
+    gains = control_gains.default_mrp_gains_for_inertia(sc.inertia_kg_m2)
+    rate_turn_deg = 4.0 * gains["P"] / gains["K"] * errors.rate_bound_deg_s * math.sqrt(3.0)  # [deg]
+    implied_deg = rotation_deg(errors.attitude_bound_deg) + rate_turn_deg + 0.01  # [deg]
+    pointing = _velocity_pointing_error_deg(result)
+    assert pointing.max() < implied_deg
+    assert pointing.max() > rotation_deg(errors.attitude_bound_deg)  # the rate error shows
+    assert result.series["sat-1.navigation_error.attitude"].data[:, 0].max() <= rotation_deg(
+        errors.attitude_bound_deg) * (1 + 1e-6)
+    field = np.linalg.norm(result.series["sat-1.sensor.mag-1"].data, axis=1) * 1e6  # [uT]
+    assert 17.0 < field.min() and field.max() < 52.0 and field.max() - field.min() > 20.0
+
+    exact = _template("41")
+    exact.spacecraft[0].navigation_error = None
+    assert _velocity_pointing_error_deg(_run(exact)).max() < 0.01  # [deg]
+    wider = _template("41")
+    wider.spacecraft[0].navigation_error = NavigationErrorConfig(
+        **{**errors.__dict__, "rate_step_deg_s": 0.0005, "rate_bound_deg_s": 0.005})
+    assert _velocity_pointing_error_deg(_run(wider, duration_days=0.03)).max() > 2.0 * pointing.max()
+
+
+def test_42_the_tabular_atmosphere_decays_otherwise_than_nrlmsise_00():
+    """Template 42 (decision TPL-A1): two days at 350 km from 1 October 2024.
+    The NRLMSISE-00 nominal profile (one table, no solar cycle) lowers the
+    mean semi-major axis by about 0.4 km; NRLMSISE-00 with that month's real
+    space weather, near the solar maximum, about seven times as far; the
+    exponential model about as much as no drag at all. The lifetime estimate
+    reads the same table: re-entry after about 350 days at Cd 2.2, under two
+    months with NRLMSISE-00, and it warns about the table."""
+    from spacemissionstudio.engine import lifetime
+
+    scenario = _template("42")
+    assert (scenario.space_weather.atmosphere_model, scenario.space_weather.atmosphere_table) == (
+        "tabular", "nrlmsise00_nominal")
+
+    def decay_km(model=None, drag=True):
+        variant = _template("42")
+        if model is not None:
+            variant.space_weather.atmosphere_model = model
+        variant.spacecraft[0].enable_drag = drag
+        a = _mean_elements(_run(variant), "low-sat", "semi_major_axis") / 1e3  # [km]
+        return float(a[-1] - a[0])
+
+    tabular, msis, exponential, none = decay_km(), decay_km("nrlmsise00"), decay_km("exponential"), decay_km(drag=False)
+    assert tabular == pytest.approx(-0.4, abs=0.05)
+    assert msis / tabular == pytest.approx(7.3, abs=0.5)
+    assert (msis - none) / (tabular - none) > 5.0  # the drag alone
+    assert exponential == pytest.approx(none, abs=1e-3)
+
+    table_life = lifetime.end_of_life(scenario, "low-sat", drag_coeff=2.2)
+    assert table_life.lifetime.reentered and table_life.lifetime.lifetime_s / 86400.0 == pytest.approx(350.0, abs=10.0)
+    assert any("tabular atmosphere" in w for w in table_life.lifetime.warnings)
+    scenario.space_weather.atmosphere_model = "nrlmsise00"
+    msis_life = lifetime.end_of_life(scenario, "low-sat", drag_coeff=2.2)
+    assert msis_life.lifetime.reentered and msis_life.lifetime.lifetime_s / 86400.0 < 61.0

@@ -2853,3 +2853,30 @@ No existing test changed. Added:
 (the Statistics plot, the statistics' computer and the report writer
 deleted while their workers run; the late results are dropped). It does
 not reproduce the Windows failure on Linux; see `HISTORY.md`.
+
+## Templates for every feature, batch A: templates 39 to 42 (2026-11-24)
+
+No GUI test reaches a widget another way. Two tests pin the number of
+templates; only that number changed (decision TPL-A4):
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_home.py::test_every_template_has_a_card_with_its_type_orbit_and_first_sentence` | `len(files) == 37` | `== 41` | four templates added |
+| `tests/gui/test_home.py::test_the_filter_narrows_the_cards_and_says_how_many` | "4 of 37", 37 cards | "4 of 41", 41 cards | the same; the four Monte Carlo cards are unchanged |
+| `tests/test_monte_carlo_statistics.py::test_no_template_has_a_false_finding` | `len(paths) == 37` | `== 41` | the same |
+
+One test helper changed: `tests/golden_capture.py` compares a
+`navigation_error.` series like a `sensor.` one on another C++ standard
+library (decision TPL-A3). No existing template has such a series, so no
+existing comparison changes.
+
+New tests:
+- `tests/test_template_claims.py`:
+  `test_39_each_orbit_input_flies_the_orbit_it_states`,
+  `test_40_the_thruster_raises_the_orbit_against_drag_and_spends_what_the_rocket_equation_says`,
+  `test_41_velocity_pointing_stays_within_what_the_navigation_errors_imply`
+  and `test_42_the_tabular_atmosphere_decays_otherwise_than_nrlmsise_00`.
+- `tests/test_golden_outputs.py`:
+  `test_a_navigation_error_compares_value_by_value_only_on_the_library_that_recorded_it`.
+- The tests that run every template now run the four new ones too (their
+  golden files and hashes are new).

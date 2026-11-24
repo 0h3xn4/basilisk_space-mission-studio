@@ -12,6 +12,10 @@ converts it to the simulation's frame. **Scenario > Overview** warns when the
 TLE's epoch is more than 3 days from the scenario's: SGP4 grows less
 accurate the further it propagates.
 
+Template **39** has one spacecraft for each orbit form: a TLE (a
+synthetic one, not a real satellite), a position and velocity, and
+classical elements.
+
 ## CCSDS orbit messages
 
 CCSDS 502.0-B-3 defines three text (KVN) messages that flight-dynamics
