@@ -352,7 +352,6 @@ dispersions are edited in a form under their list instead of a dialog.
   per scenario, an empty folder falling back to the picker, and a SIL run
   without a confirmed program not starting and saying where to choose it.
 
-
 ## M6a The Overview and the plot view
 
 ### Changed: how a test reaches the widget
@@ -2374,7 +2373,6 @@ New in the second round: `test_breakout.py::test_the_3d_view_tries_again_while_n
 | `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` (release 2.12.0 CI) | the moves timed with every earlier object in the collector's full collections | the objects that exist before the moves leave the full collections first (`app.freeze_start_up_objects`, as the app does after start-up), and come back after the test (`gc.unfreeze`); the limits are unchanged | in the Linux job of the 2.12.0 release PR one attach of Budgets took 60 ms: a full collection fell in it. In the test process a full collection walks the objects of every earlier test (45 to 70 ms on this machine); the app moves its start-up objects out of them (UI overhaul M6a), so the test now measures the move as the app has it |
 | `test_breakout.py::test_detach_and_attach_take_under_50_ms_on_the_gui_thread` (UI audit B5 CI) | a view failed when one of its six moves reached its limit | a view that reaches its limit is timed once more (its show and its six moves) and fails only when it reaches the limit again; the failure message gives both timings. The limits are unchanged | CI runs the suite on as many workers as the runner has processors, and the wall clock also counts the time another worker holds the processor. In the Windows job of #287 one Budgets attach took 54.5 ms (limit 50) and, in the same run, one 3D View move took 47.8 ms while its other five took 5 to 9 ms. B5 did not change the Budgets area's moves. A move that is slow in itself is slow both times |
 
-
 ### PR-3: ground tracks, stations and the live map (decision "Ground tracks, stations and the live map")
 
 Results › 3D View gets a **Globe | Map | Both** control and the 2D map
@@ -2887,6 +2885,12 @@ and the 50 ms limit). Each fails without the change.
 
 New: `test_a_page_the_web_view_still_holds_is_deleted_a_little_later`
 (fails without the retry).
+
+## A uniform dispersion with equal bounds (MC-41, 2026-11-24)
+
+No existing test changed. Added to `tests/test_monte_carlo.py`:
+`test_a_uniform_dispersion_with_equal_bounds_gives_that_value` (four
+cases) and `test_a_batch_with_an_untouched_new_dry_mass_dispersion_runs`.
 
 ## Templates for every feature, batch A: templates 39 to 42 (2026-11-24)
 
