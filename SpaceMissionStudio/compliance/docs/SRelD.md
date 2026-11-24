@@ -1,11 +1,10 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 55, 2026-11-23. Remediation R14.
+Document: SMS-SRelD, issue 56, 2026-11-24. Remediation R14.
 
-**Status:** release **2.15.0**, prepared 2026-11-23, not yet
-published. It is to be tagged with the tag workflow after its release
-pull request is merged. 2.15.0 is a minor release: it adds features and
+**Status:** release **2.15.0**, published 2026-11-24 (00:38 UTC).
+2.15.0 is a minor release: it adds features and
 a scenario schema step (version 7). It holds Monte Carlo phase B
 (`docs/developer/monte-carlo-plan.md`; #313, #314 and #316, decisions
 MC-20 to MC-35) and the 2.14.2 publication record (#317):
@@ -65,6 +64,54 @@ release pull request may be merged with CI's "Windows (MAX Python)" job
 red, but only for the Basilisk framework test `LambertInputValidation`
 (K-45). Basilisk is unchanged. Outside `SpaceMissionStudio/` only the
 front-page `README.md`'s SpaceMissionStudio part changed (section 4).
+
+How 2.15.0 was tagged and published:
+- The release pull request #318 was merged at 20:40 UTC on 2026-11-23
+  as `5ebbd3b`, after #317 (`f4ab371`). On the head of #318
+  (`3fd215f`), only CI's "Windows (MAX Python)" job was red. It failed
+  only the framework test of K-45, 1 test of 842.
+- CI ("SpaceMissionStudio") on `develop`'s head `5ebbd3b`, the merge of
+  #318 ([run 45261875723](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45261875723)), passed at
+  the first attempt. No job was run again.
+- The tag workflow ([run 45294312275](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45294312275)) ran from
+  00:05:49 to 00:07:06 UTC on 2026-11-24. It ran the release check on
+  `5ebbd3b` and passed.
+- The tag workflow (github-actions) tagged `spacemissionstudio-v2.15.0`
+  (annotated, not signed, D-13; tag object `56e0831`) on commit
+  `5ebbd3b` (`5ebbd3bda91fa52fe907a1a3747b8ebe1c1eaee0`) at 00:06:56
+  UTC.
+- The release workflow ([run 45294483106](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45294483106)) ran from
+  00:07:02 to 00:38:47 UTC and passed at the first attempt. Every job
+  passed, the Windows tests too. It built, installed, checked and
+  attached the eleven files. It counted the eleven files and then
+  published the GitHub release "SpaceMissionStudio 2.15.0" at 00:38:45
+  UTC, not as a draft and not as a pre-release
+  (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.15.0>).
+  The release was never public without its files. Its notes are the
+  CHANGELOG's 2.15.0 section.
+- GitHub's SHA-256 digests: `.deb` (`spacemissionstudio_2.15.0_amd64.deb`,
+  440 912 148 bytes) `4a53c2ec...d1e3`, setup program
+  (`spacemissionstudio-2.15.0-setup.exe`, 387 174 918 bytes)
+  `3683a4e5...cf40`, wheel (9 102 884 bytes) `52a0b15b...013d`, sdist
+  (9 423 227 bytes) `345655c5...c9d9`, the `.deb`'s bill of materials
+  (`spacemissionstudio_2.15.0_amd64.cdx.json`, 35 359 bytes)
+  `c676bc43...d07a`, the setup program's
+  (`spacemissionstudio-2.15.0-setup.cdx.json`, 36 459 bytes)
+  `40400646...126c`, `SHA256SUMS-linux` `793224ec...26b5`,
+  `SHA256SUMS-windows` `6d7a4265...6118`, and the LGPL sources, the same
+  as 2.14.x's: `qt-everywhere-src-6.11.2.tar.xz` (1 019 661 552 bytes)
+  `6dcfbca2...6f33`, `pyside-setup-everywhere-src-6.11.2.tar.xz`
+  (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
+  `1301daba...e6f6`.
+- Every file's digest equals its checksum in `SHA256SUMS-*`. The
+  digests table of the release notes gives the same digests for the
+  `.deb` and the setup program. Every small file (the wheel, the sdist,
+  both bills of materials and the three `SHA256SUMS-*` files),
+  downloaded from the release, gives the same digest. The release notes
+  do not name the 3D vendor.
+- #319 (a cancelled Monte Carlo batch leaves no process) was merged
+  after the tag, as `bb00914`. It is not in 2.15.0. Its CHANGELOG entry
+  stays under "Unreleased".
 
 **Previous release:** 2.14.2, published 2026-11-23 (11:13 UTC), tag
 `spacemissionstudio-v2.14.2` on `452e164`; its publication is recorded
@@ -1250,7 +1297,7 @@ This SRelD describes release 2.15.0 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.15.0 release pull request (the changes of #313, #314, #316 and #317, from `records/2.14.2-published` at `79e0331`, which holds `develop` at `0dc0810`, and the release's records), to be tagged `spacemissionstudio-v2.15.0` with the tag workflow. Previous release: 2.14.2, commit `452e164` (`452e164e7652de7135fe513d82039bbf311b388f`), tagged `spacemissionstudio-v2.14.2`. |
+| Baseline | `develop` after the 2.15.0 release pull request (the changes of #313, #314, #316 and #317, from `records/2.14.2-published` at `79e0331`, which holds `develop` at `0dc0810`, and the release's records), tagged `spacemissionstudio-v2.15.0` on `5ebbd3b` (`5ebbd3bda91fa52fe907a1a3747b8ebe1c1eaee0`), the merge of #318, by the tag workflow. Previous release: 2.14.2, commit `452e164` (`452e164e7652de7135fe513d82039bbf311b388f`), tagged `spacemissionstudio-v2.14.2`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 47 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble (also under the 2D map and in the app icon) and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
 | Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.15.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.15.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.15.0_amd64.cdx.json`, `spacemissionstudio-2.15.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
@@ -1375,7 +1422,10 @@ The new test files are `tests/test_monte_carlo_statistics.py` and
 in `tests/gui/test_monte_carlo_results_widget.py`,
 `test_monte_carlo_editor.py` and `test_home.py`. The changed test
 lines are in `docs/ui/TEST_CHANGES.md` (MC-25, MC-31, MC-35). The
-release itself changed no test.
+release itself changed no test. CI on the tagged commit `5ebbd3b` (run
+45261875723) passed at the first attempt. The release workflow's tests
+(run 45294483106) passed at the first attempt, on the Windows runner
+too.
 
 **Still open:** K-19 (about 0.4 s), K-22, K-23 (smaller), K-24 (fixed
 when a seed is set), K-25, K-26, K-27, K-28, K-30, K-31, K-34, K-35,

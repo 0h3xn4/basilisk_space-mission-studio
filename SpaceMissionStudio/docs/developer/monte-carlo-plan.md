@@ -464,7 +464,7 @@ new version opens an old batch without them.
 | B-1 Batch seed (B1), thermal node limits (B4), small fixes (B8) | done (`feature/monte-carlo-seed`, 2026-11-23; DECISIONS MC-20 to MC-25) |
 | B-2 Sensitivity (B2), outcome statistics (B3), trust checks (B6) | done (`feature/monte-carlo-insight`, 2026-11-23; DECISIONS MC-26 to MC-31; Q8 answered provisionally by MC-27) |
 | B-3 Batch report (B5), command line (B7), template 37 (B9) | done (`feature/monte-carlo-report`, 2026-11-23; DECISIONS MC-32 to MC-35; Q7 answered provisionally by MC-34: a new template 37, template 25 unchanged). |
-| Phase B | released in 2.15.0: B-1, B-2 and B-3 merged into `develop` (#313, #314, #316); release prepared 2026-11-23 (`release/2.15.0`). MC-27 and MC-34, and the answers to Q1 to Q8, are provisional. |
+| Phase B | published in 2.15.0 (2026-11-24, tag `spacemissionstudio-v2.15.0` on `5ebbd3b`, SRelD issue 56): B-1, B-2 and B-3 merged into `develop` (#313, #314, #316); release prepared 2026-11-23 (`release/2.15.0`, #318). MC-27 and MC-34, and the answers to Q1 to Q8, are provisional. |
 | C | later |
 
 ---
