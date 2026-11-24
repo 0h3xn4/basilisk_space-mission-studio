@@ -117,11 +117,12 @@ class _EntryDelegate(QStyledItemDelegate):
         return QRect(rect.right() - width + 1, rect.top(), width, ROW_HEIGHT)
 
     def sizeHint(self, option, index) -> QSize:  # noqa: N802 -- Qt API name
-        hint = super().sizeHint(option, index)
         height = ROW_HEIGHT
         if index.data(REASON_ROLE):
             height += QFontMetrics(self.reason_font).height() + SPACE["xs"]
-        return QSize(hint.width(), height)
+        # No width of its own: a row is as wide as the list, its name elided before the keys, so a long
+        # name (a template with its category) neither scrolls the list sideways nor pushes the keys out.
+        return QSize(0, height)
 
     def paint(self, painter, option, index) -> None:
         item = QStyleOptionViewItem(option)
@@ -178,6 +179,7 @@ class CommandPalette(QDialog):
         layout.addWidget(self.search)
         self.list = QListWidget()
         self.list.setObjectName("commandPaletteList")
+        self.list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.delegate = _EntryDelegate(self.list)
         self.list.setItemDelegate(self.delegate)
         self.list.setUniformItemSizes(False)  # a disabled command's row has its reason under it

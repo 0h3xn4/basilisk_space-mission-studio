@@ -21981,3 +21981,82 @@ state, a template opened from a group, Up and Down across a heading, the
 palette). One existing test changed how it reaches the cards
 (`docs/ui/TEST_CHANGES.md`): the keyboard test takes the cards in the
 order shown. The golden files are byte-identical; no schema change.
+
+## Feature access: no feature hidden (2026-11-24)
+
+**What was asked.** The owner: "Make sure that no feature is hidden and
+that the users can actually use them."
+
+**How it was audited.** Each kind of hiding was looked for in the code,
+not only in the documents:
+
+- every command of the action registry against the menus, the palette and
+  the keys (a script listed each with its category, keys and state, with
+  template 23 and template 38 open);
+- every `QAction`, menu item and button made outside the registry
+  (`grep` for `QAction(`, `addAction(`, `QPushButton(`);
+- every field of every record the scenario file can hold, from
+  `Scenario` down through `schema.fields.LIST_ITEMS`: 592 fields in 78
+  records, of which 22 names never appear in the GUI code;
+- every command-line command and flag (`cli.build_parser()`) against the
+  app;
+- the environment variables and settings the code reads;
+- every `EmptyState` of the window with a template open and no run: its
+  title, its text and its buttons;
+- the User Manual's menu and area lists against the menus.
+
+**What was hidden, and what changed.**
+
+- The six actions of Budgets › Pointing had no menu item, no palette
+  entry and no keys (the known finding). They are now commands in Tools ›
+  Budgets; Add Pointing Requirement has `Ctrl+Shift+E`, Add Pointing
+  Contributor `Ctrl+Shift+T`. The Budgets area fills a page only when it
+  is shown, so each command shows the page first, then does its action.
+- The Spacecraft page's Add, New from template... and three generators,
+  and the Ground stations page's Add, were buttons on their pages only.
+  They are now in Tools › Scenario and the palette.
+- The reproduction bundle and the OEM export were in the menu of Results ›
+  Plots › Export all..., a button that is off until a plot is ticked: a
+  run with no plot ticked could not be exported at all. They are now
+  also in the File menu, on while a run is shown.
+- The palette had no exports. It now lists each row of Reports ›
+  Exports and opens the view that makes it.
+- Eight empty states said "Run a scenario" with no button: Plots,
+  3D View, the map, Timeline, Compare, Dashboard (Run), Output (Go to
+  Mission Sequence) and Dashboard (Open Template 19).
+- The manual's Run area list missed Design Checks, Thermal and Plan; its
+  Run menu missed Thermal and Plan; its Tools and File menus and the
+  palette's other entries are now as the app has them. The capabilities
+  page said 35 commands; the command line has 38.
+
+**What stays hidden (backlog).** The operations section (activity types,
+requests, the scheduler, what-if events, the verification settings) is
+edited only in Scenario › JSON: a form is about 24 hours. `reproduce`
+has no counterpart in the app (about 6 hours). The run comparison as
+JSON (`compare --out`) is small work, but its row in Reports › Exports
+changes an existing test's count, which the owner decides (FA-9).
+
+**What was found reachable.** Most of the app: 173 of the 198 rows of
+the page were already reachable, among them the template catalog and
+Home's category filter (merged during this work).
+
+**A test that hung.** The palette test ran 3D Model... while two
+spacecraft were open; the window asked which one with a `QInputDialog`,
+which the GUI tests' guard against blocking dialogs did not replace, and
+the test waited for ever. The guard now replaces `QInputDialog`'s
+getters too (FA-8).
+
+**A palette that hid its keys.** The screenshots of the palette showed
+`Ctrl+Shift+` cut at the right: the template entries now carry their
+category, the longest row was wider than the palette, the list scrolled
+sideways and the keys, drawn at the row's right end, were out of view.
+A row now takes the list's width (FA-10).
+
+**Tests.** `tests/test_feature_access.py` (every command and flag of the
+command line has its row, the links and the named tests exist, the
+counts add up, every scenario field has a form field or a reason) and
+`tests/gui/test_feature_access_gui.py` (every command is in the palette
+and runs from it with the dialogs answered at once; the pages, settings
+and exports of the palette open; the page names every command with its
+keys; the pointing, Scenario and File commands and the empty states end
+to end). No existing test changed. Decisions FA-1 to FA-9.

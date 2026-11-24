@@ -2977,3 +2977,28 @@ New tests:
   double-click, and Open template in the window); Up and Down across a
   heading; the command palette's template entries in catalog order with
   their category.
+
+## Feature access (2026-11-24)
+
+No existing test changed how it reaches a widget, and none changed what
+it checks.
+
+The GUI tests' guard against blocking dialogs (`tests/gui/conftest.py`,
+`_no_blocking_dialogs`) now also replaces `QInputDialog`'s getters
+(`getItem`, `getText`, `getMultiLineText`, `getInt`, `getDouble`), as it
+replaces `QMessageBox`'s and `QFileDialog`'s: one opened during a test
+fails the test with its name instead of hanging the suite (decision
+FA-8). The tests that drive one replace it themselves, which takes
+precedence, as before.
+
+New tests:
+- `tests/test_feature_access.py`: every command-line command and flag
+  has its row on `docs/reference/feature-access.md`; every link and named
+  test there exists; the summary counts the rows; every scenario field is
+  named in the GUI code or listed with its reason.
+- `tests/gui/test_feature_access_gui.py`: every command is in the palette
+  and runs from it; the palette's pages, settings and exports open; the
+  page names every command with its keys; the pointing commands, the
+  Tools › Scenario commands, the File exports and the run views' empty
+  states end to end; a long palette entry neither scrolls the list
+  sideways nor hides the keys (FA-10).

@@ -839,7 +839,8 @@ class MainWindow(QMainWindow):
                  None, "Add the spacecraft's star trackers, gyroscopes and sun sensors as knowledge contributors, "
                        "with their noise and its source.")):
             add(command_id, label, self._on_pointing_command, category="Budgets", area="budgets", shortcut=keys,
-                tip=tip, keywords=("pointing error budget", "pointing budget")).setData(page_action)
+                qicon=page_action.icon(), tip=tip,
+                keywords=("pointing error budget", "pointing budget")).setData(page_action)
             if keys:
                 page_action.setToolTip(f"{page_action.text()} ({keys})")
         # The Spacecraft and Ground stations pages' buttons as commands (decision FA-3): the page shows,

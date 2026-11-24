@@ -6626,3 +6626,93 @@ change; the golden files are byte-identical.
   under 90 characters. The Home category tests now take their counts
   and the attitude group from the catalog, so a new template needs no
   test change.
+
+## Feature access: no feature hidden (2026-11-24)
+
+The owner: "Make sure that no feature is hidden and that the users can
+actually use them." An audit of every feature, with what was hidden made
+reachable and the rest in the backlog. No engine, schema or file-format
+change; the golden files are byte-identical.
+
+- **Decision FA-1: one page is the record, and the tests read it.**
+  `docs/reference/feature-access.md` has a table per area (feature, the
+  path in the app with its command id and keys, the manual section, the
+  test that follows the path, the status) and one for the command line
+  (each command with every flag). `tests/test_feature_access.py` fails
+  when a command or flag has no row, a link or a named test is missing,
+  or the summary's counts are wrong; `tests/gui/test_feature_access_gui.py`
+  fails when a command of the window has no row or the row gives other
+  keys than the command has. A new feature so needs its place on the
+  page. The platform's own keys (New, Open, Save, Save As, Quit, Undo,
+  Redo, the manual) differ between systems: the page may leave them out.
+- **Decision FA-2: the pointing budget's commands.** The six actions of
+  Budgets › Pointing are window commands in Tools › Budgets and in the
+  palette. Each shows the Pointing page first (the Budgets area fills a
+  page only when it is shown, so the page's own action could act on an
+  old copy) and then does the page's action; when it cannot act (no
+  spacecraft, no pointing budget yet, one already there) a note says
+  why. Keys for the two frequent ones: Add Pointing Requirement
+  `Ctrl+Shift+E` and Add Pointing Contributor `Ctrl+Shift+T`. Both were
+  free in the window and in the JSON page. `Ctrl+Alt` was not used: it is
+  AltGr on many European keyboards. `Ctrl+Shift+P` was not used either:
+  other tools open their palette with it. The page's buttons show the
+  keys in their tooltips.
+- **Decision FA-3: the Spacecraft and Ground stations buttons as
+  commands.** Add Spacecraft, New Spacecraft from Template..., the three
+  generators and Add Ground Station are in a new Tools › Scenario submenu
+  and in the palette. Each shows its page and clicks the page's button,
+  so it does what the button does, with its rules; a button that is off
+  gives its reason as a note.
+- **Decision FA-4: the run's exports in the File menu.** The
+  reproduction bundle and the CCSDS OEM were only in the menu of Results ›
+  Plots › Export all..., which is off until a plot is ticked. They are
+  now also File › Export Ephemeris as CCSDS OEM... and File › Export
+  Reproduction Bundle..., after Export Orbits as CCSDS..., on while a run
+  is shown and no export goes. Export Orbits as CCSDS... stays where it
+  was. The button's own menu items keep their names (a test and the
+  Exports page name them).
+- **Decision FA-5: every export in the palette.** The palette lists each
+  row of Reports › Exports as "Export › (name)" and opens the view that
+  makes it, as a double-click on the row does. It does not write the file
+  itself: most exports need a choice on their view first. Two exports
+  with one name carry their format: "Plot image (PNG)".
+- **Decision FA-6: the run views' empty states lead to their action.**
+  Before a run, Results › Plots, 3D View, the map, Timeline, Compare and
+  Dashboard have a Run button; Output has Go to Mission Sequence (a
+  Report step fills it); Dashboard also Open Template 19 (a Comms
+  pointing spacecraft). The Run buttons are secondary (the top bar's Run
+  is the one accent) and follow Run: off, with its reason, when a run
+  cannot start. Budgets' "No spacecraft" keeps its text without a button:
+  its one button is the page's own Add.
+- **Decision FA-7: what counts as a form field, and as CLI only.** A
+  scenario field has a form field when the GUI code names it (as a
+  string or an attribute); the few it never names are listed with their
+  reason in the page and in the test. The test is a heuristic: a field
+  with a common name may pass without a form field of its own; the
+  round trip of every template through the forms
+  (`tests/gui/test_forms.py`) covers the rest. A command-line command is
+  "CLI only" when it serves scripts or a check before a batch job and
+  the app has the result another way: `link-budget` (one geometry, while
+  the app shows the run's own) and `spaceweather-resolve` (the run's
+  provenance names the file used).
+- **Decision FA-8: the test guard against blocking dialogs covers
+  QInputDialog.** Its getters run their own event loop, as a message box
+  does, and the guard of `tests/gui/conftest.py` did not replace them:
+  3D Model... with two spacecraft hung a test of this work instead of
+  failing. The guard now replaces `getItem`, `getText`,
+  `getMultiLineText`, `getInt` and `getDouble` as it replaces the others.
+  No existing test opened one unreplaced.
+- **Decision FA-9: the run comparison as JSON goes to the backlog.** The
+  command line's `compare --out` has no counterpart in Results › Compare.
+  The button is small work, but its row in Reports › Exports (every
+  export is listed there) changes the count that
+  `tests/gui/test_reports_and_settings.py::test_every_export_is_listed_never_written_at_first`
+  checks (23), and a GUI test may change only how it reaches a widget.
+  The owner decides.
+- **Decision FA-10: a palette row is as wide as the list.** The
+  template entries now carry their category ("Open template › 19 sun
+  pointing comms link (Power, communications and data)"): the longest
+  rows were wider than the palette, the list scrolled sideways, and the
+  keys at the right end of a row (`Ctrl+Shift+E`) were cut. A row now
+  takes the list's width, its name elided before the keys, as the
+  palette already drew it; the list never scrolls sideways.

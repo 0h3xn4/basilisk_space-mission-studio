@@ -27,6 +27,27 @@
   Each new template gets its golden file, its claims test and a row in
   the coverage page.
 
+- An operations form (feature access, `docs/reference/feature-access.md`).
+  The operations section's activity types, requests, scheduler (objective,
+  weights, iterations), what-if events and verification settings are
+  edited only in Scenario › JSON. A Scenario › Operations page with
+  tables for the activity types and requests, the scheduler's fields and
+  the what-if events, round-tripping the section exactly (templates 35
+  and 36 unchanged). About 24 hours.
+
+- Reproduce a bundle in the app (feature access). `spacemissionstudio
+  reproduce` runs a reproduction bundle again and compares the results;
+  the app has no counterpart. Reports › Reproduce a Bundle...: choose
+  the folder, run in a worker with progress and cancel, show the
+  comparison per series with the tolerance, keep the run in History.
+  About 6 hours.
+
+- The run comparison as JSON in Results › Compare (feature access,
+  decision FA-9). The command line's `compare --out`. About 1.5 hours.
+  Needs the owner: its row in Reports › Exports changes the count of
+  `tests/gui/test_reports_and_settings.py::test_every_export_is_listed_never_written_at_first`
+  (23 to 24), and a GUI test may change only how it reaches a widget.
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
@@ -49,6 +70,12 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Feature access: no feature hidden (the owner, 2026-11-24), on branch
+  `feature/feature-access`. The page `docs/reference/feature-access.md`
+  (198 rows: 173 OK, 18 fixed, 5 backlog, 2 CLI only) and its tests; the
+  pointing budget's commands with `Ctrl+Shift+E` and `Ctrl+Shift+T`;
+  Tools › Scenario; the run exports in File; the exports in the palette;
+  the empty states' actions; the manual's lists. Decisions FA-1 to FA-9.
 - Template 38, "Budgets: equipment list, power, mass and propellant",
   on branch `feature/template-38-budgets` (2026-11-24). The owner asked
   for a template for the budgets feature. A small LEO imager with a

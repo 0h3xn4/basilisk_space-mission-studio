@@ -30,6 +30,7 @@ to do. New here? Start with **Getting started**.
 | [The definition of done](definition-of-done.md) | How each transparency criterion is checked, with the walkthrough of every output's calculation |
 | [The Python API](api.md) | `spacemissionstudio.api`: load, check, run, lifetime, budget, trades, Monte Carlo, comparisons, design checks, model analyses and the re-entry estimate from a script, with tested examples |
 | [Models, rules and assumptions](models/README.md) | One page per model: how it computes, every rule with its value, unit and source, and what it assumes |
+| [Feature access](reference/feature-access.md) | Every feature, where it is in the app (menu, palette, keys), its manual section, the test that follows its path, and what is still hidden |
 | [Capabilities and verification](reference/capabilities.md) | What the app can do, which Basilisk modules do it, what has been verified |
 | [Known limitations](reference/limitations.md) | What it does not do, and why |
 | [Transparency audit](transparency_audit.md) | Every hard-coded value, hidden assumption, underived output, forced choice and data exchange, with file and line, and the plan to make results traceable and editable ([every numeric literal](transparency_audit_constants.csv)) |

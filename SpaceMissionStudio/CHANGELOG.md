@@ -12,6 +12,24 @@ fixes bugs.
 
 ### Added
 
+- **Every feature in reach.** A new page,
+  [Feature access](docs/reference/feature-access.md), lists each feature
+  with where it is in the app (menu, palette, keys), its manual section
+  and the test that follows its path, and says what is still hidden.
+  The pointing budget's actions are now in **Tools › Budgets** and the
+  palette: **Add Pointing Requirement** (`Ctrl+Shift+E`) and **Add
+  Pointing Contributor** (`Ctrl+Shift+T`) open Budgets › Pointing from
+  anywhere. A new **Tools › Scenario** menu adds a spacecraft, one from a
+  template, a Walker constellation, a phasing or ROE formation, or a
+  ground station. **File** has **Export Ephemeris as CCSDS OEM...** and
+  **Export Reproduction Bundle...** for the run shown; before, they hid
+  in the Plots page's Export all... menu. The command palette finds every
+  export by name ("Export ›") and opens the view that makes it.
+- **Empty views that say what to do.** Before your first run, Plots,
+  3D View, the map, Timeline, Compare and Dashboard each have a **Run**
+  button; Output offers **Go to Mission Sequence** (add a Report step
+  there) and Dashboard **Open Template 19**.
+
 - **A pointing error budget.** The Budgets area has a new **Pointing**
   tab, after Mass. You list your pointing requirements (which error
   index, about which axis or the line of sight, the limit in arcsec and
@@ -110,6 +128,11 @@ fixes bugs.
 
 ### Fixed
 
+- **The command palette no longer cuts off shortcuts.** Since the
+  templates show their category, the longest entries were wider than the
+  palette: the list scrolled sideways and the keys at the right of a
+  command were cut. Each row now fits the palette, its name shortened
+  with "…" before the keys.
 - **Monte Carlo plot pages no longer pile up in the temporary folder on
   Windows.** When a statistics plot was drawn again while the previous
   one was still loading, the old page (a few megabytes) could not be

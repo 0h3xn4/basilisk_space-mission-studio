@@ -141,7 +141,8 @@ def _no_blocking_dialogs(monkeypatch):
     changes hung at its "Unsaved changes" prompt when the window closed).
 
     Every modal entry point the GUI uses (QMessageBox's static functions,
-    QFileDialog's getters, ``QDialog.exec`` and ``QMenu.exec``) is replaced
+    QFileDialog's and QInputDialog's getters, ``QDialog.exec`` and
+    ``QMenu.exec``) is replaced
     for the test. During setup and the test itself, one the test did not
     replace raises :class:`UnexpectedDialog` naming the dialog, so the test
     fails (pytest-qt reports an exception raised inside a Qt slot too).
@@ -151,7 +152,7 @@ def _no_blocking_dialogs(monkeypatch):
     takes precedence for that test.
     """
     try:
-        from PySide6.QtWidgets import QDialog, QFileDialog, QMenu, QMessageBox
+        from PySide6.QtWidgets import QDialog, QFileDialog, QInputDialog, QMenu, QMessageBox
     except ImportError:  # no PySide6: these tests are skipped via requires_gui anyway
         yield
         return
@@ -178,6 +179,10 @@ def _no_blocking_dialogs(monkeypatch):
         monkeypatch.setattr(QFileDialog, name, staticmethod(guard(f"QFileDialog.{name}", lambda a, k, r=answer: r)))
     monkeypatch.setattr(QDialog, "exec", guard("exec() of a dialog", lambda a, k: QDialog.DialogCode.Rejected))
     monkeypatch.setattr(QMenu, "exec", guard("QMenu.exec()", lambda a, k: None))
+    # QInputDialog's getters run their own event loop too (3D Model... with several spacecraft hung a test).
+    for name, answer in (("getItem", ("", False)), ("getText", ("", False)), ("getMultiLineText", ("", False)),
+                         ("getInt", (0, False)), ("getDouble", (0.0, False))):
+        monkeypatch.setattr(QInputDialog, name, staticmethod(guard(f"QInputDialog.{name}", lambda a, k, r=answer: r)))
     yield
 
 

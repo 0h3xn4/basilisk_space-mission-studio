@@ -208,7 +208,8 @@ A few things to notice right away:
     the archive folder for a Monte
     Carlo batch, the spacecraft and program for a SIL run; each applies
     as you change it), **End of Life** (the re-entry estimates,
-    Section 11), **History** (every run: its
+    Section 11), **Design Checks**, **Thermal** and **Plan** (Section 6),
+    **History** (every run: its
     status, mode, start, how long it took and whether it is saved; see
     Section 7, Compare) and the **Log** (what the app logged in this
     session: each run's start, end, warnings and where it is saved, in a
@@ -295,7 +296,9 @@ A few things to notice right away:
 * The **menu bar** at the top holds every command, by menu:
   * **File**: New Scenario, Open..., **Open Recent** (the same recent
     scenarios as Home), Save, Save As..., Change History..., Export Orbits
-    as CCSDS... and Quit.
+    as CCSDS..., Export Ephemeris as CCSDS OEM... and Export Reproduction
+    Bundle... (the run shown, as Results › Plots › Export all... does)
+    and Quit.
   * **Edit**: Undo, Redo and **Settings...** (`Ctrl+,`).
   * **View**: the Inspector, Calculation and Problems panels, Explain,
     **Own Windows** (a view in a window of its own, below), **3D View**
@@ -304,11 +307,15 @@ A few things to notice right away:
   * **Go**: the seven areas (`Ctrl+1` to `Ctrl+7`) and the **Time Cursor**
     moves of Results.
   * **Run**: Run, Cancel Run, the run mode, Live plot, End of Life,
-    Budget, Design Checks, Open Monte Carlo Results... and Run This Case
-    (`Ctrl+Shift+R`, below).
-  * **Tools**: 3D Model..., Flight Software, **Budgets** (Add Equipment
-    Item, Remove Equipment Item, Copy as CSV), Check a CCSDS File...,
-    Reference Data... and Check Reference Data.
+    Budget, Design Checks, Thermal, Plan, Open Monte Carlo Results... and
+    Run This Case (`Ctrl+Shift+R`, below).
+  * **Tools**: 3D Model..., Flight Software, **Scenario** (Add
+    Spacecraft, New Spacecraft from Template..., Generate Walker
+    Constellation..., Generate Phasing Formation..., Generate ROE
+    Formation..., Add Ground Station: each shows its page and does what
+    its button there does), **Budgets** (Add Equipment Item, Remove
+    Equipment Item, the pointing budget's commands, Copy as CSV), Check a
+    CCSDS File..., Reference Data... and Check Reference Data.
   * **Help**: this manual, Keyboard Shortcuts, Third-Party Licences... and
     About (a small window with the version, the Basilisk version and the
     licence, and buttons for the third-party licences and this manual).
@@ -319,7 +326,12 @@ A few things to notice right away:
   or the palette ("menu bar") shows it again.
 * Every command is also in the **command palette**: press `Ctrl+K`, or
   click the search field in the top bar, and type part of its name
-  ("save as", "budget", or a spacecraft's name).
+  ("save as", "budget", or a spacecraft's name). It also lists every
+  page, panel and Settings section ("Go to ›"), every template, every
+  export ("Export ›": the view that makes it, as a double-click in
+  **Reports › Exports** does) and the series of the run shown.
+  [Feature access](docs/reference/feature-access.md) lists each feature
+  with its place in the app.
 * **Drop-down lists** open below their field, at most 12 rows high with a
   scroll bar. A list of 12 entries or more has a **Type to filter** field
   at its top: just type while it is open and only the entries containing
@@ -1129,7 +1141,11 @@ app guesses none.
 
 - **Add Pointing Budget** starts one. If the spacecraft has no budgets
   section yet, the new section holds the pointing budget and nothing
-  else.
+  else. Each command of the page is also in **Tools › Budgets** and in
+  the command palette ("pointing"): **Add Pointing Requirement**
+  (`Ctrl+Shift+E`), **Add Pointing Contributor** (`Ctrl+Shift+T`), the
+  two Remove commands and **Add Scenario Sensors to Pointing Budget**.
+  From another area they open this page first.
 - **Requirements**: one row per limit. **Index** is the error looked at:
   *absolute* (at any instant), *mean* (over the window), *relative*
   (about the window's mean), *drift* and *reproducibility* (the change
@@ -1470,7 +1486,10 @@ byte order.
 
 After a run finishes, the **Results** area opens on **Plots**: a catalog
 of the run's plots on the left, the plots in a grid beside it, and a
-readout under the catalog.
+readout under the catalog. Before the first run, each run view (Plots,
+3D View, the map, Timeline, Compare, Dashboard) says so and has a
+**Run** button; Output has **Go to Mission Sequence** (a Report step
+fills it) and Dashboard **Open Template 19** too.
 
 **Overview**, the first view of Results, shows the run's headline
 figures as cards of one size, each with its unit: run length, the orbital

@@ -27,6 +27,7 @@ writes, so you can move data to and from other tools.
 | `Esc` in the Timeline, `Alt+Backspace` anywhere | Clear the time cursor |
 | `Ctrl+Shift+N`, `Ctrl+Del` | Add an item to the equipment list, remove the item picked (Budgets > Equipment) |
 | `Ctrl+Shift+C` | Copy the Budgets page shown as CSV |
+| `Ctrl+Shift+E`, `Ctrl+Shift+T` | Add a requirement, a contributor to the pointing budget (Budgets > Pointing) |
 | `Alt+Right` / `Alt+Left` in Results (with `Shift`: ten) | Move the time cursor a sample |
 | `Alt+PgDown` / `Alt+PgUp`, `Alt+Home` / `Alt+End` in Results | The time cursor to the next or previous event, or the run's start or end |
 
