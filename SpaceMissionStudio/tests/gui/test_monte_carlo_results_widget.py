@@ -995,4 +995,3 @@ def test_a_page_the_web_view_still_holds_is_deleted_a_little_later(qtbot, monkey
     page = Path(plot._shown_page)
     qtbot.waitUntil(lambda: sorted(page.parent.glob("monte_carlo_insight_*.html")) == [page], timeout=5000)
     assert plot._stale == []
-
