@@ -5905,3 +5905,24 @@ window or back took 64.0 and 72.7 ms on the Windows runner (release run
   `tests/gui/test_background_threads.py`. The first two fail without the
   fix. The move test is unchanged: a plain 50 ms per view. In CI run
   45314703069 (Windows) the move test and the two new tests passed.
+
+## Monte Carlo phase C: the order of the dispersions (2026-11-24)
+
+The owner answered Q6 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md)
+(§9): which phase C dispersions come first.
+
+- **Decision MC-36: the order of the phase C dispersions** (C1, the
+  owner's answer to Q6). The dispersions of item C1 are built in this
+  order:
+  1. Atmospheric density: a scale on the density, or on F10.7 and Ap.
+  2. Maneuver execution errors: the magnitude and the direction of the
+     Mission Sequence's impulsive and Lambert burns. The Mission Sequence
+     draws them, because the Controller cannot reach a command.
+  3. Thruster force and misalignment.
+  4. Reaction-wheel friction and bias.
+  5. Propellant load and centre-of-mass offset.
+
+  Each item starts with a short spike: read the code of the app and of
+  Basilisk 2.12.0 first, then choose the design and record it here.
+  **Why:** the owner's order. Density is first: it is the largest
+  uncertainty of a low-orbit decay and needs no Mission Sequence.

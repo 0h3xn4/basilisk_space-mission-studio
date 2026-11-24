@@ -445,7 +445,13 @@ new version opens an old batch without them.
 - **Q5** Exit code 5 from `monte-carlo` when a requirement is not shown
   met (proposed, MC-10): acceptable for scripts that call it today?
 - **Q6** Phase C: which dispersions first (maneuver errors, thrusters,
-  wheels, density)?
+  wheels, density)? *Answer (the owner, 2026-11-24; MC-36): in this
+  order: 1. atmospheric density (a scale on the density, or on F10.7 and
+  Ap); 2. maneuver execution errors of the Mission Sequence's impulsive
+  and Lambert burns, magnitude and direction (the Mission Sequence draws
+  them); 3. thruster force and misalignment; 4. reaction-wheel friction
+  and bias; 5. propellant load and centre-of-mass offset. Each item
+  starts with a short spike.*
 - **Q7** A template for the new features: change template 25 (its
   golden file changes) or add template 37? *Provisional answer (MC-34):
   template 37 is added; template 25 and every golden file stay as they
@@ -465,7 +471,9 @@ new version opens an old batch without them.
 | B-2 Sensitivity (B2), outcome statistics (B3), trust checks (B6) | done (`feature/monte-carlo-insight`, 2026-11-23; DECISIONS MC-26 to MC-31; Q8 answered provisionally by MC-27) |
 | B-3 Batch report (B5), command line (B7), template 37 (B9) | done (`feature/monte-carlo-report`, 2026-11-23; DECISIONS MC-32 to MC-35; Q7 answered provisionally by MC-34: a new template 37, template 25 unchanged). |
 | Phase B | published in 2.15.0 (2026-11-24, tag `spacemissionstudio-v2.15.0` on `5ebbd3b`, SRelD issue 56): B-1, B-2 and B-3 merged into `develop` (#313, #314, #316); release prepared 2026-11-23 (`release/2.15.0`, #318). MC-27 and MC-34, and the answers to Q1 to Q8, are provisional. |
-| C | later |
+| C order of the dispersions | decided (the owner's answer to Q6, 2026-11-24; DECISIONS MC-36): density, maneuver execution errors, thrusters, reaction wheels, propellant load and centre of mass, each with a spike first |
+| C-1 Atmospheric density dispersion | in work (`feature/monte-carlo-density`) |
+| C, other items | later |
 
 ---
 
