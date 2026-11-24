@@ -119,7 +119,9 @@ spacemissionstudio generate-phasing-formation in.json --out formation.json \
 
 **Constant thrust (continuous, orbit-frame-relative)** fires a thruster
 for the whole run in a fixed direction in the orbit frame, for example a
-low-thrust orbit raise.
+low-thrust orbit raise. Its plots show the delta-V and the propellant
+left. Template **40** raises an orbit against drag with a 1 mN electric
+thruster beside a twin without one.
 
 **More detail:** User Manual section 6,
 [Formation control laws](../../USER_MANUAL.md#formation-control-laws).

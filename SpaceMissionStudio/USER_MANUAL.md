@@ -96,11 +96,11 @@ Where each piece lives in the app, and which template shows it best:
 | Piece | Where you edit it | Learn it from template |
 |---|---|---|
 | Simulation mode, epoch | Scenario tree > **General** | 01 (orbit only), 06 (attitude) |
-| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18 |
-| A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22 |
-| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14 |
-| Where it points | ... > **Attitude control** | 06, 15, 19 |
-| Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19 |
+| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18, 42 |
+| A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22, 39 |
+| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14, 41 |
+| Where it points | ... > **Attitude control** | 06, 15, 19, 41 |
+| Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19, 40 |
 | Instruments, memory, downlink | ... > **Power / propulsion / link budget** > Data handling | 26 |
 | 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32 |
 | Ground stations | Scenario tree > **Ground stations** > its name | 19, 22 |
@@ -535,9 +535,9 @@ path, each step building on the one before:
 
 | Step | Templates | What you learn |
 |---|---|---|
-| 1. Orbits | 01, 02, 22 | An ideal orbit; what Earth's shape, the Sun and the Moon do to it; a realistic satellite with drag and a ground station |
-| 2. Keeping an orbit | 18, 03, 17 | Station keeping against drag (low orbit) and drift (geostationary); how propellant runs down |
-| 3. Pointing | 06, 07, 15, 14, 27 | Attitude control, ideal and with real hardware; pointing at the Moon; finding the Sun with sun sensors; flexible wings swinging in a turn |
+| 1. Orbits | 01, 02, 22, 39, 42 | An ideal orbit; what Earth's shape, the Sun and the Moon do to it; a realistic satellite with drag and a ground station; an orbit from a TLE or a state vector; another atmosphere model and the lifetime |
+| 2. Keeping an orbit | 18, 03, 17, 40 | Station keeping against drag (low orbit) and drift (geostationary); how propellant runs down; continuous low thrust |
+| 3. Pointing | 06, 07, 15, 14, 27, 41 | Attitude control, ideal and with real hardware; pointing at the Moon; finding the Sun with sun sensors; flexible wings swinging in a turn; velocity pointing with navigation errors |
 | 4. Disturbances and momentum | 10, 21, 28, 12, 13, 11 | Gravity-gradient and surface torques; a center of mass off the body origin; unloading wheels with thrusters or torque rods; thrusters for pointing |
 | 5. Missions in steps | 08, 16, 23 | Mission Sequences: burns, a Lambert transfer, stopping on a ground pass |
 | 6. Several spacecraft | 04, 05, 24, 29 | A Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
@@ -604,7 +604,8 @@ fixed:
   published profiles Basilisk ships (**Atmosphere table**: the US
   Standard Atmosphere 1976 to 86 km, Earth-GRAM 2016's to 200 km,
   NRLMSISE-00's to 499.5 km), with no drag above its top
-  ([Environment data](docs/models/environment-and-data.md)). With a Mission Sequence its steps decide
+  ([Environment data](docs/models/environment-and-data.md); template 42 flies the tabular model and
+  compares it with the others). With a Mission Sequence its steps decide
   how long the run is; a note under **Duration** then says how long
   ("58 min + 2 event or condition stops"), and Overview shows the same. The rkf45 and rkf78 integrators adapt
   their steps inside each dynamics step to a relative error of 1e-10
@@ -640,7 +641,8 @@ fixed:
   the values before and after, converted by Basilisk's own `orbitalMotion`
   at the scenario epoch), or **Use the ... page's values** takes what that
   page already holds. A TLE is never made from the other forms: it holds
-  SGP4 mean elements fitted to tracking data. **Import CCSDS OPM/OMM...**
+  SGP4 mean elements fitted to tracking data. Template 39 flies one orbit
+  of each form. **Import CCSDS OPM/OMM...**
   sets the orbit from an orbit file another tool or an operator wrote
   ([Exchange orbits with other tools](docs/user-manual/orbit-files.md)).
   There are also **Generate Walker constellation...** and **Generate
@@ -680,7 +682,8 @@ fixed:
   A `maneuver` or `lambert_transfer` burn is an
   instant change of velocity only: it uses no propellant and leaves the
   mass unchanged. For propellant, use the **Budgets > Propellant** page (Section 11)
-  or a fuel tank with station-keeping or constant thrust.
+  or a fuel tank with station-keeping or constant thrust (continuous
+  low thrust in the orbit frame; template 40).
 * **Monte Carlo** – see Section 10.
 * **Assumptions** – the rules and margins the analyses use, each with
   its value in effect, unit and source, and the project configuration
@@ -1302,7 +1305,9 @@ steps of the slowest channel (measured with Basilisk's module); the
 Explain (**Overview**) says how long that is for your run. In a Monte Carlo batch Basilisk gives every run
 its own random seed (the scenario's seed is not used there), so the runs see
 different errors. Software in the loop gives the program the same noisy
-navigation as the simulation's own modules.
+navigation as the simulation's own modules. Template 41 flies velocity
+pointing with navigation errors and shows how far they turn the
+spacecraft.
 
 ### Exporting the flight software
 
@@ -2323,7 +2328,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the thirty-seven built-in templates teaches, in
+  describes what each of the forty-one built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

@@ -21737,3 +21737,79 @@ open choices. Records only, and one parameter's source text:
 source instead of "TBD"; its value is unchanged. DECISIONS marks MC-11 to
 MC-15, MC-17, MC-27 and MC-34 as confirmed and adds PE-21 (a gyroscope's
 angle error from a time between attitude fixes), which is a backlog item.
+
+## Templates for every feature, batch A: templates 39 to 42 (2026-11-24)
+
+The owner wants at least one template for every feature of the tool. On
+branch `feature/templates-39-42` from `develop` at `28d9e83`. Number 38
+is kept for the Budgets template, which another change adds. Decisions
+TPL-A1 to TPL-A4 record the choices. No scenario field changed: the
+scenario stays at schema version 8. The golden files of templates 01 to
+37 are byte-identical; each new template has its own, recorded with
+`scripts/update_golden_outputs.py 39_ 40_ 41_ 42_ --write`.
+
+**The gaps.** The 37 templates gave every orbit as classical elements and
+used only NRLMSISE-00; none used `constant_thrust`, `navigation_error`,
+the `velocityPoint` mode or a `magnetometer` sensor.
+
+**Template 39, orbit inputs.** Three 150 kg satellites, orbit only,
+without drag: a synthetic TLE (catalogue number 99999, epoch the
+scenario's, checksums computed by the generator), an illustrative
+Cartesian state (the perigee of a 500 x 1500 km orbit at 63.4 deg, its
+speed from vis-viva) and 22's orbit in classical elements. Measured: the
+TLE spacecraft's mean semi-major axis 6795.37 km against SGP4's 6795.37
+km; its inclination over the first orbit in TEME of date 51.6405 deg; its
+mean eccentricity 0.0013 (Basilisk's mean elements, not SGP4's); 15.49
+revolutions a day. The state-vector spacecraft's mean argument of
+perigee moves 0.01 deg in the day, its node -2.71 deg. The run takes
+about 4 s.
+
+**Template 40, continuous low thrust.** Two 150 kg satellites at 400 km
+with drag, three days, one with the device catalogue's ENPULSION MICRO R3
+(1 mN, Isp 3000 s, 1.3 kg) firing along the velocity. Measured: ep-sat's
+mean semi-major axis +2.76 km, twin-sat's -0.29 km; their gap grew by
+3.05 km, against 3.02 km from Gauss's equation for the 1.713 m/s of
+delta-V; 8.810 g of propellant, as F t / (Isp g0) gives. About 13 s.
+
+**Template 41, velocity pointing.** Template 07's microsatellite in
+`velocityPoint` with a star tracker, an IMU, the MM200 magnetometer and
+navigation errors, 0.07 day in March 2027 (inside WMM2025's five years).
+The first draft used the navigation error values of
+`tests/test_navigation_error.py` (rate bound 0.005 deg/s). The true
+pointing error was then up to 0.25 deg; with the errors off it was
+0.008 deg, with only the attitude error 0.028 deg, with only the rate
+error 0.24 deg. The controller damps the rate it is told, so a rate error
+w turns the spacecraft by about 4 x P/K x w. Six other seeds, as a
+stand-in for another C++ standard library, moved the wheel speeds by up
+to 0.84 % of their scale, close to the 1 % the golden comparison allows
+there. With the rate bound at 0.001 deg/s: 0.064 to 0.076 deg over eight
+seeds, against the 0.104 deg the bounds imply, and at most 0.22 % of
+scale. The magnetometer reads 18.9 to 49.9 uT. About 4 s.
+
+**Template 42, other atmosphere models.** One 150 kg satellite at 350 km
+for two days from 1 October 2024 with the tabular model and NRLMSISE-00's
+nominal profile. Measured: the mean semi-major axis falls 0.40 km; with
+NRLMSISE-00 and the observed space weather 2.94 km; without drag
+0.10 km; with the exponential model as without drag. Lifetime at Cd 2.2:
+348 days with the table, 54 days with NRLMSISE-00 (at Cd 3.0: 255 and 38
+days). At 320 km in January 2030 the two models had differed by only
+15 %, so the template starts near the solar maximum. About 4 s.
+
+**The golden comparison.** `simpleNav` draws its errors with the same
+GaussMarkov as the sensors, so Windows draws other errors.
+`tests/golden_capture.py` now compares a `navigation_error.` series like
+a `sensor.` one there (count only); the attitude it steers stays held to
+1 % (TPL-A3).
+
+**The rest.** Customize wizards for the four, the templates' README rows
+and learning path, the User Manual's tables and sections, the how-to
+pages, the counts in `README.md` (32, stale), `docs/README.md`,
+`docs/faq.md`, `docs/reference/capabilities.md` and
+`docs/user-manual/run-a-template.md` (33). The new page
+`docs/reference/template-coverage.md` lists each feature with its
+templates; `BACKLOG.md` has "Templates for every feature, batch B" for
+the gaps. Running `scripts/_generate_templates.py` writes the 37 others
+byte for byte as committed, except template 03, whose orbit elements
+differ in their last digits on this machine (as before; not committed).
+The repository's root `README.md` still says 36 templates: it is outside
+`SpaceMissionStudio/`.

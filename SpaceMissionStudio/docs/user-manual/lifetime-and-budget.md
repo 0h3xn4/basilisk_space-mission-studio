@@ -38,6 +38,10 @@ WARNING: past 2041-10 MSFC's last 132 months repeat (ESA AD10 Sec. 5.9)
 
 The warnings are normal for a mission after the observed record ends.
 
+The estimate uses the scenario's atmosphere model. Template **42** flies
+the tabular model (a fixed profile with no solar cycle) and compares it
+with NRLMSISE-00 in its "Try changing".
+
 **Show calculation** (beside the result) opens how each figure was computed:
 its equation, its inputs with their units and sources, and the rule applied.
 On the command line, add `--explain`. **Export JSON...** writes the

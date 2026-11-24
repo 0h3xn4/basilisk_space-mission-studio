@@ -73,7 +73,11 @@ computer that wrote the baseline disagreed on 22 templates, Windows on all
   noise from the same seed. A sensor output (a series or Mission Output
   value under ``sensor.``) is therefore compared value by value only on the
   standard library that recorded it (``rng_library`` in the fingerprint);
-  elsewhere only its sample count and its non-finite count are.
+  elsewhere only its sample count and its non-finite count are. A
+  navigation error (``navigation_error.``: what ``simpleNav`` adds to what
+  the flight software is told) is drawn by the same GaussMarkov, so it
+  follows the same rule; the attitude it steers is held to the other
+  library's tolerance below (template 41).
 - Template 27's reaction wheels are driven through two flexible arrays
   whose hinge mode is barely damped (0.2 Hz, damping ratio 0.005), which
   amplifies last-bit differences: its wheel speeds moved by 1.04e-6 of
@@ -445,7 +449,13 @@ def _series_rule(name: str, series: dict, column: str, other_library: bool, base
     relative = max(base.relative, AMPLIFIED_SERIES.get((base.template, kind), 0.0))
     wraps = units in ("rad", "deg") and (column in WRAPPING_COLUMNS or kind in WRAPPING_SERIES)
     return dataclasses.replace(base, relative=relative, floor=floor, wraps=wraps, period=360.0 if units == "deg" else 2.0 * math.pi,
-                               noise_only_shape=other_library and ".sensor." in f".{kind}")
+                               noise_only_shape=other_library and _is_noise(kind))
+
+
+def _is_noise(name: str) -> bool:
+    """An output GaussMarkov draws (module docstring): a sensor output or a
+    navigation error, by its name with or without the spacecraft's."""
+    return ".sensor." in f".{name}" or ".navigation_error." in f".{name}"
 
 
 def compare(golden, actual, path: str = "", rule: _Rule | None = None) -> list[str]:
@@ -577,7 +587,7 @@ def _compare_mission_output(golden, actual, path: str, other_library: bool, base
                             if name not in a[field] or name not in g[field]:
                                 problems.append(f"{where}/{name}: {'missing now' if name not in a[field] else 'new'}")
                                 continue
-                            noisy = other_library and ".sensor." in f".{name}"
+                            noisy = other_library and _is_noise(name)
                             problems.extend(compare(g[field][name], a[field][name], f"{where}/{name}",
                                                     dataclasses.replace(base, noise_only_shape=noisy)))
                     else:

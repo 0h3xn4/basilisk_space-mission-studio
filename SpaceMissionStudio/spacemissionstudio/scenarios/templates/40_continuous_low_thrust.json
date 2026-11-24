@@ -1,0 +1,206 @@
+{
+  "name": "40 - Continuous low thrust: electric propulsion against drag",
+  "epoch_utc": "2030-01-01T00:00:00",
+  "simulation_mode": "orbit_only",
+  "gravity": {
+    "central_body": "earth",
+    "central_body_degree": 10,
+    "third_body_perturbers": [
+      "sun",
+      "moon"
+    ],
+    "polyhedral_gravity": false,
+    "albedo": false
+  },
+  "spacecraft": [
+    {
+      "name": "ep-sat",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6778.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.03,
+        "raan_deg": 259.03,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "enable_drag": true,
+      "drag_coeff": 3.0,
+      "drag_area_m2": 0.8,
+      "enable_srp": false,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.0,
+      "facets": [],
+      "enable_gravity_gradient": false,
+      "sensors": [],
+      "actuators": [],
+      "fsw_mode": null,
+      "fsw_params": {},
+      "control_params": {},
+      "power": null,
+      "rf_link": null,
+      "comms_pointing": null,
+      "data_handling": null,
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": {
+        "frame": "VNB",
+        "direction": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "thrust_n": 0.001,
+        "isp_s": 3000.0,
+        "propellant_kg": 1.3
+      },
+      "momentum_dumping": null,
+      "magnetic_momentum_management": null,
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    },
+    {
+      "name": "twin-sat",
+      "orbit": {
+        "type": "classical_elements",
+        "semi_major_axis_km": 6778.0,
+        "eccentricity": 0.0,
+        "inclination_deg": 97.03,
+        "raan_deg": 259.03,
+        "arg_periapsis_deg": 0.0,
+        "anomaly_type": "true",
+        "true_anomaly_deg": 0.0,
+        "mean_anomaly_deg": null,
+        "position_km": null,
+        "velocity_km_s": null,
+        "tle_line1": null,
+        "tle_line2": null
+      },
+      "dry_mass_kg": 150.0,
+      "inertia_kg_m2": [
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        20.5,
+        0.0,
+        0.0,
+        0.0,
+        16.0
+      ],
+      "center_of_mass_b_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "sigma_bn_init": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "omega_bn_b_init_rad_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "enable_drag": true,
+      "drag_coeff": 3.0,
+      "drag_area_m2": 0.8,
+      "enable_srp": false,
+      "srp_coeff": 1.3,
+      "srp_area_m2": 1.0,
+      "facets": [],
+      "enable_gravity_gradient": false,
+      "sensors": [],
+      "actuators": [],
+      "fsw_mode": null,
+      "fsw_params": {},
+      "control_params": {},
+      "power": null,
+      "rf_link": null,
+      "comms_pointing": null,
+      "data_handling": null,
+      "solar_arrays": [],
+      "station_keeping": null,
+      "geo_station_keeping": null,
+      "phasing_keeping": null,
+      "roe_formation": null,
+      "optical_navigation": null,
+      "landmark_navigation": null,
+      "constant_thrust": null,
+      "momentum_dumping": null,
+      "magnetic_momentum_management": null,
+      "navigation_error": null,
+      "fuel_tank": null,
+      "propellant_budget": null,
+      "model": null
+    }
+  ],
+  "ground_stations": [],
+  "space_weather": {
+    "source": "bundled",
+    "local_file_path": null,
+    "cache_dir": null,
+    "atmosphere_model": "nrlmsise00",
+    "forecast_percentile": 50.0,
+    "msfc_file_path": null
+  },
+  "sim_settings": {
+    "duration_days": 3.0,
+    "dynamics_task_rate_s": 30.0,
+    "integrator": "rkf78",
+    "record_interval_s": 0.0,
+    "seed": 0
+  },
+  "monte_carlo": {
+    "enabled": false,
+    "num_runs": 10,
+    "thread_count": 1,
+    "verbose": false,
+    "dispersions": []
+  },
+  "mission_sequence": [],
+  "fsw_exports": [],
+  "description": "Continuous low thrust against drag. Two 150 kg satellites at 400 km for three days, orbit only: ep-sat fires a 1 mN electric thruster along its velocity all the time, twin-sat has none.\n\nWhat to look at:\n- Mean semi-major axis: ep-sat rises about 2.8 km, twin-sat sinks about 0.3 km under drag.\n- ep-sat's constant thrust plots: 1.7 m/s of delta-V and 8.8 g of propellant used, thrust x time / (Isp x g0).\n- The thruster is the ENPULSION MICRO R3 of the device catalogue: 1 mN, Isp 3000 s, 1.3 kg of indium, about 15 months of firing.\n- The VNB frame (velocity, orbit normal, binormal) turns with the orbit, so no attitude model is needed.\n- The command line's run prints the delta-V and the propellant used.\n\nTry changing:\n- Direction [0, 1, 0], the orbit normal: the same delta-V turns the plane, and the orbit keeps its size.\n- Direction [-1, 0, 0]: a slow descent.\n- A lower thrust, to find the level that only holds ep-sat's height against drag.",
+  "schema_version": 8
+}
