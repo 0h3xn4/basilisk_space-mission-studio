@@ -58,6 +58,14 @@ fixes bugs.
   before. The 3D View also draws each new size
   once instead of twice, which halves the drawing after a move and while
   you resize its window.
+- **Closing the Monte Carlo results while a plot or report is still
+  being prepared no longer shows an error.** The Statistics and
+  Sensitivity plots, the statistics and the batch report are prepared in
+  the background. If the results view was closed at that moment, the
+  background work could report back to a view that was already being
+  removed, and on Windows that raised an error in the window. The work
+  now reports through a messenger of its own, and a view that has been
+  closed simply gets nothing.
 
 ## 2.15.0 (2026-11-24)
 
