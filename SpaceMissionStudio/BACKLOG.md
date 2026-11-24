@@ -18,12 +18,12 @@
   imported `.obj` mesh; an IDM-CIC import from a synthetic file only; the
   other Monte Carlo dispersions (attitude, inertia, body rate, SRP
   coefficient, atmospheric density scale); plugins and project
-  parameters (a project configuration); the pointing error budget
-  (Budgets › Pointing). Also without a template: solar activity at the
+  parameters (a project configuration). Also without a template: solar activity at the
   95th or 5th percentile or a local space-weather file; a long run past
   Basilisk's 104 days; Mission Sequence assignment, `if`, `while` and
-  script blocks; sensor faults; a 3D model from cylinders and spheres;
-  the equipment list and power budget, if template 38 does not land.
+  script blocks; sensor faults; a 3D model from cylinders and spheres.
+  (Template 38 shows the equipment list, the power budget and the
+  pointing error budget.)
   Each new template gets its golden file, its claims test and a row in
   the coverage page.
 
@@ -49,6 +49,17 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Template 38, "Budgets: equipment list, power, mass and propellant",
+  on branch `feature/template-38-budgets` (2026-11-24). The owner asked
+  for a template for the budgets feature. A small LEO imager with a
+  complete `budgets` section (12 items, four system modes whose duty
+  cycles add up to 1, two buses, margins), a 3D model with the S-120
+  mass budget, a mass limit and a launcher envelope, a small pointing
+  error budget (three requirements, five contributors) and a propellant
+  budget with a tank and a specific impulse. Every number of the section
+  has the source "Synthetic example value; not from a data sheet or a
+  standard.". Claims tests, a golden file, a wizard and the docs.
+  Decisions TB-1 to TB-8.
 - A pointing error budget, scope B (the owner's answers of 2026-11-24
   to `docs/developer/pointing-error-budget-design.md` section 7), on
   branch `feature/pointing-budget` (2026-11-24). Budgets › Pointing after

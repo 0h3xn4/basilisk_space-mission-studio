@@ -647,6 +647,28 @@ Try changing:
 
 Note:
 - The batch seed (37) gives the same draws every time, with one process or many.""",
+    "38": """\
+The Budgets area on one small imager in a 550 km Sun-synchronous orbit: 12 items, four system modes, \
+the power, mass, pointing and propellant budgets. Each number of the budgets is an example, and its \
+source says so.
+
+What to look at:
+- Budgets > Equipment: the items with mass and maturity, their power modes, the system modes, the power settings.
+- Budgets > Power: each mode's load, margins and source power. The duty cycles add up to 1, so the last \
+row is the average: 54.2 W of load, 77.1 W at the source with margins.
+- Budgets > Mass: 110.3 kg basic and 22.9 kg of AIAA S-120 growth; with 6 kg of propellant, 139.2 kg \
+against the 150 kg limit.
+- Budgets > Pointing: three requirements met; the line of sight at 22.1 of 60 arcsec (0.95).
+- Budgets > Propellant, Compute budget: 83.0 m/s and 5.23 kg for five years, in an 8 kg tank (about a \
+minute).
+
+Try changing:
+- A mode's duty cycle: when they no longer add up to 1, the average row goes and Problems says why.
+- Clear the camera's imaging power (it becomes TBD): the Power badge says Unknown values.
+- Power settings: the system margin or a bus's efficiency.
+
+Note:
+- The 3D model holds every item (Mass in model): the run flies the same 110.3 kg.""",
     "39": """\
 Three ways to give an orbit. Three 150 kg satellites, orbit only and without drag: tle-sat from a TLE, \
 state-sat from a position and a velocity, elements-sat from classical elements (550 km, Sun-synchronous).

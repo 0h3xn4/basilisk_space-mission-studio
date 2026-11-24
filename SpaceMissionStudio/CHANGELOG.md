@@ -51,6 +51,24 @@ fixes bugs.
   `docs/reference/template-coverage.md`, lists every feature with the
   templates that show it, and the ones still to come.
 
+- **A new template shows the Budgets area: 38, "Budgets: equipment list,
+  power, mass and propellant".** Until now no template had an equipment
+  list, so the Budgets area opened empty on every one of them. Template
+  38 is a small imager in a 550 km Sun-synchronous orbit with a complete
+  budgets section: twelve items across structure, power, ADCS, OBC,
+  comms, payload, thermal, harness and propulsion, each with its mass
+  and maturity; their power modes; four system modes (safe, nominal,
+  imaging, downlink) whose duty cycles add up to 1, so the Power page
+  ends with the duty-cycle average; two buses with their converter
+  efficiencies, a distribution loss, a system margin and a power margin
+  for each maturity. Its 3D model holds every item, so the Mass page
+  lists them with their AIAA S-120 growth against a mass limit, the run
+  flies the same mass. A small pointing budget has three requirements
+  and five sources of error, all met, and the Propellant page computes
+  a five-year budget for its tank without a run. Every number in
+  the budgets is an example, and its source says so. The run itself
+  takes seconds.
+
 - **A Monte Carlo batch can now vary the atmospheric density.** Pick
   `density_scale` in Scenario › Monte Carlo › Dispersions: each run draws
   one scale (uniform or normal) and the drag of every spacecraft reads

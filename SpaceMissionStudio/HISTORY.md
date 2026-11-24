@@ -21813,3 +21813,124 @@ byte for byte as committed, except template 03, whose orbit elements
 differ in their last digits on this machine (as before; not committed).
 The repository's root `README.md` still says 36 templates: it is outside
 `SpaceMissionStudio/`.
+
+## Template 38: the Budgets area (2026-11-24)
+
+The owner asked: "I need a template for the budgets feature". No
+template filled a spacecraft's `budgets` section (equipment list, system
+modes, power budget), so the Budgets area opened empty on all of them;
+only template 32 had a model mass budget. Branch
+`feature/template-38-budgets` from `develop` at `28d9e83`. The work ran
+without questions; `docs/DECISIONS.md` records each choice as TB-1 to
+TB-8.
+
+**No scenario format step.** The scenario stays at schema version 8 and
+the section at `BUDGETS_VERSION` 1. The golden files of templates 01 to
+37 are byte-identical; running `scripts/_generate_templates.py` writes
+them as committed, except template 03, whose orbit elements differ in
+their last digits on this machine (as before; not committed). Template
+38 has its own golden file, recorded with
+`scripts/update_golden_outputs.py 38_ --write`, and its two hashes in
+`tests/data/scenario_hashes.json`.
+
+**What it is.** "38 - Budgets: equipment list, power, mass and
+propellant": template 22's orbit (550 km, Sun-synchronous), environment
+and Berlin station, one spacecraft (`eo-sat`), orbit only, one day. The
+section has 12 items over nine subsystems, each with a mass, an S-120
+column and a maturity; power modes for 8 of them (the heaters with a
+thermostat duty cycle per power mode); two buses (platform 0.92,
+payload 0.88); a 2 % distribution loss, a 12 % system margin and a power
+margin per maturity category; four system modes (safe 0.05, nominal
+0.65, imaging 0.2, downlink 0.1). The 3D model holds every item: the
+structure, the arrays, the camera and the star tracker outside, the
+other items hidden inside, each with its list item's mass, column and
+maturity, so the run flies the list's 110.3 kg. It has the S-120 policy,
+an illustrative 150 kg limit and an illustrative 1.3 x 1.5 m cylinder.
+A small pointing part (budgets section version 2): the line of sight
+along body z, three requirements at 0.95 and five contributors (star
+tracker noise, camera alignment, attitude control error, wheel jitter,
+a thermal distortion over a 5700 s period).
+A 1 N, 220 s station keeper (15 km deadband: no burn in a day) and a
+five-year propellant budget with an 8 kg tank.
+
+**Values and sources.** Every number of the section has the source
+"Synthetic example value; not from a data sheet or a standard.", the
+words of the budgets test data. The fields without a source (the station
+keeper, the propellant budget, the limit, the envelope) are examples
+too, and the generator and TB-5 say so. The growth allowances come from
+AIAA S-120-2006 through the app's mass policy. The margins and
+efficiencies differ from the System Budget Studio example in the test
+data, so that nothing is taken from it.
+
+**Measured** (`tests/test_template_claims.py`). Power: complete, no
+finding; loads 38.0, 43.5, 87.5 and 65.5 W; the duty-cycle average 54.2 W
+of load and 77.1 W at the source with margins; imaging 129.6 W at the
+source with margins over two buses. Mass: 110.3 kg basic, 22.87 kg of
+growth, 6 kg of propellant, 139.17 kg against 150 kg. Propellant: 83.0
+m/s and 5.23 kg for five years in the 8 kg tank, without a run (about
+70 s here: the re-entry solve takes most of it). Pointing: the three
+requirements met, the line of sight at 22.1 of 60 arcsec, the relative
+error about x at 12.4 of 15, the knowledge about x at 3.9 of 15. The
+golden capture took 64 to 70 s.
+
+**Found on the way.**
+- A first draft kept the heaters and the harness outside the 3D model.
+  `tests/test_budgets_mass_and_findings.py` requires that no template
+  gives an "equipment list" line in its mass budget (it guards the
+  golden texts of the budgets feature), and the run then flew only the
+  model's mass. Both are now hidden parts of the model; no test changed
+  for it.
+- The 3D model page scrolled sideways at 1280 px with 11 parts
+  (`tests/gui/test_forms.py`): the note that names every part did not
+  wrap. It wraps now (`ModelSummary`).
+- A first draft had a 90 kg dry mass, below the 100 to 500 kg every
+  template flies (`tests/test_scenario_templates.py`).
+- In an offscreen screenshot script, `QTest.qWait` keeps Python's GIL,
+  so the Propellant page's worker thread did not progress (10 minutes,
+  3 s of CPU). A `QEventLoop` wait lets it finish in about 76 s. The app
+  itself runs its event loop and is not affected.
+
+**Tests.** New: `test_38_the_power_and_mass_budgets_are_complete` and
+the slow `test_38_the_propellant_budget_fits_the_tank`. Three counts of
+templates move up by one (37 to 38 at first; 41 to 42 after templates
+39 to 42 came from `develop`; `docs/ui/TEST_CHANGES.md`). A Customize
+wizard (system power margin, distribution loss, mass limit, tank
+capacity, duration).
+
+**Merging develop.** Pull request #325 (the pointing error budget,
+budgets section version 2) was not on `develop` when this work started,
+so the first commit had no pointing example. #325 and #326 were merged
+while it ran; the coordinator asked for the example, and `develop` was
+merged into the branch (no rebase). Template 38 was written again at
+section version 2 with its `pointing` part; its hashes were recorded
+again; its golden file did not change (the capture holds no budgets
+section). The record files kept both sides. The merge brought one more
+test that assumed no template has a section,
+`tests/test_budgets_schema.py::test_a_scenario_without_budgets_saves_as_before`
+(found by the full suite before the merge); it now names template 38 as
+its one exception (TB-6, TB-8).
+
+**Checks**, after the merge and the pointing example. Full suite, 3
+workers: 6156 passed, 19 skipped, 1 failed, the known local-only
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`.
+`ruff check` passes. The compliance generators change nothing on a
+second run, and `check_drds.py` finds 0 problems. pre-commit passes. The
+five pages of the Budgets area on template 38, offscreen, show no
+"unknown": Power and Mass "Complete", Pointing "All met", Propellant
+83.01 m/s and 5.225 kg.
+
+**Merging develop again.** #327 (the owner's confirmations, records
+only) and #328 (templates 39 to 42) were merged on `develop` while the
+pull request was open. `develop` was merged twice more (no rebase). The
+records kept both sides. In the code, the generator, the descriptions,
+the wizard specs, the claims tests and the hashes took `develop`'s
+version with template 38's parts put back before template 39's. With 42
+templates the three pinned counts are now 42, and the catalog README,
+the User Manual and `docs/reference/capabilities.md` say forty-two. The
+template catalog module (`scenarios/catalog.py`) is not part of this
+pull request: the coordinator adds template 38's entry in #329. After this
+merge, the generator writes the 42 templates as committed (template 03
+aside, as above), the compliance generators change nothing on a second
+run, `check_drds.py` finds 0 problems, and the template, claims, config,
+budgets, wizard, Home, forms and label tests and template 38's golden
+test pass: 1323 passed, 2 skipped.
