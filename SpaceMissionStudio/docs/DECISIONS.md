@@ -6484,3 +6484,130 @@ templates 01 to 37 are byte-identical; template 38 has its own.
   templates is removed. `docs/ui/TEST_CHANGES.md` lists them and the
   new tests. **Why:** CLAUDE.md; no check is weakened. The owner may
   want to confirm the change to the budgets schema test.
+
+## Templates for every feature, batch B: templates 43 to 47 (2026-11-24)
+
+The owner wants at least one template for every feature of the tool.
+Batch A (templates 39 to 42) left eight gaps in
+`docs/reference/template-coverage.md`. Batch B adds five templates for
+the gaps a scenario file can show, and records why three cannot be a
+template. No engine, schema or file-format change: the scenario stays at
+schema version 8. The golden files of templates 01 to 42 are
+byte-identical; each new template has its own, recorded with
+`scripts/update_golden_outputs.py 43_ 44_ 45_ 46_ 47_ --write`. The work
+ran without questions; each choice is below.
+
+- **Decision TPL-B1: template 43, a 3D model from cylinders, spheres and
+  an imported mesh.** A 150 kg microsatellite (template 22's orbit,
+  full attitude, no control, 0.1 day): a cylinder bus with a sphere tank
+  inside, a cylinder boom with a sphere magnetometer at its tip, and a
+  camera imported from an `.obj` file. **The mesh file is synthetic**:
+  the generator writes it (`_t43_camera_obj`), a closed 300 x 300 x
+  400 mm box and an open square hood, in millimetres, with a first line
+  that says it is synthetic and not a real product. It ships next to the
+  template, at `templates/meshes/43_synthetic_camera.obj`, and the model
+  names it relative to the template, with its SHA-256, `units: mm` and
+  `up_axis: z`. **Why a relative path:** the schema reads a mesh path as
+  absolute or relative to the scenario file, and a template opens from
+  its own folder; no schema change is needed. `pyproject.toml`'s package
+  data now includes `scenarios/templates/meshes/*.obj`, so a wheel has
+  the file. **Why `meshes`, not `models`:** the 3D model editor copies
+  an imported file into a `models` folder beside the scenario, and
+  `tests/gui/test_model_editor_window.py` checks that it never makes one
+  in the templates' folder; another name keeps that check as it is. **Why the hood is a shell:** a funnel is open, and a solid
+  part needs a closed surface; the box shows a solid mesh part. All
+  masses are illustrative and add up to 150 kg. **Known limit:** Save
+  As does not copy a model's mesh files, so the description says to copy
+  the `meshes` folder next to a scenario saved elsewhere (`BACKLOG.md`,
+  Later). The Customize
+  wizard reads the template's meshes from the templates' folder
+  (`_set_model_part`); templates 28 and 32 to 34 have no mesh, so
+  nothing changes for them.
+- **Decision TPL-B2: template 44, the other five Monte Carlo
+  dispersions.** Template 07's microsatellite on three wheels in
+  Sun-safe pointing at 350 km, with drag and sunlight pressure, 0.03 day
+  (half an orbit), 12 runs, batch seed 44, one process (about half a
+  minute). Each run draws its initial attitude (any: Euler angles within
+  +/- 180 deg), its body rate (0.2 deg/s 1-sigma added on each axis), its
+  inertia (1 kg m^2 1-sigma on each diagonal, turned by 2 deg 1-sigma),
+  its SRP coefficient (1.2 to 1.8) and the density scale (0.7 to 1.3).
+  Every spread is illustrative. **Why this length and count:** the claims
+  test stays near a minute, and every case still turns onto the Sun
+  (within 5 minutes, measured on all 12). With 12 runs, chance gives rank
+  correlations up to about 0.6; the description says so, and the
+  density scale's correlation of 1 stands out. A project parameter
+  (`monte_carlo.spread_statistic`) is in its "Try changing" (TPL-B6).
+- **Decision TPL-B3: template 45, the 95th percentile over a run past 104
+  days.** One 150 kg satellite at 400 km, 110 days from 1 January 2030,
+  orbit only, NRLMSISE-00 at MSFC's 95th percentile (ESA AD10's
+  operations case). **Why one template for two features:** a long run is
+  where the solar activity matters, and the 110 days chain two segments
+  (90 and 20). **Why J2 only and a 60 s step:** with degree 10 and the
+  Sun and Moon a 120-day run took about 85 s here; with J2 alone the
+  110 days take about 48 s. 60 s is `checks.long_step_s`, the longest
+  step without a warning. **No
+  synthetic space weather:** `CONTRIBUTING.md` asks for real data only,
+  so the template uses the bundled CelesTrak file and NASA MSFC's
+  prediction of November 2026; the 5th percentile and a local CelesTrak
+  file are in its "Try changing". The F10.7 and Ap the description quotes
+  are read from that bundled file (78.7 and 15.9 at the 95th, 70.6 and
+  6.2 at the 5th, January 2030). Measured decay: 9.20 km (95th), 7.49 km
+  (50th), 6.05 km (5th). The golden capture stops at 0.25 day, as for
+  every template, so the chaining is checked by the claims test only.
+- **Decision TPL-B4: template 46, assignment, if, while and a script
+  block.** A 150 kg satellite at 400 km with an illustrative 20 mN,
+  1500 s thruster (`constant_thrust`, VNB). Assignments switch it off and
+  on (`raise-sat.constant_thrust.thrust_n`), a `while` propagates 0.05 day
+  at a time while the altitude is below 420 km (21 times), an `if` takes
+  a snapshot when the altitude is reached, and a script block adds the
+  semi-major axis and the period from vis-viva to Results › Output.
+  **Why two-body gravity and no drag:** the conditions read the
+  osculating altitude; with J2 it swings by several kilometres in an
+  orbit and the snapshots looked inconsistent. **The script block:** it
+  runs only with the user's consent, as every script block
+  (SRS-S-03); the description says to read its code first. The golden
+  capture now runs a template's script block (`tests/golden_capture.py`,
+  `allow_scripts=True`): the templates are the app's own, and no
+  template before 46 has a script block, so no existing comparison
+  changes.
+- **Decision TPL-B5: template 47, sensor faults.** Two microsatellites
+  side by side in Sun-safe pointing from the true Sun direction, each
+  with a sun sensor on +z and one on -z, a magnetometer and a thermal
+  sensor (template 20's), for 0.04 day in March 2027 (inside WMM2025).
+  faulty-sat has three fault modes: css-2 `stuck_max`, the magnetometer's
+  z axis `spiking` (probability 0.01, amount 3) and the thermal sensor's
+  reading `stuck_value` at 20 C. **Why the flight software reads the
+  true state:** while building the template we found that the Sun
+  heading estimated from sun sensors (`fsw.build_css_sun_estimation`)
+  uses its own copies of the sensors with their direction, field of view
+  and noise but not their faults, and the torque rods' momentum
+  management has its own magnetometer. A fault therefore changes the
+  reading only. The description says so; `BACKLOG.md` has an item to
+  decide whether faults should reach the flight software. **Why not
+  `stuck_current` on a sun sensor:** at the start it holds 0 (the value
+  before the first update), which looks like `off`. The spikes come from
+  the standard library's random numbers, so the claims test checks them
+  with bounds, and the golden comparison treats `sensor.` series as noise
+  on another library, as before.
+- **Decision TPL-B6: three features stay without a template.** A
+  template is a scenario file that opens from the app's folder and is
+  saved elsewhere or customized.
+  - **An IDM-CIC import** reads a model file of another format into a
+    scenario; the template would be its result, not the import. Shipping
+    an import file would mean writing a file in that format. The
+    importer's synthetic test fixtures (`tests/idm_fixtures.py`) and the
+    how-to page show it.
+  - **Plugins** are Python packages installed next to the app; a
+    scenario cannot carry one. `docs/user-manual/plugins.md` has a
+    complete example that `tests/test_plugins.py` runs.
+  - **A project configuration** is a file named relative to the
+    scenario's folder. Save As and Customize would leave it behind, and
+    a scenario whose configuration cannot be read does not validate, so
+    the template would fail in the two ways templates are used. Template
+    44's "Try changing" sets one parameter after Save As.
+- **Decision TPL-B7: the records.** Each template has a description, a
+  claims test (`tests/test_template_claims.py`; 44 and 45 are marked
+  slow), a golden file, its two hashes in `tests/data/scenario_hashes.json`,
+  a Customize wizard, a catalog entry and a row in the templates' README,
+  and its rows in the coverage page. Tests that pin the number of
+  templates changed only that number (`docs/ui/TEST_CHANGES.md`).

@@ -2952,3 +2952,29 @@ New tests:
   command).
 - Template 38 joins every test that walks the templates (the golden
   file, the hashes, the wizard, the forms, the descriptions).
+
+## Templates for every feature, batch B: templates 43 to 47 (2026-11-24)
+
+No GUI test reaches a widget another way. The tests that pin the number
+of templates changed only that number, and the Home filter test the set
+of cards its words match (decision TPL-B7):
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_home.py::test_every_template_has_a_card_with_its_type_orbit_and_first_sentence` | `len(files) == 42` | `== 47` | templates 43 to 47 are new |
+| `tests/gui/test_home.py::test_the_filter_narrows_the_cards_and_says_how_many` | the cards 09, 25, 34, 37; "4 of 42"; 42 cards and "42" | the cards 09, 25, 34, 37, 44; "5 of 47"; 47 cards and "47" | template 44 is a Monte Carlo template, so "monte carlo" also finds it |
+| `tests/test_monte_carlo_statistics.py::test_no_template_has_a_false_finding` | `len(paths) == 42` | `== 47` | templates 43 to 47 are new; 44's five dispersions have no false finding |
+
+One test helper changed: `tests/golden_capture.py` runs a template's
+Mission Sequence with `allow_scripts=True` (decision TPL-B4). No
+template before 46 has a script block, so no existing comparison
+changes.
+
+New tests in `tests/test_template_claims.py`:
+`test_43_the_model_gives_the_mass_properties_of_its_cylinders_spheres_and_mesh`,
+`test_44_the_density_scale_sets_the_decay_and_every_case_turns_onto_the_sun` (slow),
+`test_45_the_conservative_sun_decays_the_orbit_faster_over_a_chained_run` (slow),
+`test_46_the_sequence_fires_in_a_loop_until_420_km_and_the_script_reports_the_orbit`
+and `test_47_each_faulty_sensor_reports_its_fault_and_the_attitude_is_the_same`.
+The tests that run every template now run the five new ones too (their
+golden files and hashes are new).
