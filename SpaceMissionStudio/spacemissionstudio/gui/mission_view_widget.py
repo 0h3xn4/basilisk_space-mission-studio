@@ -400,7 +400,9 @@ def grouped_notes(notes: list[str]) -> tuple[list[str], list[str]]:
 
 class MissionViewWidget(QWidget):
     """Results › 3D View. :meth:`set_run` gives it a run; the view is built
-    when the tab is shown."""
+    when the tab is shown. ``run_requested``: the empty state's Run."""
+
+    run_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -540,7 +542,10 @@ class MissionViewWidget(QWidget):
             shortcut.activated.connect(slot)
 
         self.stack = QStackedWidget()
-        self.empty = EmptyState(*_NO_VIEW)  # the one empty state (UI audit UI-15)
+        self.empty = EmptyState(*_NO_VIEW, "Run")  # the one empty state (UI audit UI-15)
+        # Its Run before a run (FA-6), secondary: the top bar's Run is the one accent (UI-03).
+        self.empty_run_button = self.empty.button
+        self.empty_run_button.clicked.connect(self.run_requested)
         self.stack.addWidget(self.empty)
         # The globe and, beside it, the 2D map (in a slot of its own, so it can move to its own window).
         self.ground_map = GroundMapWidget()
@@ -649,7 +654,7 @@ class MissionViewWidget(QWidget):
         self._shown_result = None
         self.set_thermal(None, None)
         self.scene = None
-        self.empty.set_text(*_NO_VIEW)
+        self.empty.set_text(*_NO_VIEW, "Run")
         self.stack.setCurrentWidget(self.empty)
         self.ground_map.clear("No ground track yet")
         self._set_controls_enabled(False)

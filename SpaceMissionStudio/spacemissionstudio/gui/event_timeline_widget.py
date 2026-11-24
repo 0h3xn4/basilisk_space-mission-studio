@@ -497,6 +497,7 @@ class EventTimelineWidget(QWidget):
     """The Timeline area (the run's events)."""
 
     calculation_requested = Signal(object)  # a gui.calculation_panel.Explanation
+    run_requested = Signal()  # the empty state's Run, before a run (FA-6)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -604,7 +605,9 @@ class EventTimelineWidget(QWidget):
         splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter, 1)
         # No run, or a run without events: one empty state, the reasons as a short list (UI audit UI-25).
-        self.empty_state = EmptyState(*_NO_RUN)
+        self.empty_state = EmptyState(*_NO_RUN, "Run")
+        self.empty_run_button = self.empty_state.button  # secondary: the top bar's Run is the one accent (UI-03)
+        self.empty_run_button.clicked.connect(self.run_requested)
         self.reasons = NoteList("note")
         self.empty_state.add_detail(self.reasons)
         layout.addWidget(self.empty_state, 1)
@@ -654,7 +657,7 @@ class EventTimelineWidget(QWidget):
         self.export_button.setEnabled(bool(self.events))
         empty = not self.events
         if empty:
-            self.empty_state.set_text(*(_NO_RUN if result is None else ("No events in this run", "")))
+            self.empty_state.set_text(*(_NO_RUN + ("Run",) if result is None else ("No events in this run", "")))
             self.reasons.set_notes([f"No {_plural(kind, 2)[2:]}: {why}." for kind, why in missing.items()])
         for widget in (self.summary_label, self.cursor_label, self.splitter):
             widget.setVisible(not empty)
