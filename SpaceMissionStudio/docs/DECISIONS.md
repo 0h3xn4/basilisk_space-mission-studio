@@ -5751,3 +5751,66 @@ first two runs differed from the golden file: the true anomaly,
   semi-major axis) still to a relative 1e-12. **Why:** the golden test of
   the same batch already uses this floor. The draws that the generator
   makes still have to match to the last digits.
+
+## A cancelled Monte Carlo batch leaves no process (2026-11-23)
+
+The backlog item of 2.15.0: twice, a local `pytest tests -n 4` did not end
+within 60 min, with a `spawn_main` process and a
+`multiprocessing.resource_tracker` alive at 0 % CPU.
+
+- **Cause:** `gui.monte_carlo_process._stop_on` (Cancel, in the batch's
+  child) takes one list of the child's processes
+  (`multiprocessing.active_children()`), ends them, waits for them and
+  calls `os._exit`. With 2 processes, Basilisk's controller runs the
+  cases in a `multiprocessing.Pool`. The pool's worker-handler thread
+  replaces a worker that ends. So it started a new worker after the list
+  was taken, and that worker outlived the child. In the batch's child the
+  start method is "spawn" (the child's own), so the orphan is a
+  `spawn_main` process. It waits for ever on the pool's task queue
+  (`SimpleQueue.get`, `SemLock.__enter__`): its parent is gone and it
+  holds the queue's pipe itself. It holds the resource tracker's pipe
+  too, so the tracker of the pytest worker does not end either. When the
+  tracker or the orphan has the run's own stderr, a run piped to a
+  filter never ends, although pytest has ended.
+- **Evidence:**
+  - Traced (a scratch `sitecustomize` that logs each process start): the
+    cancel thread listed the data writer, the manager and pool workers 3
+    and 4; 15 ms later the thread `_handle_workers` started
+    `SpawnPoolWorker-1:5`; 16 ms after that the child called
+    `os._exit(3)`. Worker 5 was the process left.
+  - `py-spy dump` of every process left: the worker in
+    `pool.worker` > `SimpleQueue.get` > `SemLock.__enter__`, parent PID 1;
+    the tracker in `resource_tracker.main`, reading its pipe.
+  - Before the fix, on `5ebbd3b`: 3 of 7 runs of `pytest tests/gui -n 4`
+    (about 3.7 min each) left a worker and a tracker. The cancel test
+    `test_a_monte_carlo_batch_can_be_cancelled_keeping_the_runs_finished`
+    alone left them in 4 of 8 runs while the GUI suite ran beside it, and
+    in none of 12 runs on an idle machine. Run with `-s` and piped to
+    `tail -1`, 2 of 10 runs did not end in 150 s after pytest had ended;
+    they ended when the two processes were killed.
+  - No other test left a process in these runs.
+- **Decision:** the batch's child puts itself in a group of its own
+  before it starts a process (`_own_process_group`): on POSIX a process
+  group (`os.setpgid(0, 0)`), and `run_batch` sends SIGKILL to that group
+  when the child has ended after Cancel or without a result
+  (`_end_process_group`); on Windows a job object with
+  `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` that holds the child, so every
+  process in it ends when the child ends. **Why:** a group takes the
+  processes that start after any list is taken, and also those of a
+  child that crashed. The alternatives do not end the race: a loop that
+  takes the list again never ends, because the pool replaces every
+  worker that ends; the controller's pool is Basilisk's and not
+  reachable (no patching of Basilisk).
+- **Trade-off:** on POSIX the batch's child is no longer in the group of
+  the terminal that started the app, so Ctrl+C in that terminal does not
+  reach it directly. Closing the window still cancels the batch. When the
+  system refuses the group, the child logs a warning and the batch runs
+  as before.
+- **Test:** `tests/gui/test_run_worker.py::test_a_cancelled_batch_leaves_no_process_that_its_pool_started_late`
+  starts `run_batch` with a stand-in child that starts a process just
+  after Cancel's list is taken. Without the fix the process still ran 10 s
+  later (2 runs of 2); with it, it ends.
+- **After the fix:** no process left in 4 runs of `pytest tests/gui -n 4`
+  and 20 runs of the cancel test beside them; 10 piped runs with `-s`
+  ended in 10 s each. In 12 traced runs the pool started a worker after
+  Cancel's list in 2, and the group ended it both times.

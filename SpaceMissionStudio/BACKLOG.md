@@ -15,18 +15,6 @@
   move test passes on the Windows runner with every view under 50 ms.
   If the cause is QtWebEngine's own reparenting and no change in the app
   helps, move this item to `## Needs human` with the measurements.
-- Find and fix the test that sometimes makes a full local suite run
-  hang (seen 2026-11-23). Twice, a local run with 4 workers (`pytest
-  tests -n 4`) did not end within 60 min, and a Monte Carlo worker
-  process (multiprocessing, spawn) was still alive: once on the branch
-  of Monte Carlo phase B, part 2 (`feature/monte-carlo-insight`), and
-  once in a run of the GUI tests only on `7a9a25f`, before phase B.
-  Repeat runs of the same code passed in about 20 min. Which test hung
-  is not known. Run the suite with `-o faulthandler_timeout=300` and
-  keep the whole output, so that the next hang names its test and its
-  stacks; then find the cause and fix it. Never skip or loosen a test to
-  hide it. If the hang cannot be reproduced, move this item to
-  `## Needs human` with the attempts (commits, commands, durations).
 
 ## Later
 
@@ -43,6 +31,14 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- Find and fix the test that sometimes made a local suite run hang
+  (2026-11-23), on branch `fix/suite-hang`. The cancel test of a batch
+  with 2 processes: Cancel's thread ended the processes in its list, but
+  Basilisk's process pool started a new worker meanwhile, which outlived
+  the batch with the resource tracker and kept the run's output open.
+  The batch's child now has a process group of its own (a job on
+  Windows) that ends with it. Measured: HISTORY.md and
+  `docs/DECISIONS.md`, "A cancelled Monte Carlo batch leaves no process".
 - Monte Carlo phase B, parts 2 and 3: the outcome statistics, the
   sensitivity and the trust checks (B2, B3, B6) on branch
   `feature/monte-carlo-insight`, decisions MC-26 to MC-31; the batch
