@@ -6321,7 +6321,10 @@ change; the golden files are byte-identical.
     categories, beside the text filter. A card shows when it passes
     both. Chips would add ten buttons, ten Tab stops and a row of
     their own. The combo box is as wide as its longest category, so the
-    category picked is never cut short.
+    category picked is never cut short. It is the app's `ComboBox`
+    (`gui/widgets.py`): the mouse wheel scrolls the page and does not
+    change the category. A first version used a plain `QComboBox`, and
+    `tests/gui/test_wheel_in_dialogs.py` found it.
   - When the filters match nothing, the empty state says so, with
     **Show all templates**, which clears both filters.
   - The count is the number of template files in the folder, "n of N"

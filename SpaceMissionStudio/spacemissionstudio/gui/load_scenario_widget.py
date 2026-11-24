@@ -102,7 +102,7 @@ from .template_wizard import TemplateCustomizeWizard, get_wizard_spec
 from .shell import INSET_INSIDE
 from .theme import PAGE_INSET, SPACE, TOKENS, icon, items, set_role, ui_font
 from .value_sheet import FoldSection
-from .widgets import EmptyState
+from .widgets import ComboBox, EmptyState
 from .theme.richtext import css
 
 _logger = logging.getLogger(__name__)
@@ -821,7 +821,7 @@ class LoadScenarioWidget(QWidget):
         header.addWidget(self.templates_count, 1)
         # The category filter beside the text filter (decision TC-2): a
         # card shows when it passes both. Filled by _populate_templates.
-        self.category_combo = QComboBox()
+        self.category_combo = ComboBox()  # the wheel scrolls the page, not the category
         self.category_combo.setAccessibleName("Template category")
         self.category_combo.setToolTip("Show the templates of one category")
         # As wide as its longest category, so the one picked is never cut short.
