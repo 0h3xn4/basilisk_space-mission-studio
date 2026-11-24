@@ -21,15 +21,6 @@ owner has answered the plan's open questions.
   centre of mass (the atmospheric density is done); then outcomes from
   any recorded series; convergence and adding cases to a batch;
   percentile bands over time; other sampling designs.
-- A uniform dispersion of the dry mass, the drag coefficient or the SRP
-  coefficient with equal bounds fails every run of the batch
-  (`ZeroDivisionError` in Basilisk 2.12.0's `UniformDispersion.generate`,
-  which divides by the half-width). The form starts a new dispersion at
-  [nominal, nominal], so an untouched new one crashes the batch. Found
-  while building the density scale, which has its own fix
-  (`engine.monte_carlo._UniformDensityScale`, MC-38); the same subclass
-  idea fits the other three. Reproduced on template 25 (0.001 day, one
-  run, dry mass uniform [150, 150]: run 0 failed).
 
 ## Done
 
@@ -44,6 +35,12 @@ owner has answered the plan's open questions.
   contributors with their sources, `budgets --pointing` and
   `api.pointing_budget`. Budgets section version 2 with a migration; no
   template or golden file changed. Decisions PE-10 to PE-20; SRS-F-32.
+
+- A uniform dispersion with equal bounds (dry mass, drag or SRP
+  coefficient, body rate) failed every run of the batch, as a new
+  dispersion starts at [nominal, nominal]; branch
+  `fix/uniform-equal-bounds` (2026-11-24, decision MC-41).
+
 - Monte Carlo phase C, item 1: the atmospheric density dispersion, on
   branch `feature/monte-carlo-density` (2026-11-24). The owner's order
   of the phase C dispersions (Q6) is recorded as MC-36. A spike
