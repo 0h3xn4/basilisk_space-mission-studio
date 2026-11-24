@@ -4798,18 +4798,18 @@ of the owner to the plan's questions Q1 to Q5 replaces them.
 
 Items A1, A4 and A2 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
 built as the plan says. The owner answered Q1, Q2, Q4, Q5 and Q8 for this
-work. **MC-11 to MC-15 are provisional: the owner may change them.** They
+work. MC-11 to MC-15 were provisional; **the owner confirmed them on 2026-11-24.** They
 confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
 
-- **Decision MC-11 (provisional, the owner may change it; Q1):** a
+- **Decision MC-11 (confirmed by the owner on 2026-11-24; Q1):** a
   crashed run counts as not meeting every requirement and is shown
   apart: it is in N and in k, and the Requirements table has the column
   "Of which crashed". **Why:** the owner's answer; it is MC-6, the
   conservative reading.
-- **Decision MC-12 (provisional, the owner may change it; Q2):** the
+- **Decision MC-12 (confirmed by the owner on 2026-11-24; Q2):** the
   batch seed goes to phase B. Schema version 6 holds the requirements
   only. **Why:** the owner's answer; it is MC-8.
-- **Decision MC-13 (provisional, the owner may change it; Q4):** the
+- **Decision MC-13 (confirmed by the owner on 2026-11-24; Q4):** the
   confidence is required per requirement, with no default in the code
   or in the editor. The limit has no default either. A new requirement
   in the editor starts with both "Not set"; the list and the draft
@@ -4820,7 +4820,7 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
   requirements too. **Why:** the owner's answer, and a number without a
   source is not allowed (MC-9). A form that refused every edit until the
   confidence was set would force one order of typing.
-- **Decision MC-14 (provisional, the owner may change it; Q5):**
+- **Decision MC-14 (confirmed by the owner on 2026-11-24; Q5):**
   `monte-carlo` exits with 5 when a requirement with an allowed
   probability is not shown met; 3 (a run failed) comes first. Checked
   before use: ICD-02 and `cli.py` give 5 (`EXIT_CHECK_FAILED`) to "the
@@ -4828,7 +4828,7 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
   `sil --max-error`, `reproduce`), and no command gives 5 another
   meaning. So 5 is free for this use and fits the scheme. **Why:** the
   owner's answer; it is MC-10.
-- **Decision MC-15 (provisional, the owner may change it; Q8):** the
+- **Decision MC-15 (confirmed by the owner on 2026-11-24; Q8):** the
   thermal and operations batches keep their "mean - 3 sigma" and "mean +
   3 sigma" lines for now. Percentiles are phase B (B3). **Why:** the
   owner's answer.
@@ -4895,10 +4895,10 @@ confirm MC-6, MC-8, MC-5 and MC-10, and keep the "mean ± 3 sigma" lines.
 ## Monte Carlo phase A, part 2: run one case again (2026-11-21)
 
 Item A3 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md),
-built as the plan says. The owner answered Q3 for this work. **MC-17 is
-provisional: the owner may change it.** It confirms MC-7.
+built as the plan says. The owner answered Q3 for this work. MC-17 was
+provisional; **the owner confirmed it on 2026-11-24.** It confirms MC-7.
 
-- **Decision MC-17 (provisional, the owner may change it; Q3):** a case
+- **Decision MC-17 (confirmed by the owner on 2026-11-24; Q3):** a case
   is not run again when the scenario changed since the batch. The check
   compares the SHA-256 of the scenario as it is now
   (`output_provenance.scenario_sha256`: its canonical JSON, the
@@ -5416,12 +5416,13 @@ byte-identical.
     sign (the column's sort key is the absolute value), the pairs
     without a value last. One signed column, no second "size" column.
     **Why:** the plan's "sorted by its size"; a click sorts again.
-- **Decision MC-27 (provisional, the owner may change it; Q8): the
+- **Decision MC-27 (confirmed by the owner on 2026-11-24; Q8): the
   percentiles shown and the band of the thermal and operations
   batches.**
   - The percentiles shown are the parameter `monte_carlo.percentiles`
     ([%], a list), default 1, 5, 50, 95 and 99 %. Its source is "TBD:
-    the owner has not named them". **Why:** the plan makes it a project
+    the owner has not named them" (since 2026-11-24: the owner's confirmed
+    answer). **Why:** the plan makes it a project
     parameter with the owner's value; until then the median, the 5th
     and 95th and, as the tails, the 1st and 99th.
   - The "mean - 3 sigma" and "mean + 3 sigma" lines stay (MC-15 left
@@ -5699,7 +5700,7 @@ existing templates are byte-identical; template 37 has its own.
     `--summarize` with `--case`, `--out-dir`, `--runs`, `--processes`,
     `--overwrite` or `--allow-scripts` are usage errors (2), said before
     anything is read. **Why:** each would be silently ignored otherwise.
-- **Decision MC-34 (provisional, the owner may change it; Q7): template
+- **Decision MC-34 (confirmed by the owner on 2026-11-24; Q7): template
   37.** A new template, "37 - Monte Carlo: requirements, statistics and
   sensitivity"; template 25 is unchanged, so no golden file changes.
   - Template 25's 150 kg satellite at 400 km (its gravity, Sun, Moon,
@@ -6237,3 +6238,35 @@ run, dry mass uniform [150, 150]: run 0 failed).
   deviation of 0 is already handled by Basilisk). No scenario field
   changed: no schema step. No template has equal bounds (each would have
   failed), so every golden file is unchanged.
+
+## The owner confirmed the Monte Carlo answers and the pointing choices (2026-11-24)
+
+The owner answered "as per your current answer" to each of Q1 to Q8 of
+[`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md), and "as
+per your recommendations" to the open choices of the pointing error
+budget (scope B). No code changed except the source text of one
+parameter.
+
+- **Monte Carlo: MC-11 to MC-15, MC-17, MC-27 and MC-34 are final.**
+  Q1: a crashed run counts as not meeting every requirement (MC-11).
+  Q2: the requirements and the seed in separate schema steps (MC-12).
+  Q3: a case is not run again after the scenario changed (MC-17). Q4: the
+  confidence per requirement, no default (MC-13). Q5: exit status 5
+  (MC-14). Q6: the order of the phase C dispersions (MC-36, already
+  final). Q7: template 37 (MC-34). Q8: the percentiles 1, 5, 50, 95 and
+  99 % and the labelled "mean +/- 3 standard deviations" lines (MC-15,
+  MC-27). The parameter `monte_carlo.percentiles` now names the owner's
+  answer as its source instead of "TBD"; its value is unchanged.
+- **Pointing budget: PE-12, PE-13 and PE-15 are confirmed:** drift and
+  reproducibility at twice the mean share, the sinusoidal distribution,
+  and the sun sensor's 45 deg rule.
+- **PE-14 stays as it is:** the statistical interpretation is recorded
+  and does not change the sum, until scope C (indices measured from a
+  run) gives a reason to use it.
+- **PE-21: a gyroscope's angle error from a time between attitude
+  fixes.** The owner chose the recommendation: the pointing budget gets
+  a sourced "time between attitude fixes [s]" with no default ("TBD"
+  until set). With it, Add Scenario Sensors gives a gyroscope the angle
+  error its rate noise builds up over that time, instead of "TBD". The
+  rule (random walk of the device catalog's noise, which is stated for a
+  1 s tick) and the field are built as a backlog item of "Next release".

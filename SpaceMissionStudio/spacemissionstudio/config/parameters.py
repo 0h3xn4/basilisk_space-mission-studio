@@ -583,9 +583,9 @@ register(
               kind="model", choices=models.names("monte_carlo.percentile_method")),
     Parameter("monte_carlo.percentiles", (1.0, 5.0, 50.0, 95.0, 99.0), "[%]",
               "The percentiles of each outcome a Monte Carlo batch's Statistics table shows, besides the minimum "
-              "and the maximum.", "TBD: the owner has not named them (Monte Carlo plan Q8)",
-              "Provisional (decision MC-27): the median, the 5th and 95th percentiles and, as the tails, the 1st "
-              "and 99th. The owner may change them.", kind="number list", minimum=0.0, maximum=100.0),
+              "and the maximum.", "the owner's answer to Monte Carlo plan Q8, confirmed 2026-11-24 (decision MC-27)",
+              "The median, the 5th and 95th percentiles and, as the tails, the 1st and 99th. A project file "
+              "can change them.", kind="number list", minimum=0.0, maximum=100.0),
 )
 
 # -- analyses built on the 3D model (analyses/) ------------------------------------------------
