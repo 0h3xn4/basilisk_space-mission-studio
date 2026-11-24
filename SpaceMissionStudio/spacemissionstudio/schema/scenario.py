@@ -80,7 +80,7 @@ from .thermal import ThermalConfig
 from .tle_format import TLEError, check_lines
 from .command import Command, command_dict, report_before_propagate_errors, runs_sequence
 
-CURRENT_SCHEMA_VERSION = 7
+CURRENT_SCHEMA_VERSION = 8
 
 # Limits on what a scenario may ask for (audit R9): far above any template
 # (at most 6 spacecraft, 27 kB) and the editor's own ranges, so that a shared
@@ -290,7 +290,7 @@ _MIN_COSINE_GAIN_DBI = 10.0 * math.log10(2.0) - 1e-9  # [dBi] cos^0 over a hemis
 # Cartesian components; the vector Cartesian classes are used only for the
 # initial body rate, as a spread added to the nominal rate.
 DISPERSION_QUANTITIES = ("dry_mass_kg", "attitude_sigma_bn", "orbit_elements", "inertia_kg_m2",
-                         "angular_rate_bn_b", "drag_coeff", "srp_coeff")
+                         "angular_rate_bn_b", "drag_coeff", "srp_coeff", "density_scale")
 DISPERSION_KINDS_BY_QUANTITY = {
     "dry_mass_kg": ("uniform", "normal"),
     "attitude_sigma_bn": ("uniform_euler_mrp",),
@@ -299,7 +299,15 @@ DISPERSION_KINDS_BY_QUANTITY = {
     "angular_rate_bn_b": ("normal", "uniform"),
     "drag_coeff": ("uniform", "normal"),
     "srp_coeff": ("uniform", "normal"),
+    "density_scale": ("uniform", "normal"),
 }
+# Quantities of the atmosphere, not of one spacecraft (schema 8, decision MC-37): their
+# DispersionConfig.spacecraft is empty, and one draw per run scales the density that every spacecraft
+# with drag reads (engine.density_scale).
+ATMOSPHERE_DISPERSION_QUANTITIES = ("density_scale",)
+# The atmosphere models a density scale applies to (decision MC-37): it scales the density each model
+# gives, so it applies to every model a run with drag can use. A model not listed here is refused.
+DENSITY_SCALE_ATMOSPHERE_MODELS = ("nrlmsise00", "exponential", "tabular")
 # DispersionConfig.element_spread keys ("orbit_elements"), each a 1-sigma
 # ("normal") or half-width ("uniform") around the nominal element.
 ORBIT_ELEMENT_SPREAD_KEYS = ("semi_major_axis_km", "eccentricity", "inclination_deg", "raan_deg",
@@ -2980,21 +2988,22 @@ class SpaceWeatherConfig:
 
 @dataclass
 class DispersionConfig:
-    """One dispersed quantity for one spacecraft in a Monte Carlo batch --
+    """One dispersed quantity for one spacecraft in a Monte Carlo batch, or
+    for the atmosphere (``density_scale``, schema 8, decision MC-37) --
     see :data:`DISPERSION_QUANTITIES`/:data:`DISPERSION_KINDS_BY_QUANTITY`
     for what's supported and ``engine/monte_carlo.py`` for how each pairing
     maps onto a ``Basilisk.utilities.MonteCarlo.Dispersions`` class.
     """
 
-    spacecraft: str  # must match a SpacecraftConfig.name in this scenario
+    spacecraft: str  # must match a SpacecraftConfig.name in this scenario; empty for density_scale (the atmosphere's)
     quantity: str  # one of DISPERSION_QUANTITIES
     kind: str  # one of DISPERSION_KINDS_BY_QUANTITY[quantity]
     # [lo, hi]; required for "uniform"/"uniform_euler_mrp". In the quantity's
-    # unit: kg, rad (Euler angles), [-] (coefficients), deg/s added to the
-    # nominal rate ("angular_rate_bn_b"); for "inertia_kg_m2" an optional
-    # clip [kg*m^2] on each diagonal offset.
+    # unit: kg, rad (Euler angles), [-] (coefficients and the density scale),
+    # deg/s added to the nominal rate ("angular_rate_bn_b"); for
+    # "inertia_kg_m2" an optional clip [kg*m^2] on each diagonal offset.
     bounds: list | None = None  # [lo, hi] in the quantity's unit (User Manual section 10)
-    mean: float | None = None  # required for "normal" on dry_mass_kg, drag_coeff, srp_coeff
+    mean: float | None = None  # required for "normal" on dry_mass_kg, drag_coeff, srp_coeff, density_scale
     # required for "normal": kg, [-], kg*m^2 (each diagonal element of the
     # inertia), deg/s (each axis of the initial rate)
     std_deviation: float | None = None  # 1-sigma in the quantity's unit (User Manual section 10)
@@ -3004,10 +3013,16 @@ class DispersionConfig:
     angle_std_deg: float | None = None  # [deg] "inertia_kg_m2": 1-sigma rotation that mixes in off-diagonal terms
 
     def validate(self) -> None:
-        where = f"dispersion on {self.spacecraft}.{self.quantity}"
-        _require(bool(self.spacecraft), "dispersion.spacecraft must not be empty")
         _require(self.quantity in DISPERSION_QUANTITIES,
                   f"dispersion.quantity {self.quantity!r} must be one of {DISPERSION_QUANTITIES}")
+        if self.quantity in ATMOSPHERE_DISPERSION_QUANTITIES:
+            where = f"dispersion of the atmosphere's {self.quantity}"
+            _require(self.spacecraft == "",
+                     f"{where}: leave spacecraft empty, got {self.spacecraft!r}: the scale applies to the atmosphere "
+                     "that every spacecraft with drag flies through")
+        else:
+            where = f"dispersion on {self.spacecraft}.{self.quantity}"
+            _require(bool(self.spacecraft), "dispersion.spacecraft must not be empty")
         allowed_kinds = DISPERSION_KINDS_BY_QUANTITY.get(self.quantity, ())
         _require(self.kind in allowed_kinds,
                   f"dispersion.kind {self.kind!r} for quantity {self.quantity!r} must be one of {allowed_kinds}")
@@ -3042,12 +3057,41 @@ class DispersionConfig:
                 _require(_is_finite_number(self.mean), f"{where}: mean must be a finite number")
                 _require(_is_finite_number(self.std_deviation) and self.std_deviation >= 0,
                           f"{where}: std_deviation must be a finite number >= 0")
+        if self.quantity == "density_scale":
+            # A scale on the density cannot be negative (decision MC-37).
+            _require(self.bounds is None or self.bounds[0] >= 0,
+                     f"{where}: bounds must not be below 0 (the scale multiplies the density), got {self.bounds!r}")
+            _require(self.mean is None or self.mean > 0,
+                     f"{where}: mean must be above 0 (the scale multiplies the density), got {self.mean!r}")
         if self.quantity == "inertia_kg_m2":
             _require(self.bounds is None or len(self.bounds) == 2,
                       f"{where}: bounds, if given, must be a 2-element [lo, hi] list")
             _require(self.angle_std_deg is None or (_is_finite_number(self.angle_std_deg)
                                                     and self.angle_std_deg >= 0),
                       f"{where}: angle_std_deg must be a finite number >= 0")
+
+
+def density_scale_refusal(scenario) -> str:
+    """Why ``scenario`` cannot disperse the atmospheric density (decision
+    MC-37), or "" when it can: the scale multiplies the density that drag
+    reads, so the run needs a spacecraft with drag, the Earth as the central
+    body (the only body with an atmosphere model here), an atmosphere model
+    of :data:`DENSITY_SCALE_ATMOSPHERE_MODELS`, and one density dispersion at
+    most (two would write the same scale)."""
+    count = sum(d.quantity == "density_scale" for d in scenario.monte_carlo.dispersions)
+    if count > 1:
+        return f"the scenario has {count} density_scale dispersions; one scale applies to the whole atmosphere"
+    if not any(sc.enable_drag for sc in scenario.spacecraft):
+        return ("no spacecraft has enable_drag, so no drag reads the density and the scale would change nothing; "
+                "switch drag on for a spacecraft, or remove the dispersion")
+    if scenario.gravity.central_body != "earth":
+        return (f"the central body is {scenario.gravity.central_body!r}; drag and its atmosphere models are "
+                "wired up for 'earth' only")
+    model = scenario.space_weather.atmosphere_model
+    if model not in DENSITY_SCALE_ATMOSPHERE_MODELS:
+        return (f"space_weather.atmosphere_model {model!r} does not take a density scale; it applies to "
+                f"{', '.join(repr(m) for m in DENSITY_SCALE_ATMOSPHERE_MODELS)}")
+    return ""
 
 
 # A shared scenario must not start a billion runs or a million processes
@@ -4053,6 +4097,9 @@ class Scenario:
         self.monte_carlo.validate()
         by_name = {sc.name: sc for sc in self.spacecraft}
         for dispersion in self.monte_carlo.dispersions:
+            if dispersion.quantity in ATMOSPHERE_DISPERSION_QUANTITIES:
+                self._validate_atmosphere_dispersion(dispersion)
+                continue
             _require(dispersion.spacecraft in names,
                       f"monte_carlo dispersion.spacecraft {dispersion.spacecraft!r} is not one of "
                       f"this scenario's spacecraft {names}")
@@ -4103,6 +4150,14 @@ class Scenario:
             _require(ref.name in known,
                       f"{ref.path}: {ref.resource_kind} {ref.name!r} is not one of this scenario's "
                       f"{_PLURAL[ref.resource_kind]} {sorted(known)}")
+
+    def _validate_atmosphere_dispersion(self, dispersion) -> None:
+        """A dispersion of the atmosphere (decision MC-37): the run must have
+        an atmosphere that drag reads, of a model the scale applies to, and
+        the scenario at most one such dispersion. Refused, never ignored:
+        otherwise the batch would draw a scale that changes nothing."""
+        refusal = density_scale_refusal(self)
+        _require(not refusal, f"monte_carlo dispersion of the atmosphere's {dispersion.quantity}: {refusal}")
 
     def _validate_sequence_time(self) -> None:
         """A Mission Sequence is one Basilisk run, so its clock may not pass

@@ -2813,3 +2813,35 @@ plain 50 ms limit and reaches the views as before. Added:
   `install()` raises the GUI thread's priority (on Linux its nice value
   where allowed), a worker started from it takes the same, and
   `uninstall()` gives back the thread's own.
+
+## Monte Carlo phase C, item 1: the atmospheric density dispersion (2026-11-24)
+
+No GUI test reaches a widget another way. Three tests pin the schema
+version; their pins moved with the step 7 to 8 (decision MC-40):
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/test_scenario_schema.py::test_a_requirement_has_its_fields_and_round_trips` | `CURRENT_SCHEMA_VERSION == 7` | `== 8` | the schema is at version 8 |
+| `tests/test_scenario_schema.py::test_the_batch_seed_is_optional_and_saved_only_when_set` | a saved seed at `schema_version` 7 | at 8 | the same |
+| `tests/test_migrations.py::test_the_step_from_6_to_7_only_sets_the_version` | the migrated file ends at `7 == CURRENT_SCHEMA_VERSION` | ends at `CURRENT_SCHEMA_VERSION` ("and the steps after it") | as the step from 5 to 6 already does; the step itself is still checked to give 7 |
+
+New tests:
+- `tests/gui/test_monte_carlo_editor.py`:
+  `test_the_density_scale_has_no_spacecraft_and_starts_at_the_models_own_density`
+  and `test_a_saved_density_scale_shows_as_saved_and_a_negative_bound_is_refused`.
+- `tests/test_monte_carlo.py`:
+  `test_a_drawn_density_scale_reaches_the_drag_of_the_run` (scale 2 gives
+  twice the decay of scale 1 on a 300 km orbit),
+  `test_the_density_that_drag_reads_is_the_models_times_the_scale` (each
+  of the three atmosphere models),
+  `test_a_negative_density_scale_fails_the_run_with_a_message`,
+  `test_a_uniform_density_scale_with_equal_bounds_gives_that_scale`,
+  `test_a_density_scale_without_an_atmosphere_is_refused_by_the_engine_too`
+  and
+  `test_a_seeded_batch_draws_the_same_density_scales_again_and_its_cases_run_again`
+  (the batch seed, the Runs table, its CSV, the report, Run This Case).
+- `tests/test_scenario_schema.py`: the density scale validates with each
+  model and round-trips; a badly formed one is refused naming the field;
+  one that would change nothing is refused.
+- `tests/test_migrations.py`: `test_the_step_from_7_to_8_only_sets_the_version`
+  and `test_a_version_8_file_is_refused_by_a_build_that_reads_version_7`.

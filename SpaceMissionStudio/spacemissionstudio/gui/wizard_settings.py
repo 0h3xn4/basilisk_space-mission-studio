@@ -39,7 +39,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from ..schema.scenario import Scenario
+from ..schema.scenario import ATMOSPHERE_DISPERSION_QUANTITIES, Scenario
 from . import units
 
 Path = tuple[str | int, ...]
@@ -357,7 +357,8 @@ def _page_and_label(path: Path, scenario: Scenario) -> tuple[str, str, str, str,
         if len(path) > 2 and path[1] == "dispersions":
             dispersion = scenario.monte_carlo.dispersions[path[2]]
             quantity = _DISPERSION_TITLES.get(dispersion.quantity, dispersion.quantity.replace("_", " "))
-            group = f"Dispersion: {dispersion.spacecraft} {quantity}"
+            owner = "atmosphere" if dispersion.quantity in ATMOSPHERE_DISPERSION_QUANTITIES else dispersion.spacecraft
+            group = f"Dispersion: {owner} {quantity}"
     else:
         page = "Environment & simulation"
     return page, group, label, units.suffix(suffix) if suffix.strip() else "", help_text
@@ -367,7 +368,7 @@ def _page_and_label(path: Path, scenario: Scenario) -> tuple[str, str, str, str,
 _DISPERSION_TITLES = {"dry_mass_kg": "dry mass", "attitude_sigma_bn": "starting attitude",
                       "orbit_elements": "orbit elements", "inertia_kg_m2": "inertia",
                       "angular_rate_bn_b": "starting body rate", "drag_coeff": "drag coefficient",
-                      "srp_coeff": "SRP coefficient"}
+                      "srp_coeff": "SRP coefficient", "density_scale": "density scale"}
 
 
 # The unit tokens a schema field name ends with ("record_interval_s"), and

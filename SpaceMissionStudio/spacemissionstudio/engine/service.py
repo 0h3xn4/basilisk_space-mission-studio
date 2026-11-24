@@ -601,8 +601,13 @@ class SimulationService:
     """
 
     def __init__(self, scenario: Scenario, simulation_class: type | None = None,
-                 model_base_dir: str | None = None, record_orientation: bool = False, plan=None):
+                 model_base_dir: str | None = None, record_orientation: bool = False, plan=None,
+                 density_scale: bool = False):
         self.scenario = scenario
+        # Build a scale between the atmosphere and the drag (engine.density_scale): a Monte Carlo run whose
+        # scenario disperses the density (decision MC-37). Every other run is built without it.
+        self.density_scale_requested = density_scale
+        self.density_scale = None  # the density_scale.DensityScale, after build, when requested and drag acts
         # A plan to fly (operations.plan.Plan; operations.execution builds its
         # executor in place of each planned spacecraft's fsw_mode guidance).
         self.plan = plan
@@ -1210,6 +1215,10 @@ class SimulationService:
                 )
 
         self.atmosphere_module = atmo_module
+        if atmo_module is not None and self.density_scale_requested:
+            from . import density_scale
+
+            self.density_scale = density_scale.attach(self.scSim, dyn_task_name)
         sc_objects_in_order: list = []
         eclipse_index = 0  # only incremented for spacecraft added to the eclipse model (all of them when the Sun is tracked)
         drag_index = 0  # only incremented for spacecraft that actually have enable_drag
@@ -1461,9 +1470,12 @@ class SimulationService:
                 self._geodetic_proxies.append(proxy)
                 atmo_module.addSpacecraftToModel(proxy.scStateOutMsg)
                 wind_model.addSpacecraftToModel(sc_object.scStateOutMsg)
-                drag_effector.atmoDensInMsg.subscribeTo(atmo_module.envOutMsgs[drag_index])
+                density_msg = atmo_module.envOutMsgs[drag_index]
+                if self.density_scale is not None:  # the density drag reads, scaled (decision MC-37)
+                    density_msg = self.density_scale.add(density_msg)
+                drag_effector.atmoDensInMsg.subscribeTo(density_msg)
                 if sc_config.model_analyses is not None and sc_config.model_analyses.surface_exposure:
-                    handle.density_recorder = self._record(atmo_module.envOutMsgs[drag_index])
+                    handle.density_recorder = self._record(density_msg)
                     self.scSim.AddModelToTask(dyn_task_name, handle.density_recorder)
                 drag_effector.windVelInMsg.subscribeTo(wind_model.envOutMsgs[drag_index])
                 drag_index += 1

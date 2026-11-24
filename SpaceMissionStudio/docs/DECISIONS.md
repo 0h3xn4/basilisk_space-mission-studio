@@ -5926,3 +5926,102 @@ The owner answered Q6 of [`developer/monte-carlo-plan.md`](developer/monte-carlo
   Basilisk 2.12.0 first, then choose the design and record it here.
   **Why:** the owner's order. Density is first: it is the largest
   uncertainty of a low-orbit decay and needs no Mission Sequence.
+
+## Monte Carlo phase C, item 1: the atmospheric density dispersion (2026-11-24)
+
+The first dispersion of C1 by the owner's order (MC-36). The spike is
+§6.1 of [`developer/monte-carlo-plan.md`](developer/monte-carlo-plan.md).
+The work ran without questions. **The choice of meaning in MC-37 is
+provisional (Q9): the owner may also want F10.7 and Ap.** Schema step 7
+to 8. The golden files of the 37 templates are byte-identical.
+
+- **Decision MC-37 (the meaning is provisional, Q9): a scale on the
+  density that drag reads.**
+  - The quantity is `density_scale`, a number with no unit: each run's
+    drag reads the atmosphere model's density times the drawn scale.
+    1 is the model's own density. Kinds: `uniform` (bounds) and
+    `normal` (mean, standard deviation, optional bounds).
+  - It applies to the three atmosphere models (`nrlmsise00`,
+    `exponential`, `tabular`) and to the sphere and the facet drag.
+    **Why:** the owner offered "a scale on the density, or on F10.7 and
+    Ap". A density scale is physically the same thing for every model.
+    A scale on F10.7 and Ap acts on NRLMSISE-00 only, changes the
+    density by no fixed factor, and makes synthetic space weather, which
+    the user requirement "real data only" forbids. This is the safer of
+    the two meanings. Q9 asks the owner if F10.7 and Ap are wanted too.
+  - **How:** a Python `SysModel`, `engine.density_scale.DensityScale`
+    (task priority 385), between the model (390) and the drag (100). It
+    reads each spacecraft's `AtmoPropsMsg` and writes a copy with the
+    density times `scale`; the temperature is unchanged. The drag
+    effectors and the atomic-oxygen recorder read the copy. **Why:**
+    Basilisk 2.12.0 has no parameter that scales the density of every
+    model (`MsisAtmosphere` has none; `DragDynamicEffector`'s
+    `densityCorrection` is a state of the dynamics). The message is the
+    one place that all models and both drag effectors share. No change
+    to Basilisk. The Cd proxy was not taken: it is not the density, and
+    the label would mislead.
+  - The service builds the module only when asked
+    (`SimulationService(density_scale=True)`): `engine.monte_carlo`
+    asks for a batch whose scenario has the quantity, and so does a case
+    run again. Every other run is built as before. **Why:** a plain run
+    keeps its models, their order and their RNG seeds; the golden files
+    do not change. At scale 1 the run is identical to a run without the
+    module (a test compares every position).
+  - One draw per run, constant during the run, the same for every
+    spacecraft with drag. **Why:** one atmosphere per run; the simplest
+    model of a density model's error. A density error that changes in
+    time is not built (see `docs/reference/limitations.md`).
+- **Decision MC-38: the schema and its checks** (schema 8).
+  - `density_scale` belongs to the atmosphere, not to a spacecraft: its
+    `spacecraft` is empty (`""`). A name there is refused. **Why:** one
+    scale for every spacecraft with drag. A scale per spacecraft would
+    give two spacecraft in one atmosphere independent errors.
+  - Refused, never drawn and ignored (`Scenario.validate`,
+    `schema.scenario.density_scale_refusal`; the engine checks again
+    when it builds the dispersion): no spacecraft with drag; a central
+    body other than the Earth; an atmosphere model outside
+    `DENSITY_SCALE_ATMOSPHERE_MODELS` (today every model is in it); two
+    density scales; a bound below 0; a mean of 0 or below. **Why:** a
+    draw that changes nothing would show a spread that is not there.
+  - A normal draw without bounds is held at 0 or above (bounds
+    [0, inf], the clip of Basilisk's `NormalDispersion`). The module
+    stops a run whose scale is negative or not finite. **Why:** a
+    negative density has no meaning.
+  - A uniform scale with equal bounds gives that value
+    (`engine.monte_carlo._UniformDensityScale`). Basilisk 2.12.0's
+    `UniformDispersion` divides by the half-width and fails the run when
+    the bounds are equal. The form starts a new scale at [1, 1]. The
+    subclass takes the same one number from `random`, so the draws after
+    it do not change. **Why:** a fixed scale (for example 1.5 in every
+    run) is a valid study.
+  - Schema step 7 to 8, version only, as the steps to 6 and 7. The 37
+    templates change only on their `schema_version` line;
+    `tests/data/scenario_hashes.json` is recorded again (74 values);
+    `docs/changes.md` says why. A version 8 file does not open in
+    2.15.0; a build at version 7 also refuses the quantity by its name.
+- **Decision MC-39: where the scale shows.**
+  - The drawn value's label is `atmospheric density scale [-]`, with no
+    spacecraft in front. `[-]` is the app's mark for "no unit", as for
+    the drag coefficient. It reaches the batch summary, the Runs table
+    and its CSV, the statistics and the sensitivity, and the report like
+    every drawn value. The report's dispersions table names the owner
+    "atmosphere".
+  - GUI (Scenario › Monte Carlo): `density_scale` is in the quantity
+    list; the form hides the spacecraft row for it; a scale the user
+    picks starts at 1 with no spread; the list shows
+    "atmosphere: density_scale (uniform)". The wizard's group heading
+    says "Dispersion: atmosphere density scale".
+  - The command line and the API list no quantities, so they do not
+    change. `monte-carlo` writes the scale in its Runs CSV and report,
+    and ranks it among the correlations it prints.
+  - Template 37 does not get the dispersion. **Why:** its claims
+    (MC-34: the verdicts, the bound, the correlations) were measured
+    without it, and every golden file stays byte-identical. A template
+    can show it later.
+- **Decision MC-40: tests changed for this work.** Three tests pin the
+  schema version: two in `tests/test_scenario_schema.py`
+  (`CURRENT_SCHEMA_VERSION == 8`, and a saved seed at version 8) and one
+  in `tests/test_migrations.py` (the step from 6 to 7 now ends at the
+  current version, as the step from 5 to 6 already did). No GUI test reaches a widget another way.
+  `docs/ui/TEST_CHANGES.md` lists the new tests. **Why:** CLAUDE.md: a
+  pinned version moves with the schema; no check is weakened.

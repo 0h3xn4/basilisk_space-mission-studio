@@ -34,9 +34,19 @@ What can vary:
 | `inertia_kg_m2` | The inertia [kg m^2] | normal |
 | `angular_rate_bn_b` | Starting body rate [deg/s] | normal, uniform |
 | `drag_coeff`, `srp_coeff` | The drag or solar-pressure coefficient | uniform, normal |
+| `density_scale` | A scale on the atmospheric density that drag reads [-]; 1 is the atmosphere model's own density | uniform, normal |
 
 Inertia and body rate need *Full attitude*; the coefficients need drag or
 solar pressure on.
+
+The density scale belongs to the atmosphere, not to one spacecraft, so
+its form has no spacecraft. Each run draws one scale and every
+spacecraft with drag reads the model's density times that scale, for the
+whole run. It works with each atmosphere model (NRLMSISE-00,
+exponential, tabular). It needs at least one spacecraft with drag on; a
+scenario has one density scale at most. A new one starts at 1 with no
+spread: widen it, for example uniform from 0.7 to 1.3. The drawn scale
+shows in the Runs table as "atmospheric density scale [-]".
 
 ## State a requirement
 

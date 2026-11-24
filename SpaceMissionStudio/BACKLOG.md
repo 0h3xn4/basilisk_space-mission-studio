@@ -9,14 +9,34 @@ owner has answered the plan's open questions.
 
 - Monte Carlo phase C: more dispersions and outcomes
   (`docs/developer/monte-carlo-plan.md` section 6; about 30 hours, each
-  item with a spike first). Maneuver execution errors, thruster and
-  reaction-wheel errors, propellant load, centre of mass and
-  atmospheric density; outcomes from any recorded series; convergence
-  and adding cases to a batch; percentile bands over time; other
-  sampling designs.
+  item with a spike first). In the owner's order (MC-36): maneuver
+  execution errors of the Mission Sequence's burns, thruster force and
+  misalignment, reaction-wheel friction and bias, propellant load and
+  centre of mass (the atmospheric density is done); then outcomes from
+  any recorded series; convergence and adding cases to a batch;
+  percentile bands over time; other sampling designs.
+- A uniform dispersion of the dry mass, the drag coefficient or the SRP
+  coefficient with equal bounds fails every run of the batch
+  (`ZeroDivisionError` in Basilisk 2.12.0's `UniformDispersion.generate`,
+  which divides by the half-width). The form starts a new dispersion at
+  [nominal, nominal], so an untouched new one crashes the batch. Found
+  while building the density scale, which has its own fix
+  (`engine.monte_carlo._UniformDensityScale`, MC-38); the same subclass
+  idea fits the other three. Reproduced on template 25 (0.001 day, one
+  run, dry mass uniform [150, 150]: run 0 failed).
 
 ## Done
 
+- Monte Carlo phase C, item 1: the atmospheric density dispersion, on
+  branch `feature/monte-carlo-density` (2026-11-24). The owner's order
+  of the phase C dispersions (Q6) is recorded as MC-36. A spike
+  (`docs/developer/monte-carlo-plan.md` §6.1) chose a scale on the
+  density that drag reads, between the atmosphere model and the drag, so
+  it works with the three atmosphere models and with facets. New
+  quantity `density_scale` (no spacecraft), scenario schema 8 with a
+  version-only migration, the form, the summary, the Runs table, its CSV
+  and the report. Decisions MC-37 to MC-40; MC-37's choice of meaning is
+  provisional (Q9: F10.7 and Ap too?).
 - Make the move of the 3D View into its own window, or back, take under
   50 ms of the GUI thread on the Windows runner, every time (SRelD K-40),
   on branch `fix/3d-view-move` (2026-11-24). Not the move's own work (3

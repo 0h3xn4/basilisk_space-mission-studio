@@ -101,6 +101,14 @@ Basilisk's own ``Dispersions`` classes, unmodified:
   on the sphere ``dragDynamicEffector``'s ``coreParams.dragCoeff`` or the
   ``radiationPressure`` effector's ``coefficientReflection``, reached
   through ``sim.get_drag_<name>()``/``sim.get_srp_<name>()`` (below).
+* ``density_scale`` (a quantity of the atmosphere, no spacecraft; decision
+  MC-37): ``UniformDispersion``/``NormalDispersion`` on the ``scale`` of
+  ``engine.density_scale.DensityScale``, reached through
+  ``sim.get_density_scale()``; a uniform one with equal bounds gives that
+  value (:class:`_UniformDensityScale`). The service builds that module, between the
+  atmosphere model and every drag effector, only for a batch that disperses
+  the density. A normal draw without bounds is held at 0 or above (bounds
+  [0, inf]): a scale on the density cannot be negative.
 
 Dispersion path resolution
 ---------------------------
@@ -230,7 +238,8 @@ from Basilisk.utilities.MonteCarlo.RetentionPolicy import RetentionPolicy
 from .. import output_provenance
 from ..config import models, registry
 from ..schema.command import runs_sequence, script_blocks
-from ..schema.scenario import DispersionConfig, MonteCarloConfig, Scenario, SimSettings, usable_thread_count
+from ..schema.scenario import (DispersionConfig, MonteCarloConfig, Scenario, SimSettings, density_scale_refusal,
+                               usable_thread_count)
 from . import monte_carlo_case, monte_carlo_results, monte_carlo_statistics
 from .solar_arrays import hub_mass_offset_kg
 from .service import SimulationService, _orbit_ic_to_rv
@@ -251,6 +260,11 @@ _QUANTITY_PATHS = {
 }
 # Effector accessor prefix for the coefficient quantities (see _create_sim).
 _EFFECTOR_ACCESSORS = {"drag_coeff": "get_drag_", "srp_coeff": "get_srp_"}
+# The atmosphere's density scale (decision MC-37): one per run, not a spacecraft's (see _create_sim).
+DENSITY_SCALE_ACCESSOR = "get_density_scale"
+DENSITY_SCALE_PATH = f"{DENSITY_SCALE_ACCESSOR}().scale"
+# Its drawn value's label in the summary, the Runs table and the report.
+DENSITY_SCALE_LABEL = "atmospheric density scale [-]"
 # OrbitalElementDispersion's element names for each element_spread key,
 # and the factor from the key's unit (km, [-], deg) to Basilisk's (m, rad).
 _ELEMENT_KEYS = {
@@ -401,6 +415,23 @@ class _AddedToNominalUniformRate(UniformVectorCartDispersion):
         return list(self._nominal + np.asarray(super().generate(sim), dtype=float))
 
 
+class _UniformDensityScale(UniformDispersion):
+    """``UniformDispersion`` for the density scale (decision MC-37). Basilisk
+    2.12.0's class divides by the half-width to note the draw's place in the
+    bounds, so equal bounds (a fixed scale, as the form starts a new one:
+    [1, 1]) fail the run with a ``ZeroDivisionError``. Here equal bounds give
+    that value; the draw still takes one number from ``random`` (the same
+    ``random.uniform`` call), so the draws after it do not change."""
+
+    def generate(self, sim):
+        low, high = self.bounds
+        if low != high:
+            return super().generate(sim)
+        value = random.uniform(low, high)  # noqa: S311 -- the draw Basilisk makes, not a secret
+        self.magnitude.append("0.0 %")
+        return value
+
+
 def _central_body_mu(scenario: Scenario) -> float:
     """[m^3/s^2] the central body's mu, from the same gravity factory the
     service builds the run with."""
@@ -435,7 +466,21 @@ def _orbit_dispersion(dispersion: DispersionConfig, scenario: Scenario, sc_confi
     return OrbitalElementDispersion(f"{accessor}().hub.r_CN_NInit", f"{accessor}().hub.v_CN_NInit", table)
 
 
+def disperses_density(scenario: Scenario) -> bool:
+    """Whether the scenario's batch disperses the atmospheric density (decision MC-37)."""
+    return any(d.quantity == "density_scale" for d in scenario.monte_carlo.dispersions)
+
+
 def _build_dispersion(dispersion: DispersionConfig, scenario: Scenario):
+    if dispersion.quantity == "density_scale":
+        refusal = density_scale_refusal(scenario)
+        if refusal:
+            raise MonteCarloError(f"monte_carlo dispersion of the atmosphere's density_scale: {refusal}")
+        if dispersion.kind == "uniform":
+            return _UniformDensityScale(DENSITY_SCALE_PATH, bounds=dispersion.bounds)
+        bounds = dispersion.bounds if dispersion.bounds is not None else [0.0, math.inf]
+        return NormalDispersion(DENSITY_SCALE_PATH, mean=dispersion.mean, stdDeviation=dispersion.std_deviation,
+                                bounds=bounds)
     accessor = _accessor_name(dispersion.spacecraft)
     sc_config = next((sc for sc in scenario.spacecraft if sc.name == dispersion.spacecraft), None)
     if dispersion.quantity in _EFFECTOR_ACCESSORS:
@@ -547,9 +592,14 @@ def _create_sim(scenario: Scenario, folders: dict[str, str] | None = None, seed:
     if seed is not None:
         _reseed(seed)
     apply_data_folders(folders)
-    service = SimulationService(scenario)
+    service = SimulationService(scenario, density_scale=disperses_density(scenario))
     service.build(initialize=False)
     sim = service.scSim
+    if service.density_scale is not None:  # the density dispersion's target (decision MC-37)
+        setattr(sim, DENSITY_SCALE_ACCESSOR, (lambda module=service.density_scale: module))
+    elif disperses_density(scenario):
+        raise MonteCarloError("monte_carlo dispersion of the atmosphere's density_scale: this run has no atmosphere "
+                              "that drag reads, so the scale would change nothing")
 
     for name, handle in service.spacecraft_handles.items():
         sc_object = handle.sc_object
@@ -891,6 +941,9 @@ def _drawn_values(params: dict[str, str], scenario: Scenario, mu: float) -> dict
                    if d.quantity == "orbit_elements"}
     drawn: dict[str, float] = {}
     for key, text in params.items():
+        if key == DENSITY_SCALE_PATH:  # the atmosphere's, not a spacecraft's (decision MC-37)
+            drawn[DENSITY_SCALE_LABEL] = float(json.loads(text))
+            continue
         accessor, _, path = key.partition("().")
         for prefix in _EFFECTOR_ACCESSORS.values():
             if accessor.startswith(prefix):
