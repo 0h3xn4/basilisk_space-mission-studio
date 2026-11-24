@@ -21981,3 +21981,102 @@ state, a template opened from a group, Up and Down across a heading, the
 palette). One existing test changed how it reaches the cards
 (`docs/ui/TEST_CHANGES.md`): the keyboard test takes the cards in the
 order shown. The golden files are byte-identical; no schema change.
+
+## Release 2.16.0 prepared (2026-11-24)
+
+A minor release: it adds features and a scenario schema step. Contents
+since 2.15.0 (`git log --merges spacemissionstudio-v2.15.0..develop`,
+`develop` at `4819c82`, the merge of #329):
+- #319: a cancelled Monte Carlo batch leaves no process (merged after
+  the 2.15.0 tag, so not in 2.15.0);
+- #320: the record of the 2.15.0 publication;
+- #321: the GUI thread outranks the 3D View's software drawing (K-40);
+- #322: Monte Carlo phase C, item 1, the atmospheric density dispersion
+  (`density_scale`, schema version 8, MC-36 and MC-37), with the
+  owner's answers of 2026-11-24 on the pointing budget and K-40, which
+  came in through its branch;
+- #323: the Monte Carlo workers report through a relay (the insight
+  plot's teardown on Windows);
+- #325: the pointing error budget, scope B (PE-10 to PE-20, SRS-F-32),
+  with the Monte Carlo plot page that Windows holds deleted later;
+- #326: a uniform dispersion with equal bounds is that value (MC-41);
+- #327: the owner confirmed Q1 to Q8 of the Monte Carlo plan (MC-11 to
+  MC-15, MC-17, MC-27 and MC-34 final) and the pointing choices (PE-21
+  a backlog item);
+- #328: templates 39 to 42 (batch A of "templates for every feature");
+- #330: template 38, the Budgets area;
+- #329: Home's templates in nine categories (TC-1, TC-2).
+No pull request #324 is in the range: the owner's answers of 2026-11-24
+(`records/owner-answers-2026-11-24`) came in through #322.
+
+Prepared by `docs/developer/releasing.md` sections 1 to 4, on branch
+`release/2.16.0` from `develop` at `4819c82`. The version is 2.16.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script. The
+CHANGELOG's Unreleased entries are under 2.16.0, with an introduction,
+Who should update and Known limits, and an empty Unreleased section
+stays above it. SRelD issue 57 records the release: 2.16.0 is prepared,
+not yet published, and 2.15.0 moves down; K-40 is met in 2.16.0, and
+K-13, K-44 and K-45 are extended. The SDP, SRS, ICD, CSD, SUM,
+limitations, `releasing.md` and both READMEs name 2.16.0. No code
+changed but the version strings. `USER_MANUAL.md` names no version that
+the release changes, so it and its copy in the package are unchanged.
+
+The CHANGELOG heading is dated 2026-11-24, the UTC day of preparation.
+The release check wants the heading's date to equal the tag's UTC day:
+if the tag is made on a later day, the heading must move to that day
+first.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so one download of CelesTrak's `SW-All.txt` was tried
+on 2026-11-24 at 20:58 UTC: CelesTrak reset the connection (`curl`
+error 35). It was not tried again. 2.16.0 so carries 2.13.0's file
+(observations to 2026-11-18, updated 2026-11-19).
+
+The file format was checked on the code with `git diff
+spacemissionstudio-v2.15.0` (the tag, on `5ebbd3b`):
+- `schema/` has the step to version 8 (`migrations.py`, `scenario.py`,
+  `fields.py`, `field_help.json`) and the budgets section's own version
+  2 with its pointing budget (`budgets.py`), and
+  `tests/data/scenario_hashes.json` was recorded again: the 74 hashes
+  of the 37 templates changed, and the 10 of templates 38 to 42 were
+  added.
+- Templates 38 to 42 and their golden files are new.
+- The 37 earlier templates change only on their `schema_version` line.
+  With that line set back to 7, each of the 37 files is byte for byte
+  the file at the tag.
+- The 37 earlier golden files are byte-identical to those at the tag.
+- `packaging/` changed only in the Inno Setup script's version line,
+  and no file outside `SpaceMissionStudio/` changed but the root
+  README's SpaceMissionStudio part.
+
+Compatibility was checked with 2.15.0's code (`git archive
+spacemissionstudio-v2.15.0`): it refuses all 42 templates as 2.16.0
+saves them ("scenario file is schema_version 8, but this build of
+SpaceMissionStudio only understands up to version 7"). 2.16.0 opens
+2.15.0's 37 templates and saves each again byte for byte as its own
+template.
+
+CI's "Windows (MAX Python)" job still fails the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45). By the owner's decision, the release pull request may be merged
+with that check red, for that framework test only.
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4 -p no:cacheprovider -o faulthandler_timeout=300`, its
+whole output kept: 6294 passed, 19 skipped and 1 failed of 6314 (5947
+passed at 2.15.0). The run ended in 26 min 55 s, and the faulthandler
+printed no stack. The tests imported the release's worktree
+(`spacemissionstudio.__file__` and the version 2.16.0 checked). The
+failure is
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px), which fails only in this container and on
+`develop` too. The text changes of the release came after the start of
+that run, so the release check, metainfo and every test that reads the
+changed documents were run again on the final files. The release
+changed no test, so `docs/ui/TEST_CHANGES.md` is unchanged. The release
+check (`packaging/release_check.py --today 2026-11-24`, also with the
+commit and `git ls-remote --tags origin`) passed; pip-audit and CI's
+result for the commit are checked only by the tag workflow, because
+they need the network and CI. The four compliance generators changed
+nothing on two runs, and `check_drds.py` found 0 problems. ruff and
+pre-commit passed on the changed files.

@@ -10,6 +10,28 @@ fixes bugs.
 
 ## Unreleased
 
+## 2.16.0 (2026-11-24)
+
+SpaceMissionStudio 2.16.0 adds a pointing error budget, lets a Monte
+Carlo batch vary the atmospheric density, and brings five new templates.
+The new Pointing tab of the Budgets area adds up your pointing
+requirements and sources of error per error index and axis, and tells
+you for each requirement the value at its probability, the margin and
+whether it is met. A Monte Carlo batch can now draw a scale on the
+atmospheric density, so you see how much of the spread in orbit decay
+the atmosphere explains.
+
+Home now shows the 42 templates in nine groups, from Getting started to
+Deep space and navigation. Template 38 shows the Budgets area with a
+complete equipment list, and templates 39 to 42 show orbits given as a
+TLE or a state vector, continuous low thrust, velocity pointing with
+navigation errors, and drag from a published density table. A Monte
+Carlo dispersion whose range has no width no longer makes every run
+fail, a cancelled batch leaves no process behind, and the window no
+longer stalls while the 3D View draws without a graphics card. The
+scenario file moves to schema version 8: 2.16.0 opens every older file,
+but 2.15.0 and earlier do not open a file that 2.16.0 saves.
+
 ### Added
 
 - **A pointing error budget.** The Budgets area has a new **Pointing**
@@ -154,6 +176,70 @@ fixes bugs.
   removed, and on Windows that raised an error in the window. The work
   now reports through a messenger of its own, and a view that has been
   closed simply gets nothing.
+
+### Who should update
+
+- **Anyone who keeps a pointing budget in a spreadsheet:** open
+  **Budgets › Pointing**, enter your requirements and sources of error,
+  and let **Add Scenario Sensors** bring in your attitude sensors.
+  Template 38 has a small pointing budget to start from. In scripts,
+  `spacemissionstudio budgets scenario.json --pointing` prints it.
+- **Anyone who runs Monte Carlo batches with drag:** add a
+  `density_scale` dispersion to see what the atmosphere's uncertainty
+  does to your decay. If a batch ever failed on every run just after you
+  added a dispersion, or a cancelled batch left a process running, this
+  release fixes it.
+- **Anyone new to SpaceMissionStudio:** Home now leads you from the
+  simplest templates to the advanced ones, group by group, and the five
+  new templates show features that no template showed before.
+- **Everyone else:** nothing that a run computes has changed. The 37
+  templates of 2.15.0 give 2.15.0's results, and their golden outputs
+  pass unchanged, byte for byte.
+- **Compatibility:** the scenario format moves to version 8, and 2.16.0
+  saves every file at version 8, with or without a density scale.
+  2.15.0 and earlier refuse such a file ("scenario file is
+  schema_version 8, but this build of SpaceMissionStudio only
+  understands up to version 7"). If you share scenarios with someone on
+  an older version, update together. 2.16.0 opens every file the
+  earlier versions saved, and a 2.15.0 file saved again by 2.16.0
+  changes only in its version line. The batch summary keeps format 1.
+- **The installers:** on Linux, `apt install
+  ./spacemissionstudio_2.16.0_amd64.deb` replaces 2.15.0; on Windows, run
+  the 2.16.0 setup over 2.15.0. Check each against `SHA256SUMS-linux` or
+  `SHA256SUMS-windows`, or its signed provenance with `gh attestation
+  verify <file> --repo 0h3xn4/basilisk_space-mission-studio`.
+
+### Known limits
+
+- **The pointing budget adds up the numbers you give.** It does not
+  measure pointing errors from a run yet; that comes later, as its own
+  step. A gyroscope brought in by Add Scenario Sensors reads "TBD",
+  because its angle error depends on the time between attitude fixes,
+  which the scenario does not state yet.
+- **The density scale is one number per run,** constant for the whole
+  run and the same for every spacecraft with drag. A density error that
+  changes with time, place or solar activity is not modelled, and F10.7
+  and Ap are not dispersed.
+- **The numbers in template 38 are examples,** and each source says so.
+  Do not take them for a real spacecraft's.
+- **The sensitivity is one drawn value against one outcome,** and the
+  percentiles describe the runs and carry no confidence, as in 2.15.0.
+- **One CI check of the Basilisk framework is still red on Windows,** as
+  in 2.15.0. The framework test
+  `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+  fails in the "Windows (MAX Python)" job with the MSVC 19.52 compiler.
+  It belongs to the framework, which SpaceMissionStudio never changes,
+  and the installers carry Basilisk 2.12.0 from PyPI.
+- **The bundled space weather is 2.13.0's,** with observations to
+  2026-11-18: CelesTrak reset the connection when this release was
+  prepared. Fetch the current file in **Settings > Reference data**
+  before a drag study near today's date.
+- **The 3D View without a graphics card is slow,** as before: about 15
+  frames a second in software rendering. The window now stays
+  responsive while it draws.
+- **pillow stays at 12.2.0,** the highest the qualified Basilisk allows;
+  its accepted advisories are listed, with the reason, in
+  `packaging/audit-exceptions.txt`.
 
 ## 2.15.0 (2026-11-24)
 

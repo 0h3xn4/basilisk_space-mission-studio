@@ -150,8 +150,8 @@ Each item was checked against Basilisk's own source.
   with", not "causes". A pair needs 3 runs and a value that varies. The
   percentiles describe the runs, not the distribution they were drawn
   from, and carry no confidence; which ones are shown (1, 5, 50, 95 and
-  99 %) is a provisional default the owner may change
-  (`monte_carlo.percentiles`). The final offsets are read to the
+  99 %) is the default the owner confirmed (decision MC-27;
+  `monte_carlo.percentiles`). The final offsets are read to the
   millimetre for these. The command line prints the statistics and the
   ten strongest correlations; the batch report has every pair. The
   band around the mean of a thermal or operations batch is the mean
@@ -428,7 +428,7 @@ From the [changelog](../../CHANGELOG.md):
   spaceweather-download`. 2.7.0 carries a newer file (observations to
   2026-11-09, forecast to 2026-12-24), 2.8.0 to 2.12.0 a newer one
   again (observations to 2026-11-14, forecast to 2026-12-29), and 2.13.0
-  to 2.15.0 a newer one still (observations to 2026-11-18, forecast to
+  to 2.16.0 a newer one still (observations to 2026-11-18, forecast to
   2027-01-02).
 * **Some actions hold the window for longer than the 50 ms the interface
   aims at:** changing the theme (about 0.4 s), the first visit to a

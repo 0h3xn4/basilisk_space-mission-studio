@@ -1,9 +1,81 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 56, 2026-11-24. Remediation R14.
+Document: SMS-SRelD, issue 57, 2026-11-24. Remediation R14.
 
-**Status:** release **2.15.0**, published 2026-11-24 (00:38 UTC).
+**Status:** release **2.16.0**, prepared 2026-11-24, not yet
+published. It is to be tagged with the tag workflow after its release
+pull request is merged. 2.16.0 is a minor release: it adds features and
+a scenario schema step (version 8). It holds the pull requests merged
+into `develop` since the 2.15.0 tag (#319 to #330; the owner's answers
+of 2026-11-24 came in through #322, and no #324 is in the range):
+- **The pointing error budget, scope B** (#325, PE-10 to PE-20,
+  SRS-F-32). Budgets › Pointing: requirements (error index, axis or line
+  of sight, limit, probability) and contributors (biases, noise,
+  periodic terms, drifts, transients), each number sourced, summed per
+  index and axis, with the value at the probability, the margin and the
+  status, "TBD" where a number is missing. Add Scenario Sensors makes
+  contributors of the star trackers, gyroscopes and sun sensors.
+  `budgets --pointing` (with `--csv`) and `api.pointing_budget()`. The
+  budgets section's own version is 2.
+- **The atmospheric density dispersion** (#322, Monte Carlo phase C,
+  item 1, MC-36 to MC-40). The dispersion quantity `density_scale`
+  (uniform or normal) scales the density that drag reads, for the whole
+  run and every spacecraft with drag, by the app's module
+  `engine/density_scale.py` between the atmosphere model and the drag;
+  for all three atmosphere models. Scenario schema version 8.
+- **Monte Carlo decisions final** (#327). The owner confirmed Q1 to Q8
+  of the Monte Carlo plan: MC-11 to MC-15, MC-17, MC-27 (the
+  percentiles 1, 5, 50, 95 and 99 %) and MC-34 (template 37) are final.
+  `monte_carlo.percentiles` names the owner's answer as its source; its
+  value is unchanged. PE-21 is a backlog item.
+- **Monte Carlo fixes.** A uniform dispersion with equal bounds is that
+  value (#326, MC-41): the dry mass, drag and SRP coefficient and body
+  rate no longer fail every run with a `ZeroDivisionError` in Basilisk's
+  `UniformDispersion`. A cancelled batch with several processes leaves
+  no worker behind: the batch's processes form one group, a job on
+  Windows (#319). The insight workers report through a relay, so a view
+  deleted while they run gets no late result (#323, K-44). A plot page
+  that Windows still holds is deleted later, every 250 ms for up to 10 s
+  (#325).
+- **The 3D View's software drawing** (#321, K-40). The GUI thread runs at
+  the priority of the 3D View's software drawing threads, and the view
+  draws each new size once; a move took 13.6 ms at most in 60 moves on
+  the Windows test machine (up to 64 ms before).
+- **Templates 38 to 42** (#330 and #328). 38: the Budgets area with a
+  complete equipment list, power, mass, propellant and a small pointing
+  budget; 39: orbit inputs (a synthetic TLE, a state vector, classical
+  elements); 40: continuous low thrust; 41: velocity pointing with
+  navigation errors; 42: a tabular atmosphere and the lifetime. Each
+  has a golden file and a claims test.
+  `docs/reference/template-coverage.md` lists every feature with its
+  templates.
+- **The template catalog** (#329, TC-1, TC-2). Home shows the templates
+  under nine categories from `scenarios/catalog.py`, with a category
+  filter; the command palette, the template README and the User Manual
+  follow the same order. The numbers and file names are unchanged.
+- **Records:** the 2.15.0 publication (#320).
+
+The scenario file moves to schema version 8 (#322). The step only sets
+the version. `git diff spacemissionstudio-v2.15.0` (the tag, on
+`5ebbd3b`) shows the step in `schema/` and the budgets section's version
+2, `tests/data/scenario_hashes.json` recorded again (74 hashes changed,
+10 added for templates 38 to 42), templates 38 to 42 and their golden
+files new, and the 37 earlier templates changed only on their
+`schema_version` line: with that line set back to 7, each is byte for
+byte the file at the tag. The 37 earlier golden files are
+byte-identical. No computed result of an earlier template's run
+changed. The bundled CelesTrak space weather is 2.13.0's (observations
+to 2026-11-18; K-13, not refreshed: CelesTrak reset the connection). By
+the owner's decision of 2026-11-19, the release pull request may be
+merged with CI's "Windows (MAX Python)" job red, but only for the
+Basilisk framework test `LambertInputValidation` (K-45). Basilisk is
+unchanged. Outside `SpaceMissionStudio/` only the front-page
+`README.md`'s SpaceMissionStudio part changed (section 4).
+
+**Previous release:** 2.15.0, published 2026-11-24 (00:38 UTC), tag
+`spacemissionstudio-v2.15.0` on `5ebbd3b`; its publication is recorded
+in issue 56 of this document (#320).
 2.15.0 is a minor release: it adds features and
 a scenario schema step (version 7). It holds Monte Carlo phase B
 (`docs/developer/monte-carlo-plan.md`; #313, #314 and #316, decisions
@@ -113,7 +185,7 @@ How 2.15.0 was tagged and published:
   after the tag, as `bb00914`. It is not in 2.15.0. Its CHANGELOG entry
   stays under "Unreleased".
 
-**Previous release:** 2.14.2, published 2026-11-23 (11:13 UTC), tag
+Before it: 2.14.2, published 2026-11-23 (11:13 UTC), tag
 `spacemissionstudio-v2.14.2` on `452e164`; its publication is recorded
 in issue 54 of this document (#317).
 2.14.2 is a patch release. The backlog procedure (`CLAUDE.md`, "Backlog
@@ -206,7 +278,7 @@ not refreshed: CelesTrak reset the connection). Basilisk is unchanged.
 Outside `SpaceMissionStudio/` only the front-page `README.md`'s
 SpaceMissionStudio part changed (section 4).
 
-Before it: 2.14.1, published 2026-11-23 (02:20 UTC), tag
+Earlier: 2.14.1, published 2026-11-23 (02:20 UTC), tag
 `spacemissionstudio-v2.14.1` on `caabf11`; its publication is recorded
 in issue 52 of this document (#312).
 2.14.0 is a minor release: it adds features and
@@ -1271,9 +1343,9 @@ internet access and, for the setup program, Python 3.11 on `PATH`
 
 ## 1 Introduction (G.2.1<1>)
 
-This SRelD describes release 2.15.0 of SpaceMissionStudio in
-`0h3xn4/basilisk_space-mission-studio`: what it contains, what changed since 2.14.2
-(commit `452e164`), what is known to be wrong, and how to use it.
+This SRelD describes release 2.16.0 of SpaceMissionStudio in
+`0h3xn4/basilisk_space-mission-studio`: what it contains, what changed since 2.15.0
+(commit `5ebbd3b`), what is known to be wrong, and how to use it.
 
 ## 2 Applicable and reference documents (G.2.1<2>)
 
@@ -1297,150 +1369,121 @@ This SRelD describes release 2.15.0 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.15.0 release pull request (the changes of #313, #314, #316 and #317, from `records/2.14.2-published` at `79e0331`, which holds `develop` at `0dc0810`, and the release's records), tagged `spacemissionstudio-v2.15.0` on `5ebbd3b` (`5ebbd3bda91fa52fe907a1a3747b8ebe1c1eaee0`), the merge of #318, by the tag workflow. Previous release: 2.14.2, commit `452e164` (`452e164e7652de7135fe513d82039bbf311b388f`), tagged `spacemissionstudio-v2.14.2`. |
+| Baseline | `develop` after the 2.16.0 release pull request (the changes since the 2.15.0 tag: #319 to #330, from `develop` at `4819c82`, the merge of #329, and the release's records), to be tagged `spacemissionstudio-v2.16.0` with the tag workflow. Previous release: 2.15.0, commit `5ebbd3b` (`5ebbd3bda91fa52fe907a1a3747b8ebe1c1eaee0`), tagged `spacemissionstudio-v2.15.0`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 47 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble (also under the 2D map and in the app icon) and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
-| Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.15.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.15.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.15.0_amd64.cdx.json`, `spacemissionstudio-2.15.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
+| Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.16.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.16.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.16.0_amd64.cdx.json`, `spacemissionstudio-2.16.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
 | Documentation | SUM and `USER_MANUAL.md`; the documents in `compliance/docs/` |
-| Basilisk framework | No Basilisk source, module or test changed. Since 2.14.2 one file outside `SpaceMissionStudio/` changed (`git diff --name-only 452e164`): the front-page `README.md`'s SpaceMissionStudio part (its version badge and Version line). Monte Carlo phase A uses Basilisk 2.12.0's own interfaces as in 2.14.0: `RetentionPolicy.addRetentionFunction` for the outcomes and data files, and `SimulationExecutor.applyModification` to apply a case's `run<N>.json`. Phase B adds no Basilisk interface: the batch seed reseeds in the app's creation function, which Basilisk 2.12.0's `Controller.SimulationExecutor.__call__` calls after its own seeding and before the draws (read in the installed wheel, not changed; K-49). CI's "Windows (MAX Python)" job, in Basilisk's own "Pull Request" workflow, fails the framework test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling` on GitHub's runner image 20261111 (MSVC 19.52.37029; it passed on 20261103, MSVC 19.51); by the owner's decision of 2026-11-19 SpaceMissionStudio's pull requests are merged with that check red, and the framework is not changed (K-45). The installers carry Basilisk 2.12.0 from PyPI, not this repository's framework, and add its support data next to the installed package, in the folder its own `dataFetcher` reads |
+| Basilisk framework | No Basilisk source, module or test changed. Since 2.15.0 one file outside `SpaceMissionStudio/` changed (`git diff --name-only 5ebbd3b`): the front-page `README.md`'s SpaceMissionStudio part (its version badge, Version and Platforms lines, and the number of templates). Monte Carlo phase A uses Basilisk 2.12.0's own interfaces as in 2.14.0: `RetentionPolicy.addRetentionFunction` for the outcomes and data files, and `SimulationExecutor.applyModification` to apply a case's `run<N>.json`. Phase B adds no Basilisk interface: the batch seed reseeds in the app's creation function, which Basilisk 2.12.0's `Controller.SimulationExecutor.__call__` calls after its own seeding and before the draws (read in the installed wheel, not changed; K-49). The density dispersion adds no Basilisk interface either: the app's own module `engine/density_scale.py` reads the atmosphere model's `AtmoPropsMsg` and writes it on with the density times the scale, for the drag to read; Basilisk 2.12.0 has no density scale that all three atmosphere models take. Basilisk's `UniformDispersion.generate` divides by the half-width of the bounds; the app's subclass gives the value for equal bounds (MC-41), and the framework is not changed. CI's "Windows (MAX Python)" job, in Basilisk's own "Pull Request" workflow, fails the framework test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling` on GitHub's runner image 20261111 (MSVC 19.52.37029; it passed on 20261103, MSVC 19.51); by the owner's decision of 2026-11-19 SpaceMissionStudio's pull requests are merged with that check red, and the framework is not changed (K-45). The installers carry Basilisk 2.12.0 from PyPI, not this repository's framework, and add its support data next to the installed package, in the folder its own `dataFetcher` reads |
 
 ## 5 Status of the software configuration item
 
 ### 5.1 Evolution since previous version (G.2.1<5.1>)
 
-`CHANGELOG.md` 2.15.0 lists the changes since 2.14.2 (commit `452e164`);
-RD1 has the full story ("Monte Carlo phase B, part 1", "part 2" and
-"part 3", with their follow-ups). In summary, Monte Carlo phase B
-(`docs/developer/monte-carlo-plan.md`; decisions MC-20 to MC-35 in
-`docs/DECISIONS.md`, MC-27 and MC-34 provisional):
+`CHANGELOG.md` 2.16.0 lists the changes since 2.15.0 (commit `5ebbd3b`);
+RD1 has the full story (from "A cancelled Monte Carlo batch leaves no
+process" to "Templates in categories"). In summary:
 
-- **Batch seed** (#313, B1, K-24; `engine.monte_carlo._reseed`,
-  `basilisk_run_index`): `monte_carlo.seed` at schema version 7. The
-  creation function reseeds NumPy's legacy generator and `random` with
-  `SeedSequence(entropy=seed, spawn_key=(index,))`. The run index is
-  read back from the MT19937 state that Basilisk's seeding left; a state
-  already drawn from fails the run with a message (plan risk R1). The
-  summary keeps `seed`, `archive.provenance.json` `monte_carlo_seed`,
-  and `monte-carlo` prints it. Without a seed nothing is reseeded.
-- **Thermal node limits** (#313, B4;
-  `monte_carlo_requirements.node_limits`): each run's lowest and highest
-  solved temperature per node, judged against the case's operating and
-  survival ranges (a run on a limit is inside, a failed run outside
-  every range), with `clopper_pearson_upper` at the thermal Monte
-  Carlo's optional `confidence` (no default). Template 34: the battery
-  is outside its operating range in 4 of 20 runs.
-- **Small fixes** (#313, B8): "Processes" (the file keeps
-  `thread_count`), the Failed tile as a count, a thermal batch's Status
-  column, the starting attitude's bounds in degrees in the form (radians
-  in the file). The Home details' buttons in a `FlowLayout`.
-- **Outcome statistics** (#314, B3; `engine/monte_carlo_statistics.py`):
-  N, minimum, percentiles and maximum per outcome, and the empirical
-  distribution function. `numpy.percentile` with
-  `monte_carlo.percentile_method` (`linear`, Hyndman and Fan's
-  definition 7); `monte_carlo.percentiles` 1, 5, 50, 95 and 99 % with
-  the source "TBD" (MC-27, provisional). The thermal and operations
-  band is labelled "mean ± 3 standard deviations (not a probability
-  bound)"; its values do not change.
-- **Sensitivity** (#314, B2): Spearman's rank correlation (ties at
-  their mean rank) or Pearson's, by `monte_carlo.sensitivity_measure`,
-  pairwise, with N per pair; "—" for a column that does not vary or
-  fewer than 3 runs. About 0.5 s for 100 000 runs, 10 drawn values and
-  30 outcomes, in a one-thread `QThreadPool`. The plots' JSON, page and
-  page file are made in a worker; the GUI thread's part takes 4 to 7 ms
-  for 100 000 runs (a test requires under 50 ms).
-- **Trust checks** (#314, B6): the plausibility finding
-  `monte_carlo.nominal_outside` (dry mass, drag and SRP coefficient;
-  none of the 36 earlier templates gives it), and a warning with both
-  SHA-256 when a batch's scenario is not the open one
-  (`monte_carlo_case.batch_scenario_hash`).
-- **Batch report** (#316, B5; `engine/monte_carlo_report.py`): JSON
-  (`kind: "monte_carlo_report"`, `format` 1) or Markdown by the file's
-  suffix, from the functions the view uses; written in a one-thread
-  worker. The Runs table's CSV writer moved to the engine.
-- **Command line** (#316, B7): `monte-carlo --summarize DIR` (prints
-  the batch and writes its Runs table, changes nothing in DIR, exit
-  status 5 as after a batch), `--csv FILE`, `--report FILE`, `--runs N`
-  and `--processes N` (the scenario file is unchanged; recorded in
-  `archive.provenance.json`'s `monte_carlo_settings.overrides`). A batch
-  run also prints the outcome statistics and the ten strongest
-  correlations. Flags that do not go together are usage errors (2).
-- **Template 37** (#316, B9, MC-34 provisional): template 25's satellite
-  for half a day, 30 runs, batch seed 37, three dispersions, two
-  requirements at 90 % confidence; 53 s in one process. Its golden file
-  is new, with the golden angle floor for drawn angles in degrees.
-- **Records:** the 2.14.2 publication (#317); `docs/changes.md`,
-  "Scenario schema version 7"; `docs/models/monte-carlo-statistics.md`.
+- **Pointing error budget, scope B** (#325; `schema/budgets.py`,
+  `engine/pointing_budget.py`, `gui/budgets_area.py` `PointingPage`;
+  PE-10 to PE-20, SRS-F-32): `budgets.pointing` with requirements and
+  contributors, every number a `SourcedValue`; the budgets section's
+  version 2, a version 1 section read as version 2 by every loader. The
+  sum per index and axis, the periodic window shares, the value at the
+  probability, the margin, the line-of-sight rule and "TBD"; Add
+  Scenario Sensors (option B); `budgets --pointing` (`--csv`) and
+  `api.pointing_budget`. A budgets section with no powered item gives no
+  power finding (PE-16). Only the public concepts of ECSS-E-ST-60-10C,
+  in the project's own words.
+- **Density dispersion** (#322; `engine/density_scale.py`; MC-36 to
+  MC-40): `density_scale`, one draw per run, empty `spacecraft`; the
+  module passes the atmosphere model's message on with the density
+  times the scale, built only for a Monte Carlo run that has the
+  quantity. A scenario that cannot use it is refused with the reason.
+  Schema version 8 (the step only sets the version).
+- **Equal bounds** (#326, MC-41): a uniform dispersion whose bounds are
+  equal gives that value and draws the same number from `random` as
+  before, so the other dispersions draw what they drew.
+- **Cancel leaves no process** (#319; `gui/monte_carlo_process.py`): a
+  batch's processes form one process group (a job on Windows) that ends
+  with the batch.
+- **Insight workers report through a relay** (#323;
+  `gui/monte_carlo_insight.py`): a `_Relay` per `InsightPlot`,
+  `InsightComputer` and `ReportWriter`; the workers never touch a view.
+  A plot page that Windows holds is deleted again every 250 ms for up to
+  10 s (#325).
+- **3D View drawing priority** (#321, K-40; `gui/background_threads.py`,
+  `mission_view.js`): the GUI thread at the priority of the software
+  drawing; runs and studies keep the GUI thread's priority (the owner's
+  choice); one frame per new size.
+- **Monte Carlo decisions confirmed** (#327): MC-11 to MC-15, MC-17,
+  MC-27 and MC-34 final; `monte_carlo.percentiles` names the owner's
+  answer as its source; PE-21 recorded as a backlog item.
+- **Templates 38 to 42** (#330, #328; TPL-A1 to TPL-A4): new files in
+  `scenarios/templates/`, their golden files in `tests/golden/`, claims
+  in `tests/test_template_claims.py`, and
+  `docs/reference/template-coverage.md`.
+- **Template catalog** (#329; `scenarios/catalog.py`, TC-1, TC-2): Home's
+  groups, the category filter, the palette's order; `scenarios/` has an
+  `__init__.py` so that the wheel carries `catalog.py`.
+- **Records:** the 2.15.0 publication (#320); `docs/changes.md`,
+  "Scenario schema version 8"; the owner's answers (#322, #327).
 
 **Unchanged:** every existing field, command, option, exit status and
-API function, and what runs compute. A batch without a seed draws what
-it drew before. The golden outputs of the 36 earlier templates pass
-unchanged, the Monte Carlo goldens of templates 09 and 25 included.
-The batch summary is still format 1.
+API function, and what runs compute. The golden outputs of the 37
+earlier templates pass unchanged. A batch without a density scale draws
+what it drew before. The batch summary is still format 1.
 **Changed in the interface** (ICD): the scenario file's
-`schema_version` 7, `monte_carlo.seed` and a thermal Monte Carlo's
-`confidence`; `monte-carlo --summarize`, `--csv`, `--report`, `--runs`
-and `--processes`; `thermal --monte-carlo`'s node limits table; the
-batch summary's optional `seed`, node limits, `sensitivity_measure`,
-`percentile_method` and `percentiles`; `archive.provenance.json`'s
-`monte_carlo_seed` and `monte_carlo_settings`; the Monte Carlo report
-and the Runs table CSV with its provenance; the project parameters
-`monte_carlo.percentiles`, `monte_carlo.percentile_method` and
-`monte_carlo.sensitivity_measure`; the finding
-`monte_carlo.nominal_outside`.
-**File format, checked on the code with `git diff 452e164`** (the 2.14.2
-tag): `schema/` has the step to version 7 (`migrations.py`,
-`scenario.py`, `thermal.py`, `field_help.json`), and
-`tests/data/scenario_hashes.json` was recorded again (the 72 hashes of
-the 36 templates changed, template 37's 2 added). Template 37
-(`scenarios/templates/`) and its golden file (`tests/golden/`) are new.
-The 36 earlier templates differ only on their `schema_version` line:
-with the line set back to 6, all 36 are byte for byte the files at
-`452e164`, and the version 6 text and scenario give the hashes recorded
-at `452e164`. The 36 earlier golden files are byte-identical.
-`packaging/` changed only in the version line of the Inno Setup script.
-**Compatibility, checked with 2.14.2's code (the tag, `452e164`):**
-2.14.2 refuses all 37 templates as 2.15.0 saves them, each with
-"scenario file is schema_version 7, but this build of SpaceMissionStudio
-only understands up to version 6" (K-49). 2.15.0 opens the 36 templates
-as 2.14.2 saves them (version 6) and saves them again byte for byte as
-its own templates. 2.14.2 opens a batch summary that 2.15.0 writes
-(template 37, 4 runs, with the seed, the requirements and the new
-optional keys) and ignores the new keys.
+`schema_version` 8 and the dispersion quantity `density_scale`; the
+budgets section's version 2 with `budgets.pointing`; `budgets
+--pointing` (with `--csv`); the API's `pointing_budget`.
+**File format, checked on the code with `git diff
+spacemissionstudio-v2.15.0`** (the tag, on `5ebbd3b`): `schema/` has the
+step to version 8 (`migrations.py`, `scenario.py`, `fields.py`,
+`field_help.json`) and the budgets section's version 2 (`budgets.py`),
+and `tests/data/scenario_hashes.json` was recorded again (the 74 hashes
+of the 37 templates changed, the 10 of templates 38 to 42 added).
+Templates 38 to 42 and their golden files are new. The 37 earlier
+templates differ only on their `schema_version` line: with the line set
+back to 7, all 37 are byte for byte the files at the tag. The 37
+earlier golden files are byte-identical. `packaging/` changed only in
+the version line of the Inno Setup script.
+**Compatibility, checked with 2.15.0's code (the tag, `5ebbd3b`):**
+2.15.0 refuses all 42 templates as 2.16.0 saves them, each with
+"scenario file is schema_version 8, but this build of SpaceMissionStudio
+only understands up to version 7". 2.16.0 opens the 37 templates as
+2.15.0 saves them (version 7) and saves them again byte for byte as its
+own templates.
 
-**Tests:** 5947 passed and 19 skipped on Linux, Python 3.14, on the
+**Tests:** 6294 passed and 19 skipped on Linux, Python 3.14, on the
 release's code, in one run of `pytest tests -q -n 4 -p no:cacheprovider
--o faulthandler_timeout=300` (5967 tests: 3692 outside `tests/gui/`
-and 2275 in it; 5863 passed at 2.14.2, in a run with the reference data
-fetched); coverage was not measured again for this release. One test
-failed: `tests/gui/test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+-o faulthandler_timeout=300` (6314 tests; 5947 passed at 2.15.0);
+coverage was not measured again for this release. One test failed:
+`tests/gui/test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
 (511 px against 509 px). It fails only in this container, on `develop`
-too; CI is the reference. The run ended in 20 min 24 s; no test hung.
-The new test files are `tests/test_monte_carlo_statistics.py` and
-`tests/test_monte_carlo_report.py`; more new tests are in
-`tests/test_monte_carlo.py`, `test_cli.py`, `test_migrations.py`,
-`test_scenario_schema.py`, `test_template_claims.py` and others, and
-in `tests/gui/test_monte_carlo_results_widget.py`,
-`test_monte_carlo_editor.py` and `test_home.py`. The changed test
-lines are in `docs/ui/TEST_CHANGES.md` (MC-25, MC-31, MC-35). The
-release itself changed no test. CI on the tagged commit `5ebbd3b` (run
-45261875723) passed at the first attempt. The release workflow's tests
-(run 45294483106) passed at the first attempt, on the Windows runner
-too.
+too; CI is the reference. The run ended in 26 min 55 s; no test hung.
+The new test files are `tests/test_pointing_budget.py`,
+`tests/test_pointing_budget_schema.py`, `tests/test_template_catalog.py`,
+`tests/gui/test_budgets_pointing.py` and
+`tests/gui/test_home_categories.py`; more new tests are in
+`tests/test_template_claims.py`, `tests/test_monte_carlo.py`,
+`test_migrations.py`, `test_cli.py` and
+others, and in `tests/gui/`. The changed test lines are in
+`docs/ui/TEST_CHANGES.md`. The release itself changed no test.
 
 **Still open:** K-19 (about 0.4 s), K-22, K-23 (smaller), K-24 (fixed
 when a seed is set), K-25, K-26, K-27, K-28, K-30, K-31, K-34, K-35,
-K-36, K-37, K-38, K-39, K-40 (partly met), K-41, K-42, K-43, K-44
-(partly fixed), K-45, K-47, K-48, K-49, K-50, K-51. Closed: none.
+K-36, K-37, K-38, K-39, K-41, K-42, K-43, K-44 (partly fixed), K-45,
+K-47, K-48, K-49, K-50, K-51. Closed: K-40 (met in 2.16.0).
 
-**Changes users notice:** a Batch seed under Scenario › Monte Carlo;
-the Statistics, Sensitivity and, for a thermal batch, Node limits tabs
-and Export report... under Results › Monte Carlo; a Problems panel
-warning for a dispersion that no longer fits its spacecraft; a warning
-on a batch of another scenario; "Processes", the Failed tile as a count
-and the starting attitude in degrees; `monte-carlo --summarize`,
-`--report`, `--csv`, `--runs` and `--processes`; template 37; the Home
-details' buttons one above the other when they do not fit; files saved
-at schema version 7, which 2.14.2 does not open.
+**Changes users notice:** Budgets › Pointing; `density_scale` under
+Scenario › Monte Carlo › Dispersions; Home's templates in nine
+categories with a category filter, and the palette in the same order;
+templates 38 to 42; a new dispersion that runs before its range is
+widened; no process left after Cancel; no error when the Monte Carlo
+results close while a plot is prepared; a window that answers while the
+3D View draws in software; `budgets --pointing`; files saved at schema
+version 8, which 2.15.0 does not open.
 
 ### 5.2 Known problems and limitations (G.2.1<5.2>)
 
@@ -1460,7 +1503,7 @@ at schema version 7, which 2.14.2 does not open.
 | K-08 | Closed: the PNG/SVG export polled the page with overlapping asynchronous queries; a late timer tick read the cleared state (the CI tracebacks), and several answers could save the file twice. One query at a time now, late answers ignored (F-12) | – | `review_log.md` F-12 |
 | K-09 | Closed (2026-10-19): 1054 of the 2314 unit and integration test functions had no docstring. Every one now has a docstring stating what it checks, read from its body; no test code changed (each file's syntax tree without docstrings equals the one before) | – | `SUITP_test_cases.md`; HISTORY.md |
 | K-12 | The Windows setup program is built, installed silently and the installed tool run on a GitHub Windows runner (1.1.1: with an empty support-data cache, the GUI opened offscreen); the wizard has not been clicked through by hand and the GUI not opened on a real Windows machine, and an upgrade over an installed 1.1.0 has not been tried. The graceful SIL close (M15) has not run on Windows | Unknown for interactive use on Windows | `AUDIT.md` sections 5 and 6; `packaging/README.md` |
-| K-13 | Closed: the bundled CelesTrak space weather (observations to 2025-07-20) was refreshed for this release: observations to 2026-10-11, updated 2026-10-12. Refreshed again on 2026-10-19 for the next release: observations to 2026-10-18, CelesTrak's daily forecast to 2026-12-02, updated 2026-10-19 20:34 UTC. Refreshed for 1.3.0 on 2026-10-26: observations to 2026-10-24, daily forecast to 2026-12-07, updated 2026-10-25 23:32 UTC (CelesTrak revised its values from 2026-09-09 and the monthly forecast's 2027-01 and 2027-02). Results of drag runs dated after 2025-07-20 change, because observed solar activity replaces the earlier forecasts. Not refreshed for 2.0.0, 2.1.0, 2.1.1, 2.2.0, 2.3.0, 2.4.0, 2.5.0 nor 2.6.0: on 2026-11-03, twice on 2026-11-04, three times on 2026-11-05, on 2026-11-08 and on 2026-11-09 CelesTrak reset or refused every connection from the environment the release was prepared in, so 2.0.0 to 2.6.0 carry 1.3.0's file (observations to 2026-10-24, forecast to 2026-12-07). Refreshed for 2.7.0 on 2026-11-10: observations to 2026-11-09, daily forecast to 2026-12-24, updated 2026-11-10 21:33 UTC (CelesTrak revised its observed values from 2026-09-17 and NOAA the monthly forecast's 2027-01 to 2031-09, which no run uses while an MSFC prediction is there); drag on dates from 2026-09-17 to 2026-12-24 changes, no template does. Refreshed for 2.8.0 on 2026-11-15: observations to 2026-11-14, daily forecast to 2026-12-29, updated 2026-11-15 20:37 UTC (CelesTrak reset the first two connections from this environment and answered the third); drag on dates from 2026-11-10 to 2026-12-29 changes, no template does (the golden outputs pass unchanged). Not refreshed for 2.9.0: on 2026-11-16 CelesTrak reset all three connections from this environment, so 2.9.0 carries 2.8.0's file. Not refreshed for 2.10.0: on 2026-11-17 CelesTrak reset the connection again, so 2.10.0 carries the same file. Not refreshed for 2.11.0: later on 2026-11-17 CelesTrak reset the connection again, so 2.11.0 carries the same file. Not refreshed for 2.12.0: the release was prepared without a refresh (not tried), so 2.12.0 carries the same file. Refreshed for 2.13.0 on 2026-11-19: observations to 2026-11-18, daily forecast to 2027-01-02, updated 2026-11-19 17:33 UTC (CelesTrak answered the first connection; it revised its 81-day averages from 2026-10-08, and its monthly forecast now starts in February 2027, so the file has no row from 2027-01-03 to 2027-01-31, which NASA MSFC's prediction covers); drag on dates from 2026-10-08 to 2027-01-02 changes, no template does (the golden outputs pass unchanged). NASA MSFC's November 2026 prediction is still the latest issue (checked on 2026-11-19). Not refreshed for 2.13.1: it was refreshed for 2.13.0 the day before, so 2.13.1 carries 2.13.0's file. Not refreshed for 2.14.0: on 2026-11-22 CelesTrak reset all three connections from this environment (the TLS handshake, `curl` error 35), so 2.14.0 carries 2.13.0's file; NASA MSFC's November 2026 prediction is still the latest issue (its page, checked on 2026-11-22, links `nov2026f10-prd.txt`). Not refreshed for 2.14.1: on 2026-11-22 at 23:16 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.1 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`, the bundled prediction. Not refreshed for 2.14.2: on 2026-11-23 from 04:27 to 04:28 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.2 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`. Not refreshed for 2.15.0: on 2026-11-23 at 18:45 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.15.0 carries 2.13.0's file; NASA MSFC's page, checked at the same time, still links `nov2026f10-prd.txt`, the bundled prediction. Users fetch the current one in the app (Home's reference-data card, **Settings > Reference data**) or with `spacemissionstudio spaceweather-download` | Drag on dates after 2026-11-18 uses CelesTrak's forecast until the file is fetched | `spacemissionstudio/data/spaceweather/README.md` |
+| K-13 | Closed: the bundled CelesTrak space weather (observations to 2025-07-20) was refreshed for this release: observations to 2026-10-11, updated 2026-10-12. Refreshed again on 2026-10-19 for the next release: observations to 2026-10-18, CelesTrak's daily forecast to 2026-12-02, updated 2026-10-19 20:34 UTC. Refreshed for 1.3.0 on 2026-10-26: observations to 2026-10-24, daily forecast to 2026-12-07, updated 2026-10-25 23:32 UTC (CelesTrak revised its values from 2026-09-09 and the monthly forecast's 2027-01 and 2027-02). Results of drag runs dated after 2025-07-20 change, because observed solar activity replaces the earlier forecasts. Not refreshed for 2.0.0, 2.1.0, 2.1.1, 2.2.0, 2.3.0, 2.4.0, 2.5.0 nor 2.6.0: on 2026-11-03, twice on 2026-11-04, three times on 2026-11-05, on 2026-11-08 and on 2026-11-09 CelesTrak reset or refused every connection from the environment the release was prepared in, so 2.0.0 to 2.6.0 carry 1.3.0's file (observations to 2026-10-24, forecast to 2026-12-07). Refreshed for 2.7.0 on 2026-11-10: observations to 2026-11-09, daily forecast to 2026-12-24, updated 2026-11-10 21:33 UTC (CelesTrak revised its observed values from 2026-09-17 and NOAA the monthly forecast's 2027-01 to 2031-09, which no run uses while an MSFC prediction is there); drag on dates from 2026-09-17 to 2026-12-24 changes, no template does. Refreshed for 2.8.0 on 2026-11-15: observations to 2026-11-14, daily forecast to 2026-12-29, updated 2026-11-15 20:37 UTC (CelesTrak reset the first two connections from this environment and answered the third); drag on dates from 2026-11-10 to 2026-12-29 changes, no template does (the golden outputs pass unchanged). Not refreshed for 2.9.0: on 2026-11-16 CelesTrak reset all three connections from this environment, so 2.9.0 carries 2.8.0's file. Not refreshed for 2.10.0: on 2026-11-17 CelesTrak reset the connection again, so 2.10.0 carries the same file. Not refreshed for 2.11.0: later on 2026-11-17 CelesTrak reset the connection again, so 2.11.0 carries the same file. Not refreshed for 2.12.0: the release was prepared without a refresh (not tried), so 2.12.0 carries the same file. Refreshed for 2.13.0 on 2026-11-19: observations to 2026-11-18, daily forecast to 2027-01-02, updated 2026-11-19 17:33 UTC (CelesTrak answered the first connection; it revised its 81-day averages from 2026-10-08, and its monthly forecast now starts in February 2027, so the file has no row from 2027-01-03 to 2027-01-31, which NASA MSFC's prediction covers); drag on dates from 2026-10-08 to 2027-01-02 changes, no template does (the golden outputs pass unchanged). NASA MSFC's November 2026 prediction is still the latest issue (checked on 2026-11-19). Not refreshed for 2.13.1: it was refreshed for 2.13.0 the day before, so 2.13.1 carries 2.13.0's file. Not refreshed for 2.14.0: on 2026-11-22 CelesTrak reset all three connections from this environment (the TLS handshake, `curl` error 35), so 2.14.0 carries 2.13.0's file; NASA MSFC's November 2026 prediction is still the latest issue (its page, checked on 2026-11-22, links `nov2026f10-prd.txt`). Not refreshed for 2.14.1: on 2026-11-22 at 23:16 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.1 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`, the bundled prediction. Not refreshed for 2.14.2: on 2026-11-23 from 04:27 to 04:28 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.14.2 carries 2.13.0's file; NASA MSFC's page still links `nov2026f10-prd.txt`. Not refreshed for 2.15.0: on 2026-11-23 at 18:45 UTC CelesTrak again reset all three connections from this environment (`curl` error 35), so 2.15.0 carries 2.13.0's file; NASA MSFC's page, checked at the same time, still links `nov2026f10-prd.txt`, the bundled prediction. Not refreshed for 2.16.0: on 2026-11-24 at 20:58 UTC CelesTrak reset the one connection tried from this environment (`curl` error 35; not tried again), so 2.16.0 carries 2.13.0's file. Users fetch the current one in the app (Home's reference-data card, **Settings > Reference data**) or with `spacemissionstudio spaceweather-download` | Drag on dates after 2026-11-18 uses CelesTrak's forecast until the file is fetched | `spacemissionstudio/data/spaceweather/README.md` |
 | K-14 | Addressed, under watch: platform test failures. On Windows, two tests fail intermittently in CI (PR #64, 2026-10-14; each passed on the same commit in another run). `test_the_altitude_trade_runs_its_altitudes_in_parallel_processes`: a worker hit a Basilisk error whose exception cannot be pickled, so its message is lost (cause not yet known; suspected: the cached space-weather file opened by one worker while another replaces it). `test_a_step_without_deadline_waits_while_earlier_steps_are_still_answered`: its fake flight software went over the 0.3 s step timeout on a loaded runner (a test margin). On macOS (PR #65, 2026-10-14), `test_forms_stay_at_a_readable_width` and `test_a_template_row_keeps_its_customize_button_close` fail their own precondition: Qt's `cocoa` platform fits the 2560 x 1440 test window to the runner's screen, so the page is 618 px wide and there is no wide screen to check (a test set-up problem, not the layout). Fixed on the ROE branch (PR #73, commit `f601576c1`, 2026-10-18): the test window is laid out with `WA_DontShowOnScreen`, which the screen does not constrain, and the fixture asserts its 2560 x 1440 size; macOS CI then passed both (3347 passed, 0 failed, 11 skipped, run 39165811899). On the release commit `f288e0c73` (run 38633749308) Windows passed (3224 passed, 16 skipped) and macOS failed these two (3229 passed, 2 failed, 11 skipped). By the user's decision 1.0.0 is a Linux release; Windows and macOS are fixed and released later. Windows pair addressed on 2026-10-18 (after PR #73): the SIL test's step timeout is 1 s against 30 ms answers (it was 0.3 s against 20 ms), and the altitude trade's lost message is a confirmed bug, now fixed: Basilisk's `BasiliskError` cannot be pickled (its module `_bskLogging` does not import by that name), so any Basilisk error in a worker arrived as a pickling error. Workers now send such an error as a `BudgetError` with its type, message and traceback. The suspected cause is removed too: a complete space-weather file is no longer replaced by a second worker's copy, which on Windows could meet the first worker opening it. The Basilisk error behind the 2026-10-14 failure was never seen, so its cause is not confirmed; if it recurs, its message now shows. macOS, 2026-10-19 (PR #75, run 39218996167): `test_the_keys_work_where_results_has_the_focus` timed out waiting for its window to become active (passed on the PR's previous commit). On macOS activation is per application, and the parallel test workers are separate processes whose windows can keep it from this one; the test now sets Qt's active window itself (`QApplication.setActiveWindow`), which is what the shortcut map checks. Not reproducible on Linux (offscreen activates every shown window); confirmed only by the next macOS CI runs. Windows, 2026-10-19 (PR #76, job 118026573080): `test_thousands_of_dropped_steps_never_block_the_link[tcp]` failed with "the flight software took no STEP for 10 s" at step 16172 of 20000; the other Windows job on the same commit and the one re-run passed. The fake flight software was waiting to read when the link closed, so the simulation side's send found the socket not writable for 10 s, or did not run for that long. Cause not confirmed: not reproduced on Linux in 60 runs under CPU overload. A related defect was confirmed and fixed: `SocketTransport.send` gave up as soon as its time had run out, before trying the socket again, so a stall of the simulation's own process counted as the flight software's silence. The send now counts its time from the last bytes the peer took and tries once more without waiting before it gives up (`test_a_stall_of_this_process_is_not_the_peers_silence`, which fails on the previous code). Whether this was the Windows failure is confirmed only if it does not recur. It recurred on 2026-10-21 (PR #90, job 119083739177, on the 1.1.1 release commit `9dca37d5f`): the same message at step 10907 of 20000, and again the fake flight software was waiting to read when the link closed. So the send's stall handling was not the cause, and the cause is still not known. Not a Basilisk thread holding Python's interpreter lock: a Basilisk run in a second thread let the other thread run at least every 0.03 s (measured on Linux). Only this test has shown it (20000 steps, every one dropped, over TCP on a Windows runner); it may also stop a Windows SIL session that drops thousands of steps, with "the flight software took no STEP for 10 s". Not reproduced since (PR #91, 2026-10-21): the test alone passed 240 times on `windows-latest` (four workers side by side, two processes keeping the CPU busy) and the whole suite passed seven times on Windows (six runs of the new workflow "SpaceMissionStudio SIL stress (Windows)" and the platforms job). On a stall the test now fails with the state of both ends of the link: frames sent and dropped, bytes received and not read, the socket buffer sizes, what the fake flight software last did, when, and its stack, and the last `select()` calls of the send. The next recurrence names its cause. It recurred three times on 2026-10-27 (runs 40526819275 and 40543074495, twice) and named it: every `select()` of the stalled send saw the socket readable and not writable, the fake flight software alive and reading its backlog (12462 frames sent, 4568 read). The send's 10 s limit counted only bytes the peer took, and Windows reopens a full receive window only once the reader has freed much of it, so a peer that was answering looked silent. Fixed in 2.0.0 (#128): bytes the peer sends count too (`SocketTransport.send`); `test_a_peer_that_keeps_answering_is_not_silent` fails without the fix | Windows: an altitude trade with several workers may have failed with an unexplained error; a recurrence now names the error. macOS: the wide-screen layout was not checked in CI until PR #73 | PR #64 and #65 comments |
 | K-15 | Fixed (2026-10-19): a run around, or with a third body, `mars` or `jupiter` passed validation and then failed. The bundled DE430 ephemeris has the Mars and Jupiter system barycentres, not the planets: a `mars` run stopped the whole process with `SPICE(SPKINSUFFDATA)` (the GUI runs in its own process, so the app closed), and Basilisk has no body named `jupiter`. The schema now offers `mars barycenter` and `jupiter barycenter` (Basilisk gives them the planet's mass and radius) and refuses the two old names with the one to use; a test flies every offered body | A scenario with `mars` or `jupiter` could not be run, and in the GUI closed the app; no result was ever produced with them | `tests/test_central_bodies.py`; HISTORY.md |
 | K-16 | Fixed (2026-10-19): a thermal sensor's heat balance used the solar flux at Earth's distance from the Sun on the epoch, whatever the central body. Basilisk's `sensorThermal` assumes 1366 W/m^2 at any distance, and the tool's correction of it took Earth's flux. The flux is now the one at the spacecraft's own distance from the Sun when the run starts (SPICE), for every central body | Thermal sensors around the Sun, Mercury or Venus ran too cold, and around Mars, Jupiter or Eros too hot: around Mars on 2030-01-01 they absorbed 1408 W/m^2 instead of 713 W/m^2. Runs around Earth or the Moon are unchanged | `tests/test_sensor_thermal_flux.py`; HISTORY.md |
@@ -1490,18 +1533,18 @@ at schema version 7, which 2.14.2 does not open.
 | K-37 | Limitation (2026-11-17): the operations planner's models are simpler than the simulation: a one-axis slew model of the controller (planned to half the convergence threshold, O-25), the panel's angle to the Sun from the planned attitude, resources at the geometry's step (O-26); no weather or clouds, conjunctions, a ground network's costs or bookings, or binary telecommands. Without the IERS Earth orientation files the geometry is about 10 km off on the ground (IAU_EARTH in the run), so a window at a limit can hold an image or not: template 35 plans 17 or 18 of 23 images. A week of template 35 takes about 40 s to plan with 20 improvement steps, more than the design's aim (a few seconds), and about ten minutes to fly. The AEM's rotation direction (EME2000 to the body) follows the CCSDS NDM/XML schema and version 1's convention; the Blue Book could not be read to confirm it (O-20) | **Fly and verify** says how far the simplifications matter for a spacecraft; an AEM reader that assumes the other direction gets the inverse rotation | `docs/reference/limitations.md`, "Operations planning"; `docs/developer/operations-planning-decisions.md` O-20, O-25, O-26 |
 | K-38 | Limitation (2026-11-17): 2.10.0 and earlier do not open a scenario file saved by 2.11.0, with or without a `budgets` section: 2.11.0 saves every file at schema version 5 (B-01), and an older version refuses a newer schema version. 2.10.0's message: "scenario file is schema_version 5, but this build of SpaceMissionStudio only understands up to version 4 -- upgrade SpaceMissionStudio to open it, or use the version that wrote it." (its `validate` command prints it after "INVALID:" and exits with status 1). Checked with 2.10.0's code (`b074260`) on the 36 templates as 2.11.0 saves them and a file with a `budgets` section: all 37 are refused with that message. 2.11.0 opens and validates the 36 templates as 2.10.0 saves them (version 4) with no message | A team that shares scenario files updates together; a user of 2.10.0 or earlier still opens every file those versions saved | `CHANGELOG.md` 2.11.0, Who should update; `docs/changes.md`, 2026-11-17 |
 | K-39 | Limitation (2026-11-17): phase 1 of the System Budget Studio merge. The run does not use the `budgets` section: it still takes `dry_mass_kg` and the power budget's bus load, and the power modes become a load in the simulation only in phase 2. No budget report is exported: each Budgets page copies its table as CSV with the provenance, and `budgets --csv` prints the totals (B-25). An IDM-CIC model gives no converter efficiency, distribution loss or power margin, so `idm-import --budgets` writes them as placeholders, and the power at the source stays unknown until the user sets them (B-08) | The budgets are a design check beside the run, not an input of it | `docs/user-manual/budgets.md`; `docs/developer/system-budget-phase1-design.md`; `docs/developer/system-budget-decisions.md` B-08, B-25 |
-| K-40 | Met on branch `fix/3d-view-move` (2026-11-24), not yet released; partly met in 2.14.2 (2026-11-23, `29bbdb5`). Was a limitation (2026-11-18): on a slow Windows machine the Budgets area took 50 ms or more of the GUI thread to show; on the Windows CI runner each move into its own window or back took 50 to 81 ms, on Linux 10 to 11 ms. **Cause found:** the Equipment page's word-wrapped note made the area's page report a height for width, and Qt's stacked layout then asked every area's page, the hidden ones too, for its height at each show (on Linux, without the note's height for width, the show took 0.4 ms instead of 8 to 11 ms). `shell.AreaPage` now reports none; the area shows in about 1 ms on Linux, and a move takes 3 to 5 ms. The move test's limit is a plain 50 ms again and passed on the Windows runner (CI run 45109373728); a new test checks that no hidden area is asked its height. **Partly met in 2.14.2:** in the release workflow (run 45148067729, attempt 1) the 3D View's slowest move took 64.0 ms, and 72.7 ms when timed again. **Second cause found (2026-11-24):** not the move's own work (3 to 5 ms of the GUI thread's processor time on Linux; no native window or render widget host made again, since the offscreen platform's Qt Quick draws in software) but the wait for a processor. After each move the 3D View's page draws its new size in software on every processor (on the Windows runner ANGLE on WARP, "Microsoft Basic Render Driver", 30.7 ms a frame; 240 to 255 ms of processor time per move on Linux, two frames per move). On the Windows runner those threads and Chromium's GPU, compositor and IO threads ran at "above normal" priority and the GUI thread at "normal" (CI run 45296869864: slowest of 16 moves 56.2 ms; with the GUI thread at "above normal" 10.4 ms). **Fix:** `background_threads.install` gives the GUI thread that priority (nice -8 on Linux where allowed; the workers it starts take it, as before), and the page draws each new size once. After the fix on the Windows runner (CI run 45304662719), the move test's protocol ten times: slowest of 60 moves 13.6 ms (3D View), 3.7 ms (Thermal), 8.6 ms (Budgets). The move test's limit stays a plain 50 ms; two new tests check the priorities and the single frame | None once released; before: on a computer without a graphics card the window could wait for the 3D View's software drawing after each change of the view's size (up to 64 to 73 ms of the GUI thread on the Windows runner; design rule 6: about 50 ms at most) | HISTORY.md, "2.12.0 windows and views: breakout windows", "2.14.2: the Budgets area shows quickly", "Release 2.14.2 published" and "The 3D View's move: the GUI thread first"; `docs/ui/TEST_CHANGES.md`; `docs/DECISIONS.md`, "The GUI thread outranks the 3D View's software drawing"; `BACKLOG.md`, "Done" |
+| K-40 | Met in 2.16.0 (2026-11-24, #321); partly met in 2.14.2 (2026-11-23, `29bbdb5`). Was a limitation (2026-11-18): on a slow Windows machine the Budgets area took 50 ms or more of the GUI thread to show; on the Windows CI runner each move into its own window or back took 50 to 81 ms, on Linux 10 to 11 ms. **Cause found:** the Equipment page's word-wrapped note made the area's page report a height for width, and Qt's stacked layout then asked every area's page, the hidden ones too, for its height at each show (on Linux, without the note's height for width, the show took 0.4 ms instead of 8 to 11 ms). `shell.AreaPage` now reports none; the area shows in about 1 ms on Linux, and a move takes 3 to 5 ms. The move test's limit is a plain 50 ms again and passed on the Windows runner (CI run 45109373728); a new test checks that no hidden area is asked its height. **Partly met in 2.14.2:** in the release workflow (run 45148067729, attempt 1) the 3D View's slowest move took 64.0 ms, and 72.7 ms when timed again. **Second cause found (2026-11-24):** not the move's own work (3 to 5 ms of the GUI thread's processor time on Linux; no native window or render widget host made again, since the offscreen platform's Qt Quick draws in software) but the wait for a processor. After each move the 3D View's page draws its new size in software on every processor (on the Windows runner ANGLE on WARP, "Microsoft Basic Render Driver", 30.7 ms a frame; 240 to 255 ms of processor time per move on Linux, two frames per move). On the Windows runner those threads and Chromium's GPU, compositor and IO threads ran at "above normal" priority and the GUI thread at "normal" (CI run 45296869864: slowest of 16 moves 56.2 ms; with the GUI thread at "above normal" 10.4 ms). **Fix:** `background_threads.install` gives the GUI thread that priority (nice -8 on Linux where allowed; the workers it starts take it, as before), and the page draws each new size once. After the fix on the Windows runner (CI run 45304662719), the move test's protocol ten times: slowest of 60 moves 13.6 ms (3D View), 3.7 ms (Thermal), 8.6 ms (Budgets). The move test's limit stays a plain 50 ms; two new tests check the priorities and the single frame | None from 2.16.0; before: on a computer without a graphics card the window could wait for the 3D View's software drawing after each change of the view's size (up to 64 to 73 ms of the GUI thread on the Windows runner; design rule 6: about 50 ms at most) | HISTORY.md, "2.12.0 windows and views: breakout windows", "2.14.2: the Budgets area shows quickly", "Release 2.14.2 published" and "The 3D View's move: the GUI thread first"; `docs/ui/TEST_CHANGES.md`; `docs/DECISIONS.md`, "The GUI thread outranks the 3D View's software drawing"; `BACKLOG.md`, "Done" |
 | K-41 | Limitation (2026-11-18): the Windows CI job draws Chromium's compositor in software (`--disable-gpu-compositing`), as it already drew WebGL (SwiftShader), because the runner has no GPU: with the compositor's Direct3D shared images, WebGL contexts were lost at random and a different set of 3D View tests failed in each run. The app's own Chromium flags (`gui/webengine_setup.py`) are unchanged. So CI on Windows does not test the 3D View, its own window or the WebGL recovery with the GPU compositor, and they have not been tried on a Windows machine with a GPU (see also K-12) | Unknown for the 3D View on Windows with a GPU; a lost context is recovered up to five times, then the view says WebGL is gone | `docs/DECISIONS.md`, "Breakout windows" (the owner's decision, 2026-11-18); `.github/workflows/spacemissionstudio.yml` |
 | K-42 | Not verified (2026-11-18): the screenshot harness (`scripts/capture_ui_screens.py`) was not run for the new 2D map; a software centre's page for a downloaded `.deb` before it is installed was not seen (it needs Ubuntu 24.04 with a desktop; appstreamcli and desktop-file-validate accept the files); the taskbar icon and its AppUserModelID were not seen on a real Windows machine; Inno Setup compiles the script with the `.ico` only in the Windows installer workflow | The map has no reference screenshot; how the App Center and the Windows taskbar show the app is unknown | HISTORY.md, "Desktop integration", "A new app icon" and "ground tracks, stations and a live 2D map" |
 | K-43 | Limitation (2026-11-18): the 2.12.0 windows and views. On Wayland a view's window keeps only its size, not its place; a crash loses the windows' places since the start, as it loses the rest of the layout. The 2D map uses geocentric latitude (at most about 0.19 deg from geodetic) and says so. A run shown while it runs has no temperatures: the thermal analysis runs after the run (T-01, T-42). The app icon's Earth layer takes about 100 ms the first time it is made, once per process at start-up, above the 50 ms target | Small; the map says that its latitude is geocentric, and the user manual says what Wayland keeps | `docs/developer/windows-views-design.md`; `docs/DECISIONS.md`, "Ground tracks, stations and the live map" and "The app icon shows a mission" |
-| K-44 | Partly fixed for 2.13.1 (2026-11-20, #302) and 2.14.1 (#310): intermittent crashes around background threads, seen in CI on 2026-11-19. **Cause found and fixed** for the Windows access violation in `_SpaceWeatherWarmUp` ("Garbage-collecting", in the 3D step `test_live_run_3d`) and the Linux segmentation fault in `test_results_widget.py::test_an_export_runs_off_the_gui_thread_with_progress_and_cancel`: Python's garbage collector ran in the worker thread that allocated and destroyed widgets of the GUI thread there. A Linux script with the same stacks crashed five runs in five; with the fix, none in four. Garbage is now collected on the GUI thread only (`gui/background_threads.py`), the start-up warm-ups and a run's first import of the engine hold one lock, and two more event filters keep no Python attribute (the B11 rule). **Cause found and fixed for 2.14.1** (2026-11-22, branch `fix/2.14.1-small`, #310) for "Slot 'EmptyStack::' not found" (the first test of a process) and, by the same mechanism, "Slot 'MainWindow::' not found": Python's collector freed a dropped widget tree one wrapper at a time, and shiboken deleted a child before its owner (a `gdb` backtrace: `gc_collect`, a wrapper's clear, `dict_dealloc`, `QListWidget::~QListWidget`). The child's last signal (an item widget's model reset, a tab widget's `currentChanged`) reached the owner's method after its wrapper was cleared. Reproduced in a fresh interpreter for a list in `EmptyStack` and for a window with view tabs; the CI run of the `MainWindow` message has no log, so that run itself is not proven. These signals now reach their owner through `widgets.connect_while_alive` (a weak reference). **Still open:** the Windows 0xC0000005 of the warm-up check's child process (`test_the_figure_warm_up_loads_what_the_first_plot_needs`, #297; it has no Python worker thread and its stdout was empty); not reproduced. **Also seen** on 2026-11-24: a Windows crash of a test worker in the "platforms (windows-latest)" job, in `test_an_older_saved_layout_opens_without_error` (#327, commit `d42ba29`, job 138464892731); the one re-run passed; not reproduced. Earlier causes fixed: the toast follower's Python state (B11 follow-up) and stale layout item wrappers (2.13.0) | Unknown; not reported from use of the app. A crash closes the window. The fixed cause could strike whenever a worker ran (a run, an export, the start-up warm-ups). In the app, "Slot not found" was logged as an uncaught error, not a crash; under pytest-qt it fails the test that runs at that moment | `BACKLOG.md`, "Needs human"; HISTORY.md, "2.13.1: background-thread crashes (K-44)", "B11 CI follow-up" and "2.14.1: small fixes" |
-| K-45 | Owner decision (2026-11-19): CI's "Windows (MAX Python)" job, in Basilisk's own "Pull Request" workflow, fails the Basilisk framework test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling` on GitHub's runner image 20261111 (MSVC 19.52.37029); it passed on image 20261103 (MSVC 19.51). It fails on every branch, also without a change of SpaceMissionStudio. The owner chose to merge SpaceMissionStudio's pull requests (B10 to B12 and the 2.13.0 release) with this one check red, and never to change the framework. The decision also covers the 2.13.1, 2.14.0, 2.14.1 and 2.15.0 release pull requests, for this framework test only. The "SpaceMissionStudio" workflow, which the release check and the release workflow need, is a separate check | None on SpaceMissionStudio's results: the installers carry Basilisk 2.12.0 from PyPI, not a build of this repository's framework | HISTORY.md, "Release 2.13.0 prepared", "Release 2.14.0 prepared", "Release 2.14.1 prepared" and "Release 2.15.0 prepared"; the audit report's owner decision |
+| K-44 | Partly fixed for 2.13.1 (2026-11-20, #302), 2.14.1 (#310) and 2.16.0 (#323): intermittent crashes around background threads, seen in CI on 2026-11-19. **Cause found and fixed** for the Windows access violation in `_SpaceWeatherWarmUp` ("Garbage-collecting", in the 3D step `test_live_run_3d`) and the Linux segmentation fault in `test_results_widget.py::test_an_export_runs_off_the_gui_thread_with_progress_and_cancel`: Python's garbage collector ran in the worker thread that allocated and destroyed widgets of the GUI thread there. A Linux script with the same stacks crashed five runs in five; with the fix, none in four. Garbage is now collected on the GUI thread only (`gui/background_threads.py`), the start-up warm-ups and a run's first import of the engine hold one lock, and two more event filters keep no Python attribute (the B11 rule). **Cause found and fixed for 2.14.1** (2026-11-22, branch `fix/2.14.1-small`, #310) for "Slot 'EmptyStack::' not found" (the first test of a process) and, by the same mechanism, "Slot 'MainWindow::' not found": Python's collector freed a dropped widget tree one wrapper at a time, and shiboken deleted a child before its owner (a `gdb` backtrace: `gc_collect`, a wrapper's clear, `dict_dealloc`, `QListWidget::~QListWidget`). The child's last signal (an item widget's model reset, a tab widget's `currentChanged`) reached the owner's method after its wrapper was cleared. Reproduced in a fresh interpreter for a list in `EmptyStack` and for a window with view tabs; the CI run of the `MainWindow` message has no log, so that run itself is not proven. These signals now reach their owner through `widgets.connect_while_alive` (a weak reference). **Still open:** the Windows 0xC0000005 of the warm-up check's child process (`test_the_figure_warm_up_loads_what_the_first_plot_needs`, #297; it has no Python worker thread and its stdout was empty); not reproduced. **Also seen** on 2026-11-24: a Windows crash of a test worker in the "platforms (windows-latest)" job, in `test_an_older_saved_layout_opens_without_error` (#327, commit `d42ba29`, job 138464892731); the one re-run passed; not reproduced. **Fixed for 2.16.0** (#323), of the same kind: on the Windows runner a Monte Carlo insight worker emitted a signal of its view while the view was in its destructor ("TypeError: only accepts 0 argument(s), 3 given!", CI of #322). The workers now report through a relay object of their own, and a deleted view gets no late result (`gui/monte_carlo_insight.py`; HISTORY.md, "Monte Carlo workers report through a relay"). Earlier causes fixed: the toast follower's Python state (B11 follow-up) and stale layout item wrappers (2.13.0) | Unknown; not reported from use of the app. A crash closes the window. The fixed cause could strike whenever a worker ran (a run, an export, the start-up warm-ups). In the app, "Slot not found" was logged as an uncaught error, not a crash; under pytest-qt it fails the test that runs at that moment | `BACKLOG.md`, "Needs human"; HISTORY.md, "2.13.1: background-thread crashes (K-44)", "B11 CI follow-up" and "2.14.1: small fixes" |
+| K-45 | Owner decision (2026-11-19): CI's "Windows (MAX Python)" job, in Basilisk's own "Pull Request" workflow, fails the Basilisk framework test `LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling` on GitHub's runner image 20261111 (MSVC 19.52.37029); it passed on image 20261103 (MSVC 19.51). It fails on every branch, also without a change of SpaceMissionStudio. The owner chose to merge SpaceMissionStudio's pull requests (B10 to B12 and the 2.13.0 release) with this one check red, and never to change the framework. The decision also covers the 2.13.1, 2.14.0, 2.14.1, 2.15.0 and 2.16.0 release pull requests, for this framework test only. The "SpaceMissionStudio" workflow, which the release check and the release workflow need, is a separate check | None on SpaceMissionStudio's results: the installers carry Basilisk 2.12.0 from PyPI, not a build of this repository's framework | HISTORY.md, "Release 2.13.0 prepared", "Release 2.14.0 prepared", "Release 2.14.1 prepared", "Release 2.15.0 prepared" and "Release 2.16.0 prepared"; the audit report's owner decision |
 | K-46 | Closed: fixed for 2.13.1 (2026-11-20, #300 and #301). Limitation (2026-11-19): what the UI audit left for later, as users see it. Plots: fixed for 2.13.1 (`ui/plot-items`, #301): the event bands and mode lines are the neutral `chart.band`, the Timeline's model-analysis, thermal and plan events the neutral `chart.event` (not the accent), a y axis spans at least 1e-6 of its largest value (ticks such as "97.03001"), and a wheel's line carries its name from the scenario; the series, the CSV columns and the golden files are unchanged (`tests/gui/test_plot_items.py`). Fixed for 2.13.1 (`ui/small-fixes-2.13.1`, #300): Run › Thermal › Notes wrote "Energy residual [J]" with two or three significant figures (5.11e+03, 4.9e+03); each column now has three (4.90e+03). Budgets › Power's items table scrolled inside itself with the Inspector open at 1280 px; its number headings are now two or three lines and it fits (HISTORY.md, "2.13.1: small window fixes") | – (was small: how the window shows values, not the values) | `CHANGELOG.md` 2.13.1, Fixed; `CHANGELOG.md` 2.13.0, Known limits |
 | K-47 | Limitation (2026-11-22): 2.13.1 and earlier do not open a scenario file saved by 2.14.0, with or without `monte_carlo.requirements`: 2.14.0 saves every file at schema version 6 (decision MC-4), and an older version refuses a newer schema version. 2.13.1's message: "scenario file is schema_version 6, but this build of SpaceMissionStudio only understands up to version 5 -- upgrade SpaceMissionStudio to open it, or use the version that wrote it." Checked with 2.13.1's code (`a9af24e`) on the 36 templates as 2.14.0 saves them and template 25 with a requirement: all 37 are refused with that message. 2.14.0 opens and validates the 36 templates as 2.13.1 saves them (version 5) with no message, and saves them again byte for byte as its own templates. A batch summary stays at format 1: 2.13.1 opens one that 2.14.0 writes and ignores its new keys | A team that shares scenario files updates together; a user of 2.13.1 or earlier still opens every file those versions saved | `CHANGELOG.md` 2.14.0, Who should update; `docs/changes.md`, "Scenario schema version 6" |
 | K-48 | Limitation (2026-11-22): Monte Carlo phase A. A requirement limits one outcome (at least or at most a value); its Clopper-Pearson bound is one-sided and assumes independent runs with one probability of failure each; there is no requirement on a combination of outcomes and no outcome from another series, and a crashed run counts as not meeting every requirement. A case runs again only with the batch's own, unchanged scenario (MC-17) and the data files it used in the batch (MC-19), and without the live 3D View; the window checks the data files only when the case is built, after the run shown before is cleared; cases of a batch made by 2.13.1 or earlier, and crashed cases, are not checked for data files. Two batches of one scenario still draw the same values (K-24). Fixed for 2.14.1 (#310): the first Monte Carlo batch or case of a process imported pandas on the GUI thread (about 280 ms, above the 50 ms target; for a batch since before 2.14.0, MC-18). The batch's or the case's worker now imports it with `FIRST_IMPORTS` held, and the GUI thread's part of the first start is under 1 ms (258 to 271 ms before; `tests/gui/test_run_worker.py`) | Small; each refusal says why and what to do, and the bound is shown next to the estimate | `docs/developer/monte-carlo-plan.md`; `docs/DECISIONS.md` MC-16 to MC-19; `docs/reference/limitations.md`; HISTORY.md, "2.14.1: small fixes" |
 | K-49 | Limitation (2026-11-23): Monte Carlo phase B, part 1, in 2.15.0 (#313). 2.14.2 and earlier do not open a scenario file saved by 2.15.0, with or without a batch seed or a thermal confidence: every file is saved at schema version 7 (decisions MC-20 and MC-22). 2.14.1's and 2.14.2's message: "scenario file is schema_version 7, but this build of SpaceMissionStudio only understands up to version 6 -- upgrade SpaceMissionStudio to open it, or use the version that wrote it." Checked with 2.14.1's code (`7a9a25f`) on the 36 templates as this version saves them, template 25 with a seed and template 34 with a confidence: all 38 are refused with that message. This version opens the 36 templates as 2.14.1 saves them (version 6) with no migration recorded and saves them again byte for byte as its own templates. A batch summary stays at format 1: 2.14.1 opens a seeded batch and a thermal batch with node limits and ignores the new keys. Checked again for the release with 2.14.2's code (the tag `452e164`): it refuses all 37 templates as 2.15.0 saves them with that message, 2.15.0 opens 2.14.2's 36 templates and saves them byte for byte as its own, and 2.14.2 opens a 2.15.0 batch summary of template 37 (seed, requirements, percentiles, sensitivity measure) and ignores the new keys. The batch seed relies on Basilisk 2.12.0's order (seed each run with its index times 10, build, draw; plan risk R1): a Basilisk that seeds otherwise fails every run of a seeded batch with a message, not silently. The node limits' bound is one-sided and assumes independent runs with one probability each; a failed thermal run counts as leaving every range; a thermal batch saved before has no node limits | A team that shares scenario files updates together; a batch without a seed is unchanged | `docs/developer/monte-carlo-plan.md`; `docs/DECISIONS.md` MC-20 to MC-25; `docs/reference/limitations.md`; `docs/changes.md`, "Scenario schema version 7" |
-| K-50 | Limitation (2026-11-23): Monte Carlo phase B, part 2, in 2.15.0 (#314). The Sensitivity tab gives one drawn value against one outcome (Spearman's rank correlation, or Pearson's by `monte_carlo.sensitivity_measure`): no partial correlation and no variance-based index, so it does not separate the effects of several drawn values; a pair needs 3 runs and a value that varies ("—" otherwise). The Statistics tab's percentiles (`monte_carlo.percentile_method`, NumPy's linear, Hyndman and Fan's definition 7) describe the runs and carry no confidence; the percentiles shown, 1, 5, 50, 95 and 99 %, are a provisional default (`monte_carlo.percentiles`, source "TBD", decision MC-27) that the owner may change. The final offsets are read to the millimetre for both. The command line prints them since part 3 (K-51). The thermal and operations batches keep their mean ± 3 standard deviation band, now labelled "not a probability bound". The trust check covers the dry mass, the drag and the SRP coefficient while Monte Carlo is on; the starting attitude is not checked (its Euler angles are not unique). The note that a batch is of another scenario needs `archive.provenance.json` (orbit batches only). No file format changed: the batch summary keeps format 1 with three optional keys | Small; each table says what it holds, and the label of the band says what it is not | `docs/developer/monte-carlo-plan.md`; `docs/DECISIONS.md` MC-26 to MC-31; `docs/models/monte-carlo-statistics.md`; `docs/reference/limitations.md` |
-| K-51 | Limitation (2026-11-23): Monte Carlo phase B, part 3, in 2.15.0 (#316). The batch report (Export report..., `monte-carlo --report`) reads the settings and dispersions from `archive.provenance.json`'s `monte_carlo_settings`: a batch made by 2.14.2 or earlier has none, and its report says the processes and dispersions are not recorded; a thermal or operations batch lists no dispersions. The command line's Runs table (`--csv`, `--summarize`) is the first spacecraft's (or node's, or profile's); the window exports the others. `--summarize` reads the batch folder only and does not compare the batch with a scenario. `--runs` and `--processes` change one batch only and are recorded in its provenance, not in the scenario file. Template 37 (decision MC-34, provisional) takes about a minute in one process (53 s measured, 30 runs). No scenario field changed: schema version 7 | Small; the report and the command line say what they do not have | `docs/developer/monte-carlo-plan.md`; `docs/DECISIONS.md` MC-32 to MC-35; `docs/reference/limitations.md` |
+| K-50 | Limitation (2026-11-23): Monte Carlo phase B, part 2, in 2.15.0 (#314). The Sensitivity tab gives one drawn value against one outcome (Spearman's rank correlation, or Pearson's by `monte_carlo.sensitivity_measure`): no partial correlation and no variance-based index, so it does not separate the effects of several drawn values; a pair needs 3 runs and a value that varies ("—" otherwise). The Statistics tab's percentiles (`monte_carlo.percentile_method`, NumPy's linear, Hyndman and Fan's definition 7) describe the runs and carry no confidence; the percentiles shown, 1, 5, 50, 95 and 99 %, were a provisional default (`monte_carlo.percentiles`, decision MC-27); the owner confirmed them on 2026-11-24 (#327), and the parameter names that answer as its source. The final offsets are read to the millimetre for both. The command line prints them since part 3 (K-51). The thermal and operations batches keep their mean ± 3 standard deviation band, now labelled "not a probability bound". The trust check covers the dry mass, the drag and the SRP coefficient while Monte Carlo is on; the starting attitude is not checked (its Euler angles are not unique). The note that a batch is of another scenario needs `archive.provenance.json` (orbit batches only). No file format changed: the batch summary keeps format 1 with three optional keys | Small; each table says what it holds, and the label of the band says what it is not | `docs/developer/monte-carlo-plan.md`; `docs/DECISIONS.md` MC-26 to MC-31; `docs/models/monte-carlo-statistics.md`; `docs/reference/limitations.md` |
+| K-51 | Limitation (2026-11-23): Monte Carlo phase B, part 3, in 2.15.0 (#316). The batch report (Export report..., `monte-carlo --report`) reads the settings and dispersions from `archive.provenance.json`'s `monte_carlo_settings`: a batch made by 2.14.2 or earlier has none, and its report says the processes and dispersions are not recorded; a thermal or operations batch lists no dispersions. The command line's Runs table (`--csv`, `--summarize`) is the first spacecraft's (or node's, or profile's); the window exports the others. `--summarize` reads the batch folder only and does not compare the batch with a scenario. `--runs` and `--processes` change one batch only and are recorded in its provenance, not in the scenario file. Template 37 (decision MC-34, confirmed by the owner on 2026-11-24, #327) takes about a minute in one process (53 s measured, 30 runs). No scenario field changed: schema version 7 | Small; the report and the command line say what they do not have | `docs/developer/monte-carlo-plan.md`; `docs/DECISIONS.md` MC-32 to MC-35; `docs/reference/limitations.md` |
 
 **Waivers and deviations:** D-01 to D-13 (RD4). D-08 to D-13 are signed; D-01 to D-07
 are not (decision 14, H08).

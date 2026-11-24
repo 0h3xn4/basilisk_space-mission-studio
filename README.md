@@ -5,7 +5,7 @@
 # SpaceMissionStudio
 
 [![CI](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml/badge.svg?branch=develop)](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/workflows/spacemissionstudio.yml)
-[![Version 2.15.0](https://img.shields.io/badge/version-2.15.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.15.0)
+[![Version 2.16.0](https://img.shields.io/badge/version-2.16.0-blue)](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.16.0)
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
@@ -154,8 +154,13 @@ Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capab
   SpaceMissionStudio is free of charge and comes without warranty; see
   Articles 7 and 8 of the EUPL-1.2. Check its results independently
   before you use them for a real mission.
-- **Version:** 2.15.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.15.0),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): Monte Carlo phase B:
+- **Version:** 2.16.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.16.0),
+  [changelog](SpaceMissionStudio/CHANGELOG.md)): a pointing error budget (requirements
+  and sources of error summed per index and axis, with the margin of
+  each requirement), a Monte Carlo dispersion of the atmospheric
+  density, templates 38 to 42, Home's templates in nine categories, and
+  Monte Carlo fixes; scenario format version 8, which 2.15.0 and
+  earlier cannot open. 2.15.0 brought Monte Carlo phase B:
   a batch seed for independent batches, thermal batches
   that count the runs outside each node's limits with an upper bound,
   outcome statistics with percentiles and the distribution plot,
