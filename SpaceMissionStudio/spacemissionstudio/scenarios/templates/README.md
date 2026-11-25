@@ -1,60 +1,44 @@
 # Template missions
 
-Ready-to-run scenario files, for learning the tool and the orbital
-mechanics it simulates, and as starting points for your own missions
-(copy one, edit it, save it under a new name). The [catalog](#catalog)
-below puts them in categories, from **Getting started** to **Deep
-space and navigation**, and in each category from simple to advanced.
+Ready-to-run scenario files. Use them to learn the app and orbital
+mechanics, and as start points for your own missions. There are 47
+templates in nine categories.
 
-**New here?** Run 22, then 01, then go down the catalog. To start your
-own mission, open 22 or 23 and Save As.
+**New here?** Run 22, then 01. Then continue down the catalog. For your
+own mission, open 22 or 23 and save it under a new name.
 
-Every file is a complete, independently valid `Scenario` (built through
-`schema.scenario`'s own dataclasses and `Scenario.validate()`, not
-hand-written JSON -- see `scripts/_generate_templates.py` in this
-repository, the source of truth these were generated from) with an
-extensive `description` field explaining what it teaches, what to look at
-after running it, and what to try changing. Read that field (open the
-`.json` file directly, or look at the Description box at the top of the
-GUI's scenario form after opening one) before diving into the raw numbers.
+## Open a template
+
+| Where | How |
+|---|---|
+| The app | On **Home**, click the card of the template, then **Open template**. Or use **File › Open...** (`Ctrl+O`). |
+| The app, with changes | On the card, click **Customize and open...**. Change the key settings, then click **Open in editor**. |
+| The command line | `spacemissionstudio run spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json --out-dir out` |
+| A check without Basilisk | `spacemissionstudio validate spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json` |
+
+The app never changes a template file. Before you edit a template, save
+it under a new name (**File › Save As...**).
+
+Each template has a `description`. It tells what the template shows,
+what to look at after the run, and what to change. The app shows it on
+the card on **Home** and on the **General** page of the **Scenario**
+area.
 
 Templates with drag (04, 05, 07, 08, 18, 21) use a drag coefficient of
-3.0, ESA AD10's value for operations (Sec. 5.2); **Run > End of Life**
-and `spacemissionstudio lifetime` use its end-of-life 2.2 by default.
-
-## Opening a template
-
-```bash
-# GUI: pick its card on Home (where the app opens), or Open... (Ctrl+O) and browse to it:
-python3 -m spacemissionstudio.gui.app
-
-# CLI (needs a real Basilisk build):
-spacemissionstudio run spacemissionstudio/scenarios/templates/01_two_body_circular_orbit.json --out-dir out
-
-# Just check it's schema-valid, no Basilisk needed:
-spacemissionstudio validate spacemissionstudio/scenarios/templates/01_two_body_circular_orbit.json
-```
-
-Once opened in the GUI, **Save As...** under a new name/location before
-editing if you want to keep the original template intact for next time.
-
-Every template also has **Customize and open...** in the details of its
-card on **Home**: one dialog with all of that template's
-settings, pre-filled, its key ones (usually those under "Try changing:")
-first, with a section list and a filter. **Open in editor** opens the
-changed mission in the **Scenario** area; the template file itself is never
-touched. The key settings of each template are defined in
-`gui/template_wizard.py`.
+3.0, the value of ESA AD10 for operations (Sec. 5.2). **Run › End of
+Life** and `spacemissionstudio lifetime` use the end-of-life value 2.2.
 
 ## Catalog
 
 The templates are in categories, and in each category from simple to
-advanced. **Home** shows them in the same order, each category under its
-heading. The numbers are identifiers, not an order: they only tell in
-which order the templates were added. The categories and the order are in
-`spacemissionstudio/scenarios/catalog.py`;
-`tests/test_template_catalog.py` checks that this list agrees with it.
-None of the templates needs an earlier one to run first.
+advanced. **Home** shows them in the same order. The numbers are
+identifiers: they give the order in which the templates were added. No
+template needs another template to run first.
+
+`spacemissionstudio/scenarios/catalog.py` holds the categories and the
+order. `tests/test_template_catalog.py` checks that this list agrees
+with it. `tests/test_template_claims.py` checks the values that each
+description claims, with real runs.
 
 ### Getting started
 
@@ -62,10 +46,10 @@ Starting points for your own mission, and the simplest orbits.
 
 | # | File | Teaches |
 |---|------|---------|
-| 22 | `22_starter_first_leo_satellite.json` | **Starter.** The smallest scenario that is still realistic: one 150 kg satellite in a 550 km Sun-synchronous orbit (10:30 LTAN), degree-10 gravity, Sun and Moon, drag from the real space weather shipped with the app (Cd 3.0), solar pressure, and the Berlin ground station. Orbit only, so a day runs in seconds. Confirmed in a real Basilisk run (`tests/test_template_claims.py`): four Berlin passes in the day, the first 10.5-18 min in, 15 eclipses of ~35 min, and the mean orbit plane turning ~1.0 deg/day (Sun-synchronous: 0.986). Over 30 days drag lowers the mean semi-major axis ~0.1 km here, ~1.8 km at 400 km. Its description says what to change first to make it your own. |
-| 23 | `23_starter_complete_small_satellite.json` | **Starter.** A complete small satellite: the GUI's "Microsatellite (150 kg)" preset (`engine.spacecraft_templates`: star tracker, IMU, sun sensor, three wheels unloaded by torque rods, facets with Cd 3.0, a 1 m^2 array and 300 Wh battery) in Sun-safe pointing, plus a 5 W S-band downlink (`rf_link`) to Berlin, on 22's orbit. Its Mission Sequence propagates until the first Berlin pass starts (`pass_start`), reports, propagates until it ends (`pass_end`), reports, and coasts another hour. Confirmed in a real Basilisk run (`tests/test_template_claims.py`): reports at 10.4 and 18.2 min, link margin 11 dB at the 10 deg edge and 21 dB at the 62 deg peak, wheels up to ~310 RPM in the turn to the Sun and back under 1 RPM by the end, ~35 Wh drawn in the 35 min eclipse. |
-| 01 | `01_two_body_circular_orbit.json` | The basics: a single circular orbit, point-mass Earth, no perturbations, no attitude (`simulation_mode: orbit_only`). Kepler's third law. Deliberately kept perturbation-free (see '09' too) -- the clean baseline the others contrast against. |
-| 02 | `02_elliptical_orbit_with_perturbations.json` | An eccentric (GTO-like) orbit with Earth oblateness (J2 and higher-order terms, via 10th-degree spherical harmonics) and Sun/Moon third-body gravity switched on -- nodal regression, apsidal rotation, why a fine `dynamics_task_rate_s` matters once `central_body_degree > 0`. Drag deliberately left off so the J2/third-body precession lesson stays visually clean. |
+| 22 | `22_starter_first_leo_satellite.json` | **Start here.** One 150 kg satellite at 550 km, Sun-synchronous, with gravity, Sun, Moon, drag and the Berlin station. One day runs in seconds. |
+| 23 | `23_starter_complete_small_satellite.json` | **Start here.** A complete small satellite: the 150 kg microsatellite preset in Sun-safe pointing, with power and a radio link to Berlin. |
+| 01 | `01_two_body_circular_orbit.json` | One circular orbit around a point-mass Earth: no perturbations, no attitude. The baseline for the other templates. |
+| 02 | `02_elliptical_orbit_with_perturbations.json` | An eccentric orbit with Earth's oblateness and Sun and Moon gravity: nodal regression and apsidal rotation. |
 
 ### Orbits and orbit keeping
 
@@ -73,16 +57,16 @@ Orbit inputs, drag and solar activity, station keeping, low thrust, formations.
 
 | # | File | Teaches |
 |---|------|---------|
-| 39 | `39_orbit_inputs_tle_and_state_vector.json` | Three 150 kg satellites, orbit only and without drag, each orbit given in another form the schema takes. tle-sat: a synthetic TLE (catalogue number 99999, not a real satellite; 51.64 deg, e 0.0004, 15.5 revolutions a day, its epoch the scenario's, no drag terms), with valid checksums. state-sat: an illustrative Cartesian state, the perigee of a 500 x 1500 km orbit at 63.4 deg, its speed from the vis-viva equation. elements-sat: 22's 550 km Sun-synchronous orbit in classical elements. Measured (`tests/test_template_claims.py`): tle-sat's mean semi-major axis stays within 0.5 km of SGP4's 6795.4 km and its inclination in TEME of date is 51.64 deg; state-sat starts at a = 7378.138 km, its perigee holds (critical inclination) and its node regresses 2.7 deg a day. A CCSDS OPM or OMM can set an orbit too (`ccsds-import`, see [orbit files](../../../docs/user-manual/orbit-files.md)). |
-| 42 | `42_tabular_atmosphere_and_lifetime.json` | Drag from the tabular atmosphere: one 150 kg satellite at 350 km for two days from 1 October 2024, reading the NRLMSISE-00 nominal profile that Basilisk ships (`engine/atmosphere_tables.py`). Measured (`tests/test_template_claims.py`): the mean semi-major axis falls about 0.4 km; with NRLMSISE-00 and October 2024's real space weather (near the solar maximum) about seven times as far; with the exponential model no more than without drag. The lifetime estimate reads the same table: re-entry after about 350 days at Cd 2.2, against under two months with NRLMSISE-00. |
-| 45 | `45_solar_activity_past_104_days.json` | Solar activity at MSFC's 95th percentile over a run longer than one Basilisk simulation: one 150 kg satellite at 400 km for 110 days from 1 January 2030, orbit only, J2, a 60 s step, NRLMSISE-00 with the bundled space weather (F10.7 about 78 and Ap about 15 in early 2030, from NASA MSFC's prediction of November 2026). The run is chained, 90 days and then 20. Measured (`tests/test_template_claims.py`, slow: two runs of about 48 s): the mean semi-major axis falls about 9.2 km, against 6.0 km at the 5th percentile; no step at day 90 and every value finite past day 104. The 5th percentile and a local CelesTrak file are in its "Try changing". |
-| 18 | `18_leo_station_keeping.json` | The direct LEO counterpart to '03': a 400 km satellite correcting atmospheric-drag-driven altitude decay with the same `station_keeping` deadband controller, instead of '03's GEO-scale Sun/Moon/SRP drift. A tight 1 km deadband and continuous drag mean repeated corrections; '03' instead holds a GEO slot's longitude and inclination. `enable_srp` deliberately off, same "isolate the one dominant perturbation" approach as '03'. Same real space-weather data as '04'/'05'/'07'/'08'; its exact nrlmsise00 decay rate has not been re-verified in this sandbox (no CelesTrak/SPICE route here) -- the station_keeping/drag parameters were instead tuned against a bypass-SPICE build with a realistically-reparameterized atmosphere model (2-3 real reboost burns over 14 days). |
-| 03 | `03_geo_station_keeping.json` | A 500 kg satellite in the 10 E GEO slot under 10th-degree gravity, Sun/Moon and SRP, held by `geo_station_keeping` (`engine.geo_station_keeping`): east-west burns keep its day-averaged longitude within +/-0.05 deg, north-south burns at the nodes keep its inclination under 0.05 deg. Longitude and inclination are measured in Earth's own rotating frame (SPICE `J20002Pfix`), and the spacecraft starts in Earth's TRUE equator (`engine.orbit_design.geostationary_elements_deg`) -- i = 0 in J2000 is already 0.17 deg inclined to it by 2030. Confirmed in a real 45-day Basilisk run: east-west burns (0.05-0.1 m/s) at days 13, 20, 32, 41; north-south burns (~2 m/s, ~1150 s at 1 N) at days 16 and 30, each from 0.051 to ~0.013 deg; 4.4 m/s and 1.1 kg in all (~36 m/s per year). The daily eccentricity wobble (+/-0.01 deg here) is not controlled. |
-| 40 | `40_continuous_low_thrust.json` | Continuous low thrust (`constant_thrust`): two 150 kg satellites at 400 km with drag from real space weather for three days; ep-sat fires 1 mN along its velocity (VNB frame) all the time, twin-sat has no thruster. The thruster is the ENPULSION MICRO R3 of the device catalogue (1 mN, Isp 3000 s, 1.3 kg of indium). Measured (`tests/test_template_claims.py`): ep-sat's mean semi-major axis rises 2.8 km while twin-sat's sinks 0.3 km, the gap as Gauss's equation gives for 1.7 m/s of delta-V; 8.8 g of propellant used, thrust x time / (Isp x g0), about 15 months of firing for the tank. |
-| 04 | `04_walker_constellation.json` | A 6-satellite, 2-plane Walker delta constellation, generated programmatically via `engine.constellation.generate_walker_constellation()` -- the same code path the GUI's "Generate Walker constellation..." dialog and the `generate-constellation` CLI subcommand use. Full perturbation set (10th-degree gravity, Sun/Moon, drag, SRP) on every satellite -- 700 km is genuinely drag-relevant; drag uses the real space weather shipped with the app (2030: NASA MSFC's 50th-percentile prediction; the 95th gives an ESA AD10 operations budget). |
-| 05 | `05_formation_flying_phasing.json` | Two spacecraft, the follower holding a fixed in-track separation 50 km ahead of the chief (`phasing_keeping`, always paired with its own `station_keeping` -- see that config's own docstring for why) -- a basic formation-flying/proximity-operations control model. Full perturbation set on both spacecraft identically, same real space-weather data as '04'. |
-| 24 | `24_formation_mean_element_control.json` | Template 05 with one change: follower-1's `phasing_keeping.control_law` is `mean_oe`, Basilisk's `meanOEFeedback` (continuous feedback on the mean orbital elements, through the follower's own 50 mN station-keeping thruster), for 14 days instead of 90. `tests/test_scenario_templates.py` checks that nothing else differs, so the two compare directly. Confirmed in a real Basilisk run: the separation error stays within 65 m (17 m RMS) after the first day, against 5 km for 05's drift-orbit law; 0.46 m/s in 14 days (0.20 of it in the first day), against 0.014 m/s for 05's 90 days. Requests stay under 4 mN and are not fired in eclipse (37% of the run); outside eclipse almost all are fired. |
-| 29 | `29_roe_formation_helix.json` | Two 150 kg satellites at 550 km Sun-synchronous with 10th-degree gravity, Sun, Moon, drag and SRP, each with a 50 mN station-keeping thruster. follower-1 has an ROE formation (`roe_formation`, see [Fly a formation with relative orbital elements](../../../docs/user-manual/roe-formation.md)): placed 2 km behind chief-1 by the generator (`engine.roe_formation.generate_roe_follower`), held there to day 1, then moved to a passively safe helix (a·δe = a·δi = 300 m, parallel, phase 90 deg) by the impulsive law, which plans with the J2 state transition matrix and fires only in sunlight. 4 days. Measured in a real Basilisk run (`tests/test_template_claims.py`): the e/i vectors reach 300 m within 5 h; the along-track offset first slips to 4 km behind (a burn's partner falls in eclipse, so the raised orbit lingers 1.6 orbits), and a drift closes it by day 2.5; the closest radial/cross-track approach is 292 m or more from day 1.2. 0.56 m/s for the move, 0.026 m/s to hold the helix to day 4 within 13 m along-track. The continuous law (Basilisk `meanOEFeedback`) is on target by day 1.4 and within 3 m from day 2, for 1.85 m/s; a 0 deg phase, whose inclination vector J2 turns, costs about three times as much to hold. |
+| 39 | `39_orbit_inputs_tle_and_state_vector.json` | Three ways to give an orbit: a TLE, a position and a velocity, and classical elements. |
+| 42 | `42_tabular_atmosphere_and_lifetime.json` | Drag from a tabular atmosphere profile, and the orbital lifetime that it gives. |
+| 45 | `45_solar_activity_past_104_days.json` | Solar activity at MSFC's 95th percentile over 110 days: a run longer than one Basilisk simulation. |
+| 18 | `18_leo_station_keeping.json` | LEO station keeping: a 400 km satellite holds its altitude against drag with a 1 km deadband. |
+| 03 | `03_geo_station_keeping.json` | GEO station keeping: east-west and north-south burns hold a 500 kg satellite in its 10 deg E slot. |
+| 40 | `40_continuous_low_thrust.json` | Continuous low thrust: a 1 mN electric thruster against drag, beside a twin with no thruster. |
+| 04 | `04_walker_constellation.json` | A Walker delta constellation: six satellites in two planes, with all perturbations. |
+| 05 | `05_formation_flying_phasing.json` | A formation: the follower holds a position 50 km ahead of the chief for 90 days. |
+| 24 | `24_formation_mean_element_control.json` | Template 05's formation, held by Basilisk's mean-element feedback (`meanOEFeedback`). Compare the two runs. |
+| 29 | `29_roe_formation_helix.json` | A formation set by relative orbital elements: an approach to a passively safe helix. |
 
 ### Maneuvers and Mission Sequence
 
@@ -90,9 +74,9 @@ Burns, transfers and control flow as a list of commands in time order.
 
 | # | File | Teaches |
 |---|------|---------|
-| 08 | `08_mission_sequence_orbit_raise.json` | The Mission Sequence layer: a time-ordered command list (coast, snapshot, impulsive prograde burn, coast, snapshot) instead of one flat propagate-to-duration run -- edit it as a tree on the GUI's "Mission sequence" page (the Scenario area). The building block for a full two-burn Hohmann transfer (see the file's own description for how to extend it into one). Full perturbation set at 400 km (drag/SRP included, same real space-weather data as '04'/'05'/'07') -- doesn't undermine this template's own lesson, unlike '01'/'09'. |
-| 16 | `16_lambert_transfer.json` | A new Mission Sequence command kind, the counterpart to '08's `maneuver`: `lambert_transfer` solves for WHATEVER delta-V takes the spacecraft from its current state to a target position after a given time of flight (rather than you specifying the delta-V directly), via Basilisk's own `lambertPlanner` -> `lambertSolver` -> `lambertValidator` chain (`engine.mission_engine.MissionEngine._run_lambert_transfer`), then applies it immediately. Like Basilisk's own `examples/scenarioLambertSolver.py` (whose orbit, target and time of flight it uses), it first coasts a quarter orbit (2490 s) to the burn point: burning at t = 0 dips the path below Earth's surface, which `min_orbit_radius_m` rejects. Confirmed end to end in a real Basilisk run: both reports fire, and the spacecraft arrives about 1.6 m from `target_position_m` (tolerance 500 m). |
-| 46 | `46_mission_sequence_control_flow.json` | The Mission Sequence's assignment, `while`, `if` and script block: a 150 kg satellite at 400 km, two-body gravity, an illustrative 20 mN, 1500 s thruster (`constant_thrust`). Assignments switch it off and on, a `while` propagates 0.05 day at a time while the altitude is below 420 km, an `if` takes a snapshot when it is reached, a script block adds the semi-major axis and the period to Results › Output (the run asks first; `--allow-scripts` on the command line). Measured (`tests/test_template_claims.py`): 21 loop steps, the thruster off at day 1.3 at 420.6 km, the script's 6798.7 km and 93.0 min as the run's elements give, 11.7 m/s and 123 g of propellant. |
+| 08 | `08_mission_sequence_orbit_raise.json` | The Mission Sequence: coast, burn +50 m/s prograde, coast, with snapshots. |
+| 16 | `16_lambert_transfer.json` | A Lambert transfer: the Mission Sequence finds the burn that gets to a target position in a set time. |
+| 46 | `46_mission_sequence_control_flow.json` | Mission Sequence control: assignments, `if`, `while` and a script block raise an orbit to 420 km. |
 
 ### Attitude and control
 
@@ -100,18 +84,18 @@ Pointing, sensors and actuators, disturbance torques and wheel momentum.
 
 | # | File | Teaches |
 |---|------|---------|
-| 06 | `06_attitude_pointing_basic.json` | Attitude pointing as a pure concept: `fsw_mode: hillPoint` (nadir pointing) with no sensors/actuators configured, so control torque is applied through an idealized effector rather than modeled hardware. Watch the attitude error converge. Gravity harmonics/third-body added for realism; drag/SRP deliberately left off -- '06' stays the simple version, '07' is the realistic one. `dynamics_task_rate_s` is deliberately 0.1 (not the schema default of 10, nor this template's own earlier 1.0) -- confirmed directly against a real Basilisk build that the earlier, coarser rate drove the idealized-actuation control loop numerically unstable (`sigma_BN` reached NaN) with this template's inertia; see HISTORY.md. |
-| 07 | `07_attitude_pointing_with_adcs_hardware.json` | The same pointing problem as '06', but with a realistic hardware suite: star tracker, IMU, coarse sun sensor, three 6 N*m*s reaction wheels (VRW-D-6 class), and a solar-array/battery power budget, on a 150 kg, 0.8 x 0.8 x 1.0 m microsatellite. Full perturbation set (drag/SRP included) to match its own "realistic counterpart" role, same real space-weather data as '04'/'05'. The sun sensor sits on the +Z face that Sun-safe pointing turns to the Sun. |
-| 41 | `41_velocity_pointing_with_navigation_errors.json` | Template 07's 150 kg microsatellite on three wheels in velocity pointing (`velocityPoint`: body y along the velocity, z along the orbit normal), with a star tracker, a gyro, a magnetometer (the MM200 of the device catalogue) and navigation errors (illustrative: attitude 0.02 deg, rate 0.001 deg/s, position 10 m, velocity 0.1 m/s bounds, seed 41), for about one orbit in 2027, inside the World Magnetic Model's validity. Measured (`tests/test_template_claims.py`): after 10 minutes the true attitude stays within about 0.07 deg of the velocity frame, under the 0.10 deg the error bounds imply (the attitude bound plus 4 x P/K times the rate bound); without errors, within 0.01 deg; the magnetometer reads 19 to 50 uT. |
-| 15 | `15_celestial_body_pointing.json` | `fsw_mode: locationPointing`'s OTHER target option: `fsw_params['target_body']` points a body-fixed axis straight at a celestial body (here, the Moon) instead of a ground station, built via `engine.fsw.build_ephemeris_converter` (`SpicePlanetStateMsg` -> `EphemerisMsg` -> `locationPointing.celBodyInMsg`), the same converter + guidance pairing Basilisk's own `examples/scenarioAsteroidArrival.py` uses. `target_body` must name `gravity.central_body` or a `gravity.third_body_perturbers` entry. Unlike '06'/'07's fixed-relative-to-orbit targets, the commanded attitude here keeps changing as the target body moves along its own orbit. |
-| 10 | `10_gravity_gradient_torque.json` | An uncontrolled (`fsw_mode: null`), elongated 500 kg spacecraft (1 x 1 x 2 m bus) with `enable_gravity_gradient` set -- Basilisk's real `GravityGradientEffector`, a disturbance torque with no GUI/schema path to model at all until this feature. With zero initial body rate, attitude normally stays frozen for the whole run; here it visibly drifts instead, purely from gravity acting across the spacecraft's own non-uniform mass distribution. |
-| 11 | `11_thruster_attitude_control.json` | The thruster counterpart to '06'/'07': the same `inertial3D` pointing problem, but actuated by eight real 1 N ACS thrusters on the corners of a 300 kg, 1.2 x 1.2 x 1.5 m bus (`thrForceMapping` -> `thrFiringSchmitt` -> `thrusterDynamicEffector`) instead of reaction wheels or an idealized effector -- real hardware, real on-times. |
-| 17 | `17_fuel_tank_depletion.json` | The exact '11' thruster-attitude-control setup, with a real `FuelTankConfig` added: Basilisk's own `fuelTank` state effector (`engine.fsw.build_fuel_tank`) now tracks real propellant depletion as the thrusters fire, reading the same mass-flow rate each thruster already computes for its own physics -- unlike this app's older hand-rolled station-keeping/phasing/constant-thrust propellant bookkeeping, this is Basilisk's own effector doing the real physics. Confirmed in a real Basilisk run on the 300 kg bus: ~12 g of the 0.5 kg starting load is consumed while the attitude settles (within 0.03 in about 3 minutes); after that short pulses use ~2 g more. (Until 2026-10-28 the integrator's default tolerance stepped over most of the 20-40 ms pulses and this read ~0.3 g.) |
-| 12 | `12_reaction_wheel_momentum_dumping.json` | A 500 kg spacecraft's four 12 N*m*s reaction wheels (Honeywell HR12) under normal attitude control, started already heavily spun up -- `MomentumDumpingConfig` fires a separate cluster of eight 1 N thrusters (`thrMomentumManagement` -> `thrForceMapping` -> `thrMomentumDumping`) to bleed the excess momentum off while the wheels stay in control the whole time. Watch `{sat-1}.rw_speeds` drop in discrete steps as each desaturation burn fires (confirmed in Basilisk: three dumps, at 2, 103 and 204 s, take the stored momentum from 13.8 to 9.4 N*m*s, below the 9.6 N*m*s threshold). |
-| 13 | `13_magnetic_torque_rod_momentum_management.json` | The alternative to '12', on a 150 kg microsatellite: four 15 A*m^2 magnetic torque rods continuously bias the same four reaction wheels toward target speeds using the real geomagnetic field (`MagneticMomentumManagementConfig` -> `mtbMomentumManagement`), rather than firing discrete thruster bursts. Watch `{sat-1}.rw_speeds` climb smoothly from zero toward 800/600/400/200 RPM instead of '12''s sharp steps -- same problem, a structurally different real Basilisk solution (confirmed in Basilisk: within 0.5 RPM of every target after 104 min). |
-| 14 | `14_css_sun_heading_estimation.json` | Real sun-direction ESTIMATION, not truth: eight `coarse_sun_sensor` devices feed a dedicated `cssWlsEst` weighted-least-squares estimator, and `fsw_params['use_css_estimation']` routes that ESTIMATE (rather than `simpleNav`'s noise-free truth) into `fsw_mode: sunSafePoint` -- the same architecture as Basilisk's own `examples/BskSim/scenarios/scenario_AttEclipse.py` reference. Flown on '07''s 150 kg microsatellite with the same inertia-scaled default gains. Watch `{sat-1}.sun_heading_body_estimated` settle onto the real sun direction as the estimate itself stabilizes. One orbit: in Earth's shadow (minutes 10 to 44) every sensor reads zero and the estimate is lost until the spacecraft leaves it. |
-| 47 | `47_sensor_faults.json` | Sensor faults: two of template 14's microsatellites side by side in Sun-safe pointing (from the true state), each with sun sensors on +z and -z, a magnetometer and template 20's thermal sensor, in March 2027. On faulty-sat css-2 is stuck at its largest output, the magnetometer's z axis spikes (probability 0.01, three times the field) and the thermal reading is stuck at 20 C. Measured (`tests/test_template_claims.py`): css-2 reads 1.0 against 0; spikes in about 1 % of the samples; 20 C against 0 to 53 C and back down in the shadow; both attitudes identical. The faults change the readings only: the sun-heading estimate and the torque rods' magnetometer use copies without faults. |
-| 21 | `21_disturbance_torques.json` | Attitude-dependent drag and solar radiation pressure from a facet model (`SpacecraftConfig.facets`, Basilisk's `facetDragDynamicEffector`/`facetSRPDynamicEffector`): two copies of one 300 kg Sun-pointing spacecraft, built as a box plus a 2.5 m^2 array on a boom 1.5 m off to +Y, so the array's pressure torques the spacecraft. `rods-off` has only wheels; `rods-on` adds 30 A*m^2 torque rods with magnetic momentum management. Confirmed in a real Basilisk run (`tests/test_template_claims.py`): rods-off stores ~1.7 N*m*s by the end of the day (January 2030, MSFC's 50th-percentile prediction, Cd 3.0), rods-on stays under ~20 RPM; both stay Sun-pointed. Sunlit SRP torque matches the hand estimate (2.24e-5 N*m, `tests/test_facets.py`). |
+| 06 | `06_attitude_pointing_basic.json` | Nadir pointing with an ideal control torque: the pointing concept without hardware. |
+| 07 | `07_attitude_pointing_with_adcs_hardware.json` | Template 06 with real hardware: star tracker, IMU, sun sensor, three reaction wheels, solar array and battery. |
+| 41 | `41_velocity_pointing_with_navigation_errors.json` | Velocity pointing with a star tracker, a gyro, a magnetometer and navigation errors. |
+| 15 | `15_celestial_body_pointing.json` | Pointing at a celestial body: the +Z axis stays on the Moon. |
+| 10 | `10_gravity_gradient_torque.json` | Gravity gradient torque on an elongated spacecraft with no attitude control. |
+| 11 | `11_thruster_attitude_control.json` | Attitude control with eight 1 N thrusters, not reaction wheels. |
+| 17 | `17_fuel_tank_depletion.json` | Template 11 with a fuel tank: the propellant decreases as the thrusters fire. |
+| 12 | `12_reaction_wheel_momentum_dumping.json` | Momentum dumping: thrusters unload four reaction wheels that start with too much momentum. |
+| 13 | `13_magnetic_torque_rod_momentum_management.json` | Momentum management with magnetic torque rods and Earth's magnetic field. |
+| 14 | `14_css_sun_heading_estimation.json` | Sun direction from eight coarse sun sensors and an estimator, not from the true direction. |
+| 47 | `47_sensor_faults.json` | Sensor faults: a stuck sun sensor, a spiking magnetometer and a stuck thermal sensor, beside a healthy twin. |
+| 21 | `21_disturbance_torques.json` | Disturbance torques from a facet model: sunlight and drag on an array off the center. |
 
 ### Power, communications and data
 
@@ -119,8 +103,8 @@ Power, the radio link to a ground station and the data on board.
 
 | # | File | Teaches |
 |---|------|---------|
-| 19 | `19_sun_pointing_comms_link.json` | An integrated spacecraft: `comms_pointing` automatically switches attitude between Sun-pointing (normal operation, maximizing `power` generation) and ground-station-pointing, driven entirely by real `groundLocation.GroundLocation` access to `berlin-gs` -- never a manually-specified time window -- with a genuine, physically-slewed transition (only the attitude REFERENCE switches; the spacecraft's own integrated state is never reset). `rf_link` (extended with an `antenna_beamwidth_deg`-driven pointing-loss term) computes a live link margin gated on BOTH real access AND the spacecraft having actually switched into comms-pointing mode, so it can show a real, physically meaningful "geometrically visible but not yet actually linked" period right at each transition. The run starts at 08:30 UTC so Berlin is about to pass under the 10:30-LTAN orbit: a high (~60 deg) pass ~10-18 min in and a low (~15 deg) one ~107-112 min in, inside a 2 h 15 min run (a Sun-synchronous orbit crosses Berlin's latitude only near 09:50 and 23:10 local time, so the old midnight-UTC start put the first pass ~8 h in). The one template that layers ground station + RF link + comms-pointing + power onto a single spacecraft -- see the file's own `description` for the full cross-subsystem story, including a documented, deliberately-not-yet-used upgrade path to Basilisk's own native `simpleAntenna`/`linkBudget` modules. |
-| 26 | `26_earth_observation_data_downlink.json` | An Earth-observation microsatellite pointing at nadir: a camera (80 kbit/s orbit average) and housekeeping fill a 3 Gbit memory (`data_handling`), and an S-band patch antenna on the nadir face (`antenna_pattern: "cosine"`, 6 dBi) sends it to Berlin at 5 Mbit/s whenever the link closes. Measured over its 2 days: 14.5 Gbit generated, 11.5 downlinked, 0.9 lost while the memory was full between Berlin's two daily pass groups (first full 12 h in); the margin is 16 dB at the best pass and 3.7 dB at the 10 deg edge, where Berlin is 65 deg off the patch's boresight. An 8 Gbit memory, or a second station on Svalbard, loses nothing. |
+| 19 | `19_sun_pointing_comms_link.json` | Sun pointing, with automatic slews to the Berlin station for the radio link, and the power budget. |
+| 26 | `26_earth_observation_data_downlink.json` | Earth observation data: a camera fills the onboard memory, and an S-band link sends the data to Berlin. |
 
 ### Spacecraft model, thermal and budgets
 
@@ -128,14 +112,14 @@ The spacecraft as designed: 3D model, equipment, flexible arrays, thermal and bu
 
 | # | File | Teaches |
 |---|------|---------|
-| 28 | `28_octagonal_bus_3d_model.json` | A 300 kg satellite described by a 3D model (`model`, see [Build a 3D model](../../../docs/user-manual/3d-model.md)): an octagonal prism bus 1.2 m across flats and 1.4 m tall, two 1.0 x 2.0 m panels on the +/-y sides, a cone dish on +x, a star tracker on -x and a 40 kg battery inside the bus at x = 0.3 m (hidden, no facets). Mass properties are computed from the parts: 300 kg, center of mass [4.8, 0, -6.3] cm from B, Ixx/Iyy/Izz 134/77/118 kg m^2 with Ixz 6.3 kg m^2; the parts' outer faces give 36 drag/SRP facets (Cd 3.0); the 3D views draw the model. Sun-safe pointing on three wheels, no torque rods, starting 71 deg off the Sun; 0.2 days. Measured in a real Basilisk run (`tests/test_template_claims.py`): the wheels reach up to 850 RPM in the turn and the Sun is within 0.1 deg after 7 min; then rw-y drifts -2.1 RPM an orbit, to -6.5 RPM after three orbits, against +0.3 RPM with the center of mass set to B. With the battery at x = 0 (center of mass 0.8 cm from B) rw-y ends at +0.9 RPM; at x = -0.3 m at +8.3 RPM. |
-| 43 | `43_3d_model_cylinders_spheres_and_mesh.json` | A 3D model from the shapes no other template uses: a 150 kg microsatellite with a cylinder bus, a sphere tank inside, a cylinder boom with a sphere magnetometer, and a camera from an imported `.obj` (a synthetic file in millimetres, `scenarios/meshes/43_synthetic_camera.obj`: a closed box, solid, and an open hood, shell). Full attitude without control for 0.1 day. Measured (`tests/test_template_claims.py`): 150 kg, the center of mass at (20.3, 0, -32.9) mm, Ixz 0.38 kg m^2, each curved part and the box as the textbook formulas give; the body rates stay below 0.01 deg/s. |
-| 32 | `32_smallsat_design_checks.json` | The 300 kg small-satellite bus (1.2 x 1.2 x 1.5 m) as a 3D model with mounted equipment (see [Analyses built on the 3D model](../../../docs/user-manual/model-analyses.md)): two deployed 1.2 x 1.4 m arrays with solar cells, a star tracker on +y looking 10 deg below the arrays' plane (20 deg field of view, the Terma T1's), a dish, a 50 mN station-keeping nozzle with a 15 deg plume, a battery inside; each part with its material, subsystem and maturity; the arrays fold against the bus in the stowed configuration, inside an illustrative 1.9 m cylinder. Measured (`tests/test_template_claims.py`): the design checks find the +y array in about 5.5 % of the tracker's view and 9.4 % of the plume cone; the AIAA S-120 growth is 42.54 kg (352.54 kg with 10 kg of propellant). In one orbit the gravity gradient peaks at 8.0e-5 N*m (analytical worst case 8.5e-5), about 0.2 N*m*s builds up about z, and the arrays lose about 0.6 % of their energy to shading. |
-| 38 | `38_budgets_equipment_power_mass_propellant.json` | The Budgets area on one small imager (template 22's 550 km Sun-synchronous orbit, environment and Berlin station; orbit only, a day in seconds; see [Equipment list and power budget](../../../docs/user-manual/budgets.md)): a `budgets` section with 12 items (structure, power, ADCS, OBC, comms, payload, thermal, harness, propulsion), each with a mass, an S-120 column and a maturity, power modes for 8 of them, two buses (platform 0.92, payload 0.88), a 2 % distribution loss, a 12 % system margin and a power margin for each maturity; four system modes, safe, nominal, imaging and downlink, whose duty cycles (0.05, 0.65, 0.2, 0.1) add up to 1; a 3D model that holds every item (the units, the heaters and the harness hidden inside the bus), so the run flies the list's 110.3 kg, with the AIAA S-120 policy, an illustrative 150 kg limit and an illustrative 1.3 x 1.5 m cylinder; a pointing part with the line of sight along body z, three requirements (the line of sight's absolute error 60 arcsec, the relative error about x 15 arcsec over 1 s in 60 s, the knowledge about x 15 arcsec, each at 0.95) and five contributors; a 1 N, 220 s station keeper with 6 kg of propellant and a propellant budget with an 8 kg tank. Every number of the section has the source "Synthetic example value; not from a data sheet or a standard.". Measured (`tests/test_template_claims.py`): the power budget is complete, loads of 38.0, 43.5, 87.5 and 65.5 W, the duty-cycle average 54.2 W of load and 77.1 W at the source with margins; the mass budget 110.3 kg basic, 22.9 kg of growth and 139.2 kg with the propellant; the three pointing requirements met (22.1, 12.4 and 3.9 arcsec); the propellant budget 83.0 m/s and 5.23 kg for five years (about a minute: it solves the re-entry). |
-| 27 | `27_flexible_solar_arrays.json` | The "Small satellite (300 kg)" preset in Sun-safe pointing, its cells on two deployed wings (`solar_arrays`: 2.4 x 1.0 m, 8 kg each, on the +/-y faces, cells on +z). Each wing is a Basilisk `hingedRigidBodyStateEffector`, a panel on a spring-damper hinge, with an assumed first mode of 0.2 Hz (hub held fixed) and 0.5% damping; its own `simpleSolarPanel` follows the wing's deflected attitude. The run starts 71 deg off the Sun. Measured in a real Basilisk run (`tests/test_template_claims.py`): each wing swings 0.07 deg as the wheels start the turn and rings at 0.26 Hz (the coupled mode, above the hub-fixed 0.2 Hz), below 0.001 deg within 4.3 min; the Sun is within 0.1 deg after 7.1 min, as with the wings rigid on the hub; each wing gives up to 980 W in sunlight. With a 0.05 Hz first mode the wings swing 0.94 deg and the pointing settles as before; 5% damping barely shortens the ringing, which the attitude control already damps through the hub. |
-| 20 | `20_thermal_simulation.json` | Adds Basilisk's real thermal modules on top of '07's own ADCS hardware suite: a `"thermal"` sensor (`sensorThermal.SensorThermal`) on the Sun-facing +Z panel models an externally-mounted component heating in sunlight and cooling in eclipse -- real radiative absorption/emission plus an optional internal power draw, with its own `measurement_*` noise/bias/fault layer (`tempMeasurement.TempMeasurement`), the same device-interface-realism shape as every other sensor kind. `rw-1` separately carries an OPTIONAL per-wheel motor-thermal model (`motorThermal.MotorThermal`, the `motor_thermal_*` params) -- motor inefficiency/friction heat vs. ambient dissipation, independent of whether any `"thermal"` sensor exists at all; `rw-2`/`rw-3` deliberately have none set. Watch `{sat-1}.sensor.therm-1.temperature` track several full sunlight/eclipse cycles and `{sat-1}.actuator.rw-1.motor_temperature` rise above its 20 C ambient (its starting temperature) as the wheel works -- only ~0.05 C in a real Basilisk run: one gentle slew does little work. |
-| 33 | `33_microsat_thermal.json` | The 150 kg microsatellite (0.8 x 0.8 x 1.0 m) as a 3D model with a thermal model on it (see [the thermal model](../../../docs/user-manual/thermal.md)): the bus under MLI, two deployed 0.5 m^2 arrays, a 0.4 x 0.4 m silvered-Teflon radiator on the anti-Sun face on standoffs, the battery on isolators with two thermostatic heaters, and the avionics dissipating the power budget's 60 W bus load, taken to the radiator by a heat pipe. Four cases: nominal, hot and cold (NASA/TM-2001-211221) and cold in safe mode (the avionics at 15 W). Measured (`tests/test_template_claims.py`): the bus at 11.2 to 14.4 degC in the first three cases and the radiator rejecting about 37 W; in safe mode the bus at about -22.5 degC, heater A on all the time (sized at 7.6 W), and the avionics below their -20 degC operating limit, a Timeline event and a finding. |
-| 34 | `34_microsat_flexible_thermal.json` | Template 33's microsatellite with its two arrays as flexible wings (0.72 x 0.7 m, 4 kg, first mode 0.8 Hz) on hinges, each a node of the thermal model whose faces turn with the hinge angle the run records (see [the thermal model](../../../docs/user-manual/thermal.md)); a 10 mil silvered-Teflon radiator, 0.2 W/K across each hinge, and a thermal Monte Carlo of the hot case (20 runs, seed 34: the radiator's absorptance, the heat pipe and the battery's isolators). Measured (`tests/test_template_claims.py`): the hinges move by 0.012 deg at most in the Sun-safe turn (recorded every 0.5 s, which the 0.8 Hz mode needs); the wings at about -46 to 88 degC, the bus at 14 to 18 degC and the battery at 24 to 28 degC in the three cases; in 4 of the 20 Monte Carlo runs the battery passes its 30 degC limit, the same 4 again from the same seed. |
+| 28 | `28_octagonal_bus_3d_model.json` | A 3D model: an octagonal bus with panels, a dish and a star tracker. The model gives the mass properties and surfaces. |
+| 43 | `43_3d_model_cylinders_spheres_and_mesh.json` | A 3D model from cylinders, spheres and an imported `.obj` mesh. |
+| 32 | `32_smallsat_design_checks.json` | Design checks on a 3D model: fields of view, a thruster plume, disturbance torques and array shading. |
+| 38 | `38_budgets_equipment_power_mass_propellant.json` | The **Budgets** area: an equipment list, system modes, and the power, mass, pointing and propellant budgets. |
+| 27 | `27_flexible_solar_arrays.json` | Flexible solar arrays: two wings on spring-damper hinges that act back on the attitude. |
+| 20 | `20_thermal_simulation.json` | Thermal sensors: a panel that heats in the Sun and cools in eclipse, and a wheel motor model. |
+| 33 | `33_microsat_thermal.json` | A thermal model on a 3D model: hot, cold and nominal cases, heaters and a radiator. |
+| 34 | `34_microsat_flexible_thermal.json` | Template 33 with flexible arrays as thermal nodes, and thermal studies with a Monte Carlo. |
 
 ### Operations planning
 
@@ -143,8 +127,8 @@ Plans of images, calibrations and ground contacts for one or more spacecraft.
 
 | # | File | Teaches |
 |---|------|---------|
-| 35 | `35_eo_operations_week.json` | A week of operations for template 26's 150 kg imager in a Sun-synchronous orbit (see [operations planning](../../../docs/user-manual/operations.md)): twenty point targets around the world (priorities 1 to 3, three wanted twice, at most 30 deg off nadir with the Sun 15 deg up), stations at Svalbard (78 N, terrain mask), Berlin and Santiago (33 S, terrain mask), a daily star-tracker calibration, 40 min of contacts a day, a camera sending 40 Mbit/s into a 3 Gbit memory, stiffer attitude gains (K 1, P 8) and a June epoch. Run > Plan builds the geometry from an orbit-only propagation at 30 s and schedules the week in about a minute. Measured (`tests/test_template_claims.py`): 17 or 18 of the 23 images (the Alps' window sits at the 30 deg limit: with the Earth orientation files it holds, without them it is too short), 7 calibrations and 37 contacts, never above 2400 s a day; the memory reaches 2.6 Gbit and is that full at the end; Rotterdam's second image loses to the passes over Europe; Kilimanjaro and the Danube delta have no window; the first six hours flown keep within the verification's tolerances. |
-| 36 | `36_constellation_operations.json` | Three of template 35's imagers in Sun-synchronous planes 30 deg of RAAN apart, at the same point of their orbits, sharing Svalbard and Berlin (one spacecraft at a time) for two days; ten targets that any of them may take; equal contact priorities. Measured (`tests/test_template_claims.py`): 33 passes are wanted by two or three spacecraft; the plan gives each spacecraft 11 contacts; no station serves two at once; more than 20 passes are lost to a busy station. |
+| 35 | `35_eo_operations_week.json` | A week of operations for one imager: targets, three stations, calibrations and contacts. |
+| 36 | `36_constellation_operations.json` | Three imagers that share two stations, each station for one spacecraft at a time. |
 
 ### Uncertainty (Monte Carlo)
 
@@ -152,10 +136,10 @@ Batches of runs with dispersed inputs, requirements and statistics.
 
 | # | File | Teaches |
 |---|------|---------|
-| 09 | `09_monte_carlo_dispersion_analysis.json` | Uncertainty quantification: the same orbit as '01', run as a 20-case Monte Carlo batch with `dry_mass_kg` independently redrawn per run from a normal distribution. Deliberately kept perturbation-free, same as '01' -- the file's own `description` explains why (mass doesn't affect pure two-body trajectories at all; only drag/SRP/maneuvers would show mass sensitivity). |
-| 25 | `25_monte_carlo_orbit_and_drag_dispersions.json` | Template 09's idea with the newer dispersions: 20 runs of a 150 kg satellite at 400 km for 3 days, each starting on a slightly different orbit (`orbit_elements`, 1-sigma: 1 km in semi-major axis, 0.02 deg in inclination, 0.1 deg in true anomaly) with a drag coefficient drawn between 2.2 and 3.0 (`drag_coeff`). Measured in a real 20-run batch: the runs start ~10 km apart along track (1-sigma) and spread ~150 km per day (448 km after 3 days, 0.8 km radially), almost all from the semi-major-axis spread (a 1 km lower orbit gains ~9 km per orbit); drag alone separates them by only ~10 km in 3 days. **Results > Monte Carlo** shows the batch; `examples/monte_carlo_spread.py` reads the same summary. |
-| 37 | `37_monte_carlo_requirements_and_sensitivity.json` | The Monte Carlo tools of phases A and B in one small batch: template 25's 150 kg satellite at 400 km for half a day, 30 runs with the batch seed 37, each drawing its orbit (1-sigma: 0.5 km in semi-major axis, 0.02 deg in inclination, 0.05 deg along track), a drag coefficient between 2.2 and 3.0 and a dry mass of 150 kg +/- 7.5 kg; two requirements at 90 % confidence, R-ALT-01 (lowest altitude at least 389 km, allowed probability 0.1) and R-DECAY-01 (mean semi-major axis change at least -19 m, no allowed probability). Measured (`tests/test_template_claims.py`, 53 s in one process): R-ALT-01 is met, no run below and the bound 0.074; R-DECAY-01 has 2 of 30 runs not meeting it, estimate 0.067, bound 0.17; the drag coefficient's rank correlation with the decay is about -0.9 and the dry mass's about +0.3. Template 25 is unchanged. |
-| 44 | `44_monte_carlo_attitude_inertia_rate_srp_density.json` | The five dispersions no other template draws, in one batch: template 07's microsatellite on three wheels in Sun-safe pointing at 350 km, 0.03 day, 12 runs, seed 44. Each run draws any initial attitude, its body rate (0.2 deg/s 1-sigma), its inertia (1 kg m^2 1-sigma, turned by 2 deg), its SRP coefficient (1.2 to 1.8) and the density scale (0.7 to 1.3); all spreads illustrative. Measured (`tests/test_template_claims.py`, slow, about 32 s for the batch): the density scale's rank correlation with the along-track offset is 1 and with the lowest altitude -1; run again, each case turns onto the Sun within 5 minutes. |
+| 09 | `09_monte_carlo_dispersion_analysis.json` | A Monte Carlo batch of 20 runs of template 01, with a dispersed dry mass. |
+| 25 | `25_monte_carlo_orbit_and_drag_dispersions.json` | A Monte Carlo batch with orbit injection errors and a dispersed drag coefficient. |
+| 37 | `37_monte_carlo_requirements_and_sensitivity.json` | A Monte Carlo batch with requirements, a batch seed, outcome statistics and sensitivity. |
+| 44 | `44_monte_carlo_attitude_inertia_rate_srp_density.json` | Five more Monte Carlo dispersions: attitude, body rate, inertia, SRP coefficient and atmosphere density. |
 
 ### Deep space and navigation
 
@@ -163,33 +147,23 @@ Orbits around Mars and an asteroid, estimated from camera images.
 
 | # | File | Teaches |
 |---|------|---------|
-| 30 | `30_mars_optical_navigation.json` | A 300 kg probe, orbit only, in an 18 000 km x 0.2 orbit around the Mars barycentre (DE430 has no state for Mars itself), with the Sun as a third body. Its camera (40 deg, 512 x 512 px, pointed perfectly) sees the planet's disk every 60 s; the disk's place and size, computed from the true geometry with 0.5 px noise, go through Basilisk's `pixelLineConverter` to a position and Basilisk's `relativeODuKF` filter (`optical_navigation`, see [Navigate from camera images of a planet](../../../docs/user-manual/optical-navigation.md)). The filter starts 68 km off (50 km and 5 m/s, 1 sigma per axis). 2 days. Measured in a real Basilisk run (`tests/test_template_claims.py`): 62 % of the images are used (the rest are from the night side); one image alone is good to 56 km (median); the filter is within 2 km by day 1 and 1.6 km (median) after it, up to 12 km just after each night-side stretch, inside its own 3-sigma for 94 % of the axis samples. With no pixel noise every image gives the true position. |
-| 31 | `31_eros_landmark_navigation.json` | A 300 kg probe, orbit only, in a 35 km circular orbit over the poles of asteroid 433 Eros (inclination 90 deg, RAAN 11.35 deg: the orbit normal is perpendicular to Eros's pole), with gravity from Gaskell's NEAR shape model (`polyhedral_gravity`, Basilisk's `polyhedralGravityModel`) and the Sun for the lighting. Needs the Eros files (Reference data, or `spacemissionstudio small-bodies --fetch`). 100 landmarks on the shape; a 30 deg, 1024 x 1024 px camera pointed at Eros's centre images them every 600 s through Basilisk's `pinholeCamera`, and the tool's Kalman filter estimates the orbit from their pixels (`landmark_navigation`, see [Fly around an asteroid and navigate from its landmarks](../../../docs/user-manual/small-body-navigation.md)). The filter starts 100 m and 5 cm/s off (1 sigma per axis). 2 days. Measured in a real Basilisk run (`tests/test_template_claims.py`): 5.5 m after the first image, 0.35 m (median) after it, up to 4.8 m just after the stretches over the night side (22 of 289 images see no landmark), inside the filter's 3-sigma for more than 99 % of the axis samples; about 18 landmarks per image; 0.28 px residuals (the rounding to whole pixels); the shape's pull moves the probe between 35.0 and 38.0 km from the centre. With 1 px of added pixel noise the residuals are about 1 px and the error about 5 m (median over the first half day). |
+| 30 | `30_mars_optical_navigation.json` | Mars orbit: optical navigation from the disk of the planet in camera images. |
+| 31 | `31_eros_landmark_navigation.json` | Asteroid Eros: landmark navigation, with gravity from the shape model. |
 
-## Using one as a starting point for your own mission
+## Start your own mission from a template
 
-**22** and **23** are made for this: 22 has the environment every LEO
-mission needs and nothing else, 23 is a whole small-satellite mission.
-Open one, **Save As...** under your own name, and change it a step at a
-time, running after each (the User Manual's section 6, "Building your own
-scenario, step by step", walks through it).
+22 and 23 are made for this. 22 has the environment that each LEO
+mission needs, and nothing more. 23 is a complete small satellite.
 
-Templates '01' through '18' are deliberately minimal and self-contained --
-no ground stations, no RF links, no Monte Carlo batches layered on top of
-an attitude scenario, etc. -- so each idea is easy to see in isolation.
-'19' and '20' are the exceptions: '19' is the integrated demonstration
-showing what combining several of these concepts looks like (ground
-station + RF link + comms-pointing + power, on one spacecraft), and '20'
-layers both a thermal sensor AND an optional per-wheel motor-thermal model
-onto '07's own full ADCS hardware suite. A real mission scenario will
-usually combine several of these concepts this way (e.g. a comms-relay
-constellation might start from '04' and add '07''s ADCS hardware plus a
-ground station and RF link to each satellite, matching what
-`gui/ground_station_editor.py`/`RFLinkConfig` add, or '19's own
-`comms_pointing` for automatic antenna pointing, or '20's own `"thermal"`
-sensor/`motor_thermal_*` params for thermal telemetry). Copying the
-closest template and layering in the next concept from this list is
-generally easier than starting from a blank scenario.
+1. Open 22 or 23.
+2. Click **File › Save As...**, and save it under your own name.
+3. Change one thing.
+4. Run, and look at the result.
+5. Do steps 3 and 4 again for each change.
+
+The User Manual, section 6, shows this step by step. Templates 01 to 18
+show one idea each, with nothing more. To combine ideas, start from the
+nearest template and add the next idea from another template.
 
 ---
 

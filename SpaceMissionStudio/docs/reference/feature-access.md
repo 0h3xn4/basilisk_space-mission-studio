@@ -1,10 +1,15 @@
 # Feature access: where each feature is in the app
 
-Every feature of SpaceMissionStudio, where a user of the app finds it, the
-User Manual section that describes it, the test that follows its path in
-the app, and its status. The owner asked on 2026-11-24: "Make sure that no
-feature is hidden and that the users can actually use them." This page is
-the result of that audit, and the tests keep it true (decision FA-1).
+This page lists each feature of SpaceMissionStudio. For each feature it
+gives the place in the app, the User Manual section, the test of that
+path, and the status.
+
+On 2026-11-24 the owner asked for an audit:
+
+> Make sure that no feature is hidden and that the users can actually use them.
+
+This page is the result of that audit. The tests keep it true (decision
+FA-1).
 
 **Contents**
 
@@ -60,10 +65,14 @@ them):
 | CLI only | 2 |
 | All | 198 |
 
-Fixed in this audit: the six pointing-budget commands (menu, palette, two
-shortcuts), the six Spacecraft and Ground stations commands, two run
-exports in the File menu, every export in the palette, the empty states of
-eight run views, and the manual's menu and area lists.
+The audit fixed these items:
+
+- the six commands of the pointing budget (menu, palette, two shortcuts);
+- the six commands of the Spacecraft and Ground stations pages;
+- two run exports in the **File** menu;
+- each export in the command palette;
+- the empty states of eight run views;
+- the menu and area lists of the User Manual.
 
 ## Scenario
 
@@ -339,17 +348,20 @@ app has the result another way.
 | `generate-roe-formation` | `--out` `--chief` `--follower-name` `--template-spacecraft` `--roe` `--safe` `--control-law` | Tools › Scenario › Generate ROE Formation...: each option in the dialog | `tests/gui/test_roe_formation_dialog.py` | OK |
 | `gui` | none | the app itself | `tests/gui/test_app.py` | OK |
 
-Flags that only a script needs are named in the row: `run --store` and
-`runs --store` (another run store than the app's), `budget --out` (the
-budget as JSON), `spaceweather-download --dataset SW-Last5Years` (the
-smaller file). The rest of `--out` and `--out-dir` flags are the app's
-file dialogs.
+Some flags are for scripts only. The rows above name them:
+
+- `run --store` and `runs --store`: a run store that is not the app's;
+- `budget --out`: the budget as JSON;
+- `spaceweather-download --dataset SW-Last5Years`: the smaller file.
+
+In the app, the file dialogs do what the other `--out` and `--out-dir`
+flags do.
 
 ## Scenario fields without a form
 
-Every field of the scenario file has a form field, or is on this list
-with its reason (`tests/test_feature_access.py` keeps the list and the
-code in step):
+Each field of the scenario file has a form field, or it is on this list
+with its reason. `tests/test_feature_access.py` keeps the list and the
+code in step.
 
 | Field | Why it has no form field | Status |
 |---|---|---|

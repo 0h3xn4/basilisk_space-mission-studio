@@ -309,14 +309,17 @@ A few things to notice right away:
   * **Run**: Run, Cancel Run, the run mode, Live plot, End of Life,
     Budget, Design Checks, Thermal, Plan, Open Monte Carlo Results... and
     Run This Case (`Ctrl+Shift+R`, below).
-  * **Tools**: 3D Model..., Flight Software, **Scenario** (Add
-    Spacecraft, New Spacecraft from Template..., Generate Walker
-    Constellation..., Generate Phasing Formation..., Generate ROE
-    Formation..., Add Ground Station: each shows its page and does what
-    its button there does), **Budgets** (Add Equipment Item, Remove
-    Equipment Item, Copy as CSV), **Pointing Budget** (the pointing
-    budget's commands, below), Check a CCSDS File..., Reference Data...
-    and Check Reference Data.
+  * **Tools**: 3D Model..., Flight Software, three submenus, Check a
+    CCSDS File..., Reference Data... and Check Reference Data. The
+    submenus:
+    * **Scenario**: Add Spacecraft, New Spacecraft from Template...,
+      Generate Walker Constellation..., Generate Phasing Formation...,
+      Generate ROE Formation... and Add Ground Station. Each command
+      shows its page and does what the button on that page does.
+    * **Budgets**: Add Equipment Item, Remove Equipment Item and Copy as
+      CSV.
+    * **Pointing Budget**: the commands of the pointing budget (Section 6,
+      "The pointing error budget").
   * **Help**: this manual, Keyboard Shortcuts, Third-Party Licences... and
     About (a small window with the version, the Basilisk version and the
     licence, and buttons for the third-party licences and this manual).
@@ -327,12 +330,16 @@ A few things to notice right away:
   or the palette ("menu bar") shows it again.
 * Every command is also in the **command palette**: press `Ctrl+K`, or
   click the search field in the top bar, and type part of its name
-  ("save as", "budget", or a spacecraft's name). It also lists every
-  page, panel and Settings section ("Go to ›"), every template, every
-  export ("Export ›": the view that makes it, as a double-click in
-  **Reports › Exports** does) and the series of the run shown.
-  [Feature access](docs/reference/feature-access.md) lists each feature
-  with its place in the app.
+  ("save as", "budget", or a spacecraft's name). The palette also lists
+  these items:
+  * each page, panel and Settings section ("Go to ›");
+  * each template;
+  * each export ("Export ›"): it opens the view that makes the export,
+    as a double-click in **Reports › Exports** does;
+  * the series of the run shown.
+
+  [Feature access](docs/reference/feature-access.md) gives the place in
+  the app of each feature.
 * **Drop-down lists** open below their field, at most 12 rows high with a
   scroll bar. A list of 12 entries or more has a **Type to filter** field
   at its top: just type while it is open and only the entries containing
@@ -1142,11 +1149,11 @@ app guesses none.
 
 - **Add Pointing Budget** starts one. If the spacecraft has no budgets
   section yet, the new section holds the pointing budget and nothing
-  else. Each command of the page is also in **Tools › Pointing Budget**
-  and in the command palette ("pointing"): **Add Pointing Requirement**
-  (`Ctrl+Shift+E`), **Add Pointing Contributor** (`Ctrl+Shift+T`), the
-  two Remove commands and **Add Scenario Sensors to Pointing Budget**.
-  From another area they open this page first.
+  else.
+- **Tools › Pointing Budget** and the command palette ("pointing") have
+  each command of this page. **Add Pointing Requirement** has
+  `Ctrl+Shift+E`. **Add Pointing Contributor** has `Ctrl+Shift+T`. From
+  another area, a command opens this page first.
 - **Requirements**: one row per limit. **Index** is the error looked at:
   *absolute* (at any instant), *mean* (over the window), *relative*
   (about the window's mean), *drift* and *reproducibility* (the change
@@ -1487,10 +1494,10 @@ byte order.
 
 After a run finishes, the **Results** area opens on **Plots**: a catalog
 of the run's plots on the left, the plots in a grid beside it, and a
-readout under the catalog. Before the first run, each run view (Plots,
-3D View, the map, Timeline, Compare, Dashboard) says so and has a
-**Run** button; Output has **Go to Mission Sequence** (a Report step
-fills it) and Dashboard **Open Template 19** too.
+readout under the catalog. Before the first run, the run views (Plots,
+3D View, the map, Timeline, Compare, Dashboard) show a **Run** button.
+**Output** shows **Go to Mission Sequence**: a Report step fills it.
+**Dashboard** also shows **Open Template 19**.
 
 **Overview**, the first view of Results, shows the run's headline
 figures as cards of one size, each with its unit: run length, the orbital

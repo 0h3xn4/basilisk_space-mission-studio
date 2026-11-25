@@ -12,6 +12,40 @@
   A `BUDGETS_VERSION` step with a migration; tests with a hand case.
   About 3 hours.
 
+- Documentation in Simplified Technical English, group 2: the how-to
+  guides (`docs/user-manual/*.md`, 28 pages). Rewrite each page by
+  `docs/developer/writing-style.md` (decision DOC-1): shorter, steps as
+  numbered lists, the names of the term list, paths with "›"; check
+  every menu path, button name and shortcut against the code. Add the
+  pages to `CHECKED` in `tests/test_writing_style.py`. Do not change
+  `docs/reference/feature-access.md` or the pages of the feature-access
+  work until it is merged. About 5 hours.
+
+- Documentation in Simplified Technical English, group 3: the User
+  Manual (`USER_MANUAL.md`). The same rules; keep its section numbers
+  and anchors (the SUM, the how-to pages and the app's help cite them)
+  and the "Which template next?" table that
+  `tests/test_template_catalog.py` reads; run `scripts/sync_help.py`.
+  Add it to `CHECKED`. About 5 hours.
+
+- Documentation in Simplified Technical English, group 4: the model and
+  reference pages (`docs/models/*.md`, `docs/reference/*.md`,
+  `docs/api.md`). The same rules; keep each rule's value, unit and
+  source exactly, and the examples that `tests/test_api.py` and
+  `tests/test_config.py` read. Add them to `CHECKED`. About 5 hours.
+
+- Documentation in Simplified Technical English, group 5: the developer
+  documents (`CONTRIBUTING.md`, `docs/developer/*.md`, `docs/DESIGN.md`,
+  the folder READMEs not in group 1). The same rules; correct stale
+  facts (commands, CI jobs, file names). Add them to `CHECKED`. About 5
+  hours.
+
+- Documentation in Simplified Technical English, group 6: the compliance
+  documents (`compliance/`), stale facts only. Correct versions, counts,
+  paths and names that are no longer true; keep the DRD structure, the
+  section numbers and the generated parts (`check_drds.py` and the
+  generators stay clean). No rewrite of the text. About 5 hours.
+
 - An operations form (feature access, `docs/reference/feature-access.md`).
   The operations section's activity types, requests, scheduler (objective,
   weights, iterations), what-if events and verification settings are
@@ -33,10 +67,20 @@
   `tests/gui/test_reports_and_settings.py::test_every_export_is_listed_never_written_at_first`
   (23 to 24), and a GUI test may change only how it reaches a widget.
 
+
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
 owner has answered the plan's open questions.
+
+- Two texts name a place in the window differently from the window:
+  the Exports page (`gui/exports_page.py`) gives **Export Orbits as
+  CCSDS...** under "Tools ›", but the menu bar has it under **File**; the
+  support data message of `engine/kernels.py` says "Reference data
+  dialog (Settings > Reference data, Download... > Support data)", with
+  ">" (the window writes "›") and "dialog" (the window is the
+  **Reference data** window). Found in the documentation rewrite
+  (decision DOC-9). About 30 minutes with the tests that quote them.
 
 - A pointing error budget, scope C: the absolute, relative and mean
   performance errors measured from a run's attitude error series over

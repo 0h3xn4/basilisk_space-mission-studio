@@ -1,7 +1,7 @@
 # Troubleshooting
 
-What to do when installing or running SpaceMissionStudio goes wrong,
-listed by the message you see. The messages are quoted exactly.
+What to do when the installation or a run goes wrong. Each problem is
+listed by the message that you see. The messages are quoted exactly.
 
 ## Contents
 
@@ -20,42 +20,45 @@ listed by the message you see. The messages are quoted exactly.
 Basilisk 2.12.0 has prebuilt wheels only for:
 
 - Linux x86_64 and aarch64 with glibc 2.28 or newer (`ldd --version`
-  shows yours);
+  shows your version);
 - Windows x86_64;
 - Python 3.14 (`python3 --version`).
 
-On anything else (an older Linux such as Ubuntu 18.04) pip
-finds no wheel. Use a newer system, or build Basilisk from source
-([Basilisk's build guide](../../docs/source/Build.rst); rarely needed).
+On other systems, for example Ubuntu 18.04, pip finds no wheel. Use a
+newer system. You can also build Basilisk from source, but this is
+rarely necessary ([Basilisk's build guide](../../docs/source/Build.rst)).
 
 ### Behind a company firewall or proxy
 
-`pip` and the reference-data downloads honour the usual `HTTPS_PROXY`
-environment variable; set it before installing. The hosts to allow:
+`pip` and the reference data downloads use the `HTTPS_PROXY`
+environment variable. Set it before the installation. Allow these hosts:
 
 | Host | For |
 |---|---|
-| `pypi.org`, `files.pythonhosted.org` | Installing Basilisk and the Python packages |
+| `pypi.org`, `files.pythonhosted.org` | Basilisk and the Python packages |
 | `naif.jpl.nasa.gov` | SPICE kernels and Earth orientation files |
-| `raw.githubusercontent.com` | The gravity field and magnetic model |
-| `hanspeterschaub.info` | Basilisk's backup for the support data |
-| `celestrak.org` | Newer space weather, only if you ask for it |
-| `www.itu.int` | The ITU-R P.676-13 data file (`gaseous-attenuation --fetch`), only if you ask for it |
+| `raw.githubusercontent.com` | The gravity field and the magnetic model |
+| `hanspeterschaub.info` | Basilisk's second source of the support data |
+| `celestrak.org` | Newer space weather, only when you ask for it |
+| `www.itu.int` | The ITU-R P.676-13 data file (`gaseous-attenuation --fetch`), only when you ask for it |
 
 ### Windows: "running scripts is disabled on this system"
 
-PowerShell refuses to run `Activate.ps1`. Allow scripts you start
-yourself, for your account only, then activate again:
+PowerShell does not run `Activate.ps1`. Allow the scripts that you start
+yourself, for your account only:
 
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
+Then activate the environment again.
+
 ## Starting the app
 
 ### Linux: `ImportError: libEGL.so.1` (or another `.so`) when the GUI starts
 
-A minimal system is missing Qt's libraries. On Debian or Ubuntu:
+A minimal system does not have the Qt libraries. On Debian or Ubuntu,
+install them:
 
 ```bash
 sudo apt-get install libegl1 libopengl0 libxcb-cursor0 libgl1 libxkbcommon0
@@ -63,8 +66,8 @@ sudo apt-get install libegl1 libopengl0 libxcb-cursor0 libgl1 libxkbcommon0
 
 ### The Results plot stays blank
 
-The plots draw in an embedded web view (Qt WebEngine), which needs a few
-more libraries on minimal Linux systems. On Debian or Ubuntu:
+The plots use an embedded web view (Qt WebEngine). On a minimal Linux
+system, it needs more libraries. On Debian or Ubuntu, install them:
 
 ```bash
 sudo apt-get install libnss3 libatk-bridge2.0-0 libgbm1
@@ -72,78 +75,94 @@ sudo apt-get install libnss3 libatk-bridge2.0-0 libgbm1
 
 ### A 3D view says WebGL is not supported or could not start, or stays blank
 
-The 3D model editor and Results › 3D View draw with WebGL. The app
-already lets Chromium use software rendering where there is no usable
-GPU (a virtual machine, a remote desktop). If you set
-`QTWEBENGINE_CHROMIUM_FLAGS` yourself, the app keeps exactly yours: add
-`--ignore-gpu-blocklist --enable-unsafe-swiftshader
---disable-domain-blocking-for-3d-apis` to them. The model
-still works without the view: the mass properties and facets are shown
-in the tabs below it.
+The 3D model editor and **Results › 3D View** use WebGL. Without a
+usable GPU (a virtual machine, a remote desktop), the app lets Chromium
+use software rendering.
+
+If you set `QTWEBENGINE_CHROMIUM_FLAGS` yourself, the app uses only your
+flags. Add these flags to them:
+`--ignore-gpu-blocklist --enable-unsafe-swiftshader --disable-domain-blocking-for-3d-apis`.
+
+The 3D model works without the view. The tabs below the view show the
+mass properties and the facets.
 
 ### "(not qualified)" after the Basilisk version in the status bar
 
-A Basilisk version other than 2.12.0 is installed. Runs still work, but
-outside what the app was verified against. To go back:
+A Basilisk version other than 2.12.0 is installed. Runs work, but the
+app is not verified with that version. To go back, type
 `pip install "bsk[all]==2.12.0"`.
 
 ## Reference data
 
 ### `FAIL  naif0012.tls: Support data file not found via pooch: ...`
 
-`kernels-status` could not download a file, usually because there is no
-internet (it tries NAIF first, then Basilisk's backup host). Connect once
-and run `spacemissionstudio kernels-status` again, or install the files
-from disk ([work offline](user-manual/reference-data.md#work-offline)).
+`kernels-status` could not download a file. Usually there is no internet
+connection. The command tries NAIF first, then Basilisk's second host.
+Do one of these:
+
+- Connect to the internet and type `spacemissionstudio kernels-status`
+  again.
+- Install the files from disk ([Work offline](user-manual/reference-data.md#work-offline)).
 
 ### `ERROR: run failed: support-data file GGM03S.txt is not installed (...)`
 
-The full message continues: "SpaceMissionStudio does not download during
-a run: download it from the Reference data window (Settings > Reference
-data, Download... > Support data) or with `spacemissionstudio
-kernels-status`." Do one of those two, then run again. The dialog opens
-from **Settings > Reference data** > **Reference Data...**, by clicking
-the reference-data item in the status bar, or with **Reference Data...**
-in the command palette (`Ctrl+K`).
+The message continues:
+
+```text
+SpaceMissionStudio does not download during a run: download it from the Reference data dialog (Settings > Reference data, Download... > Support data) or with `spacemissionstudio kernels-status`.
+```
+
+Do these steps:
+
+
+1. Open the **Reference data** window: **Tools › Reference Data...**, or click the reference data item in the status bar.
+2. Click **Download...**, then **Support data**. Or type `spacemissionstudio kernels-status`.
+3. Run again.
 
 ### `Earth orientation: no IERS files installed -- the Earth-fixed frame is IAU_EARTH (about 160 m/day of error at 400 km); Settings > Reference data downloads them`
 
-Explain (Scenario › Overview) shows this, and a run reports `Earth orientation: IAU
-rotation model, no IERS data installed`. The measured Earth orientation
-files are missing, so the run uses the simpler IAU model. Run
-`spacemissionstudio earth-orientation --fetch`, or, in the **Reference
-data** dialog (**Settings > Reference data** > **Reference Data...**),
-**Download... > Earth orientation**.
+**Scenario › Overview** shows this message. A run shows
+`Earth orientation: IAU rotation model, no IERS data installed`. The
+measured Earth orientation files are not installed, so the run uses the
+simpler IAU model. Do one of these:
+
+- Type `spacemissionstudio earth-orientation --fetch`.
+- In the **Reference data** window, click **Download...**, then **Earth
+  orientation**.
 
 ## Running a scenario
 
 ### `ERROR: Basilisk is not installed/built (No module named 'Basilisk') -- see SpaceMissionStudio/README.md`
 
-Or, in the GUI, Run says Basilisk is not installed. The GUI works without
-Basilisk; runs need it. Activate your environment
-(`source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows)
-and run `pip install "bsk[all]==2.12.0"`. With an installer: reinstall
-while connected to the internet.
+The GUI can also say that Basilisk is not installed. The GUI works
+without Basilisk, but runs need it.
+
+1. Activate your environment: `source .venv/bin/activate`, or `.venv\Scripts\Activate.ps1` on Windows.
+2. Type `pip install "bsk[all]==2.12.0"`.
+
+With an installer, install the app again.
 
 ### Run is not available
 
-Look at the message at the bottom of the **Scenario** area: it names the
-field to fix; the **Problems** panel (`Ctrl+J`) lists every problem. **✓ valid** means you can run.
+Look at the message at the bottom of the **Scenario** area. It names
+the field to correct. The **Problems** panel (`Ctrl+J`) lists all
+problems. **✓ valid** means that you can run.
 
 ### A run takes too long, or you started the wrong one
 
-**Cancel** in the status bar (`Esc`, or **Cancel Run**) stops it
-safely at the next checkpoint and keeps the results so far. It is not
-instant. A Monte Carlo batch is cancelled the same way: the processes
-running it end, the runs finished stay in the archive folder, and the
-Monte Carlo view opens on them. Closing the window during a batch asks
+Click **Cancel Run** (`Esc`). The run stops safely at the next
+checkpoint, and keeps its results. The stop is not immediate.
+
+**Cancel Run** also stops a Monte Carlo batch. Its processes stop. The
+finished runs stay in the archive folder, and **Results › Monte Carlo**
+opens on them. If you close the window during a batch, the app asks:
 **Cancel and close** or **Keep running**.
 
 ### A long run fills memory
 
-Set **Record every** on the scenario tree's **Environment** page (for example 600 s).
-Five years of LEO station keeping took about 50 minutes and 450 MB with
-it.
+Set **Record every** on the **Scenario › Environment** page, for example
+600 s. With this setting, five years of LEO station keeping took about
+50 minutes and 450 MB.
 
 ### A run with script blocks is refused
 
@@ -151,23 +170,23 @@ it.
 1 script_block(s) (...) run unrestricted Python from the scenario file. Read the code first, then pass --allow-scripts to run it.
 ```
 
-The scenario's Mission Sequence contains Python code. Read it; if you
-trust it, add `--allow-scripts` (the GUI asks instead).
+The Mission Sequence of the scenario contains Python code. Read the
+code. If you trust it, add `--allow-scripts`. The GUI asks you instead.
 
 ## Scenario files
 
-`spacemissionstudio validate` (and **Open...** (Ctrl+O)) name the problem:
+`spacemissionstudio validate` and **File › Open...** name the problem:
 
-| Message | Means |
+| Message | Meaning |
 |---|---|
-| `INVALID: f.json: not valid JSON (Expecting property name enclosed in double quotes: line 1 column 3 (char 2))` | The file is not JSON; the position is given |
-| `INVALID: f.json: spacecraft[0].dry_mass_kg: expected a number, got text` | A value has the wrong type; the field is named |
-| `INVALID: my-sat: dry_mass_kg must be in (0, 1e6] -- if your intended value is outside this range, check for a units mixup (e.g. g instead of kg)` | A value is out of range |
-| `INVALID: f.json: could not read file (No such file or directory)` | Wrong path |
-| `INVALID: f.json: malformed scenario structure (...)` from SpaceMissionStudio 1.3.1 or earlier | The file was saved by 2.0.0, which writes fields older versions do not know (`sim_settings.seed` in every file). Open it with 2.0.0; 2.0.0 opens every file 1.x saved. Update a team together |
-| `... imports[1].target must be one of ('orbit', 'model')` from SpaceMissionStudio 2.2.0 | The file was saved by 2.3.0 or later after an IDM-CIC import added sensors and actuators or set the power budget. Open it with 2.3.0 or later; update a team together |
+| `INVALID: f.json: not valid JSON (Expecting property name enclosed in double quotes: line 1 column 3 (char 2))` | The file is not JSON. The message gives the position. |
+| `INVALID: f.json: spacecraft[0].dry_mass_kg: expected a number, got text` | A value has the wrong type. The message names the field. |
+| `INVALID: my-sat: dry_mass_kg must be in (0, 1e6] -- if your intended value is outside this range, check for a units mixup (e.g. g instead of kg)` | A value is out of range. |
+| `INVALID: f.json: could not read file (No such file or directory)` | The path is wrong. |
+| `INVALID: f.json: malformed scenario structure (...)` in an old version | A newer version saved the file. Open it with that version or a newer one. Update all computers of a team together. |
 
-`ccsds-import` refuses a message whose epoch differs from the scenario's:
+`ccsds-import` refuses a message with an epoch that is not the epoch of
+the scenario:
 
 ```text
 ERROR: the OPM state is at 2030-01-01T08:30:00 UTC, the scenario epoch is 2030-02-01T00:00:00; pass --set-epoch to move the scenario epoch to the OPM's
@@ -175,28 +194,34 @@ ERROR: the OPM state is at 2030-01-01T08:30:00 UTC, the scenario epoch is 2030-0
 
 ### `Cannot import here yet: the scenario is a built-in template: save it as your own file first (File › Save As), then try again.`
 
-The 3D model editor's **Import IDM-CIC model...** writes the model's
-meshes beside the scenario file, and the app keeps the built-in
-templates as shipped. **Save As...** (Ctrl+Shift+S) under your own name,
-then import again. A scenario never saved, or saved in a read-only
-folder, is refused the same way, with its own reason.
+**Import IDM-CIC model...** in the 3D model editor writes the meshes of
+the model beside the scenario file. The app does not change the
+templates.
+
+1. Click **File › Save As...** (`Ctrl+Shift+S`), and save the scenario under your own name.
+2. Import the model again.
+
+The app refuses an import in the same way for a scenario that you did
+not save, or that is in a read-only folder. The message gives the
+reason.
 
 ## Messages that are normal
 
 | Message | Why |
 |---|---|
-| `INFO ... Logging to ~/.spacemissionstudio/logs/...log` | Every command says where its log file is |
-| `INFO matplotlib.font_manager: ... generated new fontManager` | The first run builds a font cache, once |
-| `WARNING: space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap` | The run is past the end of the observed space-weather record, so drag uses NASA MSFC's prediction |
-| `WARNING: past 2041-10 MSFC's last 132 months repeat (ESA AD10 Sec. 5.9)` | A long lifetime estimate runs past MSFC's prediction; its last solar cycle is repeated |
-| `N: Download is performed unsandboxed as root, as file '.../spacemissionstudio_<version>_amd64.deb' couldn't be accessed by user '_apt'` | apt's notice when the `.deb` is in a folder its `_apt` user cannot read, such as your home folder. The install still succeeds. To avoid the notice, copy the `.deb` to `/tmp` and install it from there |
+| `INFO ... Logging to ~/.spacemissionstudio/logs/...log` | Each command gives its log file. |
+| `INFO matplotlib.font_manager: ... generated new fontManager` | The first run makes a font cache, one time. |
+| `WARNING: space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap` | The run is after the end of the observed space weather, so the drag uses NASA MSFC's prediction. |
+| `WARNING: past 2041-10 MSFC's last 132 months repeat (ESA AD10 Sec. 5.9)` | A long lifetime estimate goes past the end of MSFC's prediction. The app repeats its last solar cycle. |
+| `N: Download is performed unsandboxed as root, as file '.../spacemissionstudio_<version>_amd64.deb' couldn't be accessed by user '_apt'` | apt shows this notice when its user `_apt` cannot read the folder of the `.deb`, for example your home folder. The installation is correct. To prevent the notice, copy the `.deb` to `/tmp` and install it from there. |
 
 ## Reporting a problem
 
-Include:
+[Open an issue](https://github.com/0h3xn4/basilisk_space-mission-studio/issues)
+with:
 
-- the log file named in the error dialog (in `~/.spacemissionstudio/logs/`);
-- the versions, from **Settings > About** or
+- the log file that the error dialog names (in `~/.spacemissionstudio/logs/`);
+- the versions, from **Help › About SpaceMissionStudio** or
   `spacemissionstudio --version`;
 - the scenario file, if you can share it.
 

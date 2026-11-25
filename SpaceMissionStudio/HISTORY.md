@@ -22210,6 +22210,72 @@ The release and its files were checked after the publication:
 SRelD issue 58, the SDP, H05 and `releasing.md` record the tag, the runs
 and the files' digests. The CHANGELOG is unchanged.
 
+## Documentation in Simplified Technical English, group 1 (2026-11-25)
+
+**What the owner found.** "Check the root readme. It is absolutely
+horrendous for new users, too much prose and thus too much noise." Then:
+all documentation, including every README, the user manual and the
+how-to pages, is to be updated with ASD-STE100 Simplified Technical
+English. The work is cut into six groups; this is group 1, the
+documents a new user reads first, with the standard and a check that
+the later groups reuse (decisions DOC-1 to DOC-9).
+
+**What was wrong.** The root README had 274 lines before the Basilisk
+part. Its "Version" line alone held a paragraph of about 900 words: the
+story of every release from 1.0.0 to 2.16.0. The tool's README said 41
+templates (there are 47), the glossary 32. Getting started showed
+`validate` printing schema version 6 (it prints 8). The root README told
+a user to click **Open** on a template card (the button is **Open
+template**). Getting started put **Check Reference Data** in the Run
+menu (it is in **Tools**, and a button in the **Run** area) and said the
+status bar always shows the Basilisk version (it shows it only when it
+needs attention). The examples page listed an older set of API
+functions. The template catalog had cells of up to 1765 characters.
+`packaging/README.md` mixed what is true now with records of 1.0.0 and
+1.1.0 checks.
+
+**What changed.**
+
+- `docs/developer/writing-style.md`: the rules in our own words, the
+  documents they cover and those they do not, a term list taken from
+  the code (rail, menus, commands, area pages, window titles), and a
+  "Words not to use" table.
+- `scripts/check_writing.py` and `tests/test_writing_style.py`: sentence
+  and paragraph lengths, the words of the table, paths written with ">".
+  The test holds the list of checked documents; later groups add theirs.
+- Rewritten: the root README's SpaceMissionStudio part (100 lines; the
+  Basilisk part unchanged, checked by its SHA-256), `README.md`,
+  `GETTING_STARTED.md` (a pointer), `docs/getting-started.md`,
+  `docs/faq.md`, `docs/tips.md`, `docs/troubleshooting.md`,
+  `docs/glossary.md`, `docs/README.md`, `examples/README.md`, the
+  templates' README, `packaging/README.md` and the space weather README.
+- `packaging/VERIFICATION_HISTORY.md`: the old verification records of
+  `packaging/README.md`, kept as they were written.
+- `compliance/docs/SUITP_test_cases.md`, regenerated: it lists the new
+  test design and its six test cases.
+- One line each in `CONTRIBUTING.md` and the developer guide points to
+  the standard.
+
+**How it was checked.** Full suite, 3 workers: 6466 passed, 19 skipped,
+1 failed, the known local-only status bar test
+(`test_a_reported_path_is_not_clipped_in_the_status_bar`). ruff passes.
+The compliance generators change nothing on a second run, and
+`check_drds.py` finds 0 problems. Every menu path, button name and shortcut was
+read from the running window (an offscreen dump of the menu bar, the
+action registry and the area pages with template 22 open) or from the
+code. `validate`, `run`, `kernels-status` and all five examples were run
+again; the examples' printed values match, except the lifetime sweep's
+last digit at 400 and 500 km (2.66 and 6.84 years). The one-line source
+install resolved with `pip install --dry-run` on Python 3.14. Every
+relative link and anchor of the SpaceMissionStudio Markdown files
+resolves (a script with GitHub's heading slugs). The check finds no
+problem in the 14 documents of group 1.
+
+**Found, not changed.** The Exports page names **Tools › Export Orbits
+as CCSDS...**, but the menu has it under **File**; the support data
+message says "Reference data dialog (Settings > ...)". Both are in
+`BACKLOG.md`, "Later".
+
 ## Feature access: no feature hidden (2026-11-24)
 
 **What was asked.** The owner: "Make sure that no feature is hidden and

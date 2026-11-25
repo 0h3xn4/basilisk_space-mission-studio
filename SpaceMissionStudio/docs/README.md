@@ -1,88 +1,82 @@
 # SpaceMissionStudio documentation
 
-Every SpaceMissionStudio document in one place, grouped by what you want
-to do. New here? Start with **Getting started**.
+All SpaceMissionStudio documents, in groups. If you are new, start with
+[Getting started](getting-started.md).
 
-## Getting started
+## Start here
 
-| Page | What it is for |
+| Page | Use it to |
 |---|---|
-| [Getting started](getting-started.md) | Install on Linux or Windows, check it works, run a first mission |
-| [FAQ](faq.md) | Short answers: systems, internet, accuracy, data exchange, licence |
-| [Troubleshooting](troubleshooting.md) | What to do about each error message |
-| [Glossary](glossary.md) | Every term and abbreviation, in plain language |
+| [Getting started](getting-started.md) | Install on Linux or Windows, check the installation, do a first run |
+| [FAQ](faq.md) | Get short answers: systems, internet, accuracy, data exchange, licence |
+| [Troubleshooting](troubleshooting.md) | Find what to do for each error message |
+| [Glossary](glossary.md) | Find the meaning of a term or an abbreviation |
 
-## User guides
+## Use the app
 
-| Page | What it is for |
+| Page | Use it to |
 |---|---|
-| [How-to guides](user-manual/README.md) | One short page per task: run, customize, build, read results, and each feature |
-| [User Manual](../USER_MANUAL.md) | The full manual, also in the app under **Help**, the last button of the navigation rail (`F1`) |
-| [Template catalog](../spacemissionstudio/scenarios/templates/README.md) | The template missions by category, from simple to advanced, and what each one teaches |
-| [Tips](tips.md) | Shortcuts, good habits, and every file the app reads and writes |
+| [How-to guides](user-manual/README.md) | Do one task: one short page for each task and each feature |
+| [User Manual](../USER_MANUAL.md) | Learn the full app. It is also in the app (**Help**, `F1`). |
+| [Template catalog](../spacemissionstudio/scenarios/templates/README.md) | Select a template: 47 missions in nine categories, from simple to advanced |
+| [Tips](tips.md) | Learn the shortcuts and good habits; see each file that the app reads and writes |
+| [Python examples](../examples/README.md) | Use the engine from Python: five scripts |
 
 ## Reference
 
-| Page | What it is for |
+| Page | Use it to |
 |---|---|
-| [Use the command line](user-manual/command-line.md) | Every `spacemissionstudio` command |
-| [Template coverage](reference/template-coverage.md) | Each feature of the tool and the templates that show it, and why three have no template |
-| [The definition of done](definition-of-done.md) | How each transparency criterion is checked, with the walkthrough of every output's calculation |
-| [The Python API](api.md) | `spacemissionstudio.api`: load, check, run, lifetime, budget, trades, Monte Carlo, comparisons, design checks, model analyses and the re-entry estimate from a script, with tested examples |
-| [Models, rules and assumptions](models/README.md) | One page per model: how it computes, every rule with its value, unit and source, and what it assumes |
-| [Feature access](reference/feature-access.md) | Every feature, where it is in the app (menu, palette, keys), its manual section, the test that follows its path, and what is still hidden |
-| [Capabilities and verification](reference/capabilities.md) | What the app can do, which Basilisk modules do it, what has been verified |
-| [Known limitations](reference/limitations.md) | What it does not do, and why |
-| [Transparency audit](transparency_audit.md) | Every hard-coded value, hidden assumption, underived output, forced choice and data exchange, with file and line, and the plan to make results traceable and editable ([every numeric literal](transparency_audit_constants.csv)) |
-| [Network use, offline mode and telemetry](reference/network.md) | What can reach the network and which hosts, offline mode for you or a whole computer, how it is enforced and logged, what it does not cover |
-| [Data, standards and the offline policy](reference/data-and-standards.md) | Qualified Basilisk version, CCSDS, Earth orientation, space weather, network use |
-| [Packaging](../packaging/README.md) | How the installers are built, and what was run where |
-| [Compliance records](../compliance/README.md) | ECSS and CCSDS requirements, design, verification and the compliance matrix |
-| [Changelog](../CHANGELOG.md) | What changed in each release |
-| [Changes to results](changes.md) | Each fix that changed a computed value, with its before and after figures |
+| [Use the command line](user-manual/command-line.md) | See each `spacemissionstudio` command |
+| [The Python API](api.md) | Use `spacemissionstudio.api` from a script: load, check, run, lifetime, budgets, Monte Carlo and more |
+| [Models, rules and assumptions](models/README.md) | See how each model calculates, each rule with its value, unit and source, and its assumptions |
+| [Feature access](reference/feature-access.md) | See where each feature is in the app (menu, palette, keys), its manual section, its test, and what is still hidden |
+| [Capabilities and verification](reference/capabilities.md) | See what the app can do, which Basilisk module does it, and what is verified |
+| [Template coverage](reference/template-coverage.md) | See which templates show each feature |
+| [Known limitations](reference/limitations.md) | See what the app does not do, and why |
+| [Network use, offline mode and telemetry](reference/network.md) | See what can use the network, offline mode, and how the app enforces and logs it |
+| [Data, standards and the offline policy](reference/data-and-standards.md) | See the qualified Basilisk version, CCSDS, Earth orientation and space weather |
+| [The definition of done](definition-of-done.md) | See how each transparency criterion is checked |
+| [Transparency audit](transparency_audit.md) | See each hard-coded value and hidden assumption, with file and line ([all numeric literals](transparency_audit_constants.csv)) |
+| [Packaging](../packaging/README.md) | See how the installers are built and checked |
+| [Compliance records](../compliance/README.md) | See the ECSS and CCSDS requirements, design, verification and compliance matrix |
+| [Changelog](../CHANGELOG.md) | See what changed in each release |
+| [Changes to results](changes.md) | See each fix that changed a calculated value, with the values before and after |
 
-## Examples
+## Develop the app
 
-| Page | What it is for |
+| Page | Use it to |
 |---|---|
-| [Python examples](../examples/README.md) | Five scripts: build a scenario, run templates, a Hohmann transfer, a lifetime sweep, a Monte Carlo spread |
-| [Template missions](../spacemissionstudio/scenarios/templates/README.md) | Ready-to-run scenarios, from one orbit to a complete small satellite |
-
-## Developer docs
-
-| Page | What it is for |
-|---|---|
-| [Contributing](../CONTRIBUTING.md) | How to propose a change |
-| [Developer guide](developer/README.md) | Set up, run the tests and the linter, regenerate generated files |
-| [Architecture](developer/architecture.md) | The layers, how a run flows, where things live |
-| [Design system](DESIGN.md) | Colour tokens in both themes, type, layout, components, message and keyboard patterns, and the rules new GUI code follows |
-| [UX/UI standard](ux-standard.md) and [UX audit](ux-audit.md) | The goals for the interface, and the findings and changes made against them |
-| [UI overhaul brief](ui/UI_OVERHAUL.md), [plan](ui/UI_OVERHAUL_PLAN.md) and [before and after](ui/BEFORE_AFTER.md) | The 1.3.0 interface: what was asked, the milestones, and what changed, measured and pictured |
-| [Decisions](DECISIONS.md) | Choices made during the UI overhaul where the brief and the plan are silent, each with its rationale |
-| [Third-party assets](THIRD_PARTY_ASSETS.md) | The fonts, icons and libraries the GUI bundles or needs, with their licences |
-| [IDM-CIC import: design](developer/idm-cic-integration.md) | How the IDM-CIC reader and import work, and what was decided when they were built |
-| [The JSON page as a code editor](developer/json-editor.md) | How the scenario's text is highlighted, its problems marked in place, completed, explained and refactored, and what was decided |
-| [Analyses built on the 3D model: design](developer/model-analyses-design.md) | The design of the equipment, design checks and model analyses, with its [decisions](developer/model-analyses-decisions.md), [progress](developer/model-analyses-progress.md) and [sources](developer/model-analyses-sources.md) |
-| [System Budget Studio in SpaceMissionStudio: merge plan](developer/system-budget-merge-design.md) | The proposal to bring the budgets of System Budget Studio into SpaceMissionStudio: overlap, phases, licence, open questions |
-| [System budgets, phase 1: design](developer/system-budget-phase1-design.md) | The equipment list, the system modes and the static power budget: the file format, the calculation, the findings, with its [decisions](developer/system-budget-decisions.md) |
-| [Monte Carlo: plan](developer/monte-carlo-plan.md) | What the Monte Carlo batch does today, its gaps with evidence, and phases A, B and C to make it useful (outcomes, requirements with a confidence bound, reproduce a case), with the open questions |
-| [Releasing](developer/releasing.md) | Version numbers, checks, building the packages |
-| [Keeping up with upstream Basilisk](developer/upstream-sync.md) | Merging upstream, refreshing the root README's upstream part |
-| [Development log](../HISTORY.md) | Why everything is the way it is, change by change |
-| [Documentation audit](DOCS_AUDIT.md) | The audit behind this documentation set, and what changed |
+| [Contributing](../CONTRIBUTING.md) | Propose a change |
+| [Developer guide](developer/README.md) | Prepare a development environment, run the tests and the linter, make the generated files |
+| [Writing style](developer/writing-style.md) | Write documentation: the rules (ASD-STE100 principles), the term list, the check |
+| [Architecture](developer/architecture.md) | See the layers, the flow of a run, and where things are |
+| [Design system](DESIGN.md) | See the colour tokens, type, layout, components and the rules for GUI code |
+| [UX/UI standard](ux-standard.md) and [UX audit](ux-audit.md) | See the goals for the interface, and the findings and changes |
+| [UI overhaul brief](ui/UI_OVERHAUL.md), [plan](ui/UI_OVERHAUL_PLAN.md), [before and after](ui/BEFORE_AFTER.md) | See the 1.3.0 interface work |
+| [Decisions](DECISIONS.md) | See the choices made where a brief or a plan said nothing, each with its reason |
+| [Third-party assets](THIRD_PARTY_ASSETS.md) | See the fonts, icons and libraries of the GUI, with their licences |
+| [IDM-CIC import: design](developer/idm-cic-integration.md) | See how the IDM-CIC reader and import work |
+| [The JSON page as a code editor](developer/json-editor.md) | See how the JSON page marks, completes, explains and changes the text |
+| [Analyses built on the 3D model: design](developer/model-analyses-design.md) | See the design of the equipment, design checks and model analyses ([decisions](developer/model-analyses-decisions.md), [progress](developer/model-analyses-progress.md), [sources](developer/model-analyses-sources.md)) |
+| [System budgets: merge plan](developer/system-budget-merge-design.md) and [phase 1 design](developer/system-budget-phase1-design.md) | See how the budgets of System Budget Studio came into the app ([decisions](developer/system-budget-decisions.md)) |
+| [Monte Carlo: plan](developer/monte-carlo-plan.md) | See what a Monte Carlo batch does, its gaps, and phases A, B and C |
+| [Releasing](developer/releasing.md) | Make a release: version numbers, checks, packages |
+| [Keeping up with upstream Basilisk](developer/upstream-sync.md) | Merge upstream Basilisk; update the upstream part of the root README |
+| [Development log](../HISTORY.md) | See why each change was made |
+| [Documentation audit](DOCS_AUDIT.md) | See the audit of this documentation set, and what changed |
 
 ## Upstream Basilisk documentation
 
-SpaceMissionStudio lives in a fork of
-[Basilisk](https://github.com/AVSLab/basilisk). Basilisk's own
-documentation is unchanged and stays where it is:
+SpaceMissionStudio is in a fork of
+[Basilisk](https://github.com/AVSLab/basilisk). The Basilisk
+documentation is not changed:
 
-| Page | What it is for |
+| Page | Use it to |
 |---|---|
-| [Basilisk documentation online](https://avslab.github.io/basilisk/) | The published Basilisk docs: install, modules, examples |
-| [Original Basilisk README](../../README.md#original-basilisk-readme) | The upstream README, verbatim, in the root README |
-| [`docs/source/`](../../docs/source/) | The Sphinx sources of Basilisk's documentation |
-| [Basilisk's contributing guide](../../CONTRIBUTING.md) | How to contribute to Basilisk itself |
+| [Basilisk documentation online](https://avslab.github.io/basilisk/) | Install Basilisk, and read about its modules and examples |
+| [Original Basilisk README](../../README.md#original-basilisk-readme) | Read the upstream README, in the root README |
+| [`docs/source/`](../../docs/source/) | Read the Sphinx sources of the Basilisk documentation |
+| [Basilisk's contributing guide](../../CONTRIBUTING.md) | Contribute to Basilisk itself |
 
 ---
 
