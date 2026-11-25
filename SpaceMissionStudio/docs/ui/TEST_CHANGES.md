@@ -3040,4 +3040,3 @@ New tests:
   Tools › Scenario commands, the File exports and the run views' empty
   states end to end; a long palette entry neither scrolls the list
   sideways nor hides the keys (FA-10).
-

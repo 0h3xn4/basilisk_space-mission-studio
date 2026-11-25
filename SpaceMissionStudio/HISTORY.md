@@ -22249,5 +22249,8 @@ counts add up, every scenario field has a form field or a reason) and
 and runs from it with the dialogs answered at once; the pages, settings
 and exports of the palette open; the page names every command with its
 keys; the pointing, Scenario and File commands and the empty states end
-to end). No existing test changed. Decisions FA-1 to FA-9.
-
+to end). No existing test changed. A first full run failed two: the
+Budgets submenu test expects only the equipment commands in Tools ›
+Budgets, so the pointing commands moved to a Tools › Pointing Budget
+submenu of their own, and DESIGN.md's shortcut table needed the two new
+keys. Decisions FA-1 to FA-10.

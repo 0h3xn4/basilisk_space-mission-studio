@@ -6856,4 +6856,3 @@ change; the golden files are byte-identical.
   keys at the right end of a row (`Ctrl+Shift+E`) were cut. A row now
   takes the list's width, its name elided before the keys, as the
   palette already drew it; the list never scrolls sideways.
-
