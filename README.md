@@ -22,7 +22,7 @@ Basilisk itself is unchanged: its README follows below, under
 SpaceMissionStudio lets you design a satellite mission in forms, run it,
 and read the results, without writing code. Every number comes from
 Basilisk; SpaceMissionStudio adds the windows, scenario files, plots,
-checks and analysis around it. Start from one of 42 template missions,
+checks and analysis around it. Start from one of 47 template missions,
 in nine categories, or build your own, then look at orbits, ground
 passes, eclipses, pointing, battery, link margin, lifetime and
 propellant. A spacecraft with a 3D model can also carry a thermal model,

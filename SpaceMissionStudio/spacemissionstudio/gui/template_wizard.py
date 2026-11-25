@@ -70,8 +70,10 @@ split every other GUI-vs-schema boundary in this app already uses.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -242,14 +244,20 @@ def _model_part(scenario: Scenario, name: str):
     return next(part for part in _sc(scenario).model.parts if part.name == name)
 
 
+# Where a template's 3D model reads its meshes: the templates' own folder
+# ('43' has an imported .obj there, at a path relative to the template).
+_TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "scenarios" / "templates"
+
+
 def _set_model_part(scenario: Scenario, name: str, change: Callable) -> None:
     """Change one part of the spacecraft's 3D model, then write what the
     model derives (mass, center of mass, inertia, facets) back into the
-    spacecraft, as the 3D model editor's OK does."""
+    spacecraft, as the 3D model editor's OK does. Mesh parts are read from
+    the templates' folder, where the template's relative mesh path points."""
     from ..model3d import model as model3d
 
     change(_model_part(scenario, name))
-    model3d.apply(_sc(scenario), model3d.derive(_sc(scenario).model),
+    model3d.apply(_sc(scenario), model3d.derive(_sc(scenario).model, _TEMPLATES_DIR),
                   orbit_only=scenario.simulation_mode == "orbit_only")
 
 
@@ -688,6 +696,61 @@ def _navigation_bound(attribute: str):
         setattr(errors, step, min(getattr(errors, step), value / 10.0))
 
     return get, set_
+
+
+def _dispersion_value(quantity: str, attribute: str, index: int | None = None):
+    """Get/set for one number of '44''s dispersion of ``quantity``: an
+    attribute (``std_deviation``) or one end of its ``bounds``."""
+    def dispersion(scenario: Scenario):
+        return next(d for d in scenario.monte_carlo.dispersions if d.quantity == quantity)
+
+    def get(scenario: Scenario) -> float:
+        value = getattr(dispersion(scenario), attribute)
+        return float(value if index is None else value[index])
+
+    def set_(scenario: Scenario, value: float) -> None:
+        if index is None:
+            setattr(dispersion(scenario), attribute, value)
+        else:
+            getattr(dispersion(scenario), attribute)[index] = value
+
+    return get, set_
+
+
+_T46_CONDITION_NUMBER = re.compile(r"[-+]?\d+(?:\.\d*)?(?:[eE][-+]?\d+)?$")
+
+
+def _raise_conditions(scenario: Scenario) -> list:
+    """'46''s while and if commands, whose conditions end in the target altitude [m]."""
+    return [c for c in scenario.mission_sequence if c.kind in ("while", "if")]
+
+
+def _raise_target_km(scenario: Scenario) -> float:
+    match = _T46_CONDITION_NUMBER.search(_raise_conditions(scenario)[0].params["condition"].strip())
+    return float(match.group()) / 1000.0
+
+
+def _set_raise_target_km(scenario: Scenario, value: float) -> None:
+    """The same target in the while (fire while below) and in the if (check
+    it was reached), in metres."""
+    for command in _raise_conditions(scenario):
+        condition = command.params["condition"].strip()
+        command.params["condition"] = _T46_CONDITION_NUMBER.sub(f"{value * 1000.0:.1f}", condition)
+
+
+def _thruster_on(scenario: Scenario):
+    return next(c for c in scenario.mission_sequence if c.kind == "assignment" and c.params["value"] > 0.0)
+
+
+def _set_raise_thrust_mn(scenario: Scenario, value: float) -> None:
+    """'46''s thrust: the "Thruster on" assignment and the thruster's own setting."""
+    _thruster_on(scenario).params["value"] = value / 1000.0
+    _sc(scenario).constant_thrust.thrust_n = value / 1000.0
+
+
+def _faulty_sensor(name: str):
+    """'47''s faulty-sat sensor ``name``."""
+    return lambda scenario: next(s for s in _spacecraft("faulty-sat")(scenario).sensors if s.name == name)
 
 
 def _short_duration_page(intro: str) -> WizardPageSpec:
@@ -2315,6 +2378,138 @@ _SPECS: dict[str, TemplateWizardSpec] = {
                 ],
             ),
             _duration_page("Longer runs show more decay.", SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "43_3d_model_cylinders_spheres_and_mesh.json": TemplateWizardSpec(
+        template_filename="43_3d_model_cylinders_spheres_and_mesh.json",
+        pages=[
+            WizardPageSpec(
+                title="3D model",
+                intro="The parts give the spacecraft's mass, center of mass and inertia.",
+                fields=[
+                    WizardField(
+                        "Magnetometer position", "Where the magnetometer sphere sits along x, at the boom's tip.",
+                        lambda s: _model_part(s, "magnetometer").position_b_m[0],
+                        lambda s, v: _set_model_part(s, "magnetometer", lambda part: _set_part_x(part, v)),
+                        0.5, 3.0, decimals=3, step=0.1, suffix=" m", hint="Farther out: more inertia about y and z",
+                    ),
+                    WizardField(
+                        "Camera body mass", "The mass of the imported camera's box.",
+                        lambda s: _model_part(s, "camera body").mass_kg,
+                        lambda s, v: _set_model_part(s, "camera body", lambda part: setattr(part, "mass_kg", v)),
+                        0.0, 50.0, decimals=2, step=0.5, suffix=" kg", hint="Moves the center of mass",
+                    ),
+                ],
+            ),
+            _duration_page("Without control the disturbances turn it slowly.", SimSettings._MAX_SINGLE_RUN_DAYS),
+        ],
+    ),
+    "44_monte_carlo_attitude_inertia_rate_srp_density.json": TemplateWizardSpec(
+        template_filename="44_monte_carlo_attitude_inertia_rate_srp_density.json",
+        pages=[
+            WizardPageSpec(
+                title="Monte Carlo batch",
+                intro="Each run draws its attitude, rate, inertia, SRP coefficient and density scale.",
+                fields=[
+                    WizardField(
+                        "Number of runs", "More runs give smoother statistics and smaller chance correlations.",
+                        lambda s: float(s.monte_carlo.num_runs),
+                        lambda s, v: setattr(s.monte_carlo, "num_runs", int(round(v))),
+                        1.0, 1000.0, decimals=0, step=5.0, kind="int", hint="About 3 s a run",
+                    ),
+                    WizardField(
+                        "Batch seed", "The draws come from this number: another seed, other draws.",
+                        lambda s: float(s.monte_carlo.seed),
+                        lambda s, v: setattr(s.monte_carlo, "seed", int(round(v))),
+                        0.0, 2147483647.0, decimals=0, step=1.0, kind="int", hint="Same seed, same draws",
+                    ),
+                    WizardField(
+                        "Body rate spread", "1-sigma of the rate added to the nominal one, on each axis.",
+                        *_dispersion_value("angular_rate_bn_b", "std_deviation"), 0.0, 10.0, decimals=3, step=0.1,
+                        suffix=" deg/s", hint="1-sigma, each axis",
+                    ),
+                    WizardField(
+                        "Density scale, low", "The lowest scale on the atmosphere's density a run can draw.",
+                        *_dispersion_value("density_scale", "bounds", 0), 0.0, 5.0, decimals=2, step=0.05,
+                        hint="Each run draws between low and high",
+                    ),
+                    WizardField(
+                        "Density scale, high", "The highest scale on the atmosphere's density a run can draw.",
+                        *_dispersion_value("density_scale", "bounds", 1), 0.0, 5.0, decimals=2, step=0.05,
+                        hint="Must stay above the low end",
+                    ),
+                ],
+            ),
+            _short_duration_page("Half an orbit is about 0.03 days."),
+        ],
+    ),
+    "45_solar_activity_past_104_days.json": TemplateWizardSpec(
+        template_filename="45_solar_activity_past_104_days.json",
+        pages=[
+            _sun_synchronous_orbit_page("Lower orbits feel more drag and more of the Sun's activity."),
+            WizardPageSpec(
+                title="Spacecraft",
+                intro="Mass and size set how strongly drag slows the satellite.",
+                fields=[
+                    WizardField(
+                        "Drag area", "Cross-sectional area facing the flow.",
+                        lambda s: _sc(s).drag_area_m2, lambda s, v: setattr(_sc(s), "drag_area_m2", v),
+                        0.01, 100.0, decimals=2, step=0.1, suffix=" m^2", hint="Bigger = more drag",
+                    ),
+                ],
+            ),
+            _duration_page("Past 100 days the run is chained in segments of 90 days.", SimSettings._MAX_DURATION_DAYS),
+        ],
+    ),
+    "46_mission_sequence_control_flow.json": TemplateWizardSpec(
+        template_filename="46_mission_sequence_control_flow.json",
+        pages=[
+            WizardPageSpec(
+                title="Orbit raise",
+                intro="The while loop fires until the target altitude; the if checks it.",
+                fields=[
+                    WizardField(
+                        "Target altitude", "The altitude the while loop fires to, and the if checks.",
+                        _raise_target_km, _set_raise_target_km,
+                        401.0, 2000.0, decimals=1, step=10.0, suffix=" km", hint="It starts at 400 km",
+                    ),
+                    WizardField(
+                        "Thrust", "The thrust that \"Thruster on\" sets.",
+                        lambda s: _thruster_on(s).params["value"] * 1000.0, _set_raise_thrust_mn,
+                        0.1, 1000.0, decimals=2, step=1.0, suffix=" mN", hint="Less thrust: more loop steps",
+                    ),
+                ],
+            ),
+        ],
+    ),
+    "47_sensor_faults.json": TemplateWizardSpec(
+        template_filename="47_sensor_faults.json",
+        pages=[
+            WizardPageSpec(
+                title="Faults",
+                intro="faulty-sat's magnetometer z axis spikes; its thermal sensor is stuck.",
+                fields=[
+                    WizardField(
+                        "Spike probability", "The chance that a magnetometer reading on the faulty axis spikes.",
+                        lambda s: float(_faulty_sensor("mag-1")(s).params["spike_probability"]),
+                        lambda s, v: _faulty_sensor("mag-1")(s).params.__setitem__("spike_probability", v),
+                        0.0, 1.0, decimals=3, step=0.01, hint="Per sample",
+                    ),
+                    WizardField(
+                        "Spike amount", "A spiking reading is the field times this.",
+                        lambda s: float(_faulty_sensor("mag-1")(s).params["spike_amount"]),
+                        lambda s, v: _faulty_sensor("mag-1")(s).params.__setitem__("spike_amount", v),
+                        -10.0, 10.0, decimals=2, step=0.5, hint="1: no spike",
+                    ),
+                    WizardField(
+                        "Stuck temperature", "What faulty-sat's thermal sensor reads, whatever its temperature.",
+                        lambda s: float(_faulty_sensor("therm-1")(s).params["measurement_stuck_value_c"]),
+                        lambda s, v: _faulty_sensor("therm-1")(s).params.__setitem__("measurement_stuck_value_c", v),
+                        -100.0, 150.0, decimals=1, step=5.0, suffix=" C", hint="The true one is in healthy-sat's",
+                    ),
+                ],
+            ),
+            _short_duration_page("Shadow starts at about minute 25; an orbit is about 0.07 days."),
         ],
     ),
 }

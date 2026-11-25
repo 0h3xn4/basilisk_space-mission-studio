@@ -96,17 +96,17 @@ Where each piece lives in the app, and which template shows it best:
 | Piece | Where you edit it | Learn it from template |
 |---|---|---|
 | Simulation mode, epoch | Scenario tree > **General** | 01 (orbit only), 06 (attitude) |
-| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18, 42 |
+| Gravity, Sun and Moon, atmosphere, duration | Scenario tree > **Environment** | 02, 18, 42, 45 |
 | A spacecraft's orbit and mass | Scenario tree > **Spacecraft** > its name > **Orbit / mass** | 01, 22, 39 |
-| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14, 41 |
+| Sensors and actuators | ... > **Sensors / actuators** | 07, 12, 13, 14, 41, 47 |
 | Where it points | ... > **Attitude control** | 06, 15, 19, 41 |
 | Power, thrusters, radio | ... > **Power / propulsion / link budget** | 07, 17, 18, 19, 40 |
 | Instruments, memory, downlink | ... > **Power / propulsion / link budget** > Data handling | 26 |
-| 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32 |
+| 3D model, equipment, design checks | ... > **3D model**, or **3D Model...** at the top of the Scenario area | 28, 32, 43 |
 | Equipment list, system modes, power, mass and pointing budgets | the **Budgets** area (`Ctrl+5`) | 38 |
 | Ground stations | Scenario tree > **Ground stations** > its name | 19, 22 |
-| Mission sequence | Scenario tree > **Mission sequence** | 08, 16, 23 |
-| Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25, 37 |
+| Mission sequence | Scenario tree > **Mission sequence** | 08, 16, 23, 46 |
+| Monte Carlo | Scenario tree > **Monte Carlo** | 09, 25, 37, 44 |
 | Results | the Results and Timeline areas, Results > Compare (Section 7) | any |
 
 **Orbit only or full attitude?** *Orbit only* simulates where each
@@ -560,13 +560,13 @@ or pick the one you need:
 | Category | Templates, simple to advanced | What you learn |
 |---|---|---|
 | Getting started | 22, 23, 01, 02 | A realistic satellite with drag and a ground station; a complete small satellite with hardware, a radio link and a Mission Sequence; an ideal orbit; what Earth's shape, the Sun and the Moon do to it |
-| Orbits and orbit keeping | 39, 42, 18, 03, 40, 04, 05, 24, 29 | An orbit from a TLE or a state vector; drag from a tabular atmosphere and the lifetime; station keeping against drag (low orbit) and drift (geostationary); continuous low thrust; a Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
-| Maneuvers and Mission Sequence | 08, 16 | Mission Sequences: an impulsive burn, a Lambert transfer |
-| Attitude and control | 06, 07, 41, 15, 10, 11, 17, 12, 13, 14, 21 | Attitude control, ideal and with real hardware; velocity pointing with a magnetometer and navigation errors; pointing at the Moon; gravity-gradient torque; thrusters for pointing and the propellant they use; unloading wheels with thrusters or torque rods; finding the Sun with sun sensors; surface torques from a facet model |
+| Orbits and orbit keeping | 39, 42, 45, 18, 03, 40, 04, 05, 24, 29 | An orbit from a TLE or a state vector; drag from a tabular atmosphere and the lifetime; the Sun at the 95th percentile over a run past 104 days; station keeping against drag (low orbit) and drift (geostationary); continuous low thrust; a Walker constellation; a formation held by two different control laws; a passively safe formation in relative orbital elements |
+| Maneuvers and Mission Sequence | 08, 16, 46 | Mission Sequences: an impulsive burn, a Lambert transfer; assignments, a loop, a check and a script block |
+| Attitude and control | 06, 07, 41, 15, 10, 11, 17, 12, 13, 14, 47, 21 | Attitude control, ideal and with real hardware; velocity pointing with a magnetometer and navigation errors; pointing at the Moon; gravity-gradient torque; thrusters for pointing and the propellant they use; unloading wheels with thrusters or torque rods; finding the Sun with sun sensors; sensor faults; surface torques from a facet model |
 | Power, communications and data | 19, 26 | Power and a radio link working together; data from instrument to ground |
-| Spacecraft model, thermal and budgets | 28, 32, 38, 27, 20, 33, 34 | A 3D model and the mass properties from its parts; equipment mounted, with fields of view, a plume and the mass budget checked; an equipment list with the power, mass, pointing and propellant budgets; flexible wings swinging in a turn; thermal sensors; a thermal model in hot, cold and safe-mode cases; flexible arrays in the thermal model |
+| Spacecraft model, thermal and budgets | 28, 43, 32, 38, 27, 20, 33, 34 | A 3D model and the mass properties from its parts; cylinders, spheres and an imported mesh; equipment mounted, with fields of view, a plume and the mass budget checked; an equipment list with the power, mass, pointing and propellant budgets; flexible wings swinging in a turn; thermal sensors; a thermal model in hot, cold and safe-mode cases; flexible arrays in the thermal model |
 | Operations planning | 35, 36 | A week of planned operations: targets, passes and calibrations scheduled against the battery, the memory and a contact budget, flown and checked in the simulation; three spacecraft sharing two stations |
-| Uncertainty (Monte Carlo) | 09, 25, 37 | Monte Carlo batches: mass, orbit insertion, drag; requirements, statistics and sensitivity |
+| Uncertainty (Monte Carlo) | 09, 25, 37, 44 | Monte Carlo batches: mass, orbit insertion, drag; requirements, statistics and sensitivity; attitude, inertia, body rate, SRP and density |
 | Deep space and navigation | 30, 31 | Estimating an orbit around Mars from camera images of the planet; flying around asteroid Eros with its shape's gravity and navigating from its landmarks |
 
 **Starting your own mission?** Open **22** (a realistic satellite, orbit
@@ -2350,7 +2350,7 @@ anyone who hasn't worked with spacecraft before:
 
 * **More templates to learn from:**
   [`spacemissionstudio/scenarios/templates/README.md`](spacemissionstudio/scenarios/templates/README.md)
-  describes what each of the forty-two built-in templates teaches, in
+  describes what each of the forty-seven built-in templates teaches, in
   more depth than the in-app description box.
 * **Scripting it from Python:** [The Python API](docs/api.md)
   (`spacemissionstudio.api`) loads, checks and runs a scenario and

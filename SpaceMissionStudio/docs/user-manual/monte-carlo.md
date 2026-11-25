@@ -202,6 +202,11 @@ half a day, 30 runs with a batch seed and two requirements: one is met
 (its 90 % bound under the allowed probability), the other shows its
 estimate and bound, and the Sensitivity tab finds that the drag
 coefficient drives the decay. It takes about a minute in one process.
+**44** draws the other five quantities for a microsatellite on wheels
+in Sun-safe pointing: the initial attitude, the body rate, the inertia,
+the SRP coefficient and the atmosphere's density scale. In 12 runs the
+density scale alone sets the orbit, and **Run This Case** shows each
+case turned onto the Sun within 5 minutes. It takes about half a minute.
 
 **More detail:** User Manual section 10,
 [Monte Carlo](../../USER_MANUAL.md#10-monte-carlo-running-many-variations-at-once).

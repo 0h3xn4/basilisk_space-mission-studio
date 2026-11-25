@@ -45,6 +45,14 @@ On **Sensors / actuators**, **Add** a device:
   `{spacecraft}.sensor.{sensor}.albedo`.
 - **Actuators:** reaction wheel, thruster, magnetic torque rod.
 
+A sun sensor, a magnetometer and a thermal sensor can have a **fault**
+(`fault_mode`, or `measurement_fault_mode` for the thermal sensor):
+stuck at a value or at the largest output, spiking, or random. The
+fault changes the reading in Results. The Sun heading estimated from the
+sun sensors and the magnetometer of the torque rods' momentum management
+use copies of the sensors without the faults. Template **47** flies two
+spacecraft side by side, one with three faulty sensors.
+
 In the device's form, under the list, **Start from a real device** lists commercially available
 devices; **Apply device values** fills in that device's numbers. You can
 also type your own. Without actuators, the controller's torque is applied
@@ -92,7 +100,8 @@ more than an attitude error of the same size.
 
 06 (ideal pointing), 07 (the same with real hardware), 11 (thrusters),
 14 (finding the Sun with sun sensors), 15 (pointing at the Moon), 41
-(velocity pointing, a magnetometer and navigation errors).
+(velocity pointing, a magnetometer and navigation errors), 47 (sensor
+faults).
 
 **More detail:** User Manual section 6,
 [Navigation error](../../USER_MANUAL.md#navigation-error) and

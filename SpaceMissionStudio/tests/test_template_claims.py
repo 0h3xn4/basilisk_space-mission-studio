@@ -999,3 +999,267 @@ def test_42_the_tabular_atmosphere_decays_otherwise_than_nrlmsise_00():
     scenario.space_weather.atmosphere_model = "nrlmsise00"
     msis_life = lifetime.end_of_life(scenario, "low-sat", drag_coeff=2.2)
     assert msis_life.lifetime.reentered and msis_life.lifetime.lifetime_s / 86400.0 < 61.0
+
+
+def _parallel_axis(mass_kg, inertia_cm, position_m):
+    """``inertia_cm`` [kg*m^2] about a part's own center of mass, moved to
+    the body origin (parallel-axis theorem)."""
+    r = np.asarray(position_m, dtype=float)
+    return np.asarray(inertia_cm, dtype=float) + mass_kg * (r @ r * np.eye(3) - np.outer(r, r))
+
+
+def test_43_the_model_gives_the_mass_properties_of_its_cylinders_spheres_and_mesh():
+    """Template 43 (decision TPL-B1): the mass, center of mass and inertia
+    the run flies are those of the parts. The bus and the tank, the
+    magnetometer and the camera's box are checked against the textbook
+    formulas (a solid cylinder, solid spheres, a solid box); the boom (a
+    thin shell) and the camera's open hood (a shell mesh) take the app's
+    own values, as no closed formula covers them. The mesh file is the
+    synthetic one shipped next to the template, in millimetres, unchanged
+    since its SHA-256 was recorded. Without attitude control the body
+    rates stay below 0.01 deg/s for the 2.4 hours."""
+    from spacemissionstudio.model3d import mass_properties as mp
+    from spacemissionstudio.model3d import model as model3d
+    from spacemissionstudio.model3d import obj_io
+
+    scenario = _template("43")
+    sc = scenario.spacecraft[0]
+    parts = {part.name: part for part in sc.model.parts}
+    assert {p.shape for p in parts.values()} == {"cylinder", "sphere", "mesh"}
+    mesh = sc.model.meshes[0]
+    mesh_path = _TEMPLATES_DIR / mesh.path
+    assert mesh.path == "../meshes/43_synthetic_camera.obj" and (mesh.units, mesh.up_axis) == ("mm", "z")
+    assert model3d.file_sha256(mesh_path) == mesh.sha256
+    assert "synthetic" in mesh_path.read_text(encoding="utf-8").splitlines()[0]
+    assert [g.name for g in obj_io.read_obj(mesh_path, units="mm").groups] == ["camera_body", "camera_hood"]
+    derived = model3d.derive(sc.model, _TEMPLATES_DIR)
+    assert not derived.errors and not derived.warnings
+
+    def solid_cylinder(m, diameter, height):
+        r = diameter / 2.0  # [m]
+        across = m * (3 * r * r + height * height) / 12.0  # [kg*m^2]
+        return np.diag([across, across, m * r * r / 2.0])
+
+    def solid_sphere(m, diameter):
+        return np.eye(3) * 0.4 * m * (diameter / 2.0) ** 2
+
+    def solid_box(m, x, y, z):
+        return np.diag([m * (y * y + z * z), m * (x * x + z * z), m * (x * x + y * y)]) / 12.0
+
+    bus, tank, boom, magnetometer = parts["bus"], parts["tank"], parts["boom"], parts["magnetometer"]
+    body, hood = parts["camera body"], parts["camera hood"]
+    bodies = [  # (mass [kg], inertia about its own center of mass [kg*m^2], center of mass [m])
+        (bus.mass_kg, solid_cylinder(bus.mass_kg, **bus.dimensions_m), bus.position_b_m),
+        (tank.mass_kg, solid_sphere(tank.mass_kg, **tank.dimensions_m), tank.position_b_m),
+        (magnetometer.mass_kg, solid_sphere(magnetometer.mass_kg, **magnetometer.dimensions_m),
+         magnetometer.position_b_m),
+        (body.mass_kg, solid_box(body.mass_kg, 0.3, 0.3, 0.4), np.add(body.position_b_m, [0.0, 0.0, -0.2])),
+    ]
+    tube = mp.cylinder(boom.mass_kg, boom.dimensions_m["diameter"] / 2.0, boom.dimensions_m["height"], shell=True)
+    turn = np.array([[0.0, 0.0, 1.0], [0.0, 1.0, 0.0], [-1.0, 0.0, 0.0]])  # pitch 90 deg: the axis along x
+    bodies.append((boom.mass_kg, turn @ tube.inertia_kg_m2 @ turn.T, boom.position_b_m))
+    funnel = mp.shell_mesh(obj_io.read_obj(mesh_path, units="mm").group("camera_hood").mesh, hood.mass_kg)
+    bodies.append((hood.mass_kg, funnel.inertia_kg_m2, np.add(hood.position_b_m, funnel.center_of_mass_m)))
+    mass = sum(m for m, _i, _r in bodies)  # [kg]
+    com = sum(m * np.asarray(r, dtype=float) for m, _i, r in bodies) / mass  # [m]
+    inertia = sum(_parallel_axis(m, i, r) for m, i, r in bodies) - _parallel_axis(mass, np.zeros((3, 3)), com)
+
+    assert sc.dry_mass_kg == pytest.approx(mass) and mass == pytest.approx(150.0)  # [kg]
+    assert sc.center_of_mass_b_m == pytest.approx(com, abs=1e-9)
+    assert com == pytest.approx([0.0203, 0.0, -0.0329], abs=1e-4)  # [m] toward the boom and the camera
+    assert np.array(sc.inertia_kg_m2).reshape(3, 3) == pytest.approx(inertia, rel=1e-8, abs=1e-8)
+    assert inertia[0, 2] == pytest.approx(0.377, abs=1e-3)  # [kg*m^2] the product of inertia
+    assert {f.name.split(":")[0] for f in sc.facets} == {"bus", "boom", "magnetometer", "camera body", "camera hood"}
+    assert not any(f.name.startswith("tank") for f in sc.facets)  # hidden inside the bus
+
+    result = _run(scenario)
+    rates = np.degrees(np.abs(result.series["cyl-sat.body_rate_omega_BN_B"].data))  # [deg/s]
+    assert rates[0] == pytest.approx([0.0, 0.0, 0.0], abs=1e-12)
+    assert 0.003 < rates.max() < 0.01
+
+
+@pytest.mark.slow
+def test_44_the_density_scale_sets_the_decay_and_every_case_turns_onto_the_sun(tmp_path):
+    """Template 44 (decision TPL-B2): its 12 runs as shipped (seed 44, one
+    process). Each run draws an attitude, a body rate, an inertia, an SRP
+    coefficient and a density scale within what the batch says; the
+    density scale alone sets the orbit's outcomes (rank correlation 1 with
+    the along-track offset), as drag at 350 km is about a thousand times
+    sunlight's push. Run again, the case with the largest drawn rate starts
+    at its drawn attitude and rate and turns its +z face to the Sun within
+    15 minutes."""
+    import math
+
+    from spacemissionstudio import api
+    from spacemissionstudio.engine import monte_carlo_statistics as mcs
+
+    scenario = _template("44")
+    config = scenario.monte_carlo
+    assert (config.num_runs, config.thread_count, config.seed) == (12, 1, 44)
+    assert {d.quantity for d in config.dispersions} == {"attitude_sigma_bn", "angular_rate_bn_b", "inertia_kg_m2",
+                                                       "srp_coeff", "density_scale"}
+    batch = api.monte_carlo(scenario, tmp_path / "mc")
+    assert len(batch.runs) == 12 and not batch.failed
+    for drawn in batch.drawn:
+        assert 1.2 <= drawn["sat-1 SRP coefficient [-]"] <= 1.8
+        assert 0.7 <= drawn["atmospheric density scale [-]"] <= 1.3
+        assert all(abs(drawn[f"sat-1 rate {axis} [deg/s]"]) < 1.0 for axis in "xyz")  # [deg/s] 5 sigma
+        assert all(abs(drawn[f"sat-1 I{axis}{axis} [kg m^2]"] - nominal) < 5.0
+                   for axis, nominal in zip("xyz", (20.5, 20.5, 16.0)))  # [kg*m^2] 5 sigma
+    insight = mcs.insight(batch)
+    pairs = {(p.input_label, p.outcome_label): p.value for p in insight.sensitivity}
+    density = "atmospheric density scale [-]"
+    assert pairs[(density, "sat-1 final along-track offset [km]")] == pytest.approx(1.0)
+    assert pairs[(density, "sat-1 lowest altitude [km]")] == pytest.approx(-1.0)
+
+    fastest = max(range(12), key=lambda k: sum(batch.drawn[k][f"sat-1 rate {a} [deg/s]"] ** 2 for a in "xyz"))
+    case = api.monte_carlo_case(scenario, tmp_path / "mc", fastest)
+    rate = np.degrees(case.series["sat-1.body_rate_omega_BN_B"].data[0])  # [deg/s]
+    drawn_rate = [batch.drawn[fastest][f"sat-1 rate {a} [deg/s]"] for a in "xyz"]  # the nominal rate and the spread
+    assert rate == pytest.approx(drawn_rate, abs=1e-6)
+    sigma = case.series["sat-1.attitude_sigma_BN"].data[0]
+    drawn_sigma = [batch.drawn[fastest][f"sat-1 attitude MRP {k} [-]"] for k in (1, 2, 3)]
+    assert sigma == pytest.approx(drawn_sigma, abs=1e-9)
+    sun = case.series["sat-1.sun_heading_body"]
+    angle = np.degrees(np.arccos(np.clip(sun.data[:, 2] / np.linalg.norm(sun.data, axis=1), -1.0, 1.0)))  # [deg]
+    lit = case.series["sat-1.eclipse.illumination_factor"]
+    after = (sun.time_s >= 15 * 60.0) & (np.interp(sun.time_s, lit.time_s, lit.data[:, 0]) > 0.5)
+    assert after.any() and angle[after].max() < 1.0  # [deg]
+    assert math.isfinite(float(angle[0]))
+
+
+@pytest.mark.slow
+def test_45_the_conservative_sun_decays_the_orbit_faster_over_a_chained_run():
+    """Template 45 (decision TPL-B3): 110 days at 400 km from 1 January
+    2030, past Basilisk's 104-day clock: the run is chained (90 days, then
+    20) into one result on one time axis, every value finite to the end
+    and no step at day 90. MSFC's 95th percentile (F10.7 about 78 and Ap
+    about 15 in early 2030, from the prediction the app ships) lowers the
+    mean semi-major axis by about 9.2 km, the 5th percentile (F10.7 about
+    70, Ap about 6) by about 6.0 km. Two runs of about 30 s each."""
+    from datetime import date
+
+    from spacemissionstudio.engine import long_run, spaceweather
+
+    scenario = _template("45")
+    assert scenario.sim_settings.duration_days == 110.0 and scenario.space_weather.forecast_percentile == 95.0
+    assert [s / 86400.0 for s in long_run.segment_lengths_s(scenario)] == pytest.approx([90.0, 20.0])
+    msfc = spaceweather.load_msfc(Path(spaceweather.__file__).resolve().parents[1] / "data" / "spaceweather"
+                                  / "nov2026f10-prd.txt")
+    assert msfc.values(date(2030, 1, 1), 95.0)[:2] == pytest.approx((78.7, 15.9))
+    assert msfc.values(date(2030, 1, 1), 5.0)[:2] == pytest.approx((70.6, 6.2))
+
+    def decay_km(result):
+        a = _mean_elements(result, "sat-1", "semi_major_axis") / 1e3  # [km]
+        return float(a[-1] - a[0])
+
+    result = _run(scenario)
+    position = result.series["sat-1.position_N"]
+    assert position.time_s[-1] == pytest.approx(110.0 * 86400.0)  # [s]
+    assert np.isfinite(position.data).all()
+    assert np.diff(position.time_s) == pytest.approx(600.0, abs=1e-6)  # [s] Record every, no repeated sample
+    step = np.linalg.norm(np.diff(position.data, axis=0), axis=1)  # [m] in 600 s
+    at_90 = int(np.searchsorted(position.time_s, 90.0 * 86400.0))
+    assert step[at_90 - 3:at_90 + 3] == pytest.approx(np.median(step), rel=0.01)
+    conservative = decay_km(result)
+    assert conservative == pytest.approx(-9.2, abs=0.2)
+
+    low = _template("45")
+    low.space_weather.forecast_percentile = 5.0
+    quiet = decay_km(_run(low))
+    assert quiet == pytest.approx(-6.0, abs=0.2)
+    assert conservative / quiet == pytest.approx(1.5, abs=0.1)
+
+
+def test_46_the_sequence_fires_in_a_loop_until_420_km_and_the_script_reports_the_orbit():
+    """Template 46 (decision TPL-B4): the assignments switch the thruster
+    off and on, the while loop fires 0.05 day at a time until the altitude
+    is 420 km (21 times, to day 1.3), the if takes its snapshot, and the
+    script block's semi-major axis and period (vis-viva and Kepler's third
+    law) match the run's own orbit elements. The delta-V is about 11.7 m/s
+    and the propellant used is F t / (Isp g0), about 123 g. The run refuses
+    the script block without consent."""
+    import math
+
+    from spacemissionstudio import constants
+    from spacemissionstudio.engine.mission_engine import MissionEngine, MissionEngineError
+
+    scenario = _template("46")
+    assert [c.kind for c in scenario.mission_sequence] == ["assignment", "propagate", "report", "assignment", "while",
+                                                          "assignment", "if", "script_block", "propagate", "report"]
+    with pytest.raises(MissionEngineError, match="script_block"):
+        MissionEngine(_template("46")).run()
+    result, summary = MissionEngine(scenario, allow_scripts=True).run()
+    reports = {r.label: r for r in summary.reports}
+    assert list(reports) == ["Before the raise", "Raised", "Script: semi-major axis and period", "End"]
+    sma = "raise-sat.orbit_elements.semi_major_axis"
+    assert reports["Before the raise"].t_s == pytest.approx(0.25 * 86400.0)  # [s]
+    assert float(reports["Before the raise"].values["raise-sat.constant_thrust.delta_v"][0]) == 0.0  # off
+    assert reports["Raised"].t_s == pytest.approx(1.3 * 86400.0)  # [s] 21 times 0.05 day
+    radius_m = constants.EARTH_EQUATORIAL_RADIUS_M  # [m]
+    raised_m = float(reports["Raised"].values[sma][0])  # [m]
+    assert 420.0e3 <= raised_m - radius_m < 421.5e3  # [m] two-body, a circle: the altitude
+    script = reports["Script: semi-major axis and period"].values
+    assert float(script["raise-sat.script.semi_major_axis_km"]) == pytest.approx(raised_m / 1e3, abs=1e-3)
+    period_min = 2.0 * math.pi * math.sqrt(raised_m ** 3 / constants.EARTH_GM_M3_S2) / 60.0  # [min]
+    assert float(script["raise-sat.script.period_min"]) == pytest.approx(period_min, rel=1e-6)
+    assert float(script["raise-sat.script.semi_major_axis_km"]) == pytest.approx(6798.7, abs=0.1)
+    assert float(script["raise-sat.script.period_min"]) == pytest.approx(93.0, abs=0.05)
+    end = reports["End"].values
+    assert float(end[sma][0]) == pytest.approx(raised_m, abs=50.0)  # [m] the thruster stayed off
+    thrust = scenario.spacecraft[0].constant_thrust
+    delta_v = float(end["raise-sat.constant_thrust.delta_v"][0])  # [m/s]
+    used_kg = thrust.propellant_kg - float(end["raise-sat.constant_thrust.propellant_remaining"][0])
+    fired_s = 21 * 0.05 * 86400.0  # [s]
+    assert used_kg == pytest.approx(thrust.thrust_n * fired_s / (thrust.isp_s * constants.STANDARD_GRAVITY_M_S2),
+                                    rel=1e-3)
+    assert delta_v == pytest.approx(11.7, abs=0.05) and used_kg == pytest.approx(0.123, abs=0.001)  # [m/s], [kg]
+
+
+def test_47_each_faulty_sensor_reports_its_fault_and_the_attitude_is_the_same():
+    """Template 47 (decision TPL-B5): faulty-sat's css-2, facing away from
+    the Sun, reads 1.0 all the time where healthy-sat's reads 0; its
+    magnetometer's z axis is now and then three times the field (about 1 %
+    of the samples) while x and y match; its thermal sensor reads 20 C while
+    healthy-sat's warms from 0 to about 53 C in sunlight and cools in the
+    shadow. Both fly the same attitude: the flight software reads the true
+    state. Bounds only for the spikes: another standard library draws other
+    ones (golden_capture)."""
+    scenario = _template("47")
+    faulty = {s.name: s.params for s in scenario.spacecraft[1].sensors}
+    assert faulty["css-2"]["fault_mode"] == "stuck_max" and faulty["mag-1"]["fault_mode"] == "spiking"
+    assert faulty["therm-1"]["measurement_fault_mode"] == "stuck_value"
+    result = _run(scenario)
+
+    def reading(name, sensor):
+        return result.series[f"{name}-sat.sensor.{sensor}"]
+
+    assert (reading("healthy", "css-2").data == 0.0).all()
+    assert (reading("faulty", "css-2").data == 1.0).all()
+    healthy_css = reading("healthy", "css-1").data[:, 0]
+    assert healthy_css.max() > 1.0 and healthy_css[-1] == 0.0  # full Sun (closer than 1 au in March), then shadow
+    assert (reading("faulty", "css-1").data[:, 0] == healthy_css).all()  # no fault on css-1
+
+    healthy_mag, faulty_mag = reading("healthy", "mag-1").data, reading("faulty", "mag-1").data  # [T]
+    assert faulty_mag[:, :2] == pytest.approx(healthy_mag[:, :2], abs=1e-6)  # [T] noise only
+    # z: each reading is the field, or three times it (a spike). The two
+    # spacecraft draw their own noise (1e-7 T, another seed each, and other
+    # draws on another C++ library), so each is compared within 1 uT, 7 sigma
+    # of the difference (3 uT for a spike: three times the noise), where the
+    # field is strong enough (10 uT) that the two cases cannot be confused.
+    healthy_z, faulty_z = healthy_mag[:, 2], faulty_mag[:, 2]  # [T]
+    strong = np.abs(healthy_z) > 10e-6  # [T]
+    plain = np.abs(faulty_z - healthy_z) < 1e-6  # [T]
+    spiked = np.abs(faulty_z - 3.0 * healthy_z) < 3e-6  # [T]
+    assert strong.mean() > 0.5 and (plain | spiked)[strong].all()
+    assert 0.003 < spiked[strong].mean() < 0.03
+
+    healthy_temp, faulty_temp = reading("healthy", "therm-1"), reading("faulty", "therm-1")  # [C]
+    assert (faulty_temp.data == 20.0).all()
+    assert healthy_temp.data[0, 0] == 0.0 and healthy_temp.data[:, 0].max() == pytest.approx(53.0, abs=1.0)
+    lit = result.series["healthy-sat.eclipse.illumination_factor"]
+    shadow_s = float(lit.time_s[np.argmax(lit.data[:, 0] < 0.5)])  # [s]
+    assert shadow_s / 60.0 == pytest.approx(25.1, abs=0.5)  # [min]
+    assert healthy_temp.data[-1, 0] < healthy_temp.data[:, 0].max() - 20.0
+    assert result.series["faulty-sat.attitude_sigma_BN"].data == pytest.approx(
+        result.series["healthy-sat.attitude_sigma_BN"].data, abs=1e-12)

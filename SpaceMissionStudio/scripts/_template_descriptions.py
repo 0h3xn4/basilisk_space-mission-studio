@@ -735,4 +735,114 @@ Try changing:
 The orbit falls about seven times as far, and re-entry comes within about two months.
 - Exponential: almost no drag. Its 8.5 km scale height from sea level is far too thin at this height.
 - Atmosphere table Earth-GRAM 2016: it stops at 200 km, so no drag at 350 km, and the run says so.""",
+    "43": """\
+A 3D model from shapes no other template uses. A 150 kg microsatellite: a cylinder bus with a sphere tank \
+inside, a cylinder boom with a sphere magnetometer at its tip, and a camera imported from an .obj file. The \
+run flies the mass, center of mass, inertia and surfaces of the model.
+
+What to look at:
+- Spacecraft > Edit... > 3D model: six parts. The camera's two come from ../meshes/43_synthetic_camera.obj, a \
+synthetic file in millimetres: a closed box (Solid) and an open hood (Shell).
+- The model gives 150 kg, the center of mass 2.0 cm toward the boom and 3.3 cm toward the camera, and a \
+product of inertia (Ixz 0.38 kg m^2).
+- A curved part is drawn with flat sides (Segments); its mass properties are those of the true shape.
+- Results > 3D View draws the model; the tank is hidden inside the bus.
+- Without attitude control, gravity, drag and sunlight turn it slowly: under 0.01 deg/s after 2.4 hours.
+
+Try changing:
+- The magnetometer's position, or the boom's length (Open 3D model editor...): the center of mass and the \
+inertia follow.
+- The camera parts' mass, or their Spread: Solid or Shell.
+- Import .obj... in the editor: each group of your own file becomes a part; give its units and up axis.
+
+Note:
+- The mesh path is relative to the scenario file. After Save As elsewhere, give the file's full path in the \
+3D model editor, or import it again.""",
+    "44": """\
+Five Monte Carlo dispersions no other template draws, in 12 runs: template 07's 150 kg microsatellite on \
+wheels in Sun-safe pointing at 350 km. Each run draws any initial attitude, its body rate, its \
+inertia, its SRP coefficient and the atmosphere's density scale. The spreads are illustrative.
+
+What to look at:
+- Run it in Monte Carlo mode (the mode beside Run): about half a minute in one process.
+- Runs: each run's draws: the attitude as MRP, the rates (nominal plus 0.2 deg/s 1-sigma), the inertia \
+(1 kg m^2 1-sigma, turned by 2 deg), the SRP coefficient and the density scale.
+- Sensitivity: the density scale alone moves the orbit (rank correlation -1 with the lowest altitude).
+- The attitude, rate and inertia do not reach the orbit: with 12 runs, chance gives correlations up to 0.6.
+- Run This Case on any run: the wheels turn +z to the Sun within 5 minutes, from up to 132 deg away.
+
+Try changing:
+- The density scale's bounds (0.7 to 1.3), or a normal draw.
+- The body rate's 1-sigma to 2 deg/s: the wheels take longer.
+- More runs: the chance correlations become smaller.
+- After Save As: Scenario > Assumptions, New..., and set monte_carlo.spread_statistic to sample: the \
+Statistics' standard deviations then divide by n - 1.
+
+Note:
+- The batch seed (44) gives the same draws every time, with one process or many.""",
+    "45": """\
+Solar activity at the 95th percentile, over a run longer than one Basilisk simulation can hold. A 150 kg \
+satellite at 400 km for 110 days from 1 January 2030, orbit only, with drag from NRLMSISE-00.
+
+What to look at:
+- Mean semi-major axis: it falls about 9.2 km in the 110 days.
+- Environment > Solar activity: Conservative, MSFC's 95th percentile (ESA AD10's case for operations).
+- In early 2030 that is F10.7 about 78 and Ap about 15, from NASA MSFC's prediction of November 2026, \
+which the app ships.
+- Basilisk's clock holds about 104 days. The run is two simulations, 90 days and then 20, chained into one: \
+the plots go on past day 90 and day 104 without a step.
+- The Log names the space-weather files the run used.
+
+Try changing:
+- Solar activity Low (5th percentile): the orbit falls about 6.0 km; Nominal (50th), about 7.5 km.
+- Source local_file and Local file: your own CelesTrak space-weather file (.txt or .csv).
+- Duration 400 days: five segments; set Record every to keep the results small.
+
+Note:
+- J2 gravity only and a 60 s step, the longest without a warning, keep the run short (under a minute).
+- Run > End of Life estimates the whole lifetime, by default at the 50th percentile (AD10 for end of life).""",
+    "46": """\
+Mission Sequence control: assignments, a while loop, an if and a script block raise a 150 kg satellite from \
+400 to 420 km with a 20 mN electric thruster (illustrative values). Two-body gravity and no drag: only the \
+thrust changes the orbit.
+
+What to look at:
+- Mission sequence: "Thruster off" (an assignment sets the thrust to 0), a coast, then "Thruster on".
+- "Fire until 420 km": a while loop that propagates 0.05 day at a time while the altitude is below 420 km.
+- The loop runs 21 times, so the thruster stops at day 1.3. "Thruster off again" sets it to 0.
+- "Check the altitude": an if that takes the "Raised" snapshot only when the altitude is 420 km or more.
+- The script block adds a row to Results > Output: the semi-major axis (6798.7 km) and the period \
+(93.0 min), from the position and velocity.
+- 11.7 m/s of delta-V and 123 g of propellant for the 20 km.
+- Before it runs the script block, the run asks you. Read its code first (Mission sequence > Semi-major \
+axis and period). On the command line, run needs --allow-scripts.
+
+Try changing:
+- The while condition's 420000.0 to 450000.0: the loop runs about 30 more times.
+- The value of "Thruster on" to 0.01: half the thrust, and the loop runs about twice as often.
+- Disable the script block: the run then does not ask.
+
+Note:
+- In a condition, altitude_m is the distance from Earth's center less the equatorial radius.""",
+    "47": """\
+Sensor faults on two microsatellites side by side in Sun-safe pointing, with the same sensors. On \
+faulty-sat three have a fault: css-2 is stuck at its largest output, the magnetometer's z axis spikes, and \
+the thermal sensor's reading is stuck at 20 C. healthy-sat shows the true readings.
+
+What to look at:
+- css-2 faces away from the Sun: healthy-sat's reads 0, faulty-sat's reads 1.0 all the time.
+- mag-1, z: faulty-sat's reading is now and then three times the field, in about 1 % of the samples; x and y \
+match healthy-sat's.
+- therm-1: healthy-sat's warms from 0 to about 53 C in sunlight and cools in Earth's shadow (from minute \
+25); faulty-sat's stays at 20 C.
+- Both fly the same attitude: their flight software reads the true state, not these sensors.
+
+Try changing:
+- css-2's fault mode: random (noise instead of the reading).
+- The magnetometer's spike probability, spike amount or fault axis.
+- The thermal sensor's measurement fault mode: spiking.
+
+Note:
+- A fault changes the reading you see. The Sun heading estimated from sun sensors, and the magnetometer \
+of the torque rods' momentum management, use copies of the sensors without faults.""",
 }

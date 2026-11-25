@@ -38,7 +38,13 @@ Templates of other changes go here (docs/DECISIONS.md, decision TC-1):
 38 (budgets) in "Spacecraft model, thermal and budgets"; 39 (orbit
 inputs: TLE, state vector), 40 (continuous low thrust) and 42 (other
 atmosphere models) in "Orbits and orbit keeping"; 41 (velocity pointing,
-magnetometer, navigation error) in "Attitude and control".
+magnetometer, navigation error) in "Attitude and control". Batch B
+(decision TPL-B7): 43 (a 3D model from cylinders, spheres and a mesh) in
+"Spacecraft model, thermal and budgets"; 44 (five more dispersions) in
+"Uncertainty (Monte Carlo)"; 45 (solar activity, a run past 104 days) in
+"Orbits and orbit keeping"; 46 (assignment, if, while, script block) in
+"Maneuvers and Mission Sequence"; 47 (sensor faults) in "Attitude and
+control".
 """
 
 from __future__ import annotations
@@ -70,9 +76,10 @@ CATEGORIES: tuple[Category, ...] = (
               "01_two_body_circular_orbit.json",
               "02_elliptical_orbit_with_perturbations.json")),
     Category("orbits", "Orbits and orbit keeping",
-             "Orbit inputs and drag, station keeping, low thrust, a constellation, formations.",
+             "Orbit inputs, drag and solar activity, station keeping, low thrust, formations.",
              ("39_orbit_inputs_tle_and_state_vector.json",
               "42_tabular_atmosphere_and_lifetime.json",
+              "45_solar_activity_past_104_days.json",
               "18_leo_station_keeping.json",
               "03_geo_station_keeping.json",
               "40_continuous_low_thrust.json",
@@ -81,9 +88,10 @@ CATEGORIES: tuple[Category, ...] = (
               "24_formation_mean_element_control.json",
               "29_roe_formation_helix.json")),
     Category("maneuvers", "Maneuvers and Mission Sequence",
-             "Burns and transfers as a list of commands in time order.",
+             "Burns, transfers and control flow as a list of commands in time order.",
              ("08_mission_sequence_orbit_raise.json",
-              "16_lambert_transfer.json")),
+              "16_lambert_transfer.json",
+              "46_mission_sequence_control_flow.json")),
     Category("attitude", "Attitude and control",
              "Pointing, sensors and actuators, disturbance torques and wheel momentum.",
              ("06_attitude_pointing_basic.json",
@@ -96,6 +104,7 @@ CATEGORIES: tuple[Category, ...] = (
               "12_reaction_wheel_momentum_dumping.json",
               "13_magnetic_torque_rod_momentum_management.json",
               "14_css_sun_heading_estimation.json",
+              "47_sensor_faults.json",
               "21_disturbance_torques.json")),
     Category("power-comms-data", "Power, communications and data",
              "Power, the radio link to a ground station and the data on board.",
@@ -104,6 +113,7 @@ CATEGORIES: tuple[Category, ...] = (
     Category("spacecraft-model", "Spacecraft model, thermal and budgets",
              "The spacecraft as designed: 3D model, equipment, flexible arrays, thermal and budgets.",
              ("28_octagonal_bus_3d_model.json",
+              "43_3d_model_cylinders_spheres_and_mesh.json",
               "32_smallsat_design_checks.json",
               "38_budgets_equipment_power_mass_propellant.json",
               "27_flexible_solar_arrays.json",
@@ -118,7 +128,8 @@ CATEGORIES: tuple[Category, ...] = (
              "Batches of runs with dispersed inputs, requirements and statistics.",
              ("09_monte_carlo_dispersion_analysis.json",
               "25_monte_carlo_orbit_and_drag_dispersions.json",
-              "37_monte_carlo_requirements_and_sensitivity.json")),
+              "37_monte_carlo_requirements_and_sensitivity.json",
+              "44_monte_carlo_attitude_inertia_rate_srp_density.json")),
     Category("deep-space", "Deep space and navigation",
              "Orbits around Mars and an asteroid, estimated from camera images.",
              ("30_mars_optical_navigation.json",

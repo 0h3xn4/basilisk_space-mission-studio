@@ -20,21 +20,6 @@
   A `BUDGETS_VERSION` step with a migration; tests with a hand case.
   About 3 hours.
 
-- Templates for every feature, batch B (`docs/reference/template-coverage.md`,
-  "Still without a template"; batch A is templates 39 to 42, decisions
-  TPL-A1 to TPL-A4). One or more templates for: a 3D model from an
-  imported `.obj` mesh; an IDM-CIC import from a synthetic file only; the
-  other Monte Carlo dispersions (attitude, inertia, body rate, SRP
-  coefficient, atmospheric density scale); plugins and project
-  parameters (a project configuration). Also without a template: solar activity at the
-  95th or 5th percentile or a local space-weather file; a long run past
-  Basilisk's 104 days; Mission Sequence assignment, `if`, `while` and
-  script blocks; sensor faults; a 3D model from cylinders and spheres.
-  (Template 38 shows the equipment list, the power budget and the
-  pointing error budget.)
-  Each new template gets its golden file, its claims test and a row in
-  the coverage page.
-
 ## Later
 
 Not for an unattended run: these wait until phase A is done and the
@@ -55,7 +40,35 @@ owner has answered the plan's open questions.
   any recorded series; convergence and adding cases to a batch;
   percentile bands over time; other sampling designs.
 
+- Sensor faults in the flight software's loop (found by template 47,
+  decision TPL-B5). A sun sensor's or a magnetometer's `fault_mode`
+  changes its reading only: the Sun heading estimated from sun sensors
+  (`fsw.build_css_sun_estimation`) and the torque rods' momentum
+  management use their own copies of the sensors, without the faults.
+  The owner decides whether a fault should reach the flight software.
+  If so: a change of computation with its records (a golden file
+  changes only for a template with a fault in the loop; none has one).
+
+- Save As keeps a scenario's own files (found by template 43, decisions
+  TPL-B1 and TPL-B6). A 3D model's mesh and a project configuration are
+  named relative to the scenario's folder; after Save As in another
+  folder, or Customize, they are not found. The owner decides whether
+  Save As should copy them (a change to a workflow users rely on). Then
+  a template could also carry a project configuration.
+
 ## Done
+
+- Templates for every feature, batch B: templates 43 to 47, on branch
+  `feature/templates-batch-b` (2026-11-24). 43, a 3D model from
+  cylinders, spheres and a synthetic `.obj` camera; 44, the attitude,
+  inertia, body rate, SRP coefficient and density scale dispersions; 45,
+  MSFC's 95th percentile over 110 days, chained past Basilisk's 104
+  days; 46, the Mission Sequence's assignment, `if`, `while` and script
+  block; 47, sensor faults. Each has a claims test, a golden file, a
+  wizard and its rows on the coverage page. No template for an IDM-CIC
+  import, plugins or a project configuration: a scenario template
+  cannot carry them (the coverage page says where each is shown).
+  Decisions TPL-B1 to TPL-B7.
 
 - Template 38, "Budgets: equipment list, power, mass and propellant",
   on branch `feature/template-38-budgets` (2026-11-24). The owner asked

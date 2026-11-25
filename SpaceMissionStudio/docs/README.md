@@ -26,7 +26,7 @@ to do. New here? Start with **Getting started**.
 | Page | What it is for |
 |---|---|
 | [Use the command line](user-manual/command-line.md) | Every `spacemissionstudio` command |
-| [Template coverage](reference/template-coverage.md) | Each feature of the tool and the templates that show it, with the features that have none yet |
+| [Template coverage](reference/template-coverage.md) | Each feature of the tool and the templates that show it, and why three have no template |
 | [The definition of done](definition-of-done.md) | How each transparency criterion is checked, with the walkthrough of every output's calculation |
 | [The Python API](api.md) | `spacemissionstudio.api`: load, check, run, lifetime, budget, trades, Monte Carlo, comparisons, design checks, model analyses and the re-entry estimate from a script, with tested examples |
 | [Models, rules and assumptions](models/README.md) | One page per model: how it computes, every rule with its value, unit and source, and what it assumes |
