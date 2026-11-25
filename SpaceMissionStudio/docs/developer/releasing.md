@@ -739,6 +739,19 @@ day, the heading moves to that day first, because the release check
 wants the tag's day. By the owner's decision (SRelD K-45), the release
 pull request may be merged with CI's "Windows (MAX Python)" job red,
 for the Basilisk framework test `LambertInputValidation` only.
+It was published on 2026-11-25 at 00:15 UTC (SRelD issue 58). #332 was
+merged at 22:25 UTC on 2026-11-24 as `67ccf4d`. On its head only
+"Windows (MAX Python)" was red, for that framework test (1 of 842). CI
+on `67ccf4d` ([run 45500836193](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45500836193)) failed at the
+first attempt in the pointing page's 50 ms timing test only (52.5 ms on
+the runner, on the tree that passed on the pull request's head); the
+failed job, run again once, passed at 23:22. The tag workflow
+([run 45509502664](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45509502664)) passed the release check and
+tagged `67ccf4d` at 23:23:51 on 2026-11-24, the CHANGELOG's day. The
+release workflow ([run 45509626974](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45509626974)) passed at the
+first attempt, the Windows tests too. It built, installed and checked
+every file, attached the eleven and published the release 51 minutes
+after the tag. It was never a public release without files.
 
 ---
 
