@@ -166,5 +166,25 @@
  "42_tabular_atmosphere_and_lifetime": {
   "saved_text_sha256": "28ab50e6c52c7b69947ddca608be4bfb8fb98d87b2a69c276decd37c17b2d051",
   "scenario_sha256": "5e4300b058d6a8fc6fff0f9f8f5c1293457a443b9695c6c132137535dd8e42d4"
+ },
+ "43_3d_model_cylinders_spheres_and_mesh": {
+  "saved_text_sha256": "386d584c75311a8d7da3f2f62db1f6618837ae1a1162df64533d059a79b5fc77",
+  "scenario_sha256": "f98f0dc84d9189c5c12a19e538d8ec5b2167a56cce82189f8d42593103e1727b"
+ },
+ "44_monte_carlo_attitude_inertia_rate_srp_density": {
+  "saved_text_sha256": "827106ec87dc1bd9cce965ab1a3fc29cc37e07359658915bb0e6df24fc8f0bd0",
+  "scenario_sha256": "14d3b857590b3ec97a49db6e14e4ed7ec55bd6c3a778723fcd539ec22e2a69f9"
+ },
+ "45_solar_activity_past_104_days": {
+  "saved_text_sha256": "207132dc02f3aca5e6024edd50ce40274438b5eab24d4a557b5482b07c72e566",
+  "scenario_sha256": "2237be8af139cb7db5bd944ec20feed8fb97ccf8aeeafc934ee95bac18f1cf41"
+ },
+ "46_mission_sequence_control_flow": {
+  "saved_text_sha256": "423aae2c13a0e47ff7a0a7a7f2d586d5c3982f32c61d7cc33e91576355171ea4",
+  "scenario_sha256": "1b60b8729d6d361ab45e470ea333fd4a18640e55981372be7bfccc1f0471af92"
+ },
+ "47_sensor_faults": {
+  "saved_text_sha256": "ad504c31e373b091fb50eca4c0b55e838bfa93984c841686bc879804b24c60c3",
+  "scenario_sha256": "9791f5210932469b2e0545e116a8db50a432a3a25f0f714a19f0c26357423653"
  }
 }

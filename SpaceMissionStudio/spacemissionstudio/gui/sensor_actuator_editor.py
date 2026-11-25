@@ -189,7 +189,7 @@ _KIND_PARAM_SPECS: dict[str, list[_ParamSpec]] = {
                     "/ 'stuck_current' (freezes at the last real reading) / 'stuck_value' (freezes at "
                     "stuck_value_tesla) / 'spiking' (randomly multiplies the true reading by "
                     "spike_amount with probability spike_probability each tick)"),
-        _ParamSpec("fault_axis", False, 0, "which body axis (0/1/2) fault_mode above applies to – a "
+        _ParamSpec("fault_axis", False, 0, "which body axis (0/1/2) the fault mode above applies to – a "
                     "real single-axis sensor-element failure does not take out the other two axes"),
         _ParamSpec("stuck_value_tesla", False, 0.0, "value fault_axis freezes at when fault_mode="
                     "'stuck_value' [T]"),

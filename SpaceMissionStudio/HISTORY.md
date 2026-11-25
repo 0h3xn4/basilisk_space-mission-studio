@@ -22080,3 +22080,94 @@ result for the commit are checked only by the tag workflow, because
 they need the network and CI. The four compliance generators changed
 nothing on two runs, and `check_drds.py` found 0 problems. ruff and
 pre-commit passed on the changed files.
+
+## Templates for every feature, batch B: templates 43 to 47 (2026-11-24)
+
+The owner wants at least one template for every feature of the tool.
+On branch `feature/templates-batch-b` from `develop` at `a098a39`.
+Decisions TPL-B1 to TPL-B7 record the choices. No engine, schema or
+file-format change: the scenario stays at schema version 8. The golden
+files of templates 01 to 42 are byte-identical; each new template has
+its own, recorded with `scripts/update_golden_outputs.py 43_ 44_ 45_ 46_
+47_ --write`.
+
+**The gaps.** Batch A's coverage page listed eight features without a
+template: a 3D model from an `.obj` mesh, one from cylinders and
+spheres, five Monte Carlo dispersions, solar activity at the 95th or 5th
+percentile (or a local space-weather file), runs past Basilisk's 104
+days, the Mission Sequence's assignment, `if`, `while` and script block,
+sensor faults, an IDM-CIC import, and plugins with project parameters.
+
+**Template 43, a 3D model from cylinders, spheres and a mesh.** The
+generator writes a synthetic camera, `scenarios/meshes/43_synthetic_camera.obj`
+(a closed box and an open hood, in millimetres, with a first line that
+says it is synthetic), and the model names it relative to the template.
+Measured: 150.0 kg, the center of mass at (20.3, 0, -32.9) mm, Ixz
+0.377 kg m^2; the bus, the tank, the magnetometer and the camera's box
+match the textbook formulas (a solid cylinder, solid spheres, a solid
+box) to 1e-8, with the boom and the hood from the app's shell formulas.
+Uncontrolled, the body rates reach 0.007 deg/s in 2.4 hours. About 6 s.
+
+**Template 44, five Monte Carlo dispersions.** Template 07's
+microsatellite on wheels in Sun-safe pointing at 350 km, half an orbit,
+12 runs with seed 44. Measured: about 32 s for the batch; the density
+scale's rank correlation with the along-track offset is 1.0 and with
+the lowest altitude -1.0; the next largest, Iyy's, 0.65, is chance (the
+drag and SRP areas do not depend on the attitude). Each case, run again,
+starts at its drawn attitude and rate (up to 132 deg from the Sun and
+0.64 deg/s) and points within 1 deg of the Sun after 3 to 5 minutes.
+
+**Template 45, the 95th percentile past 104 days.** 110 days at 400 km
+from 1 January 2030, orbit only, J2, 60 s step: two segments, 90 and 20
+days. With degree 10 and the Sun and Moon a 120-day run took about
+85 s; with J2 alone about half as long. Measured: the mean semi-major
+axis falls 9.20 km at the 95th percentile, 7.49 km at the 50th and
+6.05 km at the 5th (MSFC's prediction of November 2026, which the app
+ships: F10.7 78.7, 74.1 and 70.6 in January 2030). The position has no
+step at day 90 and every value is finite to day 110. About 48 s a run.
+
+**Template 46, Mission Sequence control flow.** A 20 mN, 1500 s
+thruster (illustrative) raises a 150 kg satellite from 400 to 420 km.
+A first draft used J2: the osculating altitude and semi-major axis
+swing by several kilometres an orbit, and the "Raised" and "End"
+snapshots differed by 12 km. With two-body gravity the orbit is a
+widening circle. Measured: the loop runs 21 times, the thruster stops at
+day 1.30 at 420.6 km, the script block's semi-major axis (6798.74 km)
+and period (92.98 min) match the run's, 11.71 m/s and 123.3 g as
+F t / (Isp g0). About 3 s.
+
+**Template 47, sensor faults.** The first draft had one sun sensor
+stuck at its largest output in a cluster that estimates the Sun
+heading. The two spacecraft pointed the same way: the estimate is made
+from separate copies of the sun sensors (`fsw.build_css_sun_estimation`),
+which have the sensors' direction, field of view and noise but not
+their faults. The torque rods' momentum management also has its own
+magnetometer. So a fault changes only the reading. The template now
+flies Sun-safe pointing from the true state and compares the readings;
+`BACKLOG.md` has an item for the owner. Measured: css-2 reads 1.0 on
+faulty-sat and 0 on healthy-sat; the magnetometer's z axis spikes in
+about 1 % of the samples, three times the field; the thermal sensor
+reads 20 C while the healthy one goes from 0 to 53 C and down in the
+shadow from minute 25. Both attitudes are identical. About 3 s.
+
+**No template for three features (TPL-B6).** An IDM-CIC import, a plugin
+and a project configuration are not things a template can carry: the
+import's result would be the template, a plugin is an installed Python
+package, and a configuration file named relative to the template would
+be lost on Save As or Customize, which would leave the scenario invalid.
+The coverage page says so and points to where each is shown.
+
+**The rest.** `tests/golden_capture.py` runs a template's script block
+(no template before 46 had one). The Customize wizard reads a
+template's meshes from the templates' folder. `pyproject.toml` ships
+`scenarios/meshes/*.obj`. Wizards, the catalog and its README
+groups, the User Manual's table, the how-to pages, the coverage page and
+the counts (forty-two to forty-seven).
+
+**Checks.** ruff passes. Full suite, 3 workers: 6447 passed, 19 skipped,
+1 failed, the known local-only status bar test
+(`test_a_reported_path_is_not_clipped_in_the_status_bar`). The compliance
+generators change nothing on a second run; `check_drds.py` finds 0
+problems. Running `scripts/_generate_templates.py` writes templates 01 to
+42 byte for byte as committed, except template 03's last digits on this
+machine (as before; not committed).

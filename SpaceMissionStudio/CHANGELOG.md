@@ -10,6 +10,31 @@ fixes bugs.
 
 ## Unreleased
 
+### Added
+
+- **Five new templates cover the features that still had none.**
+  *43 - 3D model: cylinders, spheres and an imported mesh* builds a
+  150 kg microsatellite from a cylinder bus, a sphere tank, a cylinder
+  boom with a sphere magnetometer, and a camera read from an `.obj` file
+  in millimetres (a synthetic one, shipped with the template); the
+  run flies the mass, center of mass and inertia they give. *44 - Monte
+  Carlo: attitude, inertia, body rate, SRP and density* draws the five
+  quantities no template drew before in 12 runs, and shows that the
+  density scale alone moves the orbit while every case still turns onto
+  the Sun. *45 - Solar activity at the 95th percentile, past 104 days*
+  flies 110 days, longer than one Basilisk simulation can hold, as one
+  chained run, and loses about 9.2 km where the 5th percentile loses
+  6.0. *46 - Mission Sequence: assignment, if, while and a script block*
+  raises an orbit to 420 km with a thruster that the sequence switches
+  off and on, a loop that fires until the altitude is reached, a check,
+  and a short script that adds the new period to Results › Output (the
+  run asks before it runs the script). *47 - Sensor faults* flies two
+  satellites side by side, one with a sun sensor stuck at full output, a
+  spiking magnetometer axis and a thermal sensor stuck at 20 C. Each has
+  a Customize wizard. Three features cannot be a template: an IDM-CIC
+  import, a plugin and a project configuration; the template coverage
+  page says why and where each is shown.
+
 ## 2.16.0 (2026-11-24)
 
 SpaceMissionStudio 2.16.0 adds a pointing error budget, lets a Monte
