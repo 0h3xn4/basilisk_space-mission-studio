@@ -64,6 +64,8 @@ prints a table (400 km: 2.65 years, 550 km: 17.26 years).
 2. Run the mission, ideally for its whole length. For an ESA AD10 budget,
    set **Solar activity** (on the **Environment** page) to
    *Conservative: MSFC 95th percentile* and the drag coefficient to 3.0.
+   Template **45** flies 110 days at the 95th percentile, chained past
+   Basilisk's 104 days, and its "Try changing" compares the 5th.
 3. On the **Propellant** page (**Budgets > Propellant**), press **Compute budget**. It lists each
    contributor per mission phase with its margin, the total, and notes on
    anything that departs from the guideline. **Copy as CSV** puts the

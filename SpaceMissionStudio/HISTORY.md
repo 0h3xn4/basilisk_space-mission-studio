@@ -21982,6 +21982,196 @@ palette). One existing test changed how it reaches the cards
 (`docs/ui/TEST_CHANGES.md`): the keyboard test takes the cards in the
 order shown. The golden files are byte-identical; no schema change.
 
+## Release 2.16.0 prepared (2026-11-24)
+
+A minor release: it adds features and a scenario schema step. Contents
+since 2.15.0 (`git log --merges spacemissionstudio-v2.15.0..develop`,
+`develop` at `4819c82`, the merge of #329):
+- #319: a cancelled Monte Carlo batch leaves no process (merged after
+  the 2.15.0 tag, so not in 2.15.0);
+- #320: the record of the 2.15.0 publication;
+- #321: the GUI thread outranks the 3D View's software drawing (K-40);
+- #322: Monte Carlo phase C, item 1, the atmospheric density dispersion
+  (`density_scale`, schema version 8, MC-36 and MC-37), with the
+  owner's answers of 2026-11-24 on the pointing budget and K-40, which
+  came in through its branch;
+- #323: the Monte Carlo workers report through a relay (the insight
+  plot's teardown on Windows);
+- #325: the pointing error budget, scope B (PE-10 to PE-20, SRS-F-32),
+  with the Monte Carlo plot page that Windows holds deleted later;
+- #326: a uniform dispersion with equal bounds is that value (MC-41);
+- #327: the owner confirmed Q1 to Q8 of the Monte Carlo plan (MC-11 to
+  MC-15, MC-17, MC-27 and MC-34 final) and the pointing choices (PE-21
+  a backlog item);
+- #328: templates 39 to 42 (batch A of "templates for every feature");
+- #330: template 38, the Budgets area;
+- #329: Home's templates in nine categories (TC-1, TC-2).
+No pull request #324 is in the range: the owner's answers of 2026-11-24
+(`records/owner-answers-2026-11-24`) came in through #322.
+
+Prepared by `docs/developer/releasing.md` sections 1 to 4, on branch
+`release/2.16.0` from `develop` at `4819c82`. The version is 2.16.0 in
+`pyproject.toml`, `__init__.py` and the Inno Setup script. The
+CHANGELOG's Unreleased entries are under 2.16.0, with an introduction,
+Who should update and Known limits, and an empty Unreleased section
+stays above it. SRelD issue 57 records the release: 2.16.0 is prepared,
+not yet published, and 2.15.0 moves down; K-40 is met in 2.16.0, and
+K-13, K-44 and K-45 are extended. The SDP, SRS, ICD, CSD, SUM,
+limitations, `releasing.md` and both READMEs name 2.16.0. No code
+changed but the version strings. `USER_MANUAL.md` names no version that
+the release changes, so it and its copy in the package are unchanged.
+
+The CHANGELOG heading is dated 2026-11-24, the UTC day of preparation.
+The release check wants the heading's date to equal the tag's UTC day:
+if the tag is made on a later day, the heading must move to that day
+first.
+
+The space weather was not refreshed. `releasing.md` section 1 asks for
+a current file, so one download of CelesTrak's `SW-All.txt` was tried
+on 2026-11-24 at 20:58 UTC: CelesTrak reset the connection (`curl`
+error 35). It was not tried again. 2.16.0 so carries 2.13.0's file
+(observations to 2026-11-18, updated 2026-11-19).
+
+The file format was checked on the code with `git diff
+spacemissionstudio-v2.15.0` (the tag, on `5ebbd3b`):
+- `schema/` has the step to version 8 (`migrations.py`, `scenario.py`,
+  `fields.py`, `field_help.json`) and the budgets section's own version
+  2 with its pointing budget (`budgets.py`), and
+  `tests/data/scenario_hashes.json` was recorded again: the 74 hashes
+  of the 37 templates changed, and the 10 of templates 38 to 42 were
+  added.
+- Templates 38 to 42 and their golden files are new.
+- The 37 earlier templates change only on their `schema_version` line.
+  With that line set back to 7, each of the 37 files is byte for byte
+  the file at the tag.
+- The 37 earlier golden files are byte-identical to those at the tag.
+- `packaging/` changed only in the Inno Setup script's version line,
+  and no file outside `SpaceMissionStudio/` changed but the root
+  README's SpaceMissionStudio part.
+
+Compatibility was checked with 2.15.0's code (`git archive
+spacemissionstudio-v2.15.0`): it refuses all 42 templates as 2.16.0
+saves them ("scenario file is schema_version 8, but this build of
+SpaceMissionStudio only understands up to version 7"). 2.16.0 opens
+2.15.0's 37 templates and saves each again byte for byte as its own
+template.
+
+CI's "Windows (MAX Python)" job still fails the Basilisk framework test
+`LambertInputValidation.RejectsCollinearityBeforeLambdaAndTimeScaling`
+(K-45). By the owner's decision, the release pull request may be merged
+with that check red, for that framework test only.
+
+Tests on the release's code, Linux, Python 3.14, one run of `pytest
+tests -q -n 4 -p no:cacheprovider -o faulthandler_timeout=300`, its
+whole output kept: 6294 passed, 19 skipped and 1 failed of 6314 (5947
+passed at 2.15.0). The run ended in 26 min 55 s, and the faulthandler
+printed no stack. The tests imported the release's worktree
+(`spacemissionstudio.__file__` and the version 2.16.0 checked). The
+failure is
+`test_shell_chrome.py::test_a_reported_path_is_not_clipped_in_the_status_bar`
+(511 px against 509 px), which fails only in this container and on
+`develop` too. The text changes of the release came after the start of
+that run, so the release check, metainfo and every test that reads the
+changed documents were run again on the final files. The release
+changed no test, so `docs/ui/TEST_CHANGES.md` is unchanged. The release
+check (`packaging/release_check.py --today 2026-11-24`, also with the
+commit and `git ls-remote --tags origin`) passed; pip-audit and CI's
+result for the commit are checked only by the tag workflow, because
+they need the network and CI. The four compliance generators changed
+nothing on two runs, and `check_drds.py` found 0 problems. ruff and
+pre-commit passed on the changed files.
+
+## Templates for every feature, batch B: templates 43 to 47 (2026-11-24)
+
+The owner wants at least one template for every feature of the tool.
+On branch `feature/templates-batch-b` from `develop` at `a098a39`.
+Decisions TPL-B1 to TPL-B7 record the choices. No engine, schema or
+file-format change: the scenario stays at schema version 8. The golden
+files of templates 01 to 42 are byte-identical; each new template has
+its own, recorded with `scripts/update_golden_outputs.py 43_ 44_ 45_ 46_
+47_ --write`.
+
+**The gaps.** Batch A's coverage page listed eight features without a
+template: a 3D model from an `.obj` mesh, one from cylinders and
+spheres, five Monte Carlo dispersions, solar activity at the 95th or 5th
+percentile (or a local space-weather file), runs past Basilisk's 104
+days, the Mission Sequence's assignment, `if`, `while` and script block,
+sensor faults, an IDM-CIC import, and plugins with project parameters.
+
+**Template 43, a 3D model from cylinders, spheres and a mesh.** The
+generator writes a synthetic camera, `scenarios/meshes/43_synthetic_camera.obj`
+(a closed box and an open hood, in millimetres, with a first line that
+says it is synthetic), and the model names it relative to the template.
+Measured: 150.0 kg, the center of mass at (20.3, 0, -32.9) mm, Ixz
+0.377 kg m^2; the bus, the tank, the magnetometer and the camera's box
+match the textbook formulas (a solid cylinder, solid spheres, a solid
+box) to 1e-8, with the boom and the hood from the app's shell formulas.
+Uncontrolled, the body rates reach 0.007 deg/s in 2.4 hours. About 6 s.
+
+**Template 44, five Monte Carlo dispersions.** Template 07's
+microsatellite on wheels in Sun-safe pointing at 350 km, half an orbit,
+12 runs with seed 44. Measured: about 32 s for the batch; the density
+scale's rank correlation with the along-track offset is 1.0 and with
+the lowest altitude -1.0; the next largest, Iyy's, 0.65, is chance (the
+drag and SRP areas do not depend on the attitude). Each case, run again,
+starts at its drawn attitude and rate (up to 132 deg from the Sun and
+0.64 deg/s) and points within 1 deg of the Sun after 3 to 5 minutes.
+
+**Template 45, the 95th percentile past 104 days.** 110 days at 400 km
+from 1 January 2030, orbit only, J2, 60 s step: two segments, 90 and 20
+days. With degree 10 and the Sun and Moon a 120-day run took about
+85 s; with J2 alone about half as long. Measured: the mean semi-major
+axis falls 9.20 km at the 95th percentile, 7.49 km at the 50th and
+6.05 km at the 5th (MSFC's prediction of November 2026, which the app
+ships: F10.7 78.7, 74.1 and 70.6 in January 2030). The position has no
+step at day 90 and every value is finite to day 110. About 48 s a run.
+
+**Template 46, Mission Sequence control flow.** A 20 mN, 1500 s
+thruster (illustrative) raises a 150 kg satellite from 400 to 420 km.
+A first draft used J2: the osculating altitude and semi-major axis
+swing by several kilometres an orbit, and the "Raised" and "End"
+snapshots differed by 12 km. With two-body gravity the orbit is a
+widening circle. Measured: the loop runs 21 times, the thruster stops at
+day 1.30 at 420.6 km, the script block's semi-major axis (6798.74 km)
+and period (92.98 min) match the run's, 11.71 m/s and 123.3 g as
+F t / (Isp g0). About 3 s.
+
+**Template 47, sensor faults.** The first draft had one sun sensor
+stuck at its largest output in a cluster that estimates the Sun
+heading. The two spacecraft pointed the same way: the estimate is made
+from separate copies of the sun sensors (`fsw.build_css_sun_estimation`),
+which have the sensors' direction, field of view and noise but not
+their faults. The torque rods' momentum management also has its own
+magnetometer. So a fault changes only the reading. The template now
+flies Sun-safe pointing from the true state and compares the readings;
+`BACKLOG.md` has an item for the owner. Measured: css-2 reads 1.0 on
+faulty-sat and 0 on healthy-sat; the magnetometer's z axis spikes in
+about 1 % of the samples, three times the field; the thermal sensor
+reads 20 C while the healthy one goes from 0 to 53 C and down in the
+shadow from minute 25. Both attitudes are identical. About 3 s.
+
+**No template for three features (TPL-B6).** An IDM-CIC import, a plugin
+and a project configuration are not things a template can carry: the
+import's result would be the template, a plugin is an installed Python
+package, and a configuration file named relative to the template would
+be lost on Save As or Customize, which would leave the scenario invalid.
+The coverage page says so and points to where each is shown.
+
+**The rest.** `tests/golden_capture.py` runs a template's script block
+(no template before 46 had one). The Customize wizard reads a
+template's meshes from the templates' folder. `pyproject.toml` ships
+`scenarios/meshes/*.obj`. Wizards, the catalog and its README
+groups, the User Manual's table, the how-to pages, the coverage page and
+the counts (forty-two to forty-seven).
+
+**Checks.** ruff passes. Full suite, 3 workers: 6447 passed, 19 skipped,
+1 failed, the known local-only status bar test
+(`test_a_reported_path_is_not_clipped_in_the_status_bar`). The compliance
+generators change nothing on a second run; `check_drds.py` finds 0
+problems. Running `scripts/_generate_templates.py` writes templates 01 to
+42 byte for byte as committed, except template 03's last digits on this
+machine (as before; not committed).
+
 ## Feature access: no feature hidden (2026-11-24)
 
 **What was asked.** The owner: "Make sure that no feature is hidden and
@@ -22060,3 +22250,4 @@ and runs from it with the dialogs answered at once; the pages, settings
 and exports of the palette open; the page names every command with its
 keys; the pointing, Scenario and File commands and the empty states end
 to end). No existing test changed. Decisions FA-1 to FA-9.
+

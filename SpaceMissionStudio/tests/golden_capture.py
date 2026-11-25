@@ -369,7 +369,9 @@ def _capture(path: Path) -> dict:
     if runs_sequence(run.mission_sequence):
         from spacemissionstudio.engine.mission_engine import MissionEngine
 
-        result, command_summary = MissionEngine(run, service=service).run()
+        # The templates are the app's own: a script block (template 46) runs
+        # without the consent a scenario from elsewhere needs.
+        result, command_summary = MissionEngine(run, service=service, allow_scripts=True).run()
         command_rows = _plain(command_summary)
     else:
         result = service.run()

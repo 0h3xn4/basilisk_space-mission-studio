@@ -462,7 +462,7 @@ spacecraft's axis or instrument.
 Four spacecraft "bus" templates
 (100 kg ESPA-class, 150 kg microsatellite, 300 kg and 500 kg small
 satellites) and
-forty-two complete example scenarios: most cover one concept each,
+forty-seven complete example scenarios: most cover one concept each,
 several integrate a whole system, and four are starting points for your
 own mission (the [template catalog](../../spacemissionstudio/scenarios/templates/README.md);
 [template coverage](template-coverage.md) lists each feature with the
@@ -572,10 +572,10 @@ compliance matrix.
   the shell's areas and commands, dialogs and the plots in their embedded
   web view.
 - **Template claims are re-checked.** `tests/test_template_claims.py`
-  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-42 in Basilisk and
+  runs templates 03, 07, 08, 10-14, 16, 17, 19-24 and 26-47 in Basilisk and
   checks the headline numbers their descriptions quote; template 25 runs
   in `tests/test_examples.py`. `tests/test_golden_outputs.py` checks that
-  all 42 templates still give the outputs recorded in `tests/golden/`.
+  all 47 templates still give the outputs recorded in `tests/golden/`.
 - **The thermal model** is verified against closed forms, hand
   calculations and Basilisk's own `sensorThermal` module
   ([compliance/validation/thermal-vv.md](../../compliance/validation/thermal-vv.md)).

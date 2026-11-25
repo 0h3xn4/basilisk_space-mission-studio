@@ -2978,6 +2978,44 @@ New tests:
   heading; the command palette's template entries in catalog order with
   their category.
 
+## Templates for every feature, batch B: templates 43 to 47 (2026-11-24)
+
+No GUI test reaches a widget another way. The tests that pin the number
+of templates changed only that number, and the Home filter test the set
+of cards its words match (decision TPL-B7):
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_home.py::test_every_template_has_a_card_with_its_type_orbit_and_first_sentence` | `len(files) == 42` | `== 47` | templates 43 to 47 are new |
+| `tests/gui/test_home.py::test_the_filter_narrows_the_cards_and_says_how_many` | the cards 09, 25, 34, 37; "4 of 42"; 42 cards and "42" | the cards 09, 25, 34, 37, 44; "5 of 47"; 47 cards and "47" | template 44 is a Monte Carlo template, so "monte carlo" also finds it |
+| `tests/test_monte_carlo_statistics.py::test_no_template_has_a_false_finding` | `len(paths) == 42` | `== 47` | templates 43 to 47 are new; 44's five dispersions have no false finding |
+
+One test helper changed: `tests/golden_capture.py` runs a template's
+Mission Sequence with `allow_scripts=True` (decision TPL-B4). No
+template before 46 has a script block, so no existing comparison
+changes.
+
+New tests in `tests/test_template_claims.py`:
+`test_43_the_model_gives_the_mass_properties_of_its_cylinders_spheres_and_mesh`,
+`test_44_the_density_scale_sets_the_decay_and_every_case_turns_onto_the_sun` (slow),
+`test_45_the_conservative_sun_decays_the_orbit_faster_over_a_chained_run` (slow),
+`test_46_the_sequence_fires_in_a_loop_until_420_km_and_the_script_reports_the_orbit`
+and `test_47_each_faulty_sensor_reports_its_fault_and_the_attitude_is_the_same`.
+The tests that run every template now run the five new ones too (their
+golden files and hashes are new).
+
+## The 3D View's resize test waits for the new size (2026-11-24)
+
+On CI's Windows runner (#331, commit `b978847`, job 138824780184) the
+3D View had not drawn its new size 500 ms after the view moved back
+into the window: the last frame was 980x553, the page 1171x465. The
+test waited a fixed 500 ms. The same test passed on the commit before,
+and no code of the 3D View changed.
+
+| Test | Before | After | Why |
+|---|---|---|---|
+| `tests/gui/test_breakout.py::test_the_3d_view_draws_each_new_size_of_its_page_once` | after each move, a fixed wait of 500 ms, then the frames drawn | after each move, wait until the last frame drawn has the page's size (at most 5 s), then 500 ms more, then the frames drawn | A loaded runner draws later. The test still checks that the new size is drawn and that no two frames in a row have the same size; the 500 ms after the new frame still catches the second frame of the same size (K-40) |
+
 ## Feature access (2026-11-24)
 
 No existing test changed how it reaches a widget, and none changed what
@@ -3002,3 +3040,4 @@ New tests:
   Tools › Scenario commands, the File exports and the run views' empty
   states end to end; a long palette entry neither scrolls the list
   sideways nor hides the keys (FA-10).
+

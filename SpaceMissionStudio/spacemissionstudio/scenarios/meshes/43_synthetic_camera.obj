@@ -1,0 +1,30 @@
+# A synthetic camera for SpaceMissionStudio's template 43: not a real product.
+# Written by scripts/_generate_templates.py. Units: mm. +z up; the camera looks along -z.
+o camera_body
+v -150 -150 -400
+v 150 -150 -400
+v -150 150 -400
+v 150 150 -400
+v -150 -150 0
+v 150 -150 0
+v -150 150 0
+v 150 150 0
+f 1 3 4 2
+f 5 6 8 7
+f 1 2 6 5
+f 3 7 8 4
+f 1 5 7 3
+f 2 4 8 6
+o camera_hood
+v -130 -130 -400
+v 130 -130 -400
+v 130 130 -400
+v -130 130 -400
+v -170 -170 -550
+v 170 -170 -550
+v 170 170 -550
+v -170 170 -550
+f 9 13 14 10
+f 10 14 15 11
+f 11 15 16 12
+f 12 16 13 9
