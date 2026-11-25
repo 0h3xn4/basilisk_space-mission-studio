@@ -2,14 +2,6 @@
 
 ## Next release
 
-- The pointing page's timing test on a loaded CI runner. On 2026-11-24
-  `test_the_page_shows_a_large_budget_in_steps_under_50_ms` measured a
-  median of 52.5 ms against 50 ms on CI's Linux runner (commit
-  `67ccf4d`, run 45500836193; about 15 ms on the development machine).
-  The same tree passed before, and the job run again passed. Find why
-  the computation takes 3.5 times longer there, and make it faster or
-  measure it in a way the runner's load does not change, without a
-  higher limit (design rule 6 keeps 50 ms). About 2 hours.
 - Pointing budget: a gyroscope's angle error from a time between
   attitude fixes (decision PE-21, the owner 2026-11-24). A sourced
   `pointing` value "time between attitude fixes [s]", "TBD" until set;
@@ -58,6 +50,9 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- The pointing page's timing test on a loaded CI runner (2026-11-25,
+  branch `fix/pointing-timing-best-of-five`): the best of five under
+  50 ms, as the other 50 ms tests of the GUI thread; the limit stays.
 - Templates for every feature, batch B: templates 43 to 47, on branch
   `feature/templates-batch-b` (2026-11-24). 43, a 3D model from
   cylinders, spheres and a synthetic `.obj` camera; 44, the attitude,
