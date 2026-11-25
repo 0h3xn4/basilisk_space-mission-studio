@@ -314,8 +314,9 @@ A few things to notice right away:
     Constellation..., Generate Phasing Formation..., Generate ROE
     Formation..., Add Ground Station: each shows its page and does what
     its button there does), **Budgets** (Add Equipment Item, Remove
-    Equipment Item, the pointing budget's commands, Copy as CSV), Check a
-    CCSDS File..., Reference Data... and Check Reference Data.
+    Equipment Item, Copy as CSV), **Pointing Budget** (the pointing
+    budget's commands, below), Check a CCSDS File..., Reference Data...
+    and Check Reference Data.
   * **Help**: this manual, Keyboard Shortcuts, Third-Party Licences... and
     About (a small window with the version, the Basilisk version and the
     licence, and buttons for the third-party licences and this manual).
@@ -1141,8 +1142,8 @@ app guesses none.
 
 - **Add Pointing Budget** starts one. If the spacecraft has no budgets
   section yet, the new section holds the pointing budget and nothing
-  else. Each command of the page is also in **Tools › Budgets** and in
-  the command palette ("pointing"): **Add Pointing Requirement**
+  else. Each command of the page is also in **Tools › Pointing Budget**
+  and in the command palette ("pointing"): **Add Pointing Requirement**
   (`Ctrl+Shift+E`), **Add Pointing Contributor** (`Ctrl+Shift+T`), the
   two Remove commands and **Add Scenario Sensors to Pointing Budget**.
   From another area they open this page first.

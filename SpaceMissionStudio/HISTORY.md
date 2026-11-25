@@ -22008,8 +22008,8 @@ not only in the documents:
 **What was hidden, and what changed.**
 
 - The six actions of Budgets › Pointing had no menu item, no palette
-  entry and no keys (the known finding). They are now commands in Tools ›
-  Budgets; Add Pointing Requirement has `Ctrl+Shift+E`, Add Pointing
+  entry and no keys (the known finding). They are now commands in a
+  Tools › Pointing Budget submenu; Add Pointing Requirement has `Ctrl+Shift+E`, Add Pointing
   Contributor `Ctrl+Shift+T`. The Budgets area fills a page only when it
   is shown, so each command shows the page first, then does its action.
 - The Spacecraft page's Add, New from template... and three generators,

@@ -213,7 +213,7 @@ def test_the_feature_access_page_names_every_command_with_its_keys(window):
 # -- the paths this audit added ----------------------------------------------------------------------------------
 
 def test_the_pointing_commands_show_the_page_and_act(window, qapp, quiet_dialogs):
-    """Tools › Budgets › Add Pointing Requirement (Ctrl+Shift+E) and Add
+    """Tools › Pointing Budget › Add Pointing Requirement (Ctrl+Shift+E) and Add
     Pointing Contributor (Ctrl+Shift+T) show Budgets › Pointing and add a
     row; with no pointing budget they say so and change nothing, and Add
     Pointing Budget makes one (FA-2). The page's buttons show the keys."""
@@ -231,7 +231,7 @@ def test_the_pointing_commands_show_the_page_and_act(window, qapp, quiet_dialogs
     assert len(page.pointing.contributors) == contributors + 1
     assert page.add_requirement_action.toolTip() == "Add Requirement (Ctrl+Shift+E)"
     assert page.add_contributor_action.toolTip() == "Add Contributor (Ctrl+Shift+T)"
-    assert "budgets.pointing.add_requirement" in [i for _t, i in _menu_ids(window.menus["Budgets"])]
+    assert "budgets.pointing.add_requirement" in [i for _t, i in _menu_ids(window.menus["Pointing Budget"])]
 
     _open(window, qapp, _TEMPLATE_23)  # no budgets section
     window.commands.action("budgets.pointing.add_requirement").trigger()

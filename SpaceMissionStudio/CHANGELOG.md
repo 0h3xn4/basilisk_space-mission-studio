@@ -16,7 +16,7 @@ fixes bugs.
   [Feature access](docs/reference/feature-access.md), lists each feature
   with where it is in the app (menu, palette, keys), its manual section
   and the test that follows its path, and says what is still hidden.
-  The pointing budget's actions are now in **Tools › Budgets** and the
+  The pointing budget's actions are now in **Tools › Pointing Budget** and the
   palette: **Add Pointing Requirement** (`Ctrl+Shift+E`) and **Add
   Pointing Contributor** (`Ctrl+Shift+T`) open Budgets › Pointing from
   anywhere. A new **Tools › Scenario** menu adds a spacecraft, one from a

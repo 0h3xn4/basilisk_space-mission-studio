@@ -6646,7 +6646,8 @@ change; the golden files are byte-identical.
   page. The platform's own keys (New, Open, Save, Save As, Quit, Undo,
   Redo, the manual) differ between systems: the page may leave them out.
 - **Decision FA-2: the pointing budget's commands.** The six actions of
-  Budgets › Pointing are window commands in Tools › Budgets and in the
+  Budgets › Pointing are window commands in a Tools › Pointing Budget submenu (Tools ›
+  Budgets keeps its three equipment commands) and in the
   palette. Each shows the Pointing page first (the Budgets area fills a
   page only when it is shown, so the page's own action could act on an
   old copy) and then does the page's action; when it cannot act (no
