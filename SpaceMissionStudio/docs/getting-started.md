@@ -1,7 +1,7 @@
 # Getting started
 
-From nothing to your first simulated orbit: install the app, check it
-works, run a first mission and know what you should see.
+This page tells you how to install SpaceMissionStudio, check the
+installation and do your first run.
 
 ## Contents
 
@@ -19,72 +19,69 @@ works, run a first mission and know what you should see.
 
 | | |
 |---|---|
-| Linux | x86_64 or aarch64 with glibc 2.34 or newer (Ubuntu 22.04, Debian 12, RHEL 9 or later). Tested in CI on Ubuntu 24.04. |
-| Windows | Windows 10 or 11, x86_64. The test suite passes on Windows in CI (two tests that failed intermittently are fixed and under watch, SRelD K-14). |
-| Python | None for the installers (path A): they bring their own Python 3.14. Paths B and C need Python 3.14 (Windows: from [python.org](https://www.python.org/downloads/), on PATH); older versions are not supported. CI tests with 3.14. Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet. |
-| Disk | About 1.7 GB: Python with Basilisk and Qt, 117 MB of reference data, 36 MB of Earth orientation files. |
-| Internet | None for the installers. Paths B and C: once, while installing. After that the app runs offline and downloads nothing without asking. |
+| Linux | x86_64 or aarch64, glibc 2.34 or newer: Ubuntu 22.04, Debian 12, RHEL 9 or newer. CI uses Ubuntu 24.04. |
+| Windows | Windows 10 or 11, x86_64. CI runs the tests on Windows. |
+| Python | None for the installers (path A). Paths B and C need Python 3.14. Older versions are not supported. |
+| Disk | About 1.7 GB: Python with Basilisk and Qt, 117 MB of reference data, 36 MB of Earth orientation files |
+| Internet | None for the installers. Paths B and C: one time, during the installation. |
+
+After the installation, the app works offline. It downloads nothing
+without your consent.
 
 The app has two parts:
 
-- **SpaceMissionStudio**: the windows, forms, plots and scenario files.
-- **Basilisk**: the simulation engine from the AVS Lab at the University
-  of Colorado Boulder, which computes every number. The app opens without
-  it (you can build and save scenarios), but **Run** needs it.
+- **SpaceMissionStudio:** the windows, the forms, the plots and the
+  scenario files.
+- **Basilisk:** the simulation engine of the AVS Lab (University of
+  Colorado Boulder). It calculates every number. Without Basilisk, you
+  can make and save scenarios, but you cannot run them.
 
 ## 2. Pick an install path
 
 | Path | For | You type |
 |---|---|---|
-| **A. Installer** (`.deb` on Linux, setup program on Windows) | Using the app | Nothing: double-click |
-| **B. Install script** (`packaging/install.sh` or `install.ps1`) | Using the app from a checkout of this repository | One command |
-| **C. From source** with `pip` | Developing; scripting from Python; running the tests | About eight commands |
+| **A. Installer** (`.deb` on Linux, setup program on Windows) | Use of the app | Nothing: double-click |
+| **B. Install script** (`packaging/install.sh` or `install.ps1`) | Use of the app from a clone of this repository | One command |
+| **C. From source** with `pip` | Development, Python scripts, the tests | About eight commands |
 
-All three give you Basilisk 2.12.0, the version the app is verified
-against. Linux on ARM (aarch64) has no installer: use path B or C.
+All three paths install Basilisk 2.12.0. The app is verified with this
+version. Linux on ARM (aarch64) has no installer: use path B or C.
 
 ## 3. Path A: the installer
 
-From the [releases page](https://github.com/0h3xn4/basilisk_space-mission-studio/releases),
-download the installer for your system with its checksum file, and check
-it (`sha256sum -c SHA256SUMS-linux --ignore-missing` on Linux;
-`Get-FileHash` in PowerShell on Windows). You can also build the
-installers yourself: `packaging/build_deb.sh`, and on Windows
-[Inno Setup](https://jrsoftware.org/isinfo.php) with
-`packaging/windows/spacemissionstudio.iss`
-([`packaging/README.md`](../packaging/README.md)).
+1. Go to the [releases page](https://github.com/0h3xn4/basilisk_space-mission-studio/releases).
+2. Download the installer for your system and its checksum file.
+3. Check the download. On Linux, type `sha256sum -c SHA256SUMS-linux --ignore-missing`. On Windows, use `Get-FileHash` in PowerShell.
+4. Install it. See the steps for your system below.
+5. Open **SpaceMissionStudio** from the application menu or the Start Menu.
+6. Go to [section 6](#6-check-that-it-works).
 
-The installers are self-contained: they bring their own Python, Basilisk
-and the reference data, so they need no Python on the computer and no
-internet. (This holds from 1.1.1 on. The 1.1.0 files still set up a
-Python environment while installing: the 1.1.0 `.deb` downloads
-Basilisk and the data, and the 1.1.0 Windows setup program also needs
-Python 3.11 on PATH.)
+The installers contain Python, Basilisk and the reference data. The
+computer needs no Python and no internet.
 
-**Linux** (x86_64; Ubuntu 22.04, Debian 12 or later): double-click
-`spacemissionstudio_<version>_amd64.deb`, or:
+**Linux** (x86_64; Ubuntu 22.04, Debian 12 or newer): double-click
+`spacemissionstudio_<version>_amd64.deb`, or type:
 
 ```bash
 sudo apt install ./spacemissionstudio_<version>_amd64.deb
 ```
 
-A closing `N: Download is performed unsandboxed as root ...` line is a
-harmless apt notice ([Troubleshooting](troubleshooting.md#messages-that-are-normal)).
+A last line `N: Download is performed unsandboxed as root ...` is a
+normal apt notice
+([Troubleshooting](troubleshooting.md#messages-that-are-normal)).
 
-**Windows 10/11** (x64): run `spacemissionstudio-<version>-setup.exe`.
-It is not signed, so Windows asks before running it (**More info**, then
-**Run anyway**). It installs for your user only, without administrator
-rights, under `%LOCALAPPDATA%\SpaceMissionStudio`.
+**Windows 10 or 11** (x64): run `spacemissionstudio-<version>-setup.exe`.
+The setup program has no signature, so Windows asks before it runs it.
+Click **More info**, then **Run anyway**. The program installs for your
+user only, without administrator rights, in
+`%LOCALAPPDATA%\SpaceMissionStudio`.
 
-Then open **SpaceMissionStudio** from your application menu or the Start
-Menu and go to [section 6](#6-check-that-it-works).
-
-What was verified for the installers, and how:
-[`packaging/README.md`](../packaging/README.md).
+To build the installers yourself, and to see what the release workflow
+checks, read [`packaging/README.md`](../packaging/README.md).
 
 ## 4. Path B: the install script
 
-From the `SpaceMissionStudio` folder of a checkout:
+In the `SpaceMissionStudio` folder of a clone, type one command:
 
 ```bash
 packaging/install.sh --basilisk-wheel "bsk[all]==2.12.0"            # Linux
@@ -94,117 +91,115 @@ packaging/install.sh --basilisk-wheel "bsk[all]==2.12.0"            # Linux
 packaging\install.ps1 -BasiliskWheel "bsk[all]==2.12.0"             # Windows PowerShell
 ```
 
-Either one makes a private Python environment, installs both parts and
-the reference data into it, and adds a launcher (a desktop entry on Linux,
-a Start Menu shortcut on Windows). The Linux script has been run end to
-end; the Windows script has not yet been run on a real Windows machine.
+The script makes a private Python environment. It installs the two
+parts and the reference data, and adds a launcher: a desktop entry on
+Linux, a Start Menu shortcut on Windows. The Linux script was run from
+start to end. The Windows script was not run on a real Windows computer.
 
 ## 5. Path C: from source, step by step
 
-**1. Get the code** and open a terminal in its `SpaceMissionStudio`
-folder:
+1. Get the code, and go to its `SpaceMissionStudio` folder:
 
-```bash
-git clone https://github.com/0h3xn4/basilisk_space-mission-studio.git
-cd basilisk_space-mission-studio/SpaceMissionStudio
-```
+   ```bash
+   git clone https://github.com/0h3xn4/basilisk_space-mission-studio.git
+   cd basilisk_space-mission-studio/SpaceMissionStudio
+   ```
 
-**2. Make a private Python environment**, so nothing touches your system
-Python:
+2. Make a private Python environment. Then your system Python does not change.
 
-| Linux | Windows (PowerShell) |
-|---|---|
-| `python3 -m venv .venv` | `python -m venv .venv` |
-| `source .venv/bin/activate` | `.venv\Scripts\Activate.ps1` |
+   | Linux | Windows (PowerShell) |
+   |---|---|
+   | `python3 -m venv .venv` | `python -m venv .venv` |
+   | `source .venv/bin/activate` | `.venv\Scripts\Activate.ps1` |
 
-Your prompt now starts with `(.venv)`. Activate again in every new
-terminal. (Windows refuses to run `Activate.ps1`? See
-[Troubleshooting](troubleshooting.md#windows-running-scripts-is-disabled-on-this-system).)
+   The prompt starts with `(.venv)`. Activate the environment again in
+   each new terminal. If Windows does not run `Activate.ps1`, see
+   [Troubleshooting](troubleshooting.md#windows-running-scripts-is-disabled-on-this-system).
 
-**3. Install Basilisk** as a prebuilt wheel (no compiler needed; 1.5 to 7
-minutes in our tests, most of it downloading):
+3. Install Basilisk. The wheel is prebuilt, so you need no compiler. This step takes 1.5 to 7 minutes.
 
-```bash
-pip install "bsk[all]==2.12.0"
-```
+   ```bash
+   pip install "bsk[all]==2.12.0"
+   ```
 
-**4. Install SpaceMissionStudio** with its GUI (about a minute):
+4. Install SpaceMissionStudio with its GUI. This step takes about a minute.
 
-```bash
-pip install -e ".[gui]"
-```
+   ```bash
+   pip install -e ".[gui]"
+   ```
 
-Use `".[dev,gui]"` instead if you also want to run the tests.
+   To run the tests too, use `".[dev,gui]"`.
 
-**5. Fetch the reference data** (once):
+5. Get the reference data. Do this one time.
 
-```bash
-spacemissionstudio kernels-status
-spacemissionstudio earth-orientation --fetch
-```
+   ```bash
+   spacemissionstudio kernels-status
+   spacemissionstudio earth-orientation --fetch
+   ```
 
-The first downloads 116 MB (SPICE kernels, the gravity fields, the
-magnetic model, the albedo maps and the atmosphere tables) and lists twelve
-files as `OK`. The second downloads the
-measured Earth orientation files (36 MB) and ends with:
+The first command downloads 116 MB: SPICE kernels, gravity fields, the
+magnetic model, albedo maps and atmosphere tables. It shows twelve files
+as `OK`. The second command downloads the measured Earth orientation
+files (36 MB). It ends with a line like this one:
 
 ```text
 Earth-fixed frame: ITRF93; high accuracy until 2026-12-18, predicted after.
 ```
 
-(the date moves with each update). Without these files runs still work,
-with a simpler Earth rotation model, and say so. Two more files are
-fetched only when you need them: template 31 (the asteroid Eros) needs
-`spacemissionstudio small-bodies --fetch`, and
-`link.atmospheric_loss: itu_r_p676` needs `spacemissionstudio
-gaseous-attenuation --fetch` ([Reference data](user-manual/reference-data.md)).
+The date changes with each update. Without these files, runs use a
+simpler model of the Earth rotation, and they tell you so.
 
-Every command first prints a line like
-`INFO ... Logging to ~/.spacemissionstudio/logs/...log`. That is normal.
+Two more downloads are necessary only for some scenarios
+([Reference data](user-manual/reference-data.md)):
+
+| For | Command |
+|---|---|
+| Template 31, the asteroid Eros | `spacemissionstudio small-bodies --fetch` |
+| `link.atmospheric_loss: itu_r_p676` | `spacemissionstudio gaseous-attenuation --fetch` |
+
+Each command first shows a line `INFO ... Logging to
+~/.spacemissionstudio/logs/...log`. This line is normal.
 
 ## 6. Check that it works
 
+Type this command. It needs no Basilisk:
+
 ```console
 $ spacemissionstudio validate spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json
-OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 6, epoch 2030-01-01T08:30:00
+OK: '22 - Starter: your first LEO satellite' -- 1 spacecraft, schema version 8, epoch 2030-01-01T08:30:00
 ```
 
-Then start the GUI (installed apps: from the menu; from source:
-`spacemissionstudio gui`) and check:
+Then start the GUI: from the application menu, or with
+`spacemissionstudio gui`. Check these items:
 
-- The status bar at the bottom shows the Basilisk version. "(not
-  qualified)" after it means a version other than 2.12.0 is installed:
-  runs still work, but outside what the app was verified against.
-- **Check Reference Data** (the Run area) opens the **Reference data** window: every file
-  should be `ok`.
-- **Settings > About** shows the app's version
-  (`spacemissionstudio --version` in a terminal).
+| Check | Expected result |
+|---|---|
+| The status bar | No item about Basilisk. The status bar shows **Basilisk not installed**, or **(not qualified)** after the version, only when there is a problem. **View › Status Bar: All Details** always shows the version. |
+| **Tools › Check Reference Data**, or **Check Reference Data** in the **Run** area | The **Reference data** window opens. Each file shows **Present**. |
+| **Help › About SpaceMissionStudio** | The versions of the app and of Basilisk. In a terminal: `spacemissionstudio --version`. |
+
+**(not qualified)** means that a Basilisk version other than 2.12.0 is
+installed. Runs work, but the app is not verified with that version.
 
 ## 7. Your first run
 
-This runs template 22: one 150 kg satellite in a 550 km Sun-synchronous
-orbit for one day, with a ground station in Berlin.
+Template 22 is one 150 kg satellite in a 550 km Sun-synchronous orbit.
+The run is one day, with a ground station in Berlin.
 
 **In the GUI** (about a minute):
 
-1. Start the app. It opens on **Home**, with no scenario open (the
-   last session's scenario is not reopened). Each time it starts, a **Fetch
-   or update reference data?** card at the top offers to check for
-   newer reference data. **Not now** is fine once the data is installed;
-   **Fetch now** downloads only what you tick.
-2. Click the card **22 - Starter: your first LEO satellite**; its
-   description appears on the right.
-3. Click **Open template**. The **Scenario** area shows the mission; its
-   **Overview** (Explain), first in the tree, says what it switches on,
-   and predicts `berlin-gs: 4 passes`.
-4. **Run** in the top bar (`Ctrl+R`). It takes a few seconds.
-5. The **Results** area opens. Click "Inertial Position (ECI)" in the
-   catalog on the left (search `position_N`) to see the orbit.
-6. Open the **Timeline** (`Ctrl+6`): four Berlin passes (the first about
-   10 to 18 minutes in) and fifteen eclipses of about 35 minutes each.
-7. **Save As...** (Ctrl+Shift+S) to keep your own copy before changing anything.
+1. Start the app. It opens on **Home**, with no scenario open.
+2. On the card **Fetch or update reference data?**, click **Not now**. Click **Fetch now** only for newer data.
+3. Click the card **22 - Starter: your first LEO satellite**. Its description shows at the right.
+4. Click **Open template**. The **Scenario** area shows the mission.
+5. Read **Overview** at the top of the tree. It predicts `berlin-gs: 4 passes`.
+6. Click **Run** in the top bar (`Ctrl+R`). The run takes a few seconds.
+7. Look at the **Results** area. It opens when the run ends.
+8. Click the **Plots** tab. In the plot list, click **Inertial Position (ECI)**.
+9. Open the **Timeline** (`Ctrl+6`). It shows four Berlin passes and fifteen eclipses of about 35 minutes.
+10. Click **File › Save As...** (`Ctrl+Shift+S`). Save your own copy before you change it.
 
-**From the command line:**
+**On the command line:**
 
 ```console
 $ spacemissionstudio run spacemissionstudio/scenarios/templates/22_starter_first_leo_satellite.json --out-dir out
@@ -212,47 +207,48 @@ Running '22 - Starter: your first LEO satellite' (1 spacecraft, 1.0 day(s), rkf7
 Wrote 20 result file(s) to out:
   berlin-gs.access_to_my-sat.azimuth: out/berlin-gs.access_to_my-sat.azimuth.csv
   ...
-  my-sat.position_N: out/my-sat.position_N.csv
-  my-sat.velocity_N: out/my-sat.velocity_N.csv
   provenance: out/provenance.json
   events (19): out/events.csv
 WARNING: space weather uses MSFC's prediction (nov2026f10-prd.txt), 50th percentile F10.7 and Ap
 ```
 
-The `WARNING` is normal: the mission is in 2030, after the observed
-space-weather record ends, so drag uses NASA MSFC's prediction. `out/`
-now holds one CSV per quantity (time in seconds, values in SI units),
-`events.csv`, and `provenance.json` (which software versions, reference
-files and scenario produced the numbers).
+The `WARNING` is normal. The mission is in 2030, after the end of the
+observed space weather. Thus the drag uses NASA MSFC's prediction.
+
+The folder `out/` contains:
+
+- one CSV file for each quantity (time in seconds, values in SI units);
+- `events.csv`, the passes and eclipses;
+- `provenance.json`: the software versions, the reference files and the
+  scenario that gave the numbers.
 
 **From Python:** `python3 examples/build_a_scenario.py my_first_mission.json`
-builds a scenario in code; [the examples](../examples/README.md) show more.
+makes a scenario in code. [The examples](../examples/README.md) show
+more.
 
 ## 8. Where things are kept
 
-| What | Where (Windows: under `%USERPROFILE%` instead of `~`) |
+On Windows, read `%USERPROFILE%` for `~`.
+
+| What | Where |
 |---|---|
-| Your scenarios | Wherever you save them: plain `.json` files |
-| Bundled templates | `spacemissionstudio/scenarios/templates/` (the app never overwrites them) |
+| Your scenarios | Where you save them: `.json` files |
+| The templates | `spacemissionstudio/scenarios/templates/`. The app never changes them. |
 | Autosave | `~/.spacemissionstudio/autosave/` |
-| Log files | `~/.spacemissionstudio/logs/`; error dialogs name the current one |
-| Support data (SPICE, gravity, magnetic model) | Installers: inside the install folder (`.../site-packages/supportData/`). Otherwise Basilisk's cache, for example `~/.cache/bsk_support_data/`. `kernels-status` prints it |
-| Earth orientation | Installers: inside the install folder (`.../share/spacemissionstudio/earth_orientation/`). Files you download go to `~/.cache/SpaceMissionStudio/earth_orientation/` and are used first |
-| Space-weather downloads | `~/.cache/SpaceMissionStudio/spaceweather/` (only if you ask for newer data than the bundled copy) |
+| Log files | `~/.spacemissionstudio/logs/`. An error dialog names the current one. |
+| Support data (SPICE, gravity, magnetic model) | Installers: in the install folder (`.../site-packages/supportData/`). Other installations: the Basilisk cache, for example `~/.cache/bsk_support_data/`. `kernels-status` shows the folder. |
+| Earth orientation | Installers: in the install folder (`.../share/spacemissionstudio/earth_orientation/`). Your downloads go to `~/.cache/SpaceMissionStudio/earth_orientation/`, and the app uses them first. |
+| Space weather downloads | `~/.cache/SpaceMissionStudio/spaceweather/`, only after you download newer data |
 
 ## 9. If something goes wrong
 
-The three most common problems:
+| Problem | What to do |
+|---|---|
+| **Run** says that Basilisk is not installed | Activate the environment. Type `pip install "bsk[all]==2.12.0"`. |
+| Linux: `ImportError: libEGL.so.1` when the GUI starts, or an empty plot | Install the Qt system libraries ([Troubleshooting](troubleshooting.md#linux-importerror-libeglso1-or-another-so-when-the-gui-starts)). |
+| `pip` cannot find `bsk` | Your Python or your system has no Basilisk wheel. See [section 1](#1-what-you-need). |
 
-- **"Basilisk is not installed/built" when you click Run.** Activate the
-  environment and run `pip install "bsk[all]==2.12.0"`.
-- **Linux: `ImportError: libEGL.so.1` when the GUI starts**, or a blank
-  plot: install Qt's system libraries (see
-  [Troubleshooting](troubleshooting.md#linux-importerror-libeglso1-or-another-so-when-the-gui-starts)).
-- **`pip` cannot find `bsk`:** your Python or platform has no Basilisk
-  wheel (see [section 1](#1-what-you-need)).
-
-Everything else: [Troubleshooting](troubleshooting.md).
+For all other problems, see [Troubleshooting](troubleshooting.md).
 
 ---
 

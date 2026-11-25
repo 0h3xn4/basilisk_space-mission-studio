@@ -63,6 +63,8 @@ with:
 - **Documentation.** User-visible changes update the
   [User Manual](USER_MANUAL.md) or the [how-to pages](docs/user-manual/README.md),
   and add a line to [`CHANGELOG.md`](CHANGELOG.md) under "Unreleased".
+  Write them by the [writing style](docs/developer/writing-style.md);
+  `python scripts/check_writing.py <file>` checks a page.
   Larger changes also get a [`HISTORY.md`](HISTORY.md) entry: what was
   found, why, what changed, and how it was verified.
 - **Compliance records.** If the change touches a requirement, update the

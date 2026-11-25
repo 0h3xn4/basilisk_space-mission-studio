@@ -9,266 +9,92 @@
 ![Basilisk 2.12.0](https://img.shields.io/badge/Basilisk-2.12.0-informational)
 ![Licence EUPL-1.2](https://img.shields.io/badge/licence-EUPL--1.2-green)
 
-This repository is a fork of [Basilisk](https://github.com/AVSLab/basilisk),
-the astrodynamics framework from the AVS Lab, with a desktop app for
-satellite mission analysis added in [`SpaceMissionStudio/`](SpaceMissionStudio/).
-Basilisk itself is unchanged: its README follows below, under
-[Original Basilisk README](#original-basilisk-readme).
+SpaceMissionStudio is a desktop app for satellite mission analysis. You
+design a mission in forms, run it and read the results, without code.
+[Basilisk](https://github.com/AVSLab/basilisk), the astrodynamics
+framework of the AVS Lab, calculates every number.
 
-![The Scenario area with template 22 loaded: the navigation rail on the left, the scenario tree and its Scenario page, the Inspector on the right and the Problems panel below](SpaceMissionStudio/docs/images/scenario_editor_tab.png)
+This repository is a fork of Basilisk. The app is in
+[`SpaceMissionStudio/`](SpaceMissionStudio/README.md). Basilisk is not
+changed: its README is [below](#original-basilisk-readme).
 
-## What it is
+![The Scenario area with template 22 open: the navigation rail at the left, the scenario tree and its General page, the top bar with Run](SpaceMissionStudio/docs/images/scenario_editor_tab.png)
 
-SpaceMissionStudio lets you design a satellite mission in forms, run it,
-and read the results, without writing code. Every number comes from
-Basilisk; SpaceMissionStudio adds the windows, scenario files, plots,
-checks and analysis around it. Start from one of 47 template missions,
-in nine categories, or build your own, then look at orbits, ground
-passes, eclipses, pointing, battery, link margin, lifetime and
-propellant. A spacecraft with a 3D model can also carry a thermal model,
-solved on the run in hot, cold and nominal cases, with sweeps,
-sensitivity and a thermal Monte Carlo. And you can plan a mission's
-operations: which targets to image and which passes to use over days or
-weeks, within the battery, the memory and the slews, then fly the plan
-in the simulation and check it.
+## Install
 
-> **AI authorship.** SpaceMissionStudio was written by Claude
-> (Anthropic's AI model) through Claude Code: its code, tests and
-> documentation. A person reviewed the work, decided what to build next
-> and approved what was merged.
+| System | Get | Install |
+|---|---|---|
+| Linux x86_64 | The `.deb` from the [releases page](https://github.com/0h3xn4/basilisk_space-mission-studio/releases) | `sudo apt install ./spacemissionstudio_<version>_amd64.deb` |
+| Windows 10 or 11 | The setup program from the [releases page](https://github.com/0h3xn4/basilisk_space-mission-studio/releases) | Double-click `spacemissionstudio-<version>-setup.exe` |
+| From source, Python 3.14 | A clone of this repository, in its `SpaceMissionStudio` folder | `pip install "bsk[all]==2.12.0" -e ".[gui]"` |
 
-## Quick start
+The installers contain Python, Basilisk and the reference data. They
+need no internet. The full steps, and the reference data for a source
+install, are in [Getting started](SpaceMissionStudio/docs/getting-started.md).
 
-**Linux and Windows:** the [releases page](https://github.com/0h3xn4/basilisk_space-mission-studio/releases)
-has a `.deb` (`sudo apt install ./spacemissionstudio_<version>_amd64.deb`),
-a Windows setup program and the wheel. From 1.1.1 both installers bring
-their own Python, Basilisk and reference data, and install with no
-internet. Installing from source needs Python 3.14 on the computer; older
-versions are not supported.
+## Your first mission
 
-**From source**, on Linux with Python 3.14 (Windows: see
-[Getting started](SpaceMissionStudio/docs/getting-started.md)):
+1. Start the app. It opens on **Home**.
+2. Click the card **22 - Starter: your first LEO satellite**. Then click **Open template**.
+3. Click **Run** (`Ctrl+R`). After a few seconds, the **Results** area opens.
 
-```bash
-git clone https://github.com/0h3xn4/basilisk_space-mission-studio.git
-cd basilisk_space-mission-studio/SpaceMissionStudio
-python3 -m venv .venv
-source .venv/bin/activate
-pip install "bsk[all]==2.12.0"
-pip install -e ".[gui]"
-spacemissionstudio kernels-status
-spacemissionstudio earth-orientation --fetch
-spacemissionstudio gui
-```
+The **Timeline** (`Ctrl+6`) shows four passes over Berlin. The next steps are in
+[Run a template](SpaceMissionStudio/docs/user-manual/run-a-template.md).
 
-The app opens on **Home**. On the card **22 - Starter: your first LEO
-satellite**, click **Open**, then **Run** (`Ctrl+R`).
-A few seconds later **Results > Plots** shows the orbit and the
-**Timeline** lists four ground passes over Berlin.
+## What you can do
+
+| Area | What | How-to |
+|---|---|---|
+| Scenarios | Build a mission in forms or as JSON; start from 47 templates | [Build your own scenario](SpaceMissionStudio/docs/user-manual/build-your-own-scenario.md) |
+| Orbits | Gravity, Sun and Moon, drag, station keeping, formations, constellations | [Orbit keeping and formations](SpaceMissionStudio/docs/user-manual/orbit-keeping-and-formations.md) |
+| Maneuvers | Burns, Lambert transfers and conditions in a Mission Sequence | [Mission Sequence](SpaceMissionStudio/docs/user-manual/mission-sequence.md) |
+| Attitude | Pointing modes, sensors, actuators, momentum unloading | [Attitude and hardware](SpaceMissionStudio/docs/user-manual/attitude-and-hardware.md) |
+| Power, link, data | Battery, link margin, onboard data | [Power, link and data](SpaceMissionStudio/docs/user-manual/power-link-and-data.md) |
+| Budgets | Equipment list, power, mass, pointing and propellant budgets | [Budgets](SpaceMissionStudio/docs/user-manual/budgets.md) |
+| Lifetime | Orbital lifetime and an ESA AD10-style propellant budget | [Lifetime and propellant](SpaceMissionStudio/docs/user-manual/lifetime-and-budget.md) |
+| 3D model | Shapes, meshes or an IDM-CIC model; design checks and analyses | [3D model](SpaceMissionStudio/docs/user-manual/3d-model.md) |
+| Thermal | A thermal model on the 3D model: hot, cold and nominal cases | [Thermal analysis](SpaceMissionStudio/docs/user-manual/thermal.md) |
+| Operations | Plan images and passes within battery, memory and slews | [Operations planning](SpaceMissionStudio/docs/user-manual/operations.md) |
+| Monte Carlo | Many runs with dispersed inputs; requirements with a confidence bound | [Monte Carlo](SpaceMissionStudio/docs/user-manual/monte-carlo.md) |
+| Results | Plots, Timeline, 3D View, run comparison, CSV, PNG and SVG | [Read the results](SpaceMissionStudio/docs/user-manual/read-the-results.md) |
+| Exchange | CCSDS OPM, OMM and OEM files, TLEs | [Orbit files](SpaceMissionStudio/docs/user-manual/orbit-files.md) |
+| Flight software | Export as a C project; software-in-the-loop tests | [Flight software and SIL](SpaceMissionStudio/docs/user-manual/flight-software-and-sil.md) |
+| Automation | A command line for every analysis, and a Python API | [Command line](SpaceMissionStudio/docs/user-manual/command-line.md) |
+| Offline | Nothing downloads without your consent | [Reference data](SpaceMissionStudio/docs/user-manual/reference-data.md) |
 
 ## Where to go next
 
-| You want to | Read |
+| To | Read |
 |---|---|
-| Install it, step by step, on any system | [Getting started](SpaceMissionStudio/docs/getting-started.md) |
-| Do a specific task ("How do I…?") | [How-to guides](SpaceMissionStudio/docs/user-manual/README.md) |
-| Learn the app from the beginning | [User Manual](SpaceMissionStudio/USER_MANUAL.md), also in the app (**Help** at the bottom of the navigation rail, or `F1`) |
-| Learn by example | The [template catalog](SpaceMissionStudio/spacemissionstudio/scenarios/templates/README.md) and the [Python examples](SpaceMissionStudio/examples/README.md) |
-| Fix a problem | [Troubleshooting](SpaceMissionStudio/docs/troubleshooting.md) and the [FAQ](SpaceMissionStudio/docs/faq.md) |
-| Look up a term | [Glossary](SpaceMissionStudio/docs/glossary.md) |
-| See every document | [Documentation index](SpaceMissionStudio/docs/README.md) |
-| Contribute to the app | [Contributing](SpaceMissionStudio/CONTRIBUTING.md) and the [developer guide](SpaceMissionStudio/docs/developer/README.md) |
-| Use Basilisk itself | The [original Basilisk README](#original-basilisk-readme) below |
-
-## Features
-
-- **Scenarios** as plain JSON, edited in a tree of forms or as text in a
-  code editor (completion, help, problems marked in place, rename, quick
-  fixes) and checked as you type; orbits from elements, position and velocity, or a TLE.
-- **Orbits:** detailed Earth gravity, Sun and Moon, drag from real space
-  weather, solar pressure, measured Earth orientation, runs of up to
-  about 10 years.
-- **Pointing:** five pointing modes, real sensors and actuators, momentum
-  unloading, navigation error, surface facets, flexible solar arrays.
-- **Orbit keeping:** LEO and GEO station keeping, formations with three
-  control laws, Walker constellations that can hold their spacing.
-- **Mission Sequence:** burns, Lambert transfers, reports, conditions,
-  stopping on events such as a ground pass.
-- **Analysis:** passes, eclipses, power, link margin, onboard data,
-  thermal, Monte Carlo, orbital lifetime, ESA AD10-style propellant
-  budgets.
-- **Operations planning:** targets, passes and calibrations scheduled
-  against the battery, the memory and the slews, flown and verified in
-  the simulation, replanned after a lost pass, exported as pass
-  schedules, activity timelines, command schedules and CCSDS OEM and AEM.
-- **Results:** interactive plots, an events timeline, a shared time
-  cursor, run comparison, CSV, PNG and SVG export, provenance on every
-  output.
-- **Transparency:** **Show calculation** beside a figure opens its
-  equation, inputs and rule; named parameters a project file can change;
-  a change history beside each scenario; plugins with models and rules
-  of your own; reproduction bundles that run again on another computer.
-- **3D model:** build the spacecraft from shapes, CAD meshes or an
-  IDM-CIC model, with its mass properties, surfaces, equipment and stowed
-  configuration (from IDM-CIC also its sensors and actuators, its
-  thrusters from their plume cones, the power budget's bus load and solar panel, and the values your team keeps as
-  properties); design checks (fields of view, thrusters, mass budget,
-  launcher fit) and analyses after a run (disturbance torques, blinding,
-  shading, exposure, brightness, a preliminary re-entry estimate).
-- **Exchange:** CCSDS orbit messages, in the app and on the command
-  line; IDM-CIC models (read only);
-  flight-software export as a C project; software-in-the-loop testing.
-- **3D view** of a run inside the app; a **command line** for every analysis; a
-  **Python API**; light and dark themes; **offline by design**.
-
-Details: [Capabilities and verification](SpaceMissionStudio/docs/reference/capabilities.md).
-
-## Requirements
-
-| | |
-|---|---|
-| System | Linux x86_64 or aarch64 (glibc 2.34 or newer), Windows 10 or 11 x86_64 |
-| Python | None for the installers (they bring Python 3.14); 3.14 from source (older versions are not supported). CI tests 3.14 |
-| Basilisk | 2.12.0: in the installers, or from PyPI |
-| Disk | About 1.7 GB, including the reference data |
-| Internet | None for the installers; once from source, to install and fetch the reference data |
-
-## Licence and status
-
-- **Licence:** SpaceMissionStudio is licensed under the European Union
-  Public Licence v. 1.2 (EUPL-1.2) from the release after 2.6.0
-  ([`LICENSE`](SpaceMissionStudio/LICENSE); German text [`LICENSE.de`](SpaceMissionStudio/LICENSE.de)).
-  Releases 1.0.0 to 2.6.0 were published under the ISC licence and stay
-  under it. The EUPL covers SpaceMissionStudio's own work in
-  `SpaceMissionStudio/` only: Basilisk, which it uses, remains under its
-  ISC licence and its own copyright holders. Everything the packages
-  bundle is listed with its licence in [`THIRD_PARTY_NOTICES`](SpaceMissionStudio/THIRD_PARTY_NOTICES).
-  No copyright is claimed in SpaceMissionStudio's own code, which an AI
-  model wrote (see AI authorship above); 0h3xn4 publishes it under the
-  EUPL-1.2 as its licensor.
-  The repository's root [`LICENSE`](LICENSE) is Basilisk's.
-- **Independence and warranty:** SpaceMissionStudio is an independent
-  personal project. It is not affiliated with or endorsed by the
-  organisations named in its documentation, such as NASA, ESA, the AVS
-  Lab of the University of Colorado Boulder, CNES or The Qt Company.
-  SpaceMissionStudio is free of charge and comes without warranty; see
-  Articles 7 and 8 of the EUPL-1.2. Check its results independently
-  before you use them for a real mission.
-- **Version:** 2.16.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.16.0),
-  [changelog](SpaceMissionStudio/CHANGELOG.md)): a pointing error budget (requirements
-  and sources of error summed per index and axis, with the margin of
-  each requirement), a Monte Carlo dispersion of the atmospheric
-  density, templates 38 to 42, Home's templates in nine categories, and
-  Monte Carlo fixes; scenario format version 8, which 2.15.0 and
-  earlier cannot open. 2.15.0 brought Monte Carlo phase B:
-  a batch seed for independent batches, thermal batches
-  that count the runs outside each node's limits with an upper bound,
-  outcome statistics with percentiles and the distribution plot,
-  sensitivity (which drawn value drives which outcome), trust checks, a
-  batch report in JSON or Markdown, `monte-carlo --summarize`,
-  `--report`, `--runs` and `--processes`, and template 37; scenario
-  format version 7, which 2.14.2 and earlier cannot open. 2.14.2 fixed
-  2.14.1: the
-  Budgets area shows at once, also on a slow Windows machine; results
-  and the scenario format are 2.14.1's. 2.14.1 fixed 2.14.0: the first
-  Monte Carlo batch or case of a session starts without a pause, and no
-  "Slot '...' not found" error when a window or a list is freed. 2.14.0 made Monte Carlo
-  batches that judge requirements: every run keeps its Overview figures,
-  requirements on them with an exact upper bound on the failure rate at
-  the confidence you choose (Clopper-Pearson), crashed runs listed with
-  what they drew, and any case run again on its own; scenario format
-  version 6, which 2.13.1 and earlier cannot open. 2.13.1 fixed
-  2.13.0: one cause of rare crashes removed (a garbage collection in a
-  background thread), clearer
-  plot bands, Timeline events, tick labels and wheel names, and tables
-  that fit at 1280 px; results and the scenario format are 2.13.0's.
-  2.13.0 made a window that feels finished, from the UI
-  audit's batches B2 to B12: one accent button per view, empty states
-  that say what fills them, labels instead of codes, values as sheets,
-  one form grid and page inset, one table style, distinct plot colours
-  and display units, and a tidier thermal page, Home, command palette and
-  About; the space weather refreshed (observations to 2026-11-18); the
-  scenario format is 2.11.0's. 2.12.0 added views in their own windows (Results › 3D View,
-  Run › Thermal and the Budgets area, for example on a second screen),
-  ground tracks on by default, ground stations easy to see and a live 2D
-  map in the 3D View, Run › Thermal as tabs with plots that fit and
-  temperatures on the 3D View, dialogs that fit a 1280 x 720 screen, and
-  a new app icon; the scenario format is 2.11.0's. 2.11.0 added the
-  equipment list and power budget: each unit's
-  mass and its power in each mode, every number with its source or
-  marked "TBD", the power budget per system mode, subsystem and bus, and
-  the units in the mass budget, in a new Budgets area; the first part of
-  System Budget Studio's merge, at scenario format version 5, which
-  2.10.0 and earlier cannot open. 2.10.0 added mission operations
-  planning: which targets each
-  spacecraft images and when, which passes send the data down, all within
-  its battery, memory, slews and the stations it shares; the plan flown
-  in the simulation and checked, exported as operations products, and
-  planned again when a pass is lost. 2.9.0 added spacecraft thermal
-  analysis on the 3D model and NASA's November 2026 solar-cycle
-  prediction. 2.8.0
-  made the window calmer and easier to read (a menu bar, a quieter Home
-  and status bar, values as tables and notes as lists). 2.7.0 made **Results › 3D View** a real 3D renderer (the textured Earth lit by the Sun, the stars, the
-  Moon, each spacecraft's model with its fields of view and plumes, the
-  ground stations, several camera views) and can show a run live while
-  it computes, paced to real time if you like, started the app on Home
-  with nothing open, removed the external viewer support and moved the
-  licence to the EUPL-1.2. 2.6.0 played a run back in 3D inside the app,
-  enforced and logged every network use, with an audit anyone can run,
-  and made the installers hash-checked with a bill of materials. 2.5.0 made the scenario's JSON page a code editor and
-  placed IDM-CIC thrusters on the 3D model from their plume cones;
-  2.4.0 read each sensor's and actuator's axis from its shapes and can
-  put the body frame's origin at the centre of gravity; 2.3.0 brought the satellite's
-  components in (sensors and actuators found by name, the power budget
-  from the model's power modes and solar arrays, and the values your team
-  keeps as properties) and a Walker constellation that holds its spacing;
-  2.2.0 put CCSDS orbit files in the app; 2.1.1 fixed 2.1.0 (the 3D model editor
-  is a window of its own, the IDM-CIC import from a template); 2.1.0 was the spacecraft as designed. Its 3D model carries the equipment, a stowed configuration
-  and materials; the tool checks fields of view, thrusters, the mass
-  budget and launcher fit and analyses disturbances, blinding, shading,
-  exposure, brightness and re-entry with it; and the model can be
-  imported from IDM-CIC (© CNES) and updated from its later versions.
-  Before it: 2.0.0 was a glass box (every figure opens its calculation,
-  every rule is a parameter, every result can be reproduced, a Python
-  API; Python 3.14 from source, and 1.x cannot open the files it
-  saves); 1.3.x made
-  the interface new (a navigation rail, a command palette, the Timeline,
-  Reports › Exports), 1.2.0 guided a mission from scratch, 1.1.1 made
-  the installers self-contained, and 1.0.0 was the first release of the
-  renewed tool; the version numbers used before the renewal are
-  withdrawn.
-- **Platforms:** the Linux `.deb`, the Windows setup program and the
-  wheel are built, and the two installers installed and run, by the
-  release workflow
-  ([`packaging/README.md`](SpaceMissionStudio/packaging/README.md)); the
-  test suite runs in CI on Linux and Windows. macOS is not supported.
-- **Known gaps:** [Known limitations](SpaceMissionStudio/docs/reference/limitations.md).
-
-## Related tools
-
-| Tool | Relation |
-|---|---|
-| [Basilisk](https://github.com/AVSLab/basilisk) | The simulation engine; this repository is its fork |
-| [GMAT](https://sourceforge.net/projects/gmat/) | NASA's mission analysis tool; used as a reference to validate the app |
+| Learn the app | [User Manual](SpaceMissionStudio/USER_MANUAL.md), also in the app (**Help**, `F1`) |
+| Do a task | [How-to guides](SpaceMissionStudio/docs/user-manual/README.md) |
+| Solve a problem | [Troubleshooting](SpaceMissionStudio/docs/troubleshooting.md), [FAQ](SpaceMissionStudio/docs/faq.md) |
+| See all documents | [Documentation index](SpaceMissionStudio/docs/README.md) |
+| Contribute | [Contributing](SpaceMissionStudio/CONTRIBUTING.md) |
 
 ## What this fork adds
-
-Everything else in the repository is upstream Basilisk, unchanged.
 
 | Path | What it is |
 |---|---|
 | [`SpaceMissionStudio/`](SpaceMissionStudio/) | The app: code, tests, documentation, packaging, compliance records |
-| [`.github/workflows/spacemissionstudio.yml`](.github/workflows/spacemissionstudio.yml) | CI for the app (Linux, Windows) |
-| [`.github/workflows/spacemissionstudio-windows-installer.yml`](.github/workflows/spacemissionstudio-windows-installer.yml) | Builds, installs and runs the Windows setup program on a Windows runner |
-| [`docs/upstream/`](docs/upstream/README.md) | An untouched copy of the upstream README, for syncing, and a note on it |
-| `README.md` (this file) | The part above this line; the upstream README follows unchanged |
-| `.gitignore` | One blank line |
+| [`.github/workflows/spacemissionstudio*.yml`](.github/workflows/spacemissionstudio.yml) | The app's CI, release and installer workflows |
+| [`docs/upstream/`](docs/upstream/README.md) | A copy of the upstream README, for the sync |
+| `README.md` (this file), `.gitignore` | This part of the README; one blank line |
 
-The app installs Basilisk from PyPI; it does not build or use the
-Basilisk sources in [`src/`](src/). How to take in new upstream releases:
-[Keeping up with upstream Basilisk](SpaceMissionStudio/docs/developer/upstream-sync.md).
+Everything else is upstream Basilisk, not changed. The app installs
+Basilisk from PyPI. It does not build or use [`src/`](src/).
 
-**[Jump to the original Basilisk README](#original-basilisk-readme)**
+## Status and licence
+
+- **Version:** 2.16.0 ([release](https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.16.0), [changelog](SpaceMissionStudio/CHANGELOG.md)).
+- **Platforms:** the Linux `.deb`, the Windows setup program and the wheel. The release workflow builds, installs and runs them ([packaging](SpaceMissionStudio/packaging/README.md)). CI runs the tests on Linux and Windows. macOS is not supported.
+- **Licence:** [EUPL-1.2](SpaceMissionStudio/LICENSE) ([German](SpaceMissionStudio/LICENSE.de)) from the release after 2.6.0. Releases 1.0.0 to 2.6.0 stay under the ISC licence.
+- **Basilisk** keeps its ISC licence and its copyright holders. The EUPL covers only the work in `SpaceMissionStudio/`. The root [`LICENSE`](LICENSE) is Basilisk's. [`THIRD_PARTY_NOTICES`](SpaceMissionStudio/THIRD_PARTY_NOTICES) lists each bundled component with its licence.
+- **AI authorship:** Claude (Anthropic's AI model) wrote the code, the tests and the documentation, through Claude Code. A person reviewed the work, chose what to build and approved each merge.
+- **Copyright:** no copyright is claimed in the app's own code, which an AI model wrote. 0h3xn4 publishes it under the EUPL-1.2 as its licensor.
+- **Independence:** this is an independent personal project. It is not affiliated with the organisations that its documentation names, and they do not endorse it. Examples are NASA, ESA, the AVS Lab of the University of Colorado Boulder, CNES and The Qt Company.
+- **No warranty:** the app is free of charge and has no warranty (EUPL-1.2, Articles 7 and 8). Check its results independently before you use them for a real mission.
+- **Known gaps:** [Known limitations](SpaceMissionStudio/docs/reference/limitations.md).
 
 ---
 

@@ -1,9 +1,8 @@
 # Glossary
 
-Every term and abbreviation the SpaceMissionStudio documentation uses,
-explained in plain words, in alphabetical order. The app's built-in manual
-(**Help**, the last button of the navigation rail, `F1`; section 12) has a
-shorter version of this list.
+The terms and abbreviations of the SpaceMissionStudio documentation, in
+plain words and in alphabetical order. The User Manual in the app has a
+shorter list (**Help**, `F1`, section 12).
 
 [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) · [G](#g) ·
 [H](#h) · [I](#i) · [J](#j) · [K](#k) · [L](#l) · [M](#m) · [N](#n) ·
@@ -12,556 +11,668 @@ shorter version of this list.
 
 ## A
 
-**Absorptance (solar)** -- the share of sunlight a surface absorbs, from 0 to 1. White paint absorbs about 0.2, black paint about 0.96. With the [emissivity](#e) it sets how warm a sunlit surface gets ([Thermal analysis](user-manual/thermal.md)).
+**Absorptance (solar):** the part of the sunlight that a surface
+absorbs, from 0 to 1. White paint absorbs about 0.2, black paint about
+0.96. With the [emissivity](#e), it sets the temperature of a surface in
+the Sun ([Thermal analysis](user-manual/thermal.md)).
 
-**Acquisition** -- in an [operations plan](#o), an activity that images a target: the spacecraft points its instrument at the target and switches it on for a time.
+**Acquisition:** an activity of an [operations plan](#o) that takes an
+image of a target. The spacecraft points its instrument at the target
+and switches it on for a time.
 
-**Activity** -- one thing a spacecraft does in an [operations plan](#o), with a start, an end, a pointing mode and the devices it switches: an acquisition, a contact, a calibration, a maneuver ([Operations planning](user-manual/operations.md)).
+**Activity:** one task of a spacecraft in an [operations plan](#o): an
+acquisition, a contact, a calibration or a maneuver. It has a start, an
+end, a pointing mode and the devices that it switches on
+([Operations planning](user-manual/operations.md)).
 
-**AD10** -- ESA's guideline for delta-V and propellant budgets (document
-EOP-FM/2024-07-177). The **Budget** page follows its structure: margins,
-residual propellant, and solar activity at a high (95th) percentile for
-operations.
+**AD10:** ESA's guideline for delta-V and propellant budgets (document
+EOP-FM/2024-07-177). The **Budget (AD10)** page follows its structure:
+margins, residual propellant, and solar activity at the 95th percentile
+for operations.
 
-**ADCS** -- Attitude Determination and Control System: the sensors,
-actuators and software that work out which way a spacecraft points and
-turn it.
+**ADCS:** Attitude Determination and Control System. The sensors,
+actuators and software that find the direction of a spacecraft and turn
+it.
 
-**AEM** (Attitude Ephemeris Message) -- the [CCSDS](#c) file of a spacecraft's attitude over time, as quaternions. Run › Plan exports the planned attitude as AEM 2.0.
+**AEM (Attitude Ephemeris Message):** the [CCSDS](#c) file of the
+attitude of a spacecraft over time, as quaternions. **Run › Plan**
+exports the planned attitude as AEM 2.0.
 
-**Albedo** -- the share of sunlight a planet reflects. Earth reflects
-about 30 %, Mars about 16 %. Sunlight reflected by the planet below
-reaches a spacecraft's sun sensors as well and can pull a sun-direction
-estimate away from the Sun (template 14).
+**Albedo:** the part of the sunlight that a planet reflects: about 30 %
+for Earth, about 16 % for Mars. This light also gets to the sun sensors.
+It can move the estimate of the Sun direction (template 14).
 
-**Ap** -- a daily index of how disturbed Earth's magnetic field is. With
-[F10.7](#f), it sets how dense the upper atmosphere is, and so how much
-[drag](#d) a low satellite feels.
+**Ap:** a daily index of the disturbance of Earth's magnetic field. With
+[F10.7](#f), it sets the density of the upper atmosphere, and thus the
+[drag](#d) on a low satellite.
 
-**Assumptions** -- **Scenario › Assumptions** lists every [parameter](#p):
-the rule, margin or model an analysis uses, with its value in effect,
-unit, source and rationale (`spacemissionstudio assumptions` prints the
-same). A [project configuration file](#p) changes them.
+**Assumptions:** the page **Scenario › Assumptions**. It lists each
+[parameter](#p) with its value, unit, source and rationale.
+`spacemissionstudio assumptions` shows the same list. A
+[project configuration file](#p) changes the parameters.
 
-**Atomic oxygen (AO)** -- single oxygen atoms, the main gas of the upper atmosphere in low Earth orbit. A surface facing the direction of flight is hit by them and some materials (Kapton, Mylar) erode; the erosion is the number of atoms per area (the fluence) times the material's erosion yield.
+**Atomic oxygen (AO):** single oxygen atoms, the main gas of the upper
+atmosphere in low Earth orbit. They erode some materials (Kapton, Mylar)
+on surfaces that face the direction of flight. The erosion is the number
+of atoms per area (the fluence) times the erosion yield of the material.
 
-**Attitude** -- which way a spacecraft points, as opposed to where it is.
-"Attitude control" keeps it pointed at a target: the ground, the Sun, a
-ground station or a planet.
+**Attitude:** the direction in which a spacecraft points. Attitude
+control keeps it pointed at a target: the ground, the Sun, a ground
+station or a planet.
 
 ## B
 
-**Basilisk** -- the open-source spacecraft simulation framework from the
-AVS Lab at the University of Colorado Boulder. It computes every number in
-SpaceMissionStudio. This repository is a fork of it.
+**Basilisk:** the open-source spacecraft simulation framework of the AVS
+Lab, University of Colorado Boulder. It calculates every number in
+SpaceMissionStudio. This repository is a fork of Basilisk.
 
-**Beta angle** -- the angle between the Sun's direction and an orbit's plane. At a high beta a low orbit sees little or no eclipse and runs hot; at a low beta the eclipse is longest and it runs cold. The run's orbit and epoch fix it.
+**Beta angle:** the angle between the Sun direction and the plane of an
+orbit. At a high beta angle, a low orbit has little or no eclipse and
+is hot. At a low beta angle, the eclipse is longest and the orbit is
+cold. The orbit and the epoch of the run set it.
 
-**Body frame** -- the axes fixed to the spacecraft, in which the
-positions of its parts, sensors, thrusters and facets are given; its
-origin is body point B. An [IDM-CIC](#i) import keeps the body element's
-origin, or puts it at the model's [center of gravity](#c) if you choose.
+**Body frame:** the axes that are fixed to the spacecraft. The positions
+of its parts, sensors, thrusters and facets are given in it. The origin
+is the body point B of the spacecraft. An [IDM-CIC](#i) import keeps the origin of the
+body element, or moves it to the [center of mass](#c) if you choose.
 
-**Boresight** -- the direction an antenna or sensor looks straight out
-of; its gain or field of view is centred on it.
+**Boresight:** the direction straight out of an antenna or a sensor. Its
+gain or its field of view has its center on this direction.
 
 ## C
 
-**Calculation panel (Show calculation)** -- the tab beside the Inspector
-that explains a number: its equation and standard, each input with its unit
-and where it came from, and an **Open** button to each input that is itself
-computed. The **Show calculation** buttons on the Budget, End of Life,
-Dashboard and Timeline, and a card of Results › Overview, open it;
-`--explain` prints the same on the command line.
+**Calculation panel:** the panel beside the **Inspector** that explains
+a number. It shows the equation and the standard, and each input with
+its unit and its source. An **Open** button goes to each input that is
+calculated too. **Show calculation** beside a calculated number opens
+it. `--explain` shows the same on the command line.
 
-**Casualty area** -- the area over which falling debris could hurt a person: for each fragment that reaches the ground with more than 15 J, `(0.6 + sqrt(A))^2` m^2, `A` its average cross-section and 0.6 m the root of a standing person's. Times the population density it gives the casualty risk.
+**Casualty area:** the area in which falling debris can hurt a person.
+For each fragment that gets to the ground with more than 15 J, it is
+`(0.6 + sqrt(A))^2` m². `A` is the mean cross-section of the fragment,
+and 0.6 m is the root of the area of a standing person. The casualty
+area times the population density gives the casualty risk.
 
-**CCSDS** -- the Consultative Committee for Space Data Systems, which
-publishes the standard file formats space agencies exchange. SpaceMissionStudio
-reads and writes three of its orbit messages: [OPM, OMM and OEM](#o).
+**CCSDS:** the Consultative Committee for Space Data Systems. It
+publishes the standard file formats that space agencies exchange.
+SpaceMissionStudio reads and writes three of its orbit messages:
+[OPM, OMM and OEM](#o).
 
-**Cd (drag coefficient)** -- how strongly the thin upper atmosphere drags
-on a spacecraft for its size. ESA's [AD10](#a) uses 3.0 for operations (a
-higher, conservative value) and 2.2 for end of life.
+**Cd (drag coefficient):** a number for the drag of the upper atmosphere
+on a spacecraft, for its size. ESA's [AD10](#a) uses 3.0 for
+operations, a conservative value, and 2.2 for the end of life.
 
-**Center of mass (center of gravity)** -- the point the spacecraft's mass
-balances on. Forces that do not pass through it (drag, sunlight, a
-thruster off its axis) turn the spacecraft. The app gives it from body
-point B (`center_of_mass_b_m`); a 3D model computes it.
+**Center of mass (center of gravity):** the point on which the mass of
+the spacecraft balances. A force that does not go through it (drag,
+sunlight, a thruster off its axis) turns the spacecraft. The app gives
+it from the body point B (`center_of_mass_b_m`). A 3D model calculates
+it.
 
-**Change history** -- the record beside a scenario (`mission.history.jsonl`)
-of every saved change: the value before and after, when, by whom (the name
-set in **Settings > Change history > Author**), and the reason given for an
-[override](#v). **Change History...** lists it; `spacemissionstudio history`
-prints it.
+**Change history:** the record of each saved change, beside the scenario
+(`mission.history.jsonl`). It holds the value before and after, the
+time, the author and the reason for an [override](#v). The author is the
+name in **Settings › Change history**. **File › Change History...**
+shows the record. `spacemissionstudio history` shows it on the command
+line.
 
-**Classical orbit elements** -- six numbers that describe an orbit:
-semi-major axis (roughly its average size), eccentricity (how stretched
-it is), inclination (its tilt to the equator), [RAAN](#r) and argument of
-periapsis (its orientation), and an anomaly (where the spacecraft starts
-along it).
+**Classical orbit elements:** six numbers that describe an orbit:
 
-**Contact** -- the part of a station [pass](#p) a plan uses to send data down (or up). A station serves a limited number of spacecraft at once; when more want the same pass, it is *contested*.
+- the semi-major axis: approximately the mean size;
+- the eccentricity: how stretched the orbit is;
+- the inclination: the tilt to the equator;
+- the [RAAN](#r) and the argument of periapsis: the orientation;
+- an anomaly: the start point of the spacecraft on the orbit.
 
-**Contact conductance** -- how well heat crosses a joint between two parts: an area times a coefficient in W/(m^2 K). A bare bolted aluminium joint is about 136 W/(m^2 K) (NASA GSFC); a filler raises it about twentyfold.
+**Contact:** the part of a station [pass](#p) that a plan uses to send
+data down or up. A station serves a limited number of spacecraft at the
+same time. When more spacecraft want the same pass, the pass is
+*contested*.
 
-**CSS (coarse sun sensor)** -- a small, simple light sensor. Several of
-them, facing different ways, give a rough direction to the Sun.
+**Contact conductance:** how well heat goes across a joint between two
+parts: an area times a coefficient in W/(m² K). A bare bolted aluminium
+joint has about 136 W/(m² K) (NASA GSFC). A filler makes it about twenty
+times larger.
+
+**CSS (coarse sun sensor):** a small, simple light sensor. Several of
+them, in different directions, give an approximate direction to the
+Sun.
 
 ## D
 
-**Delta-V** -- how much a manoeuvre changes a spacecraft's velocity, in
-m/s. The usual way to say how much propellant something costs,
-independent of the spacecraft.
+**Delta-V:** the change of velocity of a maneuver, in m/s. It is the
+usual way to give the propellant cost of a maneuver, independently of
+the spacecraft.
 
-**Design checks** -- checks of a spacecraft's 3D model that need no
-run: parts in a field of view or a thruster's plume, the thrusters'
-authority, the mass budget with growth allowances and the fit in a
-launcher (**Run › Design Checks**, `spacemissionstudio check-design`).
+**Design checks:** checks of the 3D model of a spacecraft that need no
+run (**Run › Design Checks**, `spacemissionstudio check-design`). They
+find parts in a field of view or in a thruster plume. They also check
+the thruster authority, the mass budget with growth allowances, and the
+fit in a launcher.
 
-**Differential drag** -- the difference in [drag](#d) between two
-spacecraft flying together, from different mass, area or drag
-coefficient. It makes their orbits decay at different rates, so one
-slowly drifts along-track from the other.
+**Differential drag:** the difference in [drag](#d) between two
+spacecraft that fly together. It comes from a different mass, area or
+drag coefficient. Their orbits decay at different rates, so one
+spacecraft slowly moves along the track away from the other.
 
-**Drag** -- the push of the thin upper atmosphere against a low-orbiting
-spacecraft. It slowly lowers the orbit until the spacecraft re-enters.
+**Drag:** the force of the thin upper atmosphere against a spacecraft in
+a low orbit. It slowly makes the orbit lower until the spacecraft
+re-enters.
 
 ## E
 
-**ECSS** -- the European Cooperation for Space Standardization, whose
-standards European space projects follow. The `compliance/` folder records
-how SpaceMissionStudio measures up to four of them (and one CCSDS standard).
+**ECSS:** the European Cooperation for Space Standardization. European
+space projects follow its standards. The `compliance/` folder records
+how SpaceMissionStudio applies four of them, and one CCSDS standard.
 
-**Effective emittance (e*)** -- one number for how well a multi-layer insulation blanket lets heat through by radiation, typically 0.01 to 0.05. See [MLI](#m).
+**Effective emittance (e\*):** one number for the heat that a
+multi-layer insulation blanket lets through by radiation, usually 0.01
+to 0.05. See [MLI](#m).
 
-**EME2000** -- an inertial reference frame (axes fixed relative to distant
-stars) defined by Earth's equator and equinox on 1 January 2000. The
-inertial frame of CCSDS files SpaceMissionStudio writes.
+**EME2000:** an inertial reference frame (axes fixed relative to distant
+stars) set by Earth's equator and equinox on 1 January 2000.
+SpaceMissionStudio writes CCSDS files in this frame.
 
-**E/i vectors** -- the eccentricity and inclination parts of a
-formation's [relative orbital elements](#r). The eccentricity vector sets
-the follower's radial motion around the chief, the inclination vector its
-cross-track motion. Parallel vectors make the formation
+**E/i vectors:** the eccentricity and inclination parts of the
+[relative orbital elements](#r) of a formation. The eccentricity vector
+sets the radial motion of the follower around the chief. The inclination
+vector sets its cross-track motion. Parallel vectors make the formation
 [passively safe](#p).
 
-**Emissivity (infrared)** -- how well a surface radiates heat away compared with a perfect black body, from 0 to 1. It also sets how much of the planet's infrared the surface absorbs.
+**Emissivity (infrared):** how well a surface radiates heat, compared
+with a perfect black body, from 0 to 1. It also sets how much of the
+infrared of the planet the surface absorbs.
 
-**Epoch** -- the calendar date and time a simulation starts at, in
-[UTC](#u), for example `2030-01-01T00:00:00`. Sun and Moon positions,
-atmospheric density and where the ground is all depend on it.
+**Epoch:** the date and time at which a simulation starts, in [UTC](#u),
+for example `2030-01-01T00:00:00`. The positions of the Sun and the
+Moon, the density of the atmosphere and the position of the ground all
+depend on it.
 
-**Events** -- things that happen at a time during a run: ground-station
-passes, eclipses, burns and attitude-mode changes. The **Timeline** area
-lists and draws them.
+**Events:** things that occur at a time during a run: passes over ground
+stations, eclipses, burns and changes of the attitude mode. The
+**Timeline** area lists and shows them.
 
-**Exclusion angle** -- how close to its boresight a star tracker or camera tolerates a bright body (the Sun, the Earth's lit limb, the Moon) before it is blinded.
+**Exclusion angle:** the smallest angle between the boresight of a star
+tracker or a camera and a bright body before the sensor is blinded. The
+bright body can be the Sun, the lit limb of the Earth or the Moon.
 
 ## F
 
-**F10.7** -- the Sun's radio brightness at 10.7 cm wavelength, a daily
-measure of solar activity. A more active Sun heats and expands the upper
-atmosphere, so low satellites feel more [drag](#d).
+**F10.7:** the radio brightness of the Sun at a wavelength of 10.7 cm, a
+daily measure of solar activity. A more active Sun heats and expands the
+upper atmosphere, so low satellites have more [drag](#d).
 
-**Facet model** -- the spacecraft described as flat plates, each with its
-own area, facing direction and centre of pressure. Drag and solar
-pressure push on each plate that faces the flow or the Sun, so both
-depend on the attitude and can twist the spacecraft.
+**Facet model:** the spacecraft as flat plates. Each plate has an area,
+a direction and a center of pressure. Drag and solar pressure push on
+each plate that faces the flow or the Sun. Thus both forces depend on
+the attitude, and they can turn the spacecraft.
 
-**Field of view (FOV)** -- the cone a sensor, camera or antenna sees, given as its full angle.
+**Field of view (FOV):** the cone that a sensor, a camera or an antenna
+sees, given as its full angle.
 
-**Flexible appendage** -- a large, light part, such as a solar-array
+**Flexible appendage:** a large, light part, for example a solar array
 wing, that bends and swings when the spacecraft turns. Its first mode is
-its lowest bending frequency; its damping ratio says how quickly the
-swinging dies away.
+its lowest bending frequency. Its damping ratio tells how quickly the
+swing stops.
 
-**FSW (flight software)** -- the software that runs on the spacecraft. In
-SpaceMissionStudio it means the attitude software: navigation, guidance
-and control, built from Basilisk's own modules.
+**FSW (flight software):** the software on the spacecraft. In
+SpaceMissionStudio it is the attitude software: navigation, guidance and
+control, made from Basilisk's own modules.
 
-**FSW mode** -- which built-in pointing behaviour a spacecraft uses: for
+**FSW mode:** the built-in pointing behaviour of a spacecraft, for
 example pointing straight down (nadir), at the Sun, or at a ground
 station.
 
 ## G
 
-**GCRF, ICRF** -- modern inertial reference frames, practically the same
-as [EME2000](#e) for most purposes. SpaceMissionStudio accepts both in
+**GCRF, ICRF:** modern inertial reference frames. For most purposes they
+are the same as [EME2000](#e). SpaceMissionStudio accepts both in
 imported [OPM](#o) files.
 
-**GEO (geostationary orbit)** -- a circular orbit about 35,786 km above
-the equator, where a satellite goes round once a day and so stays over
-the same spot on the ground.
+**GEO (geostationary orbit):** a circular orbit about 35,786 km above
+the equator. A satellite in it goes around once a day, so it stays above
+the same point on the ground.
 
-**Ground station** -- an antenna at a fixed point on Earth. SpaceMissionStudio
-computes when each spacecraft can see each station (a **pass**) and how
-far and how high it is.
+**Ground station:** an antenna at a fixed point on Earth.
+SpaceMissionStudio calculates when each spacecraft can see each station
+(a **pass**), and the range and elevation.
 
 ## H
 
-**Heat pipe** -- a sealed tube whose working fluid carries heat from a hot end to a cold one with very little temperature difference, while it is within its operating range. Frozen or dried out it barely conducts.
+**Heat pipe:** a closed tube with a fluid that moves heat from a hot end
+to a cold end, with a very small temperature difference. This is true
+only in its operating range. When the fluid is frozen or dry, the pipe
+almost does not conduct.
 
-**Heater (thermostatic)** -- an electric heater a thermostat switches on below one temperature and off above a higher one. Its duty is the share of time it is on; its sized power the least constant power that holds its node warm enough.
+**Heater (thermostatic):** an electric heater that a thermostat switches
+on below one temperature and off above a higher one. Its duty is the
+part of the time that it is on. Its sized power is the smallest constant
+power that keeps its node warm enough.
 
-**Hill frame (R/T/N)** -- axes that move with a reference spacecraft (the
-chief): **R**adial (away from Earth), **T**ransverse (along the direction
-of travel) and **N**ormal (out of the orbit plane). Formation offsets are
-given in it.
+**Hill frame (R/T/N):** axes that move with a reference spacecraft (the
+chief). **R** is radial (away from Earth), **T** is transverse (along the
+direction of travel), and **N** is normal (out of the orbit plane). The
+formation offsets are given in this frame.
 
-**Horizon** -- the span an [operations plan](#o) covers, from its start to its end (up to 104 days).
+**Horizon:** the time span of an [operations plan](#o), from its start
+to its end (up to 104 days).
 
 ## I
 
-**Inertia (moments and products of inertia)** -- how hard the
-spacecraft is to turn about each axis: the rotational counterpart of
-mass, in kg m^2. The moments Ixx, Iyy, Izz are about the body axes; the
-products Ixy, Ixz, Iyz say how the mass sits off those axes (zero for a
-symmetric body). The app uses the tensor sign convention, Ixy = -∫xy dm.
+**Inertia (moments and products of inertia):** how hard it is to turn
+the spacecraft about each axis, in kg m². It is the rotational
+equivalent of mass. The moments Ixx, Iyy, Izz are about the body axes.
+The products Ixy, Ixz, Iyz tell how the mass is off those axes (zero for
+a symmetric body). The app uses the tensor sign convention, Ixy = -∫xy dm.
 
-**ICD (interface control document)** -- a document that lists every
-message a piece of software reads and writes: its fields, units, who
-writes it and who reads it. Each flight-software export has one.
+**ICD (interface control document):** a document that lists each
+message that a piece of software reads and writes. For each message, it
+gives the fields, the units, the writer and the reader. Each flight
+software export has one.
 
-**IDM-CIC** -- a concurrent-engineering tool whose models (`.idm`
-files) describe a spacecraft's elements, equipment, shapes, masses and
-power modes (IDM-CIC is © CNES). SpaceMissionStudio reads them with its
-own reader to build a 3D model and add sensors, actuators and power
-budget values; it never writes them. See
+**IDM-CIC:** a concurrent engineering tool (IDM-CIC is © CNES). Its
+models (`.idm` files) describe the elements, equipment, shapes, masses
+and power modes of a spacecraft. SpaceMissionStudio reads them with its
+own reader. It makes a 3D model, and adds sensors, actuators and power
+budget values. It never writes `.idm` files. See
 [Import a spacecraft from IDM-CIC](user-manual/idm-cic.md).
 
-**IERS** -- the International Earth Rotation and Reference Systems
-Service, which measures exactly how Earth turns. Its data make the
-[ITRF93](#i) frame accurate.
+**IERS:** the International Earth Rotation and Reference Systems
+Service. It measures how Earth turns. Its data make the [ITRF93](#i)
+frame accurate.
 
-**IMU (inertial measurement unit)** -- a sensor that measures how fast
-the spacecraft is turning (and, in some, how it accelerates).
+**IMU (inertial measurement unit):** a sensor that measures the rotation
+rate of the spacecraft. Some also measure its acceleration.
 
-**ITRF93, IAU_EARTH** -- two models of how Earth is oriented in space,
-used to place ground stations and compute the ground track. ITRF93 uses
-measured Earth rotation ([IERS](#i) data, downloaded with
-`spacemissionstudio earth-orientation --fetch`); IAU_EARTH is a simpler
-formula, about 10 km off at the surface in 2026. Runs say which one they
-used.
+**ITRF93, IAU_EARTH:** two models of the orientation of Earth in space.
+The app uses them to put ground stations on Earth and to calculate the
+ground track. ITRF93 uses the measured Earth rotation ([IERS](#i) data,
+from `spacemissionstudio earth-orientation --fetch`). IAU_EARTH is a
+simpler formula, about 10 km wrong at the surface in 2026. Each run
+tells which model it used.
 
 ## J
 
-**J2** -- the largest effect of Earth's equatorial bulge on an orbit. It
-slowly turns the orbit plane; [Sun-synchronous](#s) orbits use exactly
-that.
+**J2:** the largest effect of the equatorial bulge of Earth on an orbit.
+It slowly turns the orbit plane. [Sun-synchronous](#s) orbits use this
+effect.
 
-**JSON page** -- the scenario's text, under **Form · JSON** in the
-Scenario area: the file as it is saved, editable, with colours, every
-problem marked where it is, completion (`Ctrl+Space`), each key's help,
-rename (`F2`), go to definition (`F12`) and quick fixes (`Ctrl+.`).
+**JSON page:** the text of the scenario, under **JSON** in the
+**Scenario** area. It is the file as saved, and you can edit it. It
+marks each problem where it is. It has completion (`Ctrl+Space`), help
+for each key, rename (`F2`), go to definition (`F12`) and quick fixes
+(`Ctrl+.`).
 
 ## K
 
-**Kalman filter** -- an estimator that keeps a best guess of a state
-(here a position and velocity) and its uncertainty, moves both forward
-with a model of the motion, and corrects them with each measurement in
-proportion to how much it trusts it. Basilisk's `relativeODuKF`, used by
-[optical navigation](#o), is an *unscented* Kalman filter.
+**Kalman filter:** an estimator that keeps a best estimate of a state
+(here a position and a velocity) and its uncertainty. It moves both
+forward with a model of the motion. It corrects them with each
+measurement, by how much it trusts the measurement. Basilisk's
+`relativeODuKF`, which [optical navigation](#o) uses, is an *unscented*
+Kalman filter.
 
-**KVN (keyword = value notation)** -- the plain-text form of [CCSDS](#c)
-files: one `KEYWORD = value` per line. SpaceMissionStudio reads and
-writes KVN, not the XML form.
+**KVN (keyword = value notation):** the plain text form of [CCSDS](#c)
+files, with one `KEYWORD = value` on each line. SpaceMissionStudio reads
+and writes KVN, not the XML form.
 
 ## L
 
-**Lambert transfer** -- the burn that takes a spacecraft from where it
-is to a chosen position in a chosen time. The `lambert_transfer` command
-in a [Mission Sequence](#m) computes it.
+**Lambert transfer:** the burn that moves a spacecraft from its position
+to a selected position in a selected time. The `lambert_transfer`
+command of a [Mission Sequence](#m) calculates it.
 
-**Landmark navigation** -- estimating where a spacecraft is from where
-known surface features of a small body (landmarks) appear in camera
-images, combined over many images by a [Kalman filter](#k).
+**Landmark navigation:** an estimate of the position of a spacecraft
+from known surface features of a small body (landmarks) in camera
+images. A [Kalman filter](#k) combines many images.
 
-**LEO (low Earth orbit)** -- orbits below about 2000 km. Most satellites
-fly there, low enough to feel [drag](#d).
+**LEO (low Earth orbit):** orbits below about 2000 km. Most satellites
+fly there. The orbit is low enough for [drag](#d).
 
-**Link margin** -- how much stronger the received radio signal is than
-the receiver needs, in dB. At 0 dB or more the link closes and data can
-be sent; below 0 dB it cannot. A project can require more
-(`link.required_margin_db`, [RF link, data handling and power](models/link-data-and-power.md)).
+**Link margin:** the difference between the received radio signal and
+the signal that the receiver needs, in dB. At 0 dB or more, the link
+closes and data can go through. Below 0 dB, it cannot. A project can
+require more (`link.required_margin_db`,
+[RF link, data handling and power](models/link-data-and-power.md)).
 
-**LTAN (local time of the ascending node)** -- for a [Sun-synchronous
-orbit](#s), the local solar time when the satellite crosses the equator
-going north, for example 10:30. It sets the lighting the satellite sees.
+**LTAN (local time of the ascending node):** the local solar time when
+a satellite crosses the equator to the north, for example 10:30. It is
+used for a [Sun-synchronous orbit](#s). It sets the light
+conditions of the satellite.
 
 ## M
 
-**Maturity (mass)** -- how far a part's mass is known: estimated, from a layout, a design about to be released, a released design, existing hardware, or measured. The less mature, the larger the growth allowance added to it (AIAA S-120-2006).
+**Maturity (mass):** how well the mass of a part is known. The levels
+are: estimated, from a layout, a design before release, a released
+design, existing hardware, measured. A less mature mass gets a larger
+growth allowance (AIAA S-120-2006).
 
-**Mean elements** -- orbit elements with the short, regular wobbles
-averaged out, so slow trends (such as the orbit plane turning under
-[J2](#j)) are easy to see. The opposite of osculating elements.
+**Mean elements:** orbit elements without the short, regular
+oscillations. They make slow trends easy to see, for example the turn of
+the orbit plane by [J2](#j). The opposite is the osculating elements.
 
-**Mission Sequence** -- a list of commands a run carries out in order:
-propagate (fly) until something happens, burn, compute a Lambert
-transfer, report a value, branch with `if`/`while`, or run a script
-block. Like GMAT's or FreeFlyer's mission sequence.
+**Mission Sequence:** a list of commands that a run does in order. A
+command can propagate until an event, burn, calculate a Lambert
+transfer, report a value, branch with `if` or `while`, or run a script
+block. It is like the mission sequence of GMAT or FreeFlyer.
 
-**MLI (multi-layer insulation)** -- a blanket of many thin reflective layers that insulates a spacecraft's surface. The thermal model describes it by its outer layer's optics and its [effective emittance](#e).
+**MLI (multi-layer insulation):** a blanket of many thin reflective
+layers that insulates the surface of a spacecraft. The thermal model
+describes it by the optical properties of its outer layer and by its
+[effective emittance](#e).
 
-**Model analyses** -- what a run computes on the spacecraft's 3D model:
-disturbance torques, sensor blinding, antenna obstruction, array
-shading, atomic-oxygen exposure and brightness (**Results › Model
-Analyses**, `spacemissionstudio model-analyses`).
+**Model analyses:** what a run calculates on the 3D model of the
+spacecraft (**Results › Model Analyses**,
+`spacemissionstudio model-analyses`). They are disturbance torques,
+sensor blinding, antenna obstruction, array shading, atomic oxygen
+exposure and brightness.
 
-**Monte Carlo** -- running the same scenario many times with small random
-changes (mass, attitude, orbit, drag, ...), to see the range of outcomes
-instead of one answer.
+**Monte Carlo:** many runs of the same scenario with small random
+changes (mass, attitude, orbit, drag and more). The result is the range
+of outcomes, not one answer.
 
-**MRP (modified Rodrigues parameters)** -- three numbers that describe an
+**MRP (modified Rodrigues parameters):** three numbers that describe an
 [attitude](#a). Basilisk uses them for attitudes and attitude errors.
 
-**MSFC** -- NASA's Marshall Space Flight Center, which publishes the
-monthly solar-activity prediction ([F10.7](#f) and [Ap](#a)) that
-SpaceMissionStudio uses beyond the measured record.
+**MSFC:** NASA's Marshall Space Flight Center. It publishes the monthly
+prediction of solar activity ([F10.7](#f) and [Ap](#a)).
+SpaceMissionStudio uses it after the end of the measured record.
 
 ## N
 
-**NAIF** -- NASA's Navigation and Ancillary Information Facility, which
-publishes the [SPICE kernels](#s) and Earth orientation files.
+**NAIF:** NASA's Navigation and Ancillary Information Facility. It
+publishes the [SPICE kernels](#s) and the Earth orientation files.
 
-**Navigation error** -- a deliberate error added to what the flight
-software is told about the spacecraft (attitude, rate, position, ...),
-so a run shows how the software copes with imperfect sensors.
+**Navigation error:** an error that you add on purpose to what the
+flight software knows about the spacecraft: attitude, rate, position.
+The run then shows how the software works with imperfect sensors.
 
-**NRLMSISE-00** -- the model of the upper atmosphere's density that
-drag uses, driven by [F10.7](#f) and [Ap](#a).
+**NRLMSISE-00:** the model of the density of the upper atmosphere that
+the drag uses. [F10.7](#f) and [Ap](#a) drive it.
 
 ## O
 
-**OBJ (Wavefront .obj)** -- a common text file format for 3D shapes,
-written by CAD and modelling tools. The app reads it into a 3D model and
-writes the model in it, for export.
+**OBJ (Wavefront .obj):** a common text file format for 3D shapes. CAD
+and modelling tools write it. The app reads it into a 3D model, and
+exports the model in this format.
 
-**OEM, OMM, OPM** -- three [CCSDS](#c) orbit files. An **OPM** (Orbit
-Parameter Message) gives one state at one time; an **OMM** (Orbit
-Mean-Elements Message) gives mean elements, such as a [TLE](#t); an
-**OEM** (Orbit Ephemeris Message) lists positions and velocities over
-time.
+**OEM, OMM, OPM:** three [CCSDS](#c) orbit files:
 
-**OLR (outgoing longwave radiation)** -- the infrared a planet radiates, in W/m^2 at the top of its atmosphere: about 211 to 246 W/m^2 on average for the Earth, depending on the latitudes an orbit crosses.
+- an **OPM** (Orbit Parameter Message) gives one state at one time;
+- an **OMM** (Orbit Mean-Elements Message) gives mean elements, as a
+  [TLE](#t) does;
+- an **OEM** (Orbit Ephemeris Message) lists positions and velocities
+  over time.
 
-**Operations plan** -- the [activities](#a) of one or more spacecraft over a [horizon](#h), placed by the scheduler so that the slews fit and the battery and memory stay within their limits. It is a planning product, not a command load ([Operations planning](user-manual/operations.md)).
+**OLR (outgoing longwave radiation):** the infrared that a planet
+radiates, in W/m² at the top of its atmosphere. For the Earth, the mean
+is about 211 to 246 W/m². It depends on the latitudes that an orbit
+crosses.
 
-**Opportunity** -- a time an activity can happen: a target [window](#w) or a station [pass](#p).
+**Operations plan:** the [activities](#a) of one or more spacecraft over
+a [horizon](#h). The scheduler puts them so that the slews fit, and the
+battery and the memory stay in their limits. It is a planning product,
+not a command load ([Operations planning](user-manual/operations.md)).
 
-**Optical navigation** -- estimating where a spacecraft is from camera
-images: here, from where a planet's disk falls in the image (the
-direction) and how large it is (the range), combined over many images by
-a [Kalman filter](#k).
+**Opportunity:** a time at which an activity can occur: a target
+[window](#w) or a station [pass](#p).
 
-**Orbit-periodic** -- a state that repeats itself every orbit. The thermal model starts its cases from the orbit-periodic state, so the result does not depend on a guessed starting temperature.
+**Optical navigation:** an estimate of the position of a spacecraft from
+camera images. Here, the position of the disk of a planet in the image
+gives the direction. The size of the disk gives the range. A
+[Kalman filter](#k) combines many images.
 
-**Orbital lifetime** -- how long [drag](#d) takes to bring an orbit down
-to re-entry (here: the perigee reaching 120 km). Disposal rules cap it
-after the mission ends: 5 years under ESA's Zero Debris approach and the
-FCC, 25 years under the older IADC guideline.
+**Orbit-periodic:** a state that repeats in each orbit. The thermal
+model starts its cases from the orbit-periodic state. Thus the result
+does not depend on an estimated start temperature.
 
-**Osculating elements** -- the [classical elements](#c) of the orbit the
-spacecraft would follow if every force but the central gravity stopped
-at that instant. They wobble along the orbit; see mean elements.
+**Orbital lifetime:** the time until [drag](#d) brings an orbit down to
+re-entry. Here, re-entry is when the perigee gets to 120 km. Disposal
+rules limit the lifetime after the end of the mission. The limit is 5
+years under ESA's Zero Debris approach and the FCC, and 25 years under
+the older IADC guideline.
 
-**Overridden value** -- see [value mark](#v).
+**Osculating elements:** the [classical elements](#c) of the orbit that
+the spacecraft would follow if all forces except the central gravity
+stopped at that instant. They oscillate along the orbit. See mean
+elements.
+
+**Overridden value:** see [value mark](#v).
 
 ## P
 
-**Parameter** -- a named rule, margin or model choice of an analysis, such
-as `propellant_budget.residual_fraction`, with a default, a unit, a source
-and limits. A [project configuration file](#p) changes it without editing
-code; every result records what was changed. See
+**Parameter:** a named rule, margin or model choice of an analysis, for
+example `propellant_budget.residual_fraction`. It has a default, a unit,
+a source and limits. A [project configuration file](#p) changes it
+without a change to the code. Each result records the changes. See
 [Models, rules and assumptions](models/README.md).
 
-**Pass** -- one period when a spacecraft is above a ground station's
-horizon (and above its minimum elevation).
+**Pass:** one period when a spacecraft is above the horizon of a ground
+station, and above its minimum elevation.
 
-**Passive safety** -- a formation whose two spacecraft never meet in the
-radial/cross-track plane, so they cannot collide even if the along-track
-spacing is lost: its [e/i vectors](#e) are parallel. The app shows the
-closest radial/cross-track approach.
+**Passive safety:** a property of a formation. Its two spacecraft never
+meet in the radial and cross-track plane. Thus they cannot collide, even
+if the along-track spacing is lost. Its [e/i vectors](#e) are parallel.
+The app shows the closest radial and cross-track approach.
 
-**Patch antenna** -- a flat antenna on one face of the spacecraft. Its
-gain is highest straight out of the face and falls off to the sides, so
-the link depends on where the spacecraft points.
+**Patch antenna:** a flat antenna on one face of the spacecraft. Its
+gain is highest straight out of the face and decreases to the sides.
+Thus the link depends on the pointing of the spacecraft.
 
-**Phase angle** -- the angle at a planet between the Sun and the
-spacecraft. At 0 deg the camera sees the full lit disk; past 90 deg it
-sees mostly the night side.
+**Phase angle:** the angle at a planet between the Sun and the
+spacecraft. At 0 deg, the camera sees the full lit disk. Above 90 deg,
+it sees mostly the night side.
 
-**Phasing (along-track separation)** -- how far ahead of or behind
-another spacecraft (the chief) a satellite sits along the same orbit.
-"Phasing-keeping" holds that separation, the way station-keeping holds
-altitude.
+**Phasing (along-track separation):** the distance of a satellite ahead
+of or behind another spacecraft (the chief) on the same orbit. Phasing
+keeping holds that distance, as station keeping holds an altitude.
 
-**Plugin** -- a Python package that declares an entry point in the group
-`spacemissionstudio.models` and so adds [parameters](#p), pre-run rules and
-models of its own, without editing the tool. A run records the plugins it
-loaded. It cannot add what Basilisk simulates. See
-[Add your own models and rules](user-manual/plugins.md).
+**Plugin:** a Python package with an entry point in the group
+`spacemissionstudio.models`. It adds its own [parameters](#p), pre-run
+rules and models, without a change to the tool. A run records the
+plugins that it loaded. A plugin cannot add to what Basilisk simulates.
+See [Add your own models and rules](user-manual/plugins.md).
 
-**Polyhedral gravity** -- the gravity of a body computed from its shape,
-given as a closed surface of triangles (a polyhedron), at constant density
-(Werner and Scheeres 1997). Close to an irregular small body such as an
-asteroid it is far closer to the real pull than a point mass.
+**Polyhedral gravity:** the gravity of a body, calculated from its shape
+at constant density (Werner and Scheeres 1997). The shape is a closed
+surface of triangles (a polyhedron). Near an irregular small body, for
+example an asteroid, it is much nearer to the real gravity than a point
+mass.
 
-**Principal axes** -- the three axes about which a body's products of
-inertia are zero; the moments about them are its principal moments. A
-model shows both, and how far each axis is from the nearest body axis.
+**Principal axes:** the three axes about which the products of inertia
+of a body are zero. The moments about them are its principal moments. A
+model shows both, and the angle from each axis to the nearest body axis.
 
-**Project configuration file** -- a YAML file a scenario names
-(`config_file`) that changes [parameters](#p) for a project. Chosen or
-created in **Scenario › Assumptions**; see
+**Project configuration file:** a YAML file that a scenario names
+(`config_file`). It changes [parameters](#p) for a project. Select it or
+make it in **Scenario › Assumptions**. See
 [Change a parameter](user-manual/project-configuration.md).
 
-**Provenance** -- `provenance.json`, written with every run's results: the
-Basilisk version, whether it is the verified one, the other software
-versions, checksums of the scenario and every reference file used, every
-random seed, the values used that the file did not give, and each
-[parameter](#p) a project changed. **Show everything recorded** opens it
-all.
+**Provenance:** the file `provenance.json`, written with the results of
+each run. It records:
+
+- the Basilisk version, and if it is the verified version;
+- the versions of the other software;
+- the checksums of the scenario and of each reference file used;
+- each random seed;
+- the values that the run used and that the file did not give;
+- each [parameter](#p) that a project changed.
+
+**Show everything recorded** shows all of it.
 
 ## R
 
-**RAAN (right ascension of the ascending node)** -- the direction, in
-space, where the orbit crosses the equator going north. It sets which way
-the orbit plane faces.
+**RAAN (right ascension of the ascending node):** the direction in space
+where the orbit crosses the equator to the north. It sets the direction
+of the orbit plane.
 
-**Radiator** -- a surface that rejects a spacecraft's heat to space, usually facing away from the Sun, with a low [absorptance](#a) and a high [emissivity](#e) (white paint, silvered Teflon).
+**Radiator:** a surface that sends the heat of a spacecraft to space. It
+usually faces away from the Sun. It has a low [absorptance](#a) and a
+high [emissivity](#e), for example white paint or silvered Teflon.
 
-**Random seed** -- the number (`sim_settings.seed`, default 0) from which
-each sensor noise model's own random sequence is derived, so the same
-scenario gives the same run and no two sensors draw the same noise.
+**Random seed:** a number (`sim_settings.seed`, default 0). The app
+derives the random sequence of each sensor noise model from it. Thus the
+same scenario gives the same run, and no two sensors get the same noise.
 
-**Ray casting** -- following straight lines (rays) through the 3D model to see what they hit: how the app finds parts in a field of view, a plume or the way of the sunlight.
+**Ray casting:** straight lines (rays) through the 3D model, to find
+what they hit. The app uses it to find parts in a field of view, in a
+plume or in the path of the sunlight.
 
-**Reaction wheel (RW)** -- a spinning wheel inside the spacecraft.
-Speeding it up or slowing it down turns the spacecraft the other way,
-without propellant.
+**Reaction wheel (RW):** a wheel that turns inside the spacecraft. When
+it turns faster or slower, the spacecraft turns in the other direction.
+It uses no propellant.
 
-**Reference data** -- the data files runs need: [SPICE kernels](#s), the
-gravity field, the magnetic field model, Earth orientation files and
-space weather. The **Reference data** window lists them.
+**Reference data:** the data files that runs need: [SPICE kernels](#s),
+the gravity field, the magnetic field model, the Earth orientation files
+and the space weather. The **Reference data** window lists them.
 
-**Relative orbital elements (ROE)** -- six numbers that describe one
-spacecraft's orbit relative to another's (D'Amico's quasi-nonsingular
-set): a relative semi-major axis (a drift), a relative mean longitude
+**Relative orbital elements (ROE):** six numbers that describe the orbit
+of one spacecraft relative to another (D'Amico's quasi-nonsingular set).
+They are a relative semi-major axis (a drift), a relative mean longitude
 (the along-track offset) and the two [e/i vectors](#e). The app gives
-them in metres, times the chief's semi-major axis.
+them in metres: the numbers times the semi-major axis of the chief.
 
-**Replanning** -- planning again from a time: what started before it is kept as flown, and the rest of the horizon is planned again, for example after a lost pass.
+**Replanning:** a new plan from a given time. Activities that started
+before that time stay as flown. The app plans the rest of the horizon
+again, for example after a lost pass.
 
-**Reproduction bundle** -- a folder (`run --bundle`, or Results › Plots ›
-**Export all...** › **Reproduction bundle...**) that holds a run's results,
-its provenance, the scenario as run and copies of the files it refers to.
-`spacemissionstudio reproduce` runs it again and says what differs.
+**Reproduction bundle:** a folder with the results of a run, its
+provenance, the scenario as run and copies of the files that it uses.
+Make it with `run --bundle`, or with **Results › Plots › Export all... ›
+Reproduction bundle...**. `spacemissionstudio reproduce` runs it again
+and shows the differences.
 
-**RF** -- radio frequency: the radio link between spacecraft and ground.
+**RF:** radio frequency: the radio link between the spacecraft and the
+ground.
 
-**RTN, VNB** -- two sets of axes for a burn's direction. **RTN**: Radial,
-Transverse (along-track), Normal. **VNB**: Velocity, Normal (orbit
-normal), Binormal. Both move with the spacecraft.
+**RTN, VNB:** two sets of axes for the direction of a burn. **RTN** is
+Radial, Transverse (along the track) and Normal. **VNB** is Velocity,
+Normal (orbit normal) and Binormal. Both move with the spacecraft.
 
 ## S
 
-**Scenario** -- one mission set-up saved as a JSON file: spacecraft,
-orbits, ground stations, environment, run settings and an optional
-Mission Sequence. A **template** is a ready-made scenario.
+**Scenario:** one mission set-up, saved as a JSON file. It holds the
+spacecraft, the orbits, the ground stations, the environment, the run
+settings and, as an option, a Mission Sequence. A **template** is a
+ready-made scenario.
 
-**SHA-256** -- a checksum of a file's bytes. The provenance records one for
-the scenario and for every data file a run read, so a changed file shows.
+**SHA-256:** a checksum of the bytes of a file. The provenance records
+one for the scenario and for each data file of a run. Thus a changed
+file shows.
 
-**Show calculation** -- see [Calculation panel](#c).
+**Show calculation:** see [Calculation panel](#c).
 
-**SIL (software in the loop)** -- running the flight software as its own
-program against the simulated spacecraft, step by step: the simulation
-sends it the sensor readings and flies the spacecraft with its commands.
+**SIL (software in the loop):** the flight software runs as its own
+program against the simulated spacecraft, step by step. The simulation
+sends it the sensor values. The commands of the flight software fly the
+simulated spacecraft.
 
-**Space weather** -- solar activity ([F10.7](#f)) and geomagnetic
-activity ([Ap](#a)) over time. SpaceMissionStudio uses only real data:
-measured values, CelesTrak's 45-day forecast, and NASA [MSFC](#m)'s
-prediction for the future.
+**Space weather:** solar activity ([F10.7](#f)) and geomagnetic activity
+([Ap](#a)) over time. SpaceMissionStudio uses only real data: measured
+values, CelesTrak's 45-day forecast, and NASA [MSFC](#m)'s prediction
+for the future.
 
-**SPICE kernels** -- reference files from [NAIF](#n) with planet
-positions, leap seconds and planet shapes, which Basilisk needs for
-real-world time and position.
+**SPICE kernels:** reference files from [NAIF](#n) with the positions
+and shapes of the planets and the leap seconds. Basilisk needs them for
+real time and real positions.
 
-**Spherical-harmonics gravity** -- a gravity model that includes a
-planet's real, slightly lumpy shape, not just a point mass. A higher
-degree means more detail and more computing time.
+**Spherical harmonics gravity:** a gravity model of the real, slightly
+irregular shape of a planet, not only a point mass. A higher degree
+gives more detail and needs more calculation time.
 
-**SRP (solar radiation pressure)** -- the tiny push of sunlight on a
-spacecraft. It matters most for high orbits and large, light spacecraft.
+**SRP (solar radiation pressure):** the very small force of sunlight on
+a spacecraft. It is most important for high orbits and for large, light
+spacecraft.
 
-**Station-keeping** -- small, regular burns that put a satellite back
-where it should be as drag and gravity make it drift.
+**Station keeping:** small, regular burns that move a satellite back to
+its position when drag and gravity move it away.
 
-**Stowed configuration** -- where the deployable parts (arrays, booms, antennas) sit for launch, folded against the bus.
+**Stowed configuration:** the positions of the deployable parts (arrays,
+booms, antennas) during launch, folded against the bus.
 
-**Sun-synchronous orbit (SSO)** -- a near-polar orbit whose plane turns
-once a year, in step with the Sun, so the satellite passes over each
-latitude at the same local solar time every day. Common for Earth
-observation.
+**Sun-synchronous orbit (SSO):** a near-polar orbit whose plane turns
+once a year, in step with the Sun. The satellite flies over each
+latitude at the same local solar time every day. Earth observation
+satellites often use it.
 
 ## T
 
-**TAI, TDB, TT, UT1** -- time scales. **TAI**: atomic time. **TT**:
-TAI plus 32.184 s. **TDB**: the time scale of planet positions, within
-2 ms of TT. **UT1**: time by Earth's actual rotation. [UTC](#u) follows
-TAI with leap seconds and stays within 0.9 s of UT1.
+**TAI, TDB, TT, UT1:** time scales:
 
-**Template** -- one of the 32 ready-made scenarios that come with the
-app, each showing one idea or a complete mission. See the
+- **TAI** is atomic time;
+- **TT** is TAI plus 32.184 s;
+- **TDB** is the time scale of the planet positions, within 2 ms of TT;
+- **UT1** is time by the real rotation of Earth.
+
+[UTC](#u) follows TAI with leap seconds, and stays within 0.9 s of UT1.
+
+**Template:** one of the 47 ready-made scenarios of the app, in nine
+categories. Each one shows one idea or a complete mission. See the
 [template catalog](../spacemissionstudio/scenarios/templates/README.md).
 
-**Thermal node** -- a part of the spacecraft, or several, taken as one temperature with one heat capacity in the [thermal model](user-manual/thermal.md); conductors, heat pipes and radiation connect the nodes.
+**Thermal node:** one or more parts of the spacecraft with one
+temperature and one heat capacity in the
+[thermal model](user-manual/thermal.md). Conductors, heat pipes and
+radiation connect the nodes.
 
-**Third-body perturbation** -- the small extra pull of a body other than
-the one being orbited, such as the Sun or Moon on a satellite of Earth.
+**Third-body perturbation:** the small additional pull of a body other
+than the central body. An example is the pull of the Sun or the Moon on
+a satellite of Earth.
 
-**TLE (two-line element set)** -- the compact text format in which
-tracked satellites' orbits are published (for example by CelesTrak). A
-way to give a starting orbit if you have one.
+**TLE (two-line element set):** the short text format of the published
+orbits of tracked satellites, for example from CelesTrak. You can use
+one to give the start orbit.
 
-**Torque rod (magnetic torquer, MTB)** -- an electromagnet that pushes
-against Earth's magnetic field to turn the spacecraft. Used here to
-unload reaction wheels.
+**Torque rod (magnetic torquer, MTB):** an electromagnet that pushes
+against the magnetic field of Earth to turn the spacecraft. Here it
+unloads the reaction wheels.
 
-**Trace (calculation trace)** -- how one number was computed: its equation,
-the standard's clause and each input with its unit and source (`scenario:`,
-`parameter:`, `constant:`, `last run:`, `computed:`). It is what the
-[Calculation panel](#c) shows and what `--explain` and `--out` write.
+**Trace (calculation trace):** how the app calculated one number: its
+equation, the clause of the standard, and each input with its unit and
+source. The sources are `scenario:`, `parameter:`, `constant:`,
+`last run:` and `computed:`. The [Calculation panel](#c) shows it, and
+`--explain` and `--out` write it.
 
 ## U
 
-**UTC** -- Coordinated Universal Time, the civil time standard. Every
-epoch and time in SpaceMissionStudio is in UTC unless it says otherwise.
+**UTC:** Coordinated Universal Time, the civil time standard.
+SpaceMissionStudio gives each epoch and time in UTC, unless it says
+otherwise.
 
 ## V
 
-**Value mark** -- the status the scenario file keeps for a value
-SpaceMissionStudio computed or suggested (**computed**, with what computed
-it), one you edited afterwards (**edited**) or one you replace on purpose
-(**overridden**, with the reason, which is required). Runs and records list
-them. See [Computed and overridden values](models/value-marks.md).
+**Value mark:** the status that the scenario file keeps for a value:
 
-**View factor** -- the share of the radiation leaving one surface that reaches another. The thermal model uses the closed-form view factor from a flat plate to a sphere for the planet's infrared.
+- **computed:** SpaceMissionStudio calculated or suggested it, and the
+  mark tells what calculated it;
+- **edited:** you changed it after the calculation;
+- **overridden:** you replaced it on purpose, with a reason (the reason
+  is necessary).
 
-**Visual magnitude** -- how bright an object looks to the eye on a scale where smaller is brighter: the Sun is -26.7, the brightest stars about 0, the faintest seen in a dark sky about 6.
+Runs and records list the marks. See
+[Computed and overridden values](models/value-marks.md).
 
-**VNB** -- see [RTN, VNB](#r).
+**View factor:** the part of the radiation from one surface that gets to
+another surface. The thermal model uses the closed-form view factor from
+a flat plate to a sphere for the infrared of the planet.
+
+**Visual magnitude:** the brightness of an object to the eye. A smaller
+number is brighter. The Sun is -26.7, the brightest stars are about 0,
+and the faintest stars in a dark sky are about 6.
+
+**VNB:** see [RTN, VNB](#r).
 
 ## W
 
-**Walker constellation** -- a constellation of satellites spread evenly
-over several orbit planes, given as total satellites / planes / phasing
-factor. **Generate Walker constellation** builds one; **Hold each
-plane's spacing** makes each plane's first satellite the chief and gives
-the others [phasing keeping](#p) that holds their slots.
+**Walker constellation:** satellites spread evenly over several orbit
+planes, given as total satellites / planes / phasing factor. **Generate
+Walker constellation** makes one. **Hold each plane's spacing** makes
+the first satellite of each plane the chief. It gives the other
+satellites [phasing keeping](#p), which holds their positions.
 
-**Window (target)** -- a span when a target is within reach of the instrument (off-nadir angle, elevation) and lit as asked (the Sun's elevation): an [opportunity](#o) for an acquisition.
+**Window (target):** a time span when a target is in reach of the
+instrument and has the necessary light. The reach is set by the
+off-nadir angle and the elevation. The light is set by the elevation of
+the Sun. A window is an [opportunity](#o) for an acquisition.
 
 ---
 
