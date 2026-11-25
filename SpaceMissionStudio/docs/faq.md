@@ -1,7 +1,6 @@
 # Frequently asked questions
 
-Short answers to the questions newcomers ask most, with links to the
-details.
+Short answers to the questions of new users, with links to the details.
 
 ## Contents
 
@@ -17,153 +16,166 @@ details.
 - [Can I use it from Python?](#can-i-use-it-from-python)
 - [Does it comply with ECSS or CCSDS standards?](#does-it-comply-with-ecss-or-ccsds-standards)
 - [Who wrote it, and under what licence?](#who-wrote-it-and-under-what-licence)
-- [Why does every command print an INFO line?](#why-does-every-command-print-an-info-line)
+- [Why does every command show an INFO line?](#why-does-every-command-show-an-info-line)
 
 ## What is SpaceMissionStudio?
 
-A desktop app for planning and simulating satellite missions: orbits,
-pointing, power, radio links, station keeping, formations, lifetime and
-propellant budgets, and the spacecraft's 3D model with its design
-checks. Every number comes from
-[Basilisk](https://avslab.github.io/basilisk/), the open-source
-astrodynamics framework from the AVS Lab at the University of Colorado
-Boulder. SpaceMissionStudio adds the windows, forms, plots, templates and
-checks around it.
+A desktop app to plan and simulate satellite missions. It calculates
+orbits, pointing, power, radio links, station keeping, formations,
+lifetime, budgets and temperatures. It also holds the spacecraft's 3D
+model and does design checks on it.
+
+[Basilisk](https://avslab.github.io/basilisk/) calculates every number.
+Basilisk is the open-source astrodynamics framework of the AVS Lab
+(University of Colorado Boulder). SpaceMissionStudio adds the windows,
+the forms, the plots, the templates and the checks.
 
 ## Do I need to know programming, or spaceflight?
 
-No. Start from one of the templates and change it in forms
+No. Start from a template and change it in the forms
 ([Getting started](getting-started.md)). The [glossary](glossary.md)
-explains the terms. Python is optional: for scripting and batch runs.
+explains the terms. Python is optional: use it for scripts and batch
+runs.
 
 ## Which systems does it run on?
 
-Linux (x86_64 and aarch64, glibc 2.34 or newer) and Windows 10 and 11
-(x86_64). The test suite runs on both in CI. There are installers for
-Linux (x86_64) and Windows, which bring their own Python 3.14; installing
-from source needs Python 3.14 (3.11 to 3.13 are no longer supported since
-2.0.0). macOS is not supported. Details:
-[Getting started, section 1](getting-started.md#1-what-you-need).
+| System | Installer | From source |
+|---|---|---|
+| Linux x86_64, glibc 2.34 or newer | The `.deb` | Yes, Python 3.14 |
+| Linux aarch64, glibc 2.34 or newer | No | Yes, Python 3.14 |
+| Windows 10 or 11, x86_64 | The setup program | Yes, Python 3.14 |
+| macOS | No | Not supported |
+
+The installers contain Python 3.14. CI runs the tests on Linux and
+Windows. Details: [Getting started, section 1](getting-started.md#1-what-you-need).
 
 ## Does it need the internet?
 
-Not with the installers: from 1.1.1 they bring Python,
-Basilisk and the reference data with them. Installed from source, it
-needs the internet once, to install and fetch the reference data. Either
-way it then runs offline:
+Not with the installers: they contain Python, Basilisk and the reference
+data. From source, you need the internet one time, to install and to get
+the reference data. After that, the app works offline:
 
-- A run never downloads anything. If a file is missing, it stops and
-  says which one.
-- Nothing is downloaded without your say-so. Each time the GUI starts,
-  a **Fetch or update reference data?** card on Home offers to check
-  for newer reference data; **Not now** touches no network. The **Reference data** window's downloads ask
-  first, naming the source, the files and the size, and default to No.
-  On the
-  command line, only `kernels-status`, `earth-orientation --fetch`,
-  `small-bodies --fetch`, `gaseous-attenuation --fetch` and
-  `spaceweather-download` download.
-- Every file can also be installed from disk, for machines that never go
+- A run never downloads. If a file is missing, the run stops and names
+  the file.
+- Nothing downloads without your consent. At each start, the card
+  **Fetch or update reference data?** on **Home** offers newer data.
+  **Not now** uses no network.
+- A download in the **Reference data** window asks first. It names the
+  source, the files and the size. The default answer is No.
+- On the command line, only these commands download: `kernels-status`,
+  `earth-orientation --fetch`, `small-bodies --fetch`,
+  `gaseous-attenuation --fetch` and `spaceweather-download`.
+- You can install each file from disk, for a computer that is never
   online.
-- **Offline mode** switches every download off: **Settings > Network >
-  Work offline**, `spacemissionstudio network --offline on`, or, for
-  every user of a computer, an administrator's policy file. There is no
-  telemetry: no usage statistics, crash reports or update checks.
+- Offline mode stops all downloads: **Settings › Network › Work offline:
+  no downloads**, or `spacemissionstudio network --offline on`. An
+  administrator can set it for all users of a computer with a policy file.
+- There is no telemetry: no usage statistics, no crash reports, no update
+  checks.
 
 See [Network use and offline mode](reference/network.md),
-[Reference data](user-manual/reference-data.md) and, for the
-installers, [`packaging/README.md`](../packaging/README.md).
+[Reference data](user-manual/reference-data.md) and
+[`packaging/README.md`](../packaging/README.md).
 
 ## Where does the space weather come from?
 
-From real data only: CelesTrak's record of the observed solar flux
-(F10.7) and geomagnetic index (Ap) and its 45-day forecast, bundled with
-the app, then NASA MSFC's prediction of the solar cycle. There is no synthetic or made-up
-profile. A run past the end of the record prints
-`WARNING: space weather uses MSFC's prediction (...)`; that is expected.
+From real data only. The app contains CelesTrak's record of the observed
+solar flux (F10.7) and geomagnetic index (Ap), and its 45-day forecast.
+After that, it uses NASA MSFC's prediction of the solar cycle. There is
+no synthetic profile.
+
+A run after the end of the record shows
+`WARNING: space weather uses MSFC's prediction (...)`. This is normal.
 
 ## How accurate is it?
 
-As accurate as Basilisk and its inputs. The app's own checks are in
+As accurate as Basilisk and its inputs. The checks of the app are in
 [`compliance/`](../compliance/README.md): validation runs against GMAT,
-IERS and SOFA reference values, and two Basilisk accuracy defects found
-that way and worked around. Each template's catalog entry says what a
-real run of it measured. Known gaps are listed in
+IERS and SOFA reference values. These checks found two accuracy defects
+in Basilisk, and the app works around them.
+
+The [template catalog](../spacemissionstudio/scenarios/templates/README.md)
+says what a real run of each template measured. The known gaps are in
 [Known limitations](reference/limitations.md).
 
 ## Orbit only or full attitude?
 
-*Orbit only* simulates where each spacecraft goes: fast, and enough for
-orbits, drag, station keeping, formations and ground passes. *Full
-attitude* also simulates which way it points, so sensors, wheels, torque
-rods, pointing modes, surface facets and power become available; it is
-slower. Start with orbit only and switch when you need pointing.
+| Mode | Simulates | Use it for |
+|---|---|---|
+| **Orbit only** | Where each spacecraft goes | Orbits, drag, station keeping, formations, ground passes. It is fast. |
+| **Full attitude** | Also where each spacecraft points | Sensors, wheels, torque rods, pointing modes, surface facets, power. It is slower. |
+
+Start with orbit only. Change to full attitude when you need pointing.
 
 ## How long can a run be, and how long does it take?
 
-Up to about 10 years. Past 100 days the run is split into segments and
-chained automatically. Set **Record every** for long runs, or the results
-fill memory. Template 22 (one day, orbit only) takes about 5 s; five years
-of LEO station keeping took about 50 minutes. Mission sequences, phasing
-keeping, ROE formations, optical navigation, runs around a small body
-and Monte Carlo are limited to 100 days.
+A run can be up to about 10 years. A run longer than 100 days is cut
+into segments, which the app joins. For a long run, set **Record every**
+(**Scenario › Environment**), or the results fill the memory.
+
+| Run | Time |
+|---|---|
+| Template 22: one day, orbit only | About 5 s |
+| Five years of LEO station keeping | About 50 minutes |
+
+Mission sequences, phasing keeping, ROE formations, optical navigation,
+runs around a small body and Monte Carlo batches are limited to 100 days.
 
 ## Can I exchange data with other tools?
 
 Yes, through standard files:
 
-- orbits in and out as CCSDS OPM, OMM and OEM, and in as TLEs, in the
-  app or on the command line
-  ([Orbit files](user-manual/orbit-files.md));
-- a spacecraft's 3D model, mass properties, sensors and actuators,
-  thrusters (onto the 3D model), and the power budget's bus load and
-  solar panel, in from an IDM-CIC model
-  (`.idm`, read only; IDM-CIC is © CNES;
-  [Import a spacecraft from IDM-CIC](user-manual/idm-cic.md)), and 3D
-  shapes in and out as Wavefront `.obj`
-  ([Build a 3D model](user-manual/3d-model.md));
-- results as CSV in SI units;
-- scenarios as plain JSON;
-- the attitude flight software as a C project with an interface control
-  document ([Flight software and SIL](user-manual/flight-software-and-sil.md)).
+| Data | Format | How-to |
+|---|---|---|
+| Orbits, in and out | CCSDS OPM, OMM and OEM; TLE (in only) | [Orbit files](user-manual/orbit-files.md) |
+| A spacecraft from a concurrent design | An IDM-CIC model (`.idm`, read only; IDM-CIC is © CNES) | [Import from IDM-CIC](user-manual/idm-cic.md) |
+| 3D shapes, in and out | Wavefront `.obj` | [3D model](user-manual/3d-model.md) |
+| Results | CSV in SI units | [Read the results](user-manual/read-the-results.md) |
+| Scenarios | JSON | [Build your own scenario](user-manual/build-your-own-scenario.md) |
+| Attitude flight software | A C project with an interface control document | [Flight software and SIL](user-manual/flight-software-and-sil.md) |
 
-There is no direct link to other applications. [Tips](tips.md) lists
-every file the app reads and writes.
+There is no direct link to other applications. [Tips](tips.md#files-the-app-reads-and-writes)
+lists each file that the app reads and writes.
 
 ## Can I use it from Python?
 
-Yes. [`examples/`](../examples/README.md) builds a scenario in code, runs
-templates, plans a Hohmann transfer, sweeps altitudes and reads a Monte
-Carlo batch. `spacemissionstudio.api` loads, checks and runs a scenario
-and computes its lifetime, budget, comparisons, design checks, model
-analyses and re-entry estimate with the app's engine
-([The Python API](api.md)). Every
-command-line command uses the same engine
-([Use the command line](user-manual/command-line.md)).
+Yes. Use one of these:
+
+- [`examples/`](../examples/README.md): scripts that build a scenario,
+  run templates, plan a Hohmann transfer, sweep altitudes and read a
+  Monte Carlo batch.
+- `spacemissionstudio.api` ([The Python API](api.md)): load, check and
+  run a scenario; get its lifetime, budget, comparisons, design checks,
+  model analyses and re-entry estimate.
+- The command line ([Use the command line](user-manual/command-line.md)).
+  It uses the same engine as the app.
 
 ## Does it comply with ECSS or CCSDS standards?
 
-The project keeps records of how it addresses ECSS-E-ST-40C,
-ECSS-Q-ST-80C, ECSS-E-ST-10-09C, ECSS-E-ST-10-04C and CCSDS 502.0-B-3:
-requirements, design, verification, a compliance matrix and the
-deviations, in [`compliance/`](../compliance/README.md). These are the
-project's own records, not a certification by an outside body.
+The project keeps records of how it applies ECSS-E-ST-40C,
+ECSS-Q-ST-80C, ECSS-E-ST-10-09C, ECSS-E-ST-10-04C and CCSDS 502.0-B-3.
+The records are requirements, design, verification, a compliance matrix
+and the deviations, in [`compliance/`](../compliance/README.md). They
+are the project's own records, not a certification by an outside body.
 
 ## Who wrote it, and under what licence?
 
-The application, its tests and its documentation were written by Claude,
-Anthropic's AI model, through Claude Code; a person reviewed the work and
-decided what to build and merge. From the release after 2.6.0 it is
-distributed under the European Union Public Licence v. 1.2 (EUPL-1.2,
-[`LICENSE`](../LICENSE), German text [`LICENSE.de`](../LICENSE.de)); releases
-1.0.0 to 2.6.0 were published under the ISC licence. Basilisk keeps its own
-ISC licence and copyright holders.
+Claude, Anthropic's AI model, wrote the application, its tests and its
+documentation, through Claude Code. A person reviewed the work and
+chose what to build and to merge.
 
-## Why does every command print an INFO line?
+From the release after 2.6.0, the licence is the European Union Public
+Licence v. 1.2 (EUPL-1.2, [`LICENSE`](../LICENSE), German text
+[`LICENSE.de`](../LICENSE.de)). Releases 1.0.0 to 2.6.0 stay under the
+ISC licence. Basilisk keeps its own ISC licence and its copyright
+holders.
 
-`INFO ... Logging to ~/.spacemissionstudio/logs/...log` tells you where
-the log file for that command is. It is not an error. Other normal
-messages are listed in
-[Troubleshooting](troubleshooting.md#messages-that-are-normal).
+## Why does every command show an INFO line?
+
+The line `INFO ... Logging to ~/.spacemissionstudio/logs/...log` gives
+the log file of the command. It is not an error.
+[Troubleshooting](troubleshooting.md#messages-that-are-normal) lists the
+other normal messages.
 
 ---
 

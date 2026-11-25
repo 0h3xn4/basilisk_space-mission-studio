@@ -1,22 +1,15 @@
 # Python examples
 
 Short scripts that use SpaceMissionStudio from Python, without the GUI.
-Each shows one part of the tool and prints what it found. Every script
-is run by `tests/test_examples.py`, so they keep working.
+Each script shows one part of the tool and prints what it found.
+`tests/test_examples.py` runs each script, so the scripts stay correct.
 
-Run them from the `SpaceMissionStudio` folder, with the environment you
-installed SpaceMissionStudio into active (see
-[Getting started](../docs/getting-started.md)). Each one takes `--help`.
-The times below were measured in two clean installs on a 4-core Linux
-machine; allow more on a slower one.
+## Run them
 
-| Script | Shows | Needs Basilisk | Takes about |
-|---|---|---|---|
-| [`build_a_scenario.py`](build_a_scenario.py) | Building a scenario from the schema's dataclasses: an orbit, a spacecraft, a ground station. It validates the scenario, saves it as JSON for the GUI or CLI, and prints the summary Explain (Scenario › Overview) shows. | no | 1 s |
-| [`run_a_template.py`](run_a_template.py) | Running any bundled template (or your own file) and reading its results: time series, events (passes, eclipses), CSV export. | yes | 5 to 10 s |
-| [`hohmann_transfer.py`](hohmann_transfer.py) | A Mission Sequence in code: burn, coast until apoapsis, burn again. The result is checked against the textbook Hohmann transfer. | yes | 5 s |
-| [`altitude_lifetime_sweep.py`](altitude_lifetime_sweep.py) | A parameter sweep: orbital lifetime at several altitudes, with real solar activity, checked against the 5-year disposal rule. | yes | about a minute |
-| [`monte_carlo_spread.py`](monte_carlo_spread.py) | Running template 25's Monte Carlo batch and reading its summary back: the spread along, across and out of the orbit, day by day (**Results > Monte Carlo** shows the same). | yes | 2 to 3 minutes |
+1. Install SpaceMissionStudio ([Getting started](../docs/getting-started.md)).
+2. Activate its environment.
+3. Go to the `SpaceMissionStudio` folder.
+4. Type one of the commands below. Each script also takes `--help`.
 
 ```bash
 python3 examples/build_a_scenario.py my_first_mission.json
@@ -27,14 +20,26 @@ python3 examples/altitude_lifetime_sweep.py --altitudes 400,450,500,550
 python3 examples/monte_carlo_spread.py --runs 20 --archive mc_out
 ```
 
-## What you should see
+| Script | Shows | Needs Basilisk | Time |
+|---|---|---|---|
+| [`build_a_scenario.py`](build_a_scenario.py) | A scenario made from the schema's dataclasses: an orbit, a spacecraft, a ground station. The script validates it, saves it as JSON and prints the summary of **Scenario › Overview**. | No | 1 s |
+| [`run_a_template.py`](run_a_template.py) | A run of a template (or of your own file), and its results: time series, events (passes, eclipses), CSV export | Yes | 5 to 10 s |
+| [`hohmann_transfer.py`](hohmann_transfer.py) | A Mission Sequence in code: burn, coast to apoapsis, burn again. The script compares the result with the textbook Hohmann transfer. | Yes | 5 s |
+| [`altitude_lifetime_sweep.py`](altitude_lifetime_sweep.py) | A parameter sweep: the orbital lifetime at several altitudes, with real solar activity, against the 5-year disposal rule | Yes | About a minute |
+| [`monte_carlo_spread.py`](monte_carlo_spread.py) | The Monte Carlo batch of template 25, and its summary: the spread along, across and out of the orbit, day by day (as in **Results › Monte Carlo**) | Yes | 2 to 3 minutes |
 
-Every script first prints an `INFO ... Logging to ...` line; that is
-normal. The scripts that run Basilisk also print a note that the space
-weather uses NASA MSFC's prediction (the templates are set in 2030).
+The times are from a 4-core Linux computer. A slower computer needs more
+time.
 
-**`build_a_scenario.py my_first_mission.json`** prints the Explain
-summary and saves the file:
+## What you see
+
+Each script first prints a line `INFO ... Logging to ...`. This line is
+normal. The scripts that run Basilisk also give a note: the space
+weather uses NASA MSFC's prediction, because the templates are in 2030.
+Your values can differ in the last digit.
+
+**`build_a_scenario.py my_first_mission.json`** prints the summary and
+saves the file:
 
 ```text
 My first mission
@@ -48,8 +53,8 @@ My first mission
 Saved my_first_mission.json
 ```
 
-**`run_a_template.py 22`** prints each series' first and last value, then
-the events, ending with:
+**`run_a_template.py 22`** prints the first and the last value of each
+series, then the events:
 
 ```text
 event: pass over berlin-gs (my-sat) 10.5-18.0 min
@@ -58,7 +63,7 @@ event: eclipse (umbra) (my-sat) 24.0-58.5 min
 my-sat: distance from Earth's centre 6920.4-6928.5 km
 ```
 
-With `23` it also prints the Mission Sequence's two reports:
+With `23`, it also prints the two reports of the Mission Sequence:
 `report 'Pass start' at 10.4 min` and `report 'Pass end' at 18.2 min`.
 
 **`hohmann_transfer.py --from-km 550 --to-km 700`**:
@@ -74,15 +79,14 @@ Final orbit: altitude 699.69 to 700.31 km (target 700 km)
 
 ```text
  altitude      lifetime  within 5 years?
-   400 km       2.65 yr  yes
+   400 km       2.66 yr  yes
    450 km       4.37 yr  yes
-   500 km       6.83 yr  no
+   500 km       6.84 yr  no
    550 km      17.26 yr  no
 ```
 
-**`monte_carlo_spread.py --runs 20 --archive mc_out`** (the values are
-drawn at random, but repeatably: two clean installs printed exactly
-this):
+**`monte_carlo_spread.py --runs 20 --archive mc_out`**. The values are
+random but repeatable:
 
 ```text
 20 runs; drag coefficients drawn between 2.22 and 2.98
@@ -91,28 +95,29 @@ day  2.00: 1-sigma   298.7 km along track,  1.32 km radial,  1.38 km cross-track
 day  3.00: 1-sigma   448.0 km along track,  0.78 km radial,  2.00 km cross-track
 ```
 
-## Where things live
+## Where things are
 
-All five use the same few entry points:
+The five scripts use the same few entry points:
 
-| You want to | Use |
+| To | Use |
 |---|---|
-| Describe a mission | `spacemissionstudio.schema.scenario`: `Scenario`, `SpacecraftConfig`, `OrbitIC`, `GroundStationConfig` and friends. |
+| Describe a mission | `spacemissionstudio.schema.scenario`: `Scenario`, `SpacecraftConfig`, `OrbitIC`, `GroundStationConfig` and the other records |
 | Read or write a scenario file | `spacemissionstudio.schema.load_scenario(path)`, `Scenario.save(path)`, `Scenario.validate()` |
 | Plan an orbit | `spacemissionstudio.engine.orbit_design`: Sun-synchronous inclination, RAAN for a local time, GEO elements |
 | Run it | `spacemissionstudio.engine.service.SimulationService(scenario).run()`. With a Mission Sequence: `engine.mission_engine.MissionEngine(scenario, service=...).run()` |
-| Read results | `ResultSet.series[name]`, a `TimeSeries` with `time_s`, `data`, `columns`, `units`; `ResultSet.export_csv(folder)` |
-| List events | `spacemissionstudio.engine.events.extract_events(result)` |
-| Summarize a scenario | `spacemissionstudio.engine.scenario_explainer.explain(scenario)` (Explain: Scenario › Overview) |
-| Estimate lifetime | `spacemissionstudio.engine.lifetime.spacecraft_lifetime(scenario, name)` (**Run > End of Life**) |
-| Script the whole tool with a stable interface | `spacemissionstudio.api`: `template`, `load`, `validate`, `assumptions`, `run`, `summary`, `lifetime`, `budget`, `launch_delays`, `altitude_trade`, `monte_carlo`, `compare`, `design_checks`, `model_analyses`, `reentry`, `record`, `write` ([reference](../docs/api.md)); the scripts above use the engine modules directly |
-| Monte Carlo | `spacemissionstudio.engine.monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, folder)`; read the results with `spacemissionstudio.engine.monte_carlo_results.load(folder)` |
+| Read the results | `ResultSet.series[name]`, a `TimeSeries` with `time_s`, `data`, `columns`, `units`; `ResultSet.export_csv(folder)` |
+| List the events | `spacemissionstudio.engine.events.extract_events(result)` |
+| Summarize a scenario | `spacemissionstudio.engine.scenario_explainer.explain(scenario)` (**Scenario › Overview**) |
+| Estimate the lifetime | `spacemissionstudio.engine.lifetime.spacecraft_lifetime(scenario, name)` (**Run › End of Life**) |
+| Run a Monte Carlo batch | `spacemissionstudio.engine.monte_carlo.run_monte_carlo(scenario, scenario.monte_carlo, folder)`. Read the results with `spacemissionstudio.engine.monte_carlo_results.load(folder)`. |
+| Use a stable interface for the whole tool | `spacemissionstudio.api`: for example `load`, `validate`, `run`, `lifetime`, `budget`, `power_budget`, `pointing_budget`, `monte_carlo`, `design_checks`, `thermal`, `plan_schedule`, `reentry` ([reference](../docs/api.md)). The scripts above use the engine modules directly. |
 
-Series names follow `<spacecraft>.<quantity>` (`my-sat.position_N`) or
-`<station>.access_to_<spacecraft>.<quantity>`; the plot catalog of
-**Results > Plots** shows the same names when you hover an entry, and **Search plots**
-finds them. Positions are in metres, in the
-inertial frame (`_N`), and times are seconds since the scenario's epoch.
+Series names are `<spacecraft>.<quantity>` (`my-sat.position_N`) or
+`<station>.access_to_<spacecraft>.<quantity>`. The plot list of
+**Results › Plots** shows the same names when you put the pointer on an
+entry. **Search plots** finds them. Positions are in metres, in the
+inertial frame (`_N`). Times are in seconds from the epoch of the
+scenario.
 
 ---
 

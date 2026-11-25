@@ -218,6 +218,9 @@ SIL link test, many times over, on Windows). Basilisk's own workflows (in
 
 - [Architecture](architecture.md): how the code is organised.
 - [Releasing](releasing.md): cutting a release.
+- [Writing style](writing-style.md): how to write the documentation
+  (Simplified Technical English), the app's names for its parts, and
+  `scripts/check_writing.py`.
 - [IDM-CIC import: design](idm-cic-integration.md): how the importer of
   IDM-CIC models (© CNES) reads a model and maps it into a spacecraft,
   and the decisions taken when it was built.

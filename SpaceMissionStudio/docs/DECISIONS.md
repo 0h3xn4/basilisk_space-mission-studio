@@ -6765,3 +6765,101 @@ ran without questions; each choice is below.
   inputs, drag and solar activity, station keeping, low thrust,
   formations." and "Burns, transfers and control flow as a list of
   commands in time order." (each one line, at most 90 characters).
+
+## Documentation in Simplified Technical English, group 1: the first-contact documents (2026-11-25)
+
+The owner's request: the root README was "absolutely horrendous for new
+users, too much prose and thus too much noise"; all documentation is to
+be updated and improved with ASD-STE100 Simplified Technical English.
+This first group is the documents a new user reads first, the writing
+standard and its check. Groups 2 to 6 are in `BACKLOG.md`.
+
+- **Decision DOC-1: a short standard and a check that reads it.**
+  `docs/developer/writing-style.md` summarises the public STE principles
+  in our own words (not the specification's text): procedure sentences
+  at most 20 words, descriptions at most 25, paragraphs at most six
+  sentences, one instruction a sentence, imperative, active, present,
+  one name for one thing. Its term list is taken from the code (the
+  navigation rail, the menu bar, the commands of the action registry,
+  the area pages, the window titles). `scripts/check_writing.py` reads
+  the standard's "Words not to use" table, so the list has one source.
+  **How the check decides:** a sentence in a numbered list, or one that
+  starts with an imperative verb, is a procedure; a semicolon ends a
+  sentence for the length (a list fragment) but not for the paragraph
+  count; code, tables (for the length), headings, HTML, block quotes,
+  link-only lines and the text between `<!-- check-writing: off -->` and
+  `<!-- check-writing: on -->` are not checked; the root README is
+  checked down to "# Original Basilisk README". `tests/test_writing_style.py`
+  holds the list of checked documents (`GROUP_1`); a later group adds
+  its own. **Why:** a rule a script can test stays true after the next
+  edit; a heuristic that a writer can see beats a parser that guesses.
+  The append-only records (CHANGELOG, HISTORY, DECISIONS, BACKLOG,
+  TEST_CHANGES, `packaging/VERIFICATION_HISTORY.md`), the release notes
+  and generated documents keep their form.
+- **Decision DOC-2: paths with "›".** The documents write a path in the
+  app as the app does (decision B12-1): **Results › Plots**, never ">".
+  The check reports " > " outside code. Quoted messages keep their text.
+- **Decision DOC-3: the root README is a front door of 100 lines.**
+  Banner, badges, three sentences and the screenshot; an install table
+  (the `.deb`, the setup program, one `pip` line from source, checked
+  with `pip install --dry-run` on Python 3.14); three steps with
+  template 22; a table of what the app does, each row linked to its
+  how-to; where to go next; what the fork adds; status and licence. The
+  version history (about 90 lines) is in the CHANGELOG, and the README
+  links to it. **The legal statements keep their meaning**, each as its
+  own line: the licence (EUPL-1.2 from the release after 2.6.0, ISC
+  before), Basilisk's ISC licence and copyright holders, the
+  THIRD_PARTY_NOTICES, the AI authorship, no copyright claimed, the
+  independence (not affiliated, not endorsed) and no warranty (EUPL
+  Articles 7 and 8). **The release-record lines stay:** the version
+  badge, "**Version:**" and "**Platforms:**" (`docs/developer/releasing.md`
+  section 3; no test or tool reads them). The Basilisk part is byte for
+  byte as before.
+- **Decision DOC-4: one getting-started guide.** `docs/getting-started.md`
+  is the source; `GETTING_STARTED.md` is a three-line pointer (its table
+  of sections is gone). The guide keeps its nine numbered sections and
+  their anchors, because the SUM (`compliance/docs/SUM.md`) cites "GS
+  sections 3 to 9" and other pages link the anchors.
+- **Decision DOC-5: the template catalog says one line per template.**
+  The README is written by hand (no generator; the descriptions of
+  `scripts/_template_descriptions.py` go into the template files). The
+  "Teaches" cells were up to 1765 characters; each is now one sentence.
+  The details are in each template's description (shown on its Home card
+  and on **Scenario › General**), and `tests/test_template_claims.py`
+  checks the claimed values. The catalog structure that
+  `tests/test_template_catalog.py` checks is unchanged.
+- **Decision DOC-6: the packaging records move to a record file.** The
+  verification records by hand (1.0.0, 1.1.0, the venv-based `.deb`, the
+  first bundled builds, the two `build_wheel.sh` bugs, the note on the
+  unrun PowerShell scripts) moved to `packaging/VERIFICATION_HISTORY.md`
+  in their own words (only list indents removed and one opening phrase
+  joined). `packaging/README.md` says what
+  is true now: the files, the offline policy, the release files (eleven),
+  the `.deb`, the setup program, the scripts, the bundled Python, the
+  hashes, and what is not done.
+- **Decision DOC-7: the screenshot stays.** `docs/images/scenario_editor_tab.png`
+  (2026-11-19) shows the current window: menu bar, top bar, rail, tree.
+  `scripts/capture_ui_screens.py` does not make it
+  (`scripts/capture_screenshots.py` does), so it is kept.
+- **Decision DOC-8: a slot for the feature-access page.** The
+  documentation index has an HTML comment where the row of
+  `docs/reference/feature-access.md` goes, because that page is not on
+  `develop` yet and a link to it would not resolve.
+- **Decision DOC-9: stale facts corrected.** 41 and 32 templates (47 in
+  nine categories); `validate` prints schema version 8, not 6; Home's
+  button is **Open template**, not **Open**; **Check Reference Data** is
+  in the **Tools** menu and the **Run** area; the status bar shows
+  Basilisk only when it needs attention (**View › Status Bar: All
+  Details** shows it always); the reference data window shows
+  **Present**, not `ok`; **Export Orbits as CCSDS...** is in the **File**
+  menu; the API list of the examples; the lifetime sweep prints 2.66 and
+  6.84 years (2.65 and 6.83 before, a last-digit change); two
+  troubleshooting rows about files of 1.x and 2.2.0 became one general
+  row. The FAQ's last heading says "show", not "print" (no page linked
+  its anchor).
+- **Found, not changed (no code change in this work):** the Exports page
+  (`gui/exports_page.py`) gives **Export Orbits as CCSDS...** under
+  "Tools ›", but the menu bar has it under **File**; the support data
+  message (`engine/kernels.py`) says "Reference data dialog (Settings >
+  Reference data, ...)", with ">" and "dialog". `BACKLOG.md`, "Later",
+  has an item.

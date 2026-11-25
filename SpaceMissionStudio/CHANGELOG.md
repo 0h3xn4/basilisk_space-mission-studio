@@ -35,6 +35,22 @@ fixes bugs.
   import, a plugin and a project configuration; the template coverage
   page says why and where each is shown.
 
+### Changed
+
+- **The README and the first pages a new user reads are rewritten:
+  shorter, and in Simplified Technical English.** The root README is now
+  a front door of about a hundred lines: what the app is, how to install
+  it, a first mission in three steps, a table of what it can do with a
+  link to each how-to, and the status and licence; the long version
+  history lives in this changelog. The tool's README, Getting started,
+  the FAQ, the tips, troubleshooting, the glossary, the documentation
+  index, the examples, the template catalog (one line per template),
+  the packaging page and the space weather notes follow the same rules,
+  and their facts were checked against the app (47 templates, schema
+  version 8, the real menu and button names). A new writing standard,
+  `docs/developer/writing-style.md`, holds the rules and the app's own
+  names for its parts, and `scripts/check_writing.py` checks them.
+
 ## 2.16.0 (2026-11-24)
 
 SpaceMissionStudio 2.16.0 adds a pointing error budget, lets a Monte
