@@ -22171,3 +22171,41 @@ generators change nothing on a second run; `check_drds.py` finds 0
 problems. Running `scripts/_generate_templates.py` writes templates 01 to
 42 byte for byte as committed, except template 03's last digits on this
 machine (as before; not committed).
+
+### Release 2.16.0 published (2026-11-25)
+
+The release pull request #332 was merged at 22:25 UTC on 2026-11-24 as
+`67ccf4d`. On its head `902eff4`, only CI's "Windows (MAX Python)" job
+was red. It failed only the Basilisk framework test
+`LambertInputValidation` (K-45), 1 test of 842.
+
+CI ("SpaceMissionStudio") on `develop`'s head `67ccf4d` (run
+45500836193) failed at the first attempt in one test:
+`test_the_page_shows_a_large_budget_in_steps_under_50_ms` measured a
+median of 52.5 ms against its 50 ms limit (about 15 ms on the
+development machine). The tree of `67ccf4d` is the tree of `902eff4`,
+where the test passed. The failed job was run again once, and it passed
+at 23:22 UTC. `BACKLOG.md` has an item for the test's margin on a
+loaded runner.
+
+The tag workflow (run 45509502664, 23:23:05 to 23:24:01 UTC on
+2026-11-24) ran the release check on `67ccf4d`. The check passed, and
+the workflow tagged `spacemissionstudio-v2.16.0` at 23:23:51 UTC, on the
+day of the CHANGELOG heading. The tag is annotated and not signed (tag
+object `68e9ce1`). The release workflow (run 45509626974, 23:23:57 UTC
+to 00:15:10 UTC on 2026-11-25) passed at the first attempt. Every job
+passed, the Windows tests too. It built, installed and checked every
+file. It attached the eleven files and published "SpaceMissionStudio
+2.16.0" at 00:15:07 UTC. The release is not a draft and not a
+pre-release. It was never public without its files.
+
+The release and its files were checked after the publication:
+- The release notes are the CHANGELOG's 2.16.0 section. They do not
+  name the 3D vendor.
+- All eleven files were downloaded from the release. `sha256sum -c`
+  passed for `SHA256SUMS-linux`, `SHA256SUMS-windows` and
+  `SHA256SUMS-sources` (eight files OK).
+- The LGPL sources are the same files as 2.15.0's.
+
+SRelD issue 58, the SDP, H05 and `releasing.md` record the tag, the runs
+and the files' digests. The CHANGELOG is unchanged.

@@ -1,11 +1,10 @@
 # SpaceMissionStudio: Software Release Document (SRelD)
 
 DRD: ECSS-E-ST-40C Annex G
-Document: SMS-SRelD, issue 57, 2026-11-24. Remediation R14.
+Document: SMS-SRelD, issue 58, 2026-11-25. Remediation R14.
 
-**Status:** release **2.16.0**, prepared 2026-11-24, not yet
-published. It is to be tagged with the tag workflow after its release
-pull request is merged. 2.16.0 is a minor release: it adds features and
+**Status:** release **2.16.0**, published 2026-11-25 (00:15 UTC),
+tagged 2026-11-24 (23:23 UTC). 2.16.0 is a minor release: it adds features and
 a scenario schema step (version 8). It holds the pull requests merged
 into `develop` since the 2.15.0 tag (#319 to #330; the owner's answers
 of 2026-11-24 came in through #322, and no #324 is in the range):
@@ -72,6 +71,57 @@ merged with CI's "Windows (MAX Python)" job red, but only for the
 Basilisk framework test `LambertInputValidation` (K-45). Basilisk is
 unchanged. Outside `SpaceMissionStudio/` only the front-page
 `README.md`'s SpaceMissionStudio part changed (section 4).
+
+How 2.16.0 was tagged and published:
+- The release pull request #332 was merged at 22:25 UTC on 2026-11-24
+  as `67ccf4d`. On its head (`902eff4`), only CI's "Windows (MAX
+  Python)" job was red. It failed only the framework test of K-45, 1
+  test of 842.
+- CI ("SpaceMissionStudio") on `develop`'s head `67ccf4d`, the merge of
+  #332 ([run 45500836193](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45500836193)), failed at the first
+  attempt in one test: `tests/gui/test_budgets_pointing.py::test_the_page_shows_a_large_budget_in_steps_under_50_ms`
+  (the median of five computations 52.5 ms, against 50 ms; about 15 ms
+  on the development machine). The tree of `67ccf4d` is the tree of
+  `902eff4`, where the test passed. The failed job was run again once
+  and passed (attempt 2, 23:22 UTC). The test's margin on a loaded CI
+  runner is in `BACKLOG.md`.
+- The tag workflow ([run 45509502664](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45509502664)) ran from
+  23:23:05 to 23:24:01 UTC on 2026-11-24. It ran the release check on
+  `67ccf4d` and passed.
+- The tag workflow (github-actions) tagged `spacemissionstudio-v2.16.0`
+  (annotated, not signed, D-13; tag object `68e9ce1`) on commit
+  `67ccf4d` (`67ccf4dd0dabb882f7b1eff1a63bff09e2647613`) at 23:23:51
+  UTC on 2026-11-24, the day of the CHANGELOG heading.
+- The release workflow ([run 45509626974](https://github.com/0h3xn4/basilisk_space-mission-studio/actions/runs/45509626974)) ran from
+  23:23:57 UTC on 2026-11-24 to 00:15:10 UTC on 2026-11-25 and passed
+  at the first attempt. Every job passed, the Windows tests too. It
+  built, installed, checked and attached the eleven files. It counted
+  the eleven files and then published the GitHub release
+  "SpaceMissionStudio 2.16.0" at 00:15:07 UTC, not as a draft and not
+  as a pre-release
+  (<https://github.com/0h3xn4/basilisk_space-mission-studio/releases/tag/spacemissionstudio-v2.16.0>).
+  The release was never public without its files. Its notes are the
+  CHANGELOG's 2.16.0 section.
+- GitHub's SHA-256 digests: `.deb` (`spacemissionstudio_2.16.0_amd64.deb`,
+  441 159 204 bytes) `bb3973b1...ef50`, setup program
+  (`spacemissionstudio-2.16.0-setup.exe`, 387 209 454 bytes)
+  `722eba17...ef59`, wheel (9 135 107 bytes) `ff99ac58...b5ef`, sdist
+  (9 470 169 bytes) `4f3df267...52d3`, the `.deb`'s bill of materials
+  (`spacemissionstudio_2.16.0_amd64.cdx.json`, 35 359 bytes)
+  `54ee5019...b9b3`, the setup program's
+  (`spacemissionstudio-2.16.0-setup.cdx.json`, 36 459 bytes)
+  `a643f88e...1863`, `SHA256SUMS-linux` `207fe765...3e02`,
+  `SHA256SUMS-windows` `81796c96...448d`, and the LGPL sources, the same
+  as 2.15.0's: `qt-everywhere-src-6.11.2.tar.xz` (1 019 661 552 bytes)
+  `6dcfbca2...6f33`, `pyside-setup-everywhere-src-6.11.2.tar.xz`
+  (18 053 248 bytes) `cba47efb...fdf8`, `SHA256SUMS-sources`
+  `1301daba...e6f6`.
+- All eleven files were downloaded from the release, and `sha256sum -c`
+  passed for `SHA256SUMS-linux`, `SHA256SUMS-windows` and
+  `SHA256SUMS-sources` (eight files OK). The release notes do not name
+  the 3D vendor.
+- Nothing was merged into `develop` between the tag and the
+  publication.
 
 **Previous release:** 2.15.0, published 2026-11-24 (00:38 UTC), tag
 `spacemissionstudio-v2.15.0` on `5ebbd3b`; its publication is recorded
@@ -1369,7 +1419,7 @@ This SRelD describes release 2.16.0 of SpaceMissionStudio in
 | Item | Value |
 |---|---|
 | Configuration item | SpaceMissionStudio (`SpaceMissionStudio/` in the repository) |
-| Baseline | `develop` after the 2.16.0 release pull request (the changes since the 2.15.0 tag: #319 to #330, from `develop` at `4819c82`, the merge of #329, and the release's records), to be tagged `spacemissionstudio-v2.16.0` with the tag workflow. Previous release: 2.15.0, commit `5ebbd3b` (`5ebbd3bda91fa52fe907a1a3747b8ebe1c1eaee0`), tagged `spacemissionstudio-v2.15.0`. |
+| Baseline | `develop` after the 2.16.0 release pull request (the changes since the 2.15.0 tag: #319 to #330, from `develop` at `4819c82`, the merge of #329, and the release's records), tagged `spacemissionstudio-v2.16.0` on `67ccf4d` (`67ccf4dd0dabb882f7b1eff1a63bff09e2647613`), the merge of #332, by the tag workflow on 2026-11-24. Previous release: 2.15.0, commit `5ebbd3b` (`5ebbd3bda91fa52fe907a1a3747b8ebe1c1eaee0`), tagged `spacemissionstudio-v2.15.0`. |
 | Reused software baseline | Basilisk 2.12.0 (PyPI), numpy, sgp4, pyerfa, PySide6, plotly (RD3); the tested versions are pinned in `packaging/constraints.txt`. Bundled with the GUI as files, not packages: Inter 4.1 and JetBrains Mono 2.304 (SIL OFL 1.1), 47 Lucide icons from lucide-static 1.52.0 (ISC), and for the 3D View three.js 0.187.0 (MIT, one bundle built from the pinned npm packages) and resized copies of NASA's Blue Marble (also under the 2D map and in the app icon) and Deep Star Maps 2020 (public domain), with versions, sources and checksums in `docs/THIRD_PARTY_ASSETS.md`. The installers also carry CPython 3.14.8 (python-build-standalone 20261013, SHA-256 pinned) with every installed package and the reference data; each build lists them in its `SPACEMISSIONSTUDIO_RUNTIME.json`, and `docs/THIRD_PARTY_ASSETS.md` ("In the installers") gives their licences |
 | Platform | The installers: Linux x86_64 with glibc 2.34 or newer (`.deb`), Windows 10/11 x64; no Python needed. From source: Python 3.14 (3.11 to 3.13 are no longer supported; Basilisk 2.12.0 and PySide6 6.11 do not install on 3.15 yet) |
 | Delivery | Attached to the GitHub release by the release workflow (`.github/workflows/spacemissionstudio-release.yml`): the wheel and sdist, the Debian package `spacemissionstudio_2.16.0_amd64.deb`, the Windows setup program `spacemissionstudio-2.16.0-setup.exe` (not signed, D-13), each installer's bill of materials (`spacemissionstudio_2.16.0_amd64.cdx.json`, `spacemissionstudio-2.16.0-setup.cdx.json`, CycloneDX 1.6), `SHA256SUMS-linux` and `SHA256SUMS-windows`; since 2.7.0, the complete source of the LGPL-3.0 Qt libraries the installers carry (`qt-everywhere-src-6.11.2.tar.xz`, `pyside-setup-everywhere-src-6.11.2.tar.xz`, checked against the size and SHA-256 Qt publishes, `packaging/legal/qt-sources.json`) with `SHA256SUMS-sources`, and a Sigstore-signed build provenance of every built file (`gh attestation verify`) |
@@ -1469,7 +1519,12 @@ The new test files are `tests/test_pointing_budget.py`,
 `tests/test_template_claims.py`, `tests/test_monte_carlo.py`,
 `test_migrations.py`, `test_cli.py` and
 others, and in `tests/gui/`. The changed test lines are in
-`docs/ui/TEST_CHANGES.md`. The release itself changed no test.
+`docs/ui/TEST_CHANGES.md`. The release itself changed no test. CI on
+the tagged commit `67ccf4d` (run 45500836193) passed at the second
+attempt: the first failed only the pointing page's 50 ms timing test
+(52.5 ms on the runner), on the same tree that passed on `902eff4`. The
+release workflow's tests (run 45509626974) passed at the first attempt,
+on the Windows runner too.
 
 **Still open:** K-19 (about 0.4 s), K-22, K-23 (smaller), K-24 (fixed
 when a seed is set), K-25, K-26, K-27, K-28, K-30, K-31, K-34, K-35,
