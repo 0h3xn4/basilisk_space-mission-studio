@@ -37,6 +37,7 @@ from pathlib import Path
 
 import numpy as np
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QFileDialog, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 from . import export_log
@@ -122,6 +123,11 @@ _NO_REPORTS = ("No reports yet", "Add a Report step under Mission sequence, then
 
 
 class MissionOutputWidget(QWidget):
+    """Results › Output. ``sequence_requested``: the empty state's Go to
+    Mission Sequence, where a Report step is added (FA-6)."""
+
+    sequence_requested = Signal()
+
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self._summary: CommandSummary | None = None
@@ -155,7 +161,8 @@ class MissionOutputWidget(QWidget):
         self.summary_label.setVisible(False)  # the empty state says it until a run reports
         layout.addWidget(self.summary_label)
         # No report: the one empty state (UI audit UI-15), not a line of text over a blank page.
-        self.empty_state = EmptyState(*_NO_REPORTS)
+        self.empty_state = EmptyState(*_NO_REPORTS, "Go to Mission Sequence")
+        self.empty_state.button.clicked.connect(self.sequence_requested)
         layout.addWidget(self.empty_state, 1)
 
         # A DataTable (UI overhaul M6b): the reports' values, a row a quantity.
@@ -177,7 +184,7 @@ class MissionOutputWidget(QWidget):
         self.table.setVisible(False)
         self.summary_label.setText(_EMPTY_TEXT)  # say why the view is empty, as before a first run
         self.summary_label.setVisible(False)
-        self.empty_state.set_text(*_NO_REPORTS)
+        self.empty_state.set_text(*_NO_REPORTS, "Go to Mission Sequence")
         self.empty_state.setVisible(True)
 
     def set_command_summary(self, summary: CommandSummary | None, result: ResultSet | None = None) -> None:
@@ -232,7 +239,7 @@ class MissionOutputWidget(QWidget):
             self.summary_label.setVisible(True)
             self.table.setVisible(False)
             self.empty_state.set_text("No reports in this run", "The run ran no Report step. Add one under Mission "
-                                      "sequence, then run again.")
+                                      "sequence, then run again.", "Go to Mission Sequence")
             self.empty_state.setVisible(True)
             return
 

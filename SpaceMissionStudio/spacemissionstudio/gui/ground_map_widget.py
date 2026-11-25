@@ -457,6 +457,7 @@ class GroundMapWidget(QWidget):
     and ``live_requested`` ask its owner's playback (Space, End)."""
 
     play_requested = Signal()
+    run_requested = Signal()  # the empty state's Run, before a run (FA-6)
     live_requested = Signal()
 
     def __init__(self, parent: QWidget | None = None):
@@ -517,7 +518,10 @@ class GroundMapWidget(QWidget):
         self.stack = QStackedWidget()
         self.empty = EmptyState("No ground track yet",
                                 "Run a scenario: each spacecraft's ground track, the ground stations and what "
-                                "they see are drawn here, live while the run runs (Show in 3D View while running).")
+                                "they see are drawn here, live while the run runs (Show in 3D View while running).",
+                                "Run")
+        self.empty_run_button = self.empty.button  # secondary: the top bar's Run is the one accent (UI-03)
+        self.empty_run_button.clicked.connect(self.run_requested)
         self.stack.addWidget(self.empty)
         self.canvas = _Canvas(self)
         self.stack.addWidget(self.canvas)
@@ -572,7 +576,8 @@ class GroundMapWidget(QWidget):
         self._image = None
         self._stations = []
         self._circles.clear()
-        self.empty.set_text(title, text if text is not None else self.empty.text_label.text())
+        self.empty.set_text(title, text if text is not None else self.empty.text_label.text(),
+                            "Run" if title == "No ground track yet" else None)
         self.stack.setCurrentWidget(self.empty)
         self.time_label.clear()
         self._set_window_controls()

@@ -919,6 +919,8 @@ Time Cursor commands are under Go > Time Cursor).
 | Budgets > Add Equipment Item | Ctrl+Shift+N | - |
 | Budgets > Remove Equipment Item | Ctrl+Del | - |
 | Budgets > Copy as CSV | Ctrl+Shift+C | - |
+| Budgets > Add Pointing Requirement | Ctrl+Shift+E | - |
+| Budgets > Add Pointing Contributor | Ctrl+Shift+T | - |
 
 Open in Own Window (in View > Own Windows) moves the view shown (Results ›
 3D View, Run › Thermal, Budgets) into a window of its own; in that window, or on its

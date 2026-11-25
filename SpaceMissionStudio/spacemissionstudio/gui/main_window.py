@@ -149,6 +149,7 @@ _RUN_END_STEP_MS = 4  # [ms] between the steps that show a run's end (M6b)
 _NO_SCENARIO_OPEN = "No scenario is open. Open one on Home."
 _RUN_GOING = "A run is going. Wait for it to end, or cancel it (Esc)."
 _NO_RUN_GOING = "No run is going."
+_NO_RUN_SHOWN = "No run is shown: run the scenario, or show a run from Run › History."
 _RUN_CANCELLING = "The run is being cancelled: it stops at its next checkpoint."
 _NO_OWN_WINDOW = "The view shown has no window of its own: show Results › 3D View, Run › Thermal or Budgets."
 # [-] saveState() version: bump when the docks change, so an old layout is ignored. 6: the docks' own title
@@ -416,6 +417,12 @@ class MainWindow(QMainWindow):
         # Run > History (M5a): every run kept, and this session's failed runs and batches.
         self.history_view = RunHistoryView()
         self.history_view.run_requested.connect(self.on_run)
+        # The run views' empty states lead to what fills them (FA-6): Run, the Mission Sequence, a template.
+        for view in (self.results_widget, self.mission_view_widget, self.mission_view_widget.ground_map,
+                     self.event_timeline_widget, self.compare_widget, self.mission_dashboard_widget):
+            view.run_requested.connect(self.on_run)
+        self.mission_output_widget.sequence_requested.connect(self._show_mission_sequence)
+        self.mission_dashboard_widget.template_requested.connect(self._open_template_named)
         self.history_view.show_requested.connect(self._show_history_run)
         self._run_modes: dict = {}  # run number -> "Single" or "SIL" (this session's runs)
         self._run_seconds: dict = {}  # run number -> [s] how long it took (this session's runs)
@@ -812,6 +819,65 @@ class MainWindow(QMainWindow):
                  "Copy the table of the Budgets page shown as CSV, with the scenario's provenance.")):
             add(command_id, action.text(), self._on_budgets_command, category="Budgets", area="budgets",
                 action=action, tip=tip, keywords=("equipment list", "power budget", "mass budget"))
+        # The Pointing page's commands (decision FA-2): window actions that show the page first (it is filled
+        # from the scenario when shown), then do the page's own action. The page's buttons show the keys too.
+        pointing = self.budgets_views.pointing_page
+        for command_id, label, page_action, keys, tip in (
+                ("budgets.pointing.add_budget", "Add Pointing Budget", pointing.add_pointing_action, None,
+                 "Give the spacecraft shown an empty pointing error budget (Budgets › Pointing)."),
+                ("budgets.pointing.add_requirement", "Add Pointing Requirement", pointing.add_requirement_action,
+                 "Ctrl+Shift+E", "Add a requirement to the pointing budget: its index, axis, limit and probability."),
+                ("budgets.pointing.remove_requirement", "Remove Pointing Requirement",
+                 pointing.remove_requirement_action, None,
+                 "Remove the requirement picked in Budgets › Pointing (Undo brings it back)."),
+                ("budgets.pointing.add_contributor", "Add Pointing Contributor", pointing.add_contributor_action,
+                 "Ctrl+Shift+T", "Add a source of pointing error to the budget, with its behaviour and spread."),
+                ("budgets.pointing.remove_contributor", "Remove Pointing Contributor",
+                 pointing.remove_contributor_action, None,
+                 "Remove the contributor picked in Budgets › Pointing (Undo brings it back)."),
+                ("budgets.pointing.add_sensors", "Add Scenario Sensors to Pointing Budget", pointing.add_sensors_action,
+                 None, "Add the spacecraft's star trackers, gyroscopes and sun sensors as knowledge contributors, "
+                       "with their noise and its source.")):
+            add(command_id, label, self._on_pointing_command, category="Budgets", area="budgets", shortcut=keys,
+                qicon=page_action.icon(), tip=tip,
+                keywords=("pointing error budget", "pointing budget")).setData(page_action)
+            if keys:
+                page_action.setToolTip(f"{page_action.text()} ({keys})")
+        # The Spacecraft and Ground stations pages' buttons as commands (decision FA-3): the page shows,
+        # then its button is clicked, so the command does what the button does, with its rules.
+        spacecraft = self.scenario_editor.spacecraft_list
+        for command_id, label, button, tip in (
+                ("scenario.add_spacecraft", "Add Spacecraft", spacecraft.add_button,
+                 "Add a spacecraft built from scratch (Scenario › Spacecraft › Add)."),
+                ("scenario.spacecraft_from_template", "New Spacecraft from Template...",
+                 spacecraft.new_from_template_button, "Add a spacecraft from a ready-made one: a CubeSat, a smallsat, "
+                                                      "an Earth observation satellite, ..."),
+                ("scenario.generate_constellation", "Generate Walker Constellation...",
+                 spacecraft.generate_constellation_button,
+                 "Add a Walker delta or star constellation of copies of a spacecraft."),
+                ("scenario.generate_phasing_formation", "Generate Phasing Formation...",
+                 spacecraft.generate_phasing_formation_button,
+                 "Add a follower that flies at a set along-track distance behind a chosen spacecraft."),
+                ("scenario.generate_roe_formation", "Generate ROE Formation...",
+                 spacecraft.generate_roe_formation_button,
+                 "Add a follower set by relative orbital elements, for example a passively safe helix."),
+                ("scenario.add_ground_station", "Add Ground Station", self.scenario_editor.ground_station_list.add_button,
+                 "Add a ground station and open its page (Scenario › Ground stations › Add).")):
+            add(command_id, label, self._on_scenario_button_command, category="Scenario", area="scenario", tip=tip,
+                keywords=("spacecraft", "constellation", "formation", "ground station")).setData(button)
+        # Results › Plots › Export all...'s run exports, also in File (decision FA-4): window actions that do the
+        # view's own actions, on whenever the view's Export all... is.
+        for command_id, label, view_action, tip in (
+                ("file.export_bundle", "Export Reproduction Bundle...", self.results_widget.export_bundle_action,
+                 "The run shown as a folder that 'spacemissionstudio reproduce' runs again and compares: every "
+                 "series as CSV, the provenance, the scenario as run and copies of the files it refers to."),
+                ("file.export_oem", "Export Ephemeris as CCSDS OEM...", self.results_widget.export_oem_action,
+                 "Each spacecraft's recorded states in the run shown as a CCSDS OEM, for another flight-dynamics "
+                 "tool.")):
+            add(command_id, label, self._on_view_action_command, category="File", area="results", tip=tip,
+                keywords=("export", "run --bundle", "run --oem")).setData(view_action)
+            self.commands.set_available(command_id, _NO_RUN_SHOWN)
+        self.results_widget.run_exports_changed.connect(self._refresh_run_export_commands)
 
         # The inspector on the right, the Problems panel at the bottom, and
         # the layout back (U-05, M2b). Showing a panel from the keyboard
@@ -1011,7 +1077,13 @@ class MainWindow(QMainWindow):
                           "analyses.end_of_life", "analyses.budget", "analyses.design_checks",
                           "tools.flight_software", "view.explain", "budgets.add_item", "budgets.remove_item",
                           "budgets.copy_csv", "view.window.3d_view", "view.window.thermal", "view.window.budgets",
-                          "view.window.map", "view.3d_view.globe", "view.3d_view.map", "view.3d_view.both")
+                          "view.window.map", "view.3d_view.globe", "view.3d_view.map", "view.3d_view.both",
+                          "budgets.pointing.add_budget", "budgets.pointing.add_requirement",
+                          "budgets.pointing.remove_requirement", "budgets.pointing.add_contributor",
+                          "budgets.pointing.remove_contributor", "budgets.pointing.add_sensors",
+                          "scenario.add_spacecraft", "scenario.spacecraft_from_template",
+                          "scenario.generate_constellation", "scenario.generate_phasing_formation",
+                          "scenario.generate_roe_formation", "scenario.add_ground_station")
 
     def _on_go_to_area(self) -> None:
         self.shell.show_area(self.sender().data())
@@ -1548,6 +1620,43 @@ class MainWindow(QMainWindow):
         else:
             self.show_view(self.budgets_views.equipment_page)
 
+    def _on_pointing_command(self) -> None:
+        """A Budgets › Pointing command from the menu, the palette or its
+        keys: the Pointing page in view (filled from the scenario), then the
+        page's own action; when it cannot act, a note says why."""
+        page = self.budgets_views.pointing_page
+        page_action = self.sender().data()
+        self.show_view(page)
+        if not page.spacecraft_name:
+            show_toast(self, "No spacecraft: add one in Scenario › Spacecraft first.", kind="info")
+        elif page_action is not page.add_pointing_action and page.pointing is None:
+            show_toast(self, f"{page.spacecraft_name} has no pointing budget yet: Add Pointing Budget first.",
+                       kind="info")
+        elif page_action is page.add_pointing_action and page.pointing is not None:
+            show_toast(self, f"{page.spacecraft_name} has a pointing budget already.", kind="info")
+        else:
+            page_action.trigger()
+
+    def _on_scenario_button_command(self) -> None:
+        """A Tools › Scenario command: its page in view, then its button
+        clicked (off: the button's reason as a note)."""
+        button = self.sender().data()
+        page = (self.scenario_editor.ground_station_page if button is self.scenario_editor.ground_station_list.add_button
+                else self.scenario_editor.spacecraft_page)
+        self.show_view(page)
+        if button.isEnabled():
+            button.click()
+        else:
+            show_toast(self, button.toolTip().split("\n")[0] or "Not available now.", kind="info")
+
+    def _on_view_action_command(self) -> None:
+        """A File export of the run shown: the view's own action."""
+        self.sender().data().trigger()
+
+    def _refresh_run_export_commands(self, available: bool) -> None:
+        for command_id in ("file.export_bundle", "file.export_oem"):
+            self.commands.set_available(command_id, "" if available else _NO_RUN_SHOWN)
+
     def _show_scenario_editor(self) -> None:
         self.show_view(self.scenario_editor)
 
@@ -1797,6 +1906,16 @@ class MainWindow(QMainWindow):
                 page = tabs.widget(index)
                 entries.append(PaletteEntry(f"Go to > {area_label} > {tabs.tabText(index).replace('&', '')}",
                                             lambda page=page: self.show_view(page)))
+        if self._scenario_open:
+            # Every export of Reports › Exports by name: the view that makes it, as a double-click there (FA-5).
+            from .exports_page import EXPORTS
+
+            names = [export.name for export in EXPORTS]
+            for export in EXPORTS:  # a name two exports share says its format: "Plot image (PNG)"
+                label = export.name if names.count(export.name) == 1 else f"{export.name} ({export.file_format})"
+                entries.append(PaletteEntry(f"Export > {label}",
+                                            lambda key=export.key: self._on_export_open_requested(key),
+                                            keywords=f"save write {export.file_format} {export.made_in}"))
         for dock in self._docks():
             entries.append(PaletteEntry(f"Go to panel > {dock.windowTitle().split(' (')[0]}",
                                         lambda dock=dock: self.show_panel(dock)))
@@ -2544,10 +2663,21 @@ class MainWindow(QMainWindow):
             return  # still being built
         reason = self._run_blocker()
         self.commands.set_available("run.run", reason)
-        for button in (self.history_view.empty_run_button, self.results_overview.empty_run_button):
+        for button in self._empty_run_buttons():
             button.setEnabled(not reason)
             button.setToolTip(reason or self.run_action.toolTip())
         self._refresh_run_case_command()
+
+    def _empty_run_buttons(self) -> tuple:
+        """The Run buttons of the run views' empty states: they follow Run."""
+        return (self.history_view.empty_run_button, self.results_overview.empty_run_button,
+                self.results_widget.empty_run_button, self.mission_view_widget.empty_run_button,
+                self.mission_view_widget.ground_map.empty_run_button, self.event_timeline_widget.empty_run_button,
+                self.compare_widget.empty_run_button, self.mission_dashboard_widget.empty_run_button)
+
+    def _show_mission_sequence(self) -> None:
+        """Results › Output's empty state: Scenario › Mission sequence, where a Report step is added."""
+        self.show_view(self.scenario_editor.mission_sequence_page)
 
     def _refresh_run_case_command(self) -> None:
         """Run This Case: enabled when a case of an orbit batch is picked and

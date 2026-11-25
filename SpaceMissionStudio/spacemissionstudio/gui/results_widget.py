@@ -572,6 +572,10 @@ class ResultsWidget(QWidget):
     plot_drawn = Signal(bool)  # the page drew the latest figures (M6a); False: Plotly reported an error
     # The shown run's warnings changed: the Problems panel lists them (run_warning_rows, UI audit UI-37).
     run_warnings_changed = Signal()
+    # Whether the run exports (reproduction bundle, OEM) can start: a run is shown and no export goes. The
+    # window's File › Export Reproduction Bundle... and Export Ephemeris as CCSDS OEM... follow it (FA-4).
+    run_exports_changed = Signal(bool)
+    run_requested = Signal()  # the empty state's Run, before the first run (FA-6)
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -834,7 +838,10 @@ class ResultsWidget(QWidget):
         plot_layers = QStackedLayout(self.plot_area)
         plot_layers.setStackingMode(QStackedLayout.StackingMode.StackAll)
         plot_layers.addWidget(self.web_view)
-        self.plot_empty = EmptyState(*self._empty_texts())
+        self.plot_empty = EmptyState(*self._empty_texts(), "Run")
+        # Secondary: the top bar's Run is the one accent (UI-03); the window enables it with Run (UI-55).
+        self.empty_run_button = self.plot_empty.button
+        self.empty_run_button.clicked.connect(self.run_requested)
         self.plot_empty.setObjectName("plotEmptyState")  # opaque, the plots' surface (theme.qss)
         self.plot_empty.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         plot_layers.addWidget(self.plot_empty)
@@ -879,6 +886,7 @@ class ResultsWidget(QWidget):
         self._epoch_utc = epoch_utc
         self._fill_catalog(result)
         self.export_button.setEnabled(result is not None and bool(result.series) and self._export_worker is None)
+        self._refresh_run_exports()
         self._update_provenance_label()
         self._update_warnings_label()
         self._update_event_buttons()
@@ -1590,7 +1598,7 @@ class ResultsWidget(QWidget):
             return  # still building
         empty = not self.figures
         if empty:
-            self.plot_empty.set_text(*self._empty_texts())
+            self.plot_empty.set_text(*self._empty_texts(), "Run" if getattr(self, "_result", None) is None else None)
             self.plot_empty.raise_()
         self.plot_empty.setVisible(empty)
 
@@ -1664,6 +1672,7 @@ class ResultsWidget(QWidget):
         chosen = self.compare_combo.currentData()
         named = self._current_run is not None and current is not None and self._current_run.name == current.name
         self._runs, self._current_run = list(runs), current
+        self._refresh_run_exports()
         if self._run_warnings and not named:
             self.run_warnings_changed.emit()  # their rows name the run shown
         others = [r for r in self._runs if current is None or r.number != current.number]
@@ -2009,6 +2018,7 @@ class ResultsWidget(QWidget):
         worker.failed.connect(self._on_export_failed)
         worker.cancelled.connect(self._on_export_cancelled)
         self._export_worker = worker
+        self._refresh_run_exports()
         self.export_button.setEnabled(False)
         self.export_all_button.setEnabled(False)
         self.export_progress_label.setText("Exporting...")
@@ -2043,8 +2053,18 @@ class ResultsWidget(QWidget):
             self.export_cancel_button.setEnabled(False)
             self.export_progress_label.setText("Cancelling...")
 
+    def run_exports_available(self) -> bool:
+        """A run is shown and no export goes: the reproduction bundle and
+        the OEM can start."""
+        return (getattr(self, "_result", None) is not None and getattr(self, "_current_run", None) is not None
+                and getattr(self, "_export_worker", None) is None)
+
+    def _refresh_run_exports(self) -> None:
+        self.run_exports_changed.emit(self.run_exports_available())
+
     def _end_export(self) -> None:
         self._export_worker = None
+        self._refresh_run_exports()
         self.export_progress_label.hide()
         self.export_cancel_button.hide()
         self.export_button.setEnabled(self._result is not None and bool(self._result.series))

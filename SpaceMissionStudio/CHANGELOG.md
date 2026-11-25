@@ -34,6 +34,31 @@ fixes bugs.
   a Customize wizard. Three features cannot be a template: an IDM-CIC
   import, a plugin and a project configuration; the template coverage
   page says why and where each is shown.
+- **Every feature in reach.** A new page,
+  [Feature access](docs/reference/feature-access.md), lists each feature
+  with where it is in the app (menu, palette, keys), its manual section
+  and the test that follows its path, and says what is still hidden.
+  The pointing budget's actions are now in **Tools › Pointing Budget**
+  and the palette: **Add Pointing Requirement** (`Ctrl+Shift+E`) and
+  **Add Pointing Contributor** (`Ctrl+Shift+T`) open Budgets › Pointing
+  from anywhere. A new **Tools › Scenario** menu adds a spacecraft, one
+  from a template, a Walker constellation, a phasing or ROE formation,
+  or a ground station. **File** has **Export Ephemeris as CCSDS OEM...**
+  and **Export Reproduction Bundle...** for the run shown; before, they
+  hid in the Plots page's Export all... menu. The command palette finds
+  every export by name ("Export ›") and opens the view that makes it.
+- **Empty views that say what to do.** Before your first run, Plots,
+  3D View, the map, Timeline, Compare and Dashboard each have a **Run**
+  button; Output offers **Go to Mission Sequence** (add a Report step
+  there) and Dashboard **Open Template 19**.
+
+### Fixed
+
+- **The command palette no longer cuts off shortcuts.** Since the
+  templates show their category, the longest entries were wider than the
+  palette: the list scrolled sideways and the keys at the right of a
+  command were cut. Each row now fits the palette, its name shortened
+  with "…" before the keys.
 
 ### Changed
 

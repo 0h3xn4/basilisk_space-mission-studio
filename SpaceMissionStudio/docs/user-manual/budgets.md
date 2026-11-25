@@ -84,6 +84,8 @@ provenance (the versions, the scenario's SHA-256 and the time).
 | `Ctrl+Shift+C` | Copy the page shown as CSV |
 | `Ctrl+C` | Copy the selected rows of a table as tab-separated text |
 | `Ctrl+Shift+D` | Open the Budgets area in its own window, or bring it back |
+| `Ctrl+Shift+E` | Add a pointing requirement (Budgets › Pointing) |
+| `Ctrl+Shift+T` | Add a pointing contributor (Budgets › Pointing) |
 
 The commands are also in **Tools > Budgets** and in the command palette
 (`Ctrl+K`, type "budget").

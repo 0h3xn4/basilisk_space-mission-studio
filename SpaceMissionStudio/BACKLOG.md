@@ -2,14 +2,6 @@
 
 ## Next release
 
-- The pointing page's timing test on a loaded CI runner. On 2026-11-24
-  `test_the_page_shows_a_large_budget_in_steps_under_50_ms` measured a
-  median of 52.5 ms against 50 ms on CI's Linux runner (commit
-  `67ccf4d`, run 45500836193; about 15 ms on the development machine).
-  The same tree passed before, and the job run again passed. Find why
-  the computation takes 3.5 times longer there, and make it faster or
-  measure it in a way the runner's load does not change, without a
-  higher limit (design rule 6 keeps 50 ms). About 2 hours.
 - Pointing budget: a gyroscope's angle error from a time between
   attitude fixes (decision PE-21, the owner 2026-11-24). A sourced
   `pointing` value "time between attitude fixes [s]", "TBD" until set;
@@ -53,6 +45,28 @@
   paths and names that are no longer true; keep the DRD structure, the
   section numbers and the generated parts (`check_drds.py` and the
   generators stay clean). No rewrite of the text. About 5 hours.
+
+- An operations form (feature access, `docs/reference/feature-access.md`).
+  The operations section's activity types, requests, scheduler (objective,
+  weights, iterations), what-if events and verification settings are
+  edited only in Scenario › JSON. A Scenario › Operations page with
+  tables for the activity types and requests, the scheduler's fields and
+  the what-if events, round-tripping the section exactly (templates 35
+  and 36 unchanged). About 24 hours.
+
+- Reproduce a bundle in the app (feature access). `spacemissionstudio
+  reproduce` runs a reproduction bundle again and compares the results;
+  the app has no counterpart. Reports › Reproduce a Bundle...: choose
+  the folder, run in a worker with progress and cancel, show the
+  comparison per series with the tolerance, keep the run in History.
+  About 6 hours.
+
+- The run comparison as JSON in Results › Compare (feature access,
+  decision FA-9). The command line's `compare --out`. About 1.5 hours.
+  Needs the owner: its row in Reports › Exports changes the count of
+  `tests/gui/test_reports_and_settings.py::test_every_export_is_listed_never_written_at_first`
+  (23 to 24), and a GUI test may change only how it reaches a widget.
+
 
 ## Later
 
@@ -101,6 +115,9 @@ owner has answered the plan's open questions.
 
 ## Done
 
+- The pointing page's timing test on a loaded CI runner (2026-11-25,
+  branch `fix/pointing-timing-best-of-five`): the best of five under
+  50 ms, as the other 50 ms tests of the GUI thread; the limit stays.
 - Templates for every feature, batch B: templates 43 to 47, on branch
   `feature/templates-batch-b` (2026-11-24). 43, a 3D model from
   cylinders, spheres and a synthetic `.obj` camera; 44, the attitude,
@@ -112,6 +129,15 @@ owner has answered the plan's open questions.
   import, plugins or a project configuration: a scenario template
   cannot carry them (the coverage page says where each is shown).
   Decisions TPL-B1 to TPL-B7.
+
+- Feature access: no feature hidden (the owner, 2026-11-24), on branch
+  `feature/feature-access`. The page `docs/reference/feature-access.md`
+  (198 rows: 173 OK, 18 fixed, 5 backlog, 2 CLI only) and its tests; the
+  pointing budget's commands in Tools › Pointing Budget with
+  `Ctrl+Shift+E` and `Ctrl+Shift+T`; Tools › Scenario; the run exports in
+  File; the exports in the palette; the empty states' actions; the
+  palette's rows no longer cut the keys; the manual's lists. Decisions
+  FA-1 to FA-10.
 
 - Template 38, "Budgets: equipment list, power, mass and propellant",
   on branch `feature/template-38-budgets` (2026-11-24). The owner asked

@@ -536,8 +536,9 @@ A full PySide6 desktop shell (scenario editor, with the scenario's text
 as a code editor beside the forms: colours, problems marked in place,
 completion and help from the schema, rename, go to definition, quick
 fixes; Monte Carlo, live progress feedback, a real visual theme and icons, a
-navigation rail and a command palette) and an equivalent headless CLI (35 commands; see
-[Use the command line](../user-manual/command-line.md)), both built on
+navigation rail and a command palette) and an equivalent headless CLI (38 commands; see
+[Use the command line](../user-manual/command-line.md); [Feature access](feature-access.md)
+maps each feature and each command to its place in the app), both built on
 the exact same `schema`/`engine` layer -- neither is a thin wrapper
 around the other. Result plots are Plotly figures (a validated,
 colorblind-safe categorical palette; a unified hover tooltip; plain

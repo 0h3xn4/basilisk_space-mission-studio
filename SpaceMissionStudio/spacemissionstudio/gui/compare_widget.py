@@ -96,12 +96,16 @@ class CompareWidget(QWidget):
 
     compare_chosen = Signal(object)  # the run Results draws dashed, or None
     delete_requested = Signal(object)  # a gui.run_history.RunRecord
+    run_requested = Signal()  # the empty state's Run (FA-6)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
         self.empty_label = EmptyState("No runs to compare", "Run the scenario twice (or two versions of it) to compare "
-                                      "the runs here. Runs are saved, so the runs of earlier sessions show here too.")
+                                      "the runs here. Runs are saved, so the runs of earlier sessions show here too.",
+                                      "Run")
+        self.empty_run_button = self.empty_label.button  # secondary: the top bar's Run is the one accent (UI-03)
+        self.empty_run_button.clicked.connect(self.run_requested)
         layout.addWidget(self.empty_label, 1)
         self.content = QSplitter(Qt.Orientation.Horizontal)
         layout.addWidget(self.content, 1)

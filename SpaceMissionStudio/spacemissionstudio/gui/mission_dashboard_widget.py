@@ -141,11 +141,17 @@ def _card_form(box: QGroupBox) -> QFormLayout:
     return form
 
 
+# The template the empty state opens: a Sun-pointing spacecraft with a ground-station link (Comms pointing).
+DASHBOARD_TEMPLATE = "19_sun_pointing_comms_link.json"
+
+
 class MissionDashboardWidget(QWidget):
     """``calculation_requested(Explanation)``: Show calculation was chosen
     for the link budget at the time cursor."""
 
     calculation_requested = Signal(object)
+    run_requested = Signal()  # the empty state's Run (FA-6)
+    template_requested = Signal(str)  # its Open Template 19: the template's file name
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -159,7 +165,10 @@ class MissionDashboardWidget(QWidget):
 
         # The one empty state of the GUI (UI audit UI-15), in the middle of the tab.
         self._placeholder = EmptyState("No live telemetry yet", "Run a scenario with Comms pointing (e.g. template "
-                                       "19) to see it here.")
+                                       "19) to see it here.", "Run")
+        self.empty_run_button = self._placeholder.button  # secondary: the top bar's Run is the one accent (UI-03)
+        self.empty_run_button.clicked.connect(self.run_requested)
+        self._placeholder.add_action("Open Template 19").clicked.connect(self._on_open_template)
         layout.addWidget(self._placeholder, 1)
 
         # Cards sized to their content, in two columns (one when the pane
@@ -340,6 +349,9 @@ class MissionDashboardWidget(QWidget):
         explanation = self.power_explanation()
         if explanation is not None:
             self.calculation_requested.emit(explanation)
+
+    def _on_open_template(self) -> None:
+        self.template_requested.emit(DASHBOARD_TEMPLATE)
 
     def set_time_cursor(self, cursor) -> None:
         """Show the values at ``cursor`` (a :class:`gui.time_cursor.TimeCursor`) instead of the latest."""

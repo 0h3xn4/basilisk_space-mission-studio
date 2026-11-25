@@ -24,13 +24,12 @@ All SpaceMissionStudio documents, in groups. If you are new, start with
 
 ## Reference
 
-<!-- Slot: when docs/reference/feature-access.md exists, add its row (Feature access) to the table below. -->
-
 | Page | Use it to |
 |---|---|
 | [Use the command line](user-manual/command-line.md) | See each `spacemissionstudio` command |
 | [The Python API](api.md) | Use `spacemissionstudio.api` from a script: load, check, run, lifetime, budgets, Monte Carlo and more |
 | [Models, rules and assumptions](models/README.md) | See how each model calculates, each rule with its value, unit and source, and its assumptions |
+| [Feature access](reference/feature-access.md) | See where each feature is in the app (menu, palette, keys), its manual section, its test, and what is still hidden |
 | [Capabilities and verification](reference/capabilities.md) | See what the app can do, which Basilisk module does it, and what is verified |
 | [Template coverage](reference/template-coverage.md) | See which templates show each feature |
 | [Known limitations](reference/limitations.md) | See what the app does not do, and why |
